@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum NodeConditionType { None, Normal, Hard, Boss }
+public enum NodeConditionType { Free, NoLeftArm, NoRightEye, Boss }
 public enum NodeState { Hidden, RouteOnly, Visible, Current, Cleared }
 
 public class MapNode

@@ -1,16 +1,14 @@
-using UnityEngine;
+using System;
 
-public class BodyState : MonoBehaviour
+[Serializable]
+public class BodyState
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public bool head     = true;
+    public bool eyeLeft  = true;
+    public bool eyeRight = true;
+    public bool body     = true;
+    public bool armLeft  = true;
+    public bool armRight = true;
+    public bool legLeft  = true;
+    public bool legRight = true;
 }

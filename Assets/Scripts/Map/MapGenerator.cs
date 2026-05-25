@@ -8,7 +8,7 @@ public static class MapGenerator
         int nextId = 0;
 
         // Layer 0: start
-        var root = new MapNode { id = nextId++, layer = 0, conditionType = NodeConditionType.None };
+        var root = new MapNode { id = nextId++, layer = 0, conditionType = NodeConditionType.Free };
 
         // Layer 1: 항상 3개
         var layer1 = new List<MapNode>();
@@ -44,8 +44,8 @@ public static class MapGenerator
     static NodeConditionType RollCondition()
     {
         float r = Random.value;
-        return r < 0.30f ? NodeConditionType.None
-             : r < 0.75f ? NodeConditionType.Normal
-             : NodeConditionType.Hard;
+        return r < 0.40f ? NodeConditionType.Free
+             : r < 0.70f ? NodeConditionType.NoLeftArm
+             : NodeConditionType.NoRightEye;
     }
 }
