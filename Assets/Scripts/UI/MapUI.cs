@@ -2,60 +2,109 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[ExecuteAlways]
 public class MapUI : MonoBehaviour
 {
-    [SerializeField] float layerSpacing = 2f;
-    [SerializeField] float mapWidth = 14f;
-    [SerializeField] float nodeRadius = 0.35f;
+    [SerializeField] float layerSpacing = 4f;
+    [SerializeField] float mapWidth = 12f;
+    [SerializeField] float nodeRadius = 0.5f;
+    [SerializeField] float camLerpSpeed = 5f;
 
-    static readonly Color ColCurrent    = new(1.00f, 0.65f, 0.10f, 1f); // 주황
-    static readonly Color ColCleared    = new(0.15f, 0.15f, 0.15f, 1f); // 검정
-    static readonly Color ColNone       = new(0.15f, 0.15f, 0.15f, 1f); // 검정 (조건없음)
-    static readonly Color ColNormal     = new(0.25f, 0.50f, 1.00f, 1f); // 파랑
-    static readonly Color ColHard       = new(0.65f, 0.10f, 0.15f, 1f); // 진빨강
-    static readonly Color ColRouteOnly  = new(0.55f, 0.55f, 0.55f, 1f); // 회색
-    static readonly Color ColLine       = new(0.40f, 0.40f, 0.40f, 1f);
+    static readonly Color ColCurrent   = new Color(1.00f, 0.65f, 0.10f, 1f);
+    static readonly Color ColCleared   = new Color(0.20f, 0.20f, 0.20f, 1f);
+    static readonly Color ColNone      = new Color(0.30f, 0.30f, 0.30f, 1f);
+    static readonly Color ColNormal    = new Color(0.25f, 0.50f, 1.00f, 1f);
+    static readonly Color ColHard      = new Color(0.65f, 0.10f, 0.15f, 1f);
+    static readonly Color ColBoss      = new Color(0.90f, 0.75f, 0.10f, 1f);
+    static readonly Color ColRouteOnly = new Color(0.45f, 0.45f, 0.45f, 1f);
+    static readonly Color ColLine      = new Color(0.40f, 0.40f, 0.40f, 1f);
 
     Sprite circleSprite;
-    readonly Dictionary<MapNode, SpriteRenderer> nodeRenderers = new();
-    readonly Dictionary<MapNode, CircleCollider2D> nodeColliders = new();
-    readonly List<(LineRenderer lr, MapNode from, MapNode to)> lines = new();
+    readonly Dictionary<MapNode, SpriteRenderer> nodeRenderers = new Dictionary<MapNode, SpriteRenderer>();
+    readonly Dictionary<MapNode, CircleCollider2D> nodeColliders = new Dictionary<MapNode, CircleCollider2D>();
+    readonly List<(LineRenderer lr, MapNode from, MapNode to)> lines = new List<(LineRenderer lr, MapNode from, MapNode to)>();
 
-    void Start()
+    float targetCamY;
+
+    void OnEnable()
     {
+        Cleanup();
+        if (MapManager.Instance == null) return;
+
         circleSprite = MakeCircleSprite(64);
         MapManager.Instance.OnMapChanged += Refresh;
         Build(MapManager.Instance.Root);
         Refresh();
     }
 
+    void OnDisable()
+    {
+        if (MapManager.Instance != null)
+            MapManager.Instance.OnMapChanged -= Refresh;
+        Cleanup();
+    }
+
+    void Cleanup()
+    {
+        nodeRenderers.Clear();
+        nodeColliders.Clear();
+        lines.Clear();
+
+        // 딕셔너리는 도메인 리로드 후 초기화되므로, transform 자식 전체를 직접 삭제
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            var child = transform.GetChild(i);
+            if (Application.isPlaying) Destroy(child.gameObject);
+            else DestroyImmediate(child.gameObject);
+        }
+    }
+
     void Build(MapNode root)
     {
         var layers = CollectLayers(root);
+        int totalLayers = layers.Count;
 
-        // 위치 계산
+        // ── orthoSize 계산 ──────────────────────────────────────────────
+        // 세로: 3계층이 화면을 꽉 채워야 하므로 layerSpacing + padding
+        // 보스(마지막 레이어) 노출 방지 상한: (totalLayers-2)*layerSpacing
+        // 가로: 실제 화면 비율 반영해 노드가 잘리지 않도록 필요 시 확대
+        float vertOrtho = layerSpacing + 0.8f;
+        float maxOrtho  = (totalLayers - 2) * layerSpacing - 0.2f;
+        float orthoSize = vertOrtho;
+        float effectiveMapWidth = mapWidth;
+
+        if (Camera.main != null)
+        {
+            float horzOrtho = mapWidth / Camera.main.aspect / 2f + 0.5f;
+            orthoSize = Mathf.Min(Mathf.Max(vertOrtho, horzOrtho), maxOrtho);
+            // 실제 보이는 가로 범위 안에 노드가 수용되도록 X 스프레드 조정
+            effectiveMapWidth = Mathf.Min(mapWidth, (orthoSize - 0.5f) * Camera.main.aspect * 2f);
+            Camera.main.orthographicSize = orthoSize;
+        }
+        // ────────────────────────────────────────────────────────────────
+
         for (int l = 0; l < layers.Count; l++)
         {
             var layer = layers[l];
             for (int i = 0; i < layer.Count; i++)
             {
                 float x = layer.Count == 1 ? 0f
-                    : (i / (float)(layer.Count - 1) - 0.5f) * mapWidth;
+                    : (i / (float)(layer.Count - 1) - 0.5f) * effectiveMapWidth;
                 float y = -l * layerSpacing;
                 layer[i].position = new Vector2(x, y);
                 CreateNodeGO(layer[i]);
             }
         }
 
-        // 연결선
-        foreach (var node in nodeRenderers.Keys)
-            foreach (var child in node.children)
-                CreateLine(node, child);
+        foreach (var kvp in nodeRenderers)
+            foreach (var child in kvp.Key.children)
+                if (nodeRenderers.ContainsKey(child))
+                    CreateLine(kvp.Key, child);
 
-        // 카메라 위치 조정
-        float h = (layers.Count - 1) * layerSpacing;
-        Camera.main.transform.position = new Vector3(0, -h / 2f, -10f);
-        Camera.main.orthographicSize = Mathf.Max(h / 2f + 2f, mapWidth / Camera.main.aspect / 2f + 1f);
+        // Initial camera: center of layers 0–2
+        targetCamY = -layerSpacing;
+        if (Camera.main != null)
+            Camera.main.transform.position = new Vector3(0f, targetCamY, -10f);
     }
 
     void CreateNodeGO(MapNode node)
@@ -63,11 +112,11 @@ public class MapUI : MonoBehaviour
         var go = new GameObject($"Node_{node.id}");
         go.transform.SetParent(transform);
         go.transform.position = new Vector3(node.position.x, node.position.y, 0f);
+        go.transform.localScale = Vector3.one * nodeRadius * 2f;
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = circleSprite;
         sr.sortingOrder = 2;
-        go.transform.localScale = Vector3.one * nodeRadius * 2f;
 
         var col = go.AddComponent<CircleCollider2D>();
         col.radius = 0.5f;
@@ -98,55 +147,95 @@ public class MapUI : MonoBehaviour
 
     void Update()
     {
-        if (!Mouse.current.leftButton.wasPressedThisFrame) return;
+        // Smooth camera scroll (play mode only to avoid editor camera fighting)
+        if (Application.isPlaying && Camera.main != null)
+        {
+            var pos = Camera.main.transform.position;
+            pos.y = Mathf.Lerp(pos.y, targetCamY, Time.deltaTime * camLerpSpeed);
+            Camera.main.transform.position = pos;
+        }
+
+        if (!Application.isPlaying) return;
+
+        if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame) return;
         var worldPos = (Vector2)Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
         var hit = Physics2D.OverlapPoint(worldPos);
         if (hit == null) return;
 
-        foreach (var (node, col) in nodeColliders)
-            if (col == hit && MapManager.Instance.TryMoveToNode(node))
+        foreach (var kvp in nodeColliders)
+        {
+            if (kvp.Value == hit && MapManager.Instance.TryMoveToNode(kvp.Key))
                 break;
+        }
     }
 
     void Refresh()
     {
-        foreach (var (node, sr) in nodeRenderers)
+        foreach (var kvp in nodeRenderers)
         {
+            var node = kvp.Key;
+            var sr = kvp.Value;
             bool hidden = node.state == NodeState.Hidden;
             sr.gameObject.SetActive(!hidden);
             if (!hidden) sr.color = GetColor(node);
         }
 
-        foreach (var (lr, from, to) in lines)
-            lr.gameObject.SetActive(from.state != NodeState.Hidden);
+        foreach (var entry in lines)
+            // from과 to 둘 다 Hidden이 아닐 때만 선 표시
+            entry.lr.gameObject.SetActive(
+                entry.from.state != NodeState.Hidden &&
+                entry.to.state  != NodeState.Hidden);
+
+        // Update camera target based on current layer
+        if (MapManager.Instance != null)
+        {
+            int curLayer = MapManager.Instance.CurrentNode.layer;
+            targetCamY = -(curLayer + 1) * layerSpacing;
+
+            // In edit mode snap camera immediately (no lerp)
+            if (!Application.isPlaying && Camera.main != null)
+                Camera.main.transform.position = new Vector3(0f, targetCamY, -10f);
+        }
     }
 
-    Color GetColor(MapNode n) => n.state switch
+    Color GetColor(MapNode n)
     {
-        NodeState.Current   => ColCurrent,
-        NodeState.Cleared   => ColCleared,
-        NodeState.RouteOnly => ColRouteOnly,
-        NodeState.Visible   => n.conditionType switch
+        if (n.state == NodeState.Current)   return ColCurrent;
+        if (n.state == NodeState.Cleared)   return ColCleared;
+        if (n.state == NodeState.RouteOnly) return ColRouteOnly;
+        if (n.state == NodeState.Visible)
         {
-            NodeConditionType.None   => ColNone,
-            NodeConditionType.Normal => ColNormal,
-            NodeConditionType.Hard   => ColHard,
-            _ => Color.white
-        },
-        _ => Color.white
-    };
+            switch (n.conditionType)
+            {
+                case NodeConditionType.Normal: return ColNormal;
+                case NodeConditionType.Hard:   return ColHard;
+                case NodeConditionType.Boss:   return ColBoss;
+                default:                       return ColNone;
+            }
+        }
+        return Color.white;
+    }
 
     List<List<MapNode>> CollectLayers(MapNode root)
     {
         var result = new List<List<MapNode>>();
+        var visited = new HashSet<MapNode>();
         var queue = new Queue<MapNode>();
         queue.Enqueue(root);
+        visited.Add(root);
         while (queue.Count > 0)
         {
             var node = queue.Dequeue();
-            while (result.Count <= node.layer) result.Add(new());
+            while (result.Count <= node.layer) result.Add(new List<MapNode>());
             result[node.layer].Add(node);
-            foreach (var child in node.children) queue.Enqueue(child);
+            foreach (var child in node.children)
+            {
+                if (!visited.Contains(child))
+                {
+                    visited.Add(child);
+                    queue.Enqueue(child);
+                }
+            }
         }
         return result;
     }

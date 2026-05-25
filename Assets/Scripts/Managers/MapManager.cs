@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using UnityEngine;
 
+[ExecuteAlways]
 [DefaultExecutionOrder(-1)]
 public class MapManager : MonoBehaviour
 {
@@ -11,17 +11,23 @@ public class MapManager : MonoBehaviour
 
     public System.Action OnMapChanged;
 
-    void Awake()
+    void OnEnable()
     {
-        if (Instance != null) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this)
+        {
+            if (Application.isPlaying) Destroy(gameObject);
+            else DestroyImmediate(gameObject);
+            return;
+        }
         Instance = this;
-    }
-
-    void Start()
-    {
-        Root = MapGenerator.GenerateTree(8);
+        Root = MapGenerator.GenerateTree();
         CurrentNode = Root;
         UpdateVisibility();
+    }
+
+    void OnDisable()
+    {
+        if (Instance == this) Instance = null;
     }
 
     public bool TryMoveToNode(MapNode node)

@@ -3,41 +3,42 @@ using UnityEngine;
 
 public static class MapGenerator
 {
-    public static MapNode GenerateTree(int layers = 8)
+    public static MapNode GenerateTree()
     {
-        var root = new MapNode { id = 0, layer = 0, conditionType = NodeConditionType.None };
-        int nextId = 1;
-        var currentLayer = new List<MapNode> { root };
+        int nextId = 0;
 
-        for (int l = 0; l < layers - 1; l++)
+        // Layer 0: start
+        var root = new MapNode { id = nextId++, layer = 0, conditionType = NodeConditionType.None };
+
+        // Layer 1: 항상 3개
+        var layer1 = new List<MapNode>();
+        int l1Count = 3;
+        for (int i = 0; i < l1Count; i++)
         {
-            var nextLayer = new List<MapNode>();
-            foreach (var parent in currentLayer)
-            {
-                int count = l < 2 ? Random.Range(2, 4) : RollBranches();
-                for (int b = 0; b < count; b++)
-                {
-                    var child = new MapNode
-                    {
-                        id = nextId++,
-                        layer = l + 1,
-                        indexInLayer = nextLayer.Count,
-                        parent = parent,
-                        conditionType = RollCondition()
-                    };
-                    parent.children.Add(child);
-                    nextLayer.Add(child);
-                }
-            }
-            currentLayer = nextLayer;
+            var n = new MapNode { id = nextId++, layer = 1, indexInLayer = i, parent = root, conditionType = RollCondition() };
+            root.children.Add(n);
+            layer1.Add(n);
         }
-        return root;
-    }
 
-    static int RollBranches()
-    {
-        float r = Random.value;
-        return r < 0.15f ? 1 : r < 0.75f ? 2 : 3;
+        // Layer 2: 1–2 branches per layer1 node
+        var layer2 = new List<MapNode>();
+        foreach (var p in layer1)
+        {
+            int cnt = Random.Range(1, 3);
+            for (int i = 0; i < cnt; i++)
+            {
+                var n = new MapNode { id = nextId++, layer = 2, indexInLayer = layer2.Count, parent = p, conditionType = RollCondition() };
+                p.children.Add(n);
+                layer2.Add(n);
+            }
+        }
+
+        // Layer 3: boss (single node — all layer2 nodes connect here)
+        var boss = new MapNode { id = nextId, layer = 3, indexInLayer = 0, conditionType = NodeConditionType.Boss };
+        foreach (var n in layer2)
+            n.children.Add(boss);
+
+        return root;
     }
 
     static NodeConditionType RollCondition()
