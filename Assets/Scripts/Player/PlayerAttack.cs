@@ -5,9 +5,9 @@ using System.Collections;
 public class PlayerAttack : MonoBehaviour
 {
     [SerializeField] int attackDamage = 1;
-    [SerializeField] float attackRange = 0.8f;
+    [SerializeField] float attackRange = 1.5f;
     [SerializeField] float attackCooldown = 0.3f;
-    [SerializeField] Vector2 attackSize = new Vector2(0.8f, 0.8f);
+    [SerializeField] Vector2 attackSize = new Vector2(1.2f, 1.2f);
     [SerializeField] float flashDuration = 0.12f;
 
     float cooldownTimer;

@@ -26,9 +26,11 @@ public class BodyManager : MonoBehaviour
 
         if (kb.digit2Key.wasPressedThisFrame)
         {
+            // 양쪽 → 왼쪽만 사라짐 → 오른쪽만 사라짐 → 양쪽 사라짐 → 복구
             if      ( State.eyeLeft &&  State.eyeRight) State.eyeLeft  = false;
-            else if (!State.eyeLeft &&  State.eyeRight) State.eyeRight = false;
-            else { State.eyeLeft = true; State.eyeRight = true; }
+            else if (!State.eyeLeft &&  State.eyeRight) { State.eyeLeft = true;  State.eyeRight = false; }
+            else if ( State.eyeLeft && !State.eyeRight) State.eyeLeft  = false;
+            else                                        { State.eyeLeft = true;  State.eyeRight = true;  }
         }
 
         if (kb.digit3Key.wasPressedThisFrame)
@@ -37,15 +39,17 @@ public class BodyManager : MonoBehaviour
         if (kb.digit4Key.wasPressedThisFrame)
         {
             if      ( State.armLeft &&  State.armRight) State.armLeft  = false;
-            else if (!State.armLeft &&  State.armRight) State.armRight = false;
-            else { State.armLeft = true; State.armRight = true; }
+            else if (!State.armLeft &&  State.armRight) { State.armLeft = true;  State.armRight = false; }
+            else if ( State.armLeft && !State.armRight) State.armLeft  = false;
+            else                                        { State.armLeft = true;  State.armRight = true;  }
         }
 
         if (kb.digit5Key.wasPressedThisFrame)
         {
             if      ( State.legLeft &&  State.legRight) State.legLeft  = false;
-            else if (!State.legLeft &&  State.legRight) State.legRight = false;
-            else { State.legLeft = true; State.legRight = true; }
+            else if (!State.legLeft &&  State.legRight) { State.legLeft = true;  State.legRight = false; }
+            else if ( State.legLeft && !State.legRight) State.legLeft  = false;
+            else                                        { State.legLeft = true;  State.legRight = true;  }
         }
     }
 }

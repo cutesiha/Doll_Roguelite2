@@ -18,6 +18,7 @@ public class MapUI : MonoBehaviour
     [SerializeField, Min(0.01f)] float feedbackLabelFontSize  = 3f;
     [SerializeField] TMP_FontAsset mapTextFont;
     [SerializeField] string roomSceneName = "SampleScene";
+    [SerializeField] string bossSceneName = "BossScene";
     [SerializeField, Min(0f)] float conditionFeedbackDelay = 0.6f;
 
     // 노드 색상
@@ -28,6 +29,7 @@ public class MapUI : MonoBehaviour
     static readonly Color ColNoRightEye = new Color(0.65f, 0.20f, 0.85f, 1f); // 보라
     static readonly Color ColBoss       = new Color(0.90f, 0.75f, 0.10f, 1f); // 금
     static readonly Color ColRouteOnly  = new Color(0.45f, 0.45f, 0.45f, 1f);
+    static readonly Color ColHidden     = new Color(0.22f, 0.22f, 0.22f, 1f); // 짙은 회색
     static readonly Color ColLine       = new Color(0.40f, 0.40f, 0.40f, 1f);
 
     Sprite circleSprite;
@@ -260,7 +262,7 @@ public class MapUI : MonoBehaviour
         enteringRoom = pass;
 
         feedbackLabel.transform.position = worldPos;
-        feedbackLabel.text = pass ? "✓" : "✗";
+        feedbackLabel.text = pass ? "O" : "X";
         feedbackLabel.color = pass ? new Color(0.2f, 1f, 0.3f) : new Color(1f, 0.25f, 0.2f);
         feedbackLabel.gameObject.SetActive(true);
         yield return new WaitForSeconds(conditionFeedbackDelay);
@@ -273,7 +275,10 @@ public class MapUI : MonoBehaviour
         }
 
         if (MapManager.Instance != null && MapManager.Instance.TryBeginRoom(node))
-            SceneManager.LoadScene(roomSceneName);
+        {
+            string scene = node.conditionType == NodeConditionType.Boss ? bossSceneName : roomSceneName;
+            SceneManager.LoadScene(scene);
+        }
         else
             enteringRoom = false;
     }
@@ -284,15 +289,12 @@ public class MapUI : MonoBehaviour
         {
             var node = kvp.Key;
             var sr   = kvp.Value;
-            bool hidden = node.state == NodeState.Hidden;
-            sr.gameObject.SetActive(!hidden);
-            if (!hidden) sr.color = GetColor(node);
+            sr.gameObject.SetActive(true);
+            sr.color = GetColor(node);
         }
 
         foreach (var entry in lines)
-            entry.lr.gameObject.SetActive(
-                entry.from.state != NodeState.Hidden &&
-                entry.to.state   != NodeState.Hidden);
+            entry.lr.gameObject.SetActive(true);
 
         // 조건 라벨 갱신
         foreach (var kvp in nodeLabels)
@@ -335,6 +337,7 @@ public class MapUI : MonoBehaviour
         if (n.state == NodeState.Current)   return ColCurrent;
         if (n.state == NodeState.Cleared)   return ColCleared;
         if (n.state == NodeState.RouteOnly) return ColRouteOnly;
+        if (n.state == NodeState.Hidden)    return ColHidden;
         if (n.state == NodeState.Visible)
         {
             switch (n.conditionType)
