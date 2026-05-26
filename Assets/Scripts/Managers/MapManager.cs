@@ -20,9 +20,8 @@ public class MapManager : MonoBehaviour
             return;
         }
         Instance = this;
-        Root = MapGenerator.GenerateTree();
-        CurrentNode = Root;
-        UpdateVisibility();
+        MapRunState.EnsureRun();
+        SyncFromRunState();
     }
 
     void OnDisable()
@@ -32,27 +31,31 @@ public class MapManager : MonoBehaviour
 
     public bool TryMoveToNode(MapNode node)
     {
-        if (!CurrentNode.children.Contains(node)) return false;
-        CurrentNode.isCleared = true;
-        CurrentNode.state = NodeState.Cleared;
-        CurrentNode = node;
-        UpdateVisibility();
+        if (!MapRunState.BeginRoom(node)) return false;
+        if (!MapRunState.CompletePendingRoom()) return false;
+        SyncFromRunState();
         OnMapChanged?.Invoke();
         return true;
     }
 
-    void UpdateVisibility()
+    public bool TryBeginRoom(MapNode node)
     {
-        CurrentNode.state = NodeState.Current;
+        bool started = MapRunState.BeginRoom(node);
+        SyncFromRunState();
+        return started;
+    }
 
-        foreach (var child in CurrentNode.children)
-        {
-            if (child.state != NodeState.Cleared)
-                child.state = NodeState.Visible;
+    public bool CompletePendingRoom()
+    {
+        bool completed = MapRunState.CompletePendingRoom();
+        SyncFromRunState();
+        OnMapChanged?.Invoke();
+        return completed;
+    }
 
-            foreach (var grand in child.children)
-                if (grand.state != NodeState.Cleared)
-                    grand.state = NodeState.RouteOnly;
-        }
+    void SyncFromRunState()
+    {
+        Root = MapRunState.Root;
+        CurrentNode = MapRunState.CurrentNode;
     }
 }

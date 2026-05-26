@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "mcp__UnityMCP__*"
+      "mcp__UnityMCP__*",
+      "Bash(git check-ignore *)",
+      "Bash(grep -E \"\\\\.\\(csproj|slnx\\)$\")",
+      "Bash(git rm *)"
     ]
   }
 }

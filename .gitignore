@@ -5,6 +5,8 @@
 [Bb]uilds/
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
+[Aa]ssets/TextMesh Pro/
+[Aa]ssets/TextMesh Pro.meta
 
 .vs/
 .vscode/
@@ -12,6 +14,7 @@
 
 *.csproj
 *.sln
+*.slnx
 *.user
 *.tmp
 

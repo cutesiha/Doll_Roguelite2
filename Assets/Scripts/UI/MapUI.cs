@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 [ExecuteAlways]
 public class MapUI : MonoBehaviour
@@ -11,7 +13,12 @@ public class MapUI : MonoBehaviour
     [SerializeField] float mapWidth      = 12f;
     [SerializeField] float nodeRadius    = 0.5f;
     [SerializeField] float camLerpSpeed  = 5f;
-    [SerializeField] float labelFontSize = 0.55f;
+    [FormerlySerializedAs("labelFontSize")]
+    [SerializeField, Min(0.01f)] float conditionLabelFontSize = 3f;
+    [SerializeField, Min(0.01f)] float feedbackLabelFontSize  = 3f;
+    [SerializeField] TMP_FontAsset mapTextFont;
+    [SerializeField] string roomSceneName = "SampleScene";
+    [SerializeField, Min(0f)] float conditionFeedbackDelay = 0.6f;
 
     // 노드 색상
     static readonly Color ColCurrent    = new Color(1.00f, 0.65f, 0.10f, 1f);
@@ -31,6 +38,7 @@ public class MapUI : MonoBehaviour
 
     TextMeshPro feedbackLabel;
     float targetCamY;
+    bool enteringRoom;
 
     // ── 조건 판정 ────────────────────────────────────────────────────────
     static bool CanPass(NodeConditionType cond, BodyState s)
@@ -77,6 +85,11 @@ public class MapUI : MonoBehaviour
         Cleanup();
     }
 
+    void OnValidate()
+    {
+        ApplyTextSizes();
+    }
+
     void Cleanup()
     {
         nodeRenderers.Clear();
@@ -84,6 +97,7 @@ public class MapUI : MonoBehaviour
         nodeLabels.Clear();
         lines.Clear();
         feedbackLabel = null;
+        enteringRoom = false;
 
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
@@ -163,9 +177,10 @@ public class MapUI : MonoBehaviour
 
         var tmp = labelGO.AddComponent<TextMeshPro>();
         tmp.alignment  = TextAlignmentOptions.Center;
-        tmp.fontSize   = labelFontSize;
+        tmp.fontSize   = conditionLabelFontSize;
         tmp.color      = Color.white;
         tmp.sortingOrder = 3;
+        ApplyFont(tmp);
         tmp.GetComponent<RectTransform>().sizeDelta = new Vector2(4f, 0.8f);
         labelGO.SetActive(false);
 
@@ -199,8 +214,9 @@ public class MapUI : MonoBehaviour
 
         feedbackLabel = go.AddComponent<TextMeshPro>();
         feedbackLabel.alignment  = TextAlignmentOptions.Center;
-        feedbackLabel.fontSize   = labelFontSize * 2.5f;
+        feedbackLabel.fontSize   = feedbackLabelFontSize;
         feedbackLabel.sortingOrder = 4;
+        ApplyFont(feedbackLabel);
         feedbackLabel.GetComponent<RectTransform>().sizeDelta = new Vector2(2f, 1f);
         go.SetActive(false);
     }
@@ -215,6 +231,7 @@ public class MapUI : MonoBehaviour
         }
 
         if (!Application.isPlaying) return;
+        if (enteringRoom) return;
         if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame) return;
 
         var worldPos = (Vector2)Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
@@ -232,22 +249,33 @@ public class MapUI : MonoBehaviour
             bool pass = CanPass(node.conditionType, bodyState);
 
             Vector3 feedbackPos = new Vector3(node.position.x, node.position.y + nodeRadius + 0.6f, -0.2f);
-            StartCoroutine(ShowFeedback(feedbackPos, pass));
-
-            if (pass) MapManager.Instance.TryMoveToNode(node);
+            StartCoroutine(ShowConditionResultAndEnterRoom(node, feedbackPos, pass));
             break;
         }
     }
 
-    IEnumerator ShowFeedback(Vector3 worldPos, bool pass)
+    IEnumerator ShowConditionResultAndEnterRoom(MapNode node, Vector3 worldPos, bool pass)
     {
         if (feedbackLabel == null) yield break;
+        enteringRoom = pass;
+
         feedbackLabel.transform.position = worldPos;
-        feedbackLabel.text  = pass ? "✓" : "✗";
+        feedbackLabel.text = pass ? "✓" : "✗";
         feedbackLabel.color = pass ? new Color(0.2f, 1f, 0.3f) : new Color(1f, 0.25f, 0.2f);
         feedbackLabel.gameObject.SetActive(true);
-        yield return new WaitForSeconds(0.8f);
+        yield return new WaitForSeconds(conditionFeedbackDelay);
         feedbackLabel.gameObject.SetActive(false);
+
+        if (!pass)
+        {
+            enteringRoom = false;
+            yield break;
+        }
+
+        if (MapManager.Instance != null && MapManager.Instance.TryBeginRoom(node))
+            SceneManager.LoadScene(roomSceneName);
+        else
+            enteringRoom = false;
     }
 
     void Refresh()
@@ -276,12 +304,14 @@ public class MapUI : MonoBehaviour
             {
                 tmp.gameObject.SetActive(true);
                 tmp.text  = ConditionText(node.conditionType);
+                tmp.fontSize = conditionLabelFontSize;
                 tmp.color = Color.white;
             }
             else if (node.state == NodeState.RouteOnly)
             {
                 tmp.gameObject.SetActive(true);
                 tmp.text  = "?";
+                tmp.fontSize = conditionLabelFontSize;
                 tmp.color = new Color(0.6f, 0.6f, 0.6f);
             }
             else
@@ -317,6 +347,30 @@ public class MapUI : MonoBehaviour
             }
         }
         return Color.white;
+    }
+
+    void ApplyTextSizes()
+    {
+        foreach (var label in nodeLabels.Values)
+            if (label != null)
+            {
+                label.fontSize = conditionLabelFontSize;
+                ApplyFont(label);
+            }
+
+        if (feedbackLabel != null)
+        {
+            feedbackLabel.fontSize = feedbackLabelFontSize;
+            ApplyFont(feedbackLabel);
+        }
+    }
+
+    void ApplyFont(TextMeshPro tmp)
+    {
+        if (tmp == null || mapTextFont == null) return;
+
+        tmp.font = mapTextFont;
+        tmp.fontSharedMaterial = mapTextFont.material;
     }
 
     List<List<MapNode>> CollectLayers(MapNode root)
