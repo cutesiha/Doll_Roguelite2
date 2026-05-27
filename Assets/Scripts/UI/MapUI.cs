@@ -123,6 +123,7 @@ public class MapUI : MonoBehaviour
         {
             float horzOrtho = mapWidth / Camera.main.aspect / 2f + 0.5f;
             orthoSize = Mathf.Min(Mathf.Max(vertOrtho, horzOrtho), maxOrtho);
+            orthoSize = Mathf.Max(orthoSize, 3.5f); // layerSpacing이 작아져도 카메라가 과도하게 줌인되지 않게
             effectiveMapWidth = Mathf.Min(mapWidth, (orthoSize - 0.5f) * Camera.main.aspect * 2f);
             Camera.main.orthographicSize = orthoSize;
         }
@@ -183,7 +184,16 @@ public class MapUI : MonoBehaviour
         tmp.color      = Color.white;
         tmp.sortingOrder = 3;
         ApplyFont(tmp);
-        tmp.GetComponent<RectTransform>().sizeDelta = new Vector2(4f, 0.8f);
+        // 라벨이 카메라 밖으로 나가지 않도록 노드 위치 기준 안전 너비 계산
+        float safeHalfW = Camera.main != null
+            ? Camera.main.orthographicSize * Camera.main.aspect - Mathf.Abs(node.position.x) - 0.1f
+            : 2f;
+        float labelW = Mathf.Clamp(safeHalfW * 2f, 1f, 4f);
+        var rt = tmp.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(labelW, 0.8f);
+        tmp.enableAutoSizing = true;
+        tmp.fontSizeMax = conditionLabelFontSize;
+        tmp.fontSizeMin = conditionLabelFontSize * 0.4f;
         labelGO.SetActive(false);
 
         nodeLabels[node] = tmp;

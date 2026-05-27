@@ -10,12 +10,14 @@ public static class MapGenerator
         // Layer 0: start
         var root = new MapNode { id = nextId++, layer = 0, conditionType = NodeConditionType.Free };
 
-        // Layer 1: 항상 3개
+        // Layer 1: 항상 3개, Free는 정확히 1개 (랜덤 위치)
         var layer1 = new List<MapNode>();
         int l1Count = 3;
+        int freeIndex = Random.Range(0, l1Count);
         for (int i = 0; i < l1Count; i++)
         {
-            var n = new MapNode { id = nextId++, layer = 1, indexInLayer = i, parent = root, conditionType = RollCondition() };
+            var cond = (i == freeIndex) ? NodeConditionType.Free : RollNonFreeCondition();
+            var n = new MapNode { id = nextId++, layer = 1, indexInLayer = i, parent = root, conditionType = cond };
             root.children.Add(n);
             layer1.Add(n);
         }
@@ -47,5 +49,10 @@ public static class MapGenerator
         return r < 0.40f ? NodeConditionType.Free
              : r < 0.70f ? NodeConditionType.NoLeftArm
              : NodeConditionType.NoRightEye;
+    }
+
+    static NodeConditionType RollNonFreeCondition()
+    {
+        return Random.value < 0.5f ? NodeConditionType.NoLeftArm : NodeConditionType.NoRightEye;
     }
 }
