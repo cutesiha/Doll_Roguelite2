@@ -46,13 +46,19 @@ public static class MapGenerator
     static NodeConditionType RollCondition()
     {
         float r = Random.value;
-        return r < 0.40f ? NodeConditionType.Free
-             : r < 0.70f ? NodeConditionType.NoLeftArm
-             : NodeConditionType.NoRightEye;
+        return r < 0.25f ? NodeConditionType.Free
+             : r < 0.50f ? NodeConditionType.NoLeftArm
+             : r < 0.70f ? NodeConditionType.NoRightEye
+             : r < 0.85f ? NodeConditionType.NoLeftLeg
+             : NodeConditionType.NoRightLeg;
     }
 
     static NodeConditionType RollNonFreeCondition()
     {
-        return Random.value < 0.5f ? NodeConditionType.NoLeftArm : NodeConditionType.NoRightEye;
+        float r = Random.value;
+        return r < 0.30f ? NodeConditionType.NoLeftArm
+             : r < 0.55f ? NodeConditionType.NoRightEye
+             : r < 0.77f ? NodeConditionType.NoLeftLeg
+             : NodeConditionType.NoRightLeg;
     }
 }

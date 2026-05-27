@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 [ExecuteAlways]
 public class MapUI : MonoBehaviour
@@ -27,6 +28,8 @@ public class MapUI : MonoBehaviour
     static readonly Color ColFree       = new Color(0.25f, 0.80f, 0.35f, 1f); // 초록
     static readonly Color ColNoLeftArm  = new Color(0.85f, 0.20f, 0.15f, 1f); // 빨강
     static readonly Color ColNoRightEye = new Color(0.65f, 0.20f, 0.85f, 1f); // 보라
+    static readonly Color ColNoLeftLeg  = new Color(1.00f, 0.50f, 0.20f, 1f); // 주황
+    static readonly Color ColNoRightLeg = new Color(0.20f, 0.60f, 1.00f, 1f); // 파랑
     static readonly Color ColBoss       = new Color(0.90f, 0.75f, 0.10f, 1f); // 금
     static readonly Color ColRouteOnly  = new Color(0.45f, 0.45f, 0.45f, 1f);
     static readonly Color ColHidden     = new Color(0.22f, 0.22f, 0.22f, 1f); // 짙은 회색
@@ -51,6 +54,8 @@ public class MapUI : MonoBehaviour
             case NodeConditionType.Free:       return true;
             case NodeConditionType.NoLeftArm:  return !s.armLeft;
             case NodeConditionType.NoRightEye: return !s.eyeRight;
+            case NodeConditionType.NoLeftLeg:  return !s.legLeft;
+            case NodeConditionType.NoRightLeg: return !s.legRight;
             case NodeConditionType.Boss:       return true;
             default:                           return true;
         }
@@ -63,6 +68,8 @@ public class MapUI : MonoBehaviour
             case NodeConditionType.Free:       return "FREE";
             case NodeConditionType.NoLeftArm:  return "NO LEFT ARM";
             case NodeConditionType.NoRightEye: return "NO RIGHT EYE";
+            case NodeConditionType.NoLeftLeg:  return "NO LEFT LEG";
+            case NodeConditionType.NoRightLeg: return "NO RIGHT LEG";
             case NodeConditionType.Boss:       return "BOSS";
             default:                           return "";
         }
@@ -90,6 +97,16 @@ public class MapUI : MonoBehaviour
     void OnValidate()
     {
         ApplyTextSizes();
+        if (!Application.isPlaying)
+        {
+            if (MapManager.Instance != null)
+            {
+                if (circleSprite == null)
+                    circleSprite = MakeCircleSprite(64);
+                Build(MapManager.Instance.Root);
+                Refresh();
+            }
+        }
     }
 
     void Cleanup()
@@ -342,6 +359,31 @@ public class MapUI : MonoBehaviour
         }
     }
 
+
+    string GetStatusText(BodyState state)
+    {
+        if (state == null)
+            return "[인형 상태]\n데이터 없음";
+
+        bool hasOneArmMissing = state.armLeft != state.armRight;
+        bool hasOneLegMissing = state.legLeft != state.legRight;
+        bool hasEyeMissing = state.eyeLeft != state.eyeRight;
+
+        int attackPress = hasOneArmMissing ? 3 : 1;
+        int movePercent = hasOneLegMissing ? Mathf.RoundToInt(50f) : 100;
+        string vision = !state.eyeLeft && !state.eyeRight ? "양쪽 차단"
+                        : !state.eyeLeft ? "왼쪽 차단"
+                        : !state.eyeRight ? "오른쪽 차단"
+                        : "정상";
+
+        return "[인형 수치]\n" +
+               $"공격 입력 : {attackPress}회\n" +
+               $"이동 속도 : {movePercent}%\n" +
+               $"시야 : {vision}\n" +
+               $"팔 : 왼 {(state.armLeft ? "O" : "X")} / 오 {(state.armRight ? "O" : "X")}\n" +
+               $"다리 : 왼 {(state.legLeft ? "O" : "X")} / 오 {(state.legRight ? "O" : "X")}";
+    }
+
     Color GetColor(MapNode n)
     {
         if (n.state == NodeState.Current)   return ColCurrent;
@@ -355,6 +397,8 @@ public class MapUI : MonoBehaviour
                 case NodeConditionType.Free:       return ColFree;
                 case NodeConditionType.NoLeftArm:  return ColNoLeftArm;
                 case NodeConditionType.NoRightEye: return ColNoRightEye;
+                case NodeConditionType.NoLeftLeg:  return ColNoLeftLeg;
+                case NodeConditionType.NoRightLeg: return ColNoRightLeg;
                 case NodeConditionType.Boss:       return ColBoss;
                 default:                           return ColRouteOnly;
             }
@@ -378,12 +422,15 @@ public class MapUI : MonoBehaviour
         }
     }
 
-    void ApplyFont(TextMeshPro tmp)
+    void ApplyFont(TMP_Text tmp)
     {
-        if (tmp == null || mapTextFont == null) return;
+        if (tmp == null) return;
 
-        tmp.font = mapTextFont;
-        tmp.fontSharedMaterial = mapTextFont.material;
+        TMP_FontAsset fontAsset = mapTextFont != null ? mapTextFont : TMP_Settings.defaultFontAsset;
+        if (fontAsset == null) return;
+
+        tmp.font = fontAsset;
+        tmp.fontSharedMaterial = fontAsset.material;
     }
 
     List<List<MapNode>> CollectLayers(MapNode root)

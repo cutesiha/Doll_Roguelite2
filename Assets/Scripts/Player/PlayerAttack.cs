@@ -11,7 +11,13 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] float flashDuration = 0.12f;
 
     float cooldownTimer;
+    float pendingKeyTimer;
+    Key pendingAttackKey = Key.None;
+    int pendingPressCount;
     GameObject flashObj;
+
+    [SerializeField, Min(0f)] float pressTimeout = 0.5f;
+    [SerializeField, Min(1)] int requiredPressCount = 3;
 
     static readonly Key[] dirKeys = { Key.UpArrow, Key.DownArrow, Key.LeftArrow, Key.RightArrow };
     static readonly Vector2[] dirVecs = { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
@@ -41,16 +47,55 @@ public class PlayerAttack : MonoBehaviour
         if (kb == null) return;
 
         cooldownTimer -= Time.deltaTime;
+        pendingKeyTimer -= Time.deltaTime;
+        if (pendingKeyTimer <= 0f)
+        {
+            pendingAttackKey = Key.None;
+            pendingPressCount = 0;
+        }
+
         if (cooldownTimer > 0f) return;
+
+        BodyState bodyState = BodyManager.Instance != null ? BodyManager.Instance.State : null;
+        bool needsMultiplePress = bodyState != null && bodyState.armLeft != bodyState.armRight;
 
         for (int i = 0; i < dirKeys.Length; i++)
         {
-            if (kb[dirKeys[i]].wasPressedThisFrame)
+            if (!kb[dirKeys[i]].wasPressedThisFrame)
+                continue;
+
+            if (needsMultiplePress)
             {
-                Attack(dirVecs[i]);
-                cooldownTimer = attackCooldown;
+                if (pendingAttackKey != dirKeys[i])
+                {
+                    pendingAttackKey = dirKeys[i];
+                    pendingPressCount = 1;
+                    pendingKeyTimer = pressTimeout;
+                }
+                else
+                {
+                    pendingPressCount++;
+                    pendingKeyTimer = pressTimeout;
+                    if (pendingPressCount >= requiredPressCount)
+                    {
+                        Attack(dirVecs[i]);
+                        cooldownTimer = attackCooldown;
+                        pendingAttackKey = Key.None;
+                        pendingPressCount = 0;
+                        pendingKeyTimer = 0f;
+                        break;
+                    }
+                }
+
                 break;
             }
+
+            Attack(dirVecs[i]);
+            cooldownTimer = attackCooldown;
+            pendingAttackKey = Key.None;
+            pendingPressCount = 0;
+            pendingKeyTimer = 0f;
+            break;
         }
     }
 
