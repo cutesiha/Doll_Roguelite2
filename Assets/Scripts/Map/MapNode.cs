@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum NodeConditionType { Free, NoLeftArm, NoRightEye, NoLeftLeg, NoRightLeg, Boss }
+public enum NodeConditionType { None, NoLeftArm, NoRightEye, NoLeftLeg, NoRightLeg }
+public enum RoomType { NormalCombat, ConditionCombat, Supply, Event, Boss }
 public enum NodeState { Hidden, RouteOnly, Visible, Current, Cleared }
 
 public class MapNode
@@ -11,7 +12,8 @@ public class MapNode
     public int indexInLayer;
     public MapNode parent;
     public List<MapNode> children = new List<MapNode>();
-    public NodeConditionType conditionType;
+    public RoomType roomType;
+    public NodeConditionType conditionType; // ConditionCombat 일 때만 유효
     public NodeState state = NodeState.Hidden;
     public bool isCleared;
     public Vector2 position;

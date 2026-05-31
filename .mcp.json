@@ -1,8 +1,10 @@
 {
   "mcpServers": {
-    "UnityMCP": {
-      "type": "http",
-      "url": "http://127.0.0.1:8080/mcp"
+    "unity": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\sihan\\Downloads\\Doll_Roguelite2\\Library\\PackageCache\\com.gamelovers.mcp-unity@aade29c7dd84\\Server~\\build\\index.js"
+      ]
     }
   }
 }

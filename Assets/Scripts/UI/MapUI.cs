@@ -21,6 +21,8 @@ public class MapUI : MonoBehaviour
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] string bossSceneName = "BossScene";
     [SerializeField, Min(0f)] float conditionFeedbackDelay = 0.6f;
+    [SerializeField] string supplySceneName = "PresentScene";
+    [SerializeField] string eventSceneName  = "EventScene";
 
     // 노드 색상
     static readonly Color ColCurrent    = new Color(1.00f, 0.65f, 0.10f, 1f);
@@ -31,6 +33,8 @@ public class MapUI : MonoBehaviour
     static readonly Color ColNoLeftLeg  = new Color(1.00f, 0.50f, 0.20f, 1f); // 주황
     static readonly Color ColNoRightLeg = new Color(0.20f, 0.60f, 1.00f, 1f); // 파랑
     static readonly Color ColBoss       = new Color(0.90f, 0.75f, 0.10f, 1f); // 금
+    static readonly Color ColSupply     = new Color(0.20f, 0.85f, 0.90f, 1f); // 하늘
+    static readonly Color ColEvent      = new Color(0.90f, 0.45f, 0.80f, 1f); // 분홍
     static readonly Color ColRouteOnly  = new Color(0.45f, 0.45f, 0.45f, 1f);
     static readonly Color ColHidden     = new Color(0.22f, 0.22f, 0.22f, 1f); // 짙은 회색
     static readonly Color ColLine       = new Color(0.40f, 0.40f, 0.40f, 1f);
@@ -46,32 +50,41 @@ public class MapUI : MonoBehaviour
     bool enteringRoom;
 
     // ── 조건 판정 ────────────────────────────────────────────────────────
-    static bool CanPass(NodeConditionType cond, BodyState s)
+    static bool CanPass(MapNode node, BodyState s)
     {
+        if (node.roomType != RoomType.ConditionCombat) return true;
         if (s == null) return true;
-        switch (cond)
+        switch (node.conditionType)
         {
-            case NodeConditionType.Free:       return true;
             case NodeConditionType.NoLeftArm:  return !s.armLeft;
             case NodeConditionType.NoRightEye: return !s.eyeRight;
             case NodeConditionType.NoLeftLeg:  return !s.legLeft;
             case NodeConditionType.NoRightLeg: return !s.legRight;
-            case NodeConditionType.Boss:       return true;
             default:                           return true;
         }
     }
 
-    static string ConditionText(NodeConditionType cond)
+    // 맵 라벨: 방 타입 + 조건 (2줄)
+    static string NodeLabel(MapNode node)
     {
-        switch (cond)
+        switch (node.roomType)
         {
-            case NodeConditionType.Free:       return "FREE";
-            case NodeConditionType.NoLeftArm:  return "NO LEFT ARM";
-            case NodeConditionType.NoRightEye: return "NO RIGHT EYE";
-            case NodeConditionType.NoLeftLeg:  return "NO LEFT LEG";
-            case NodeConditionType.NoRightLeg: return "NO RIGHT LEG";
-            case NodeConditionType.Boss:       return "BOSS";
-            default:                           return "";
+            case RoomType.NormalCombat: return "COMBAT\nFREE";
+            case RoomType.Supply:       return "SUPPLY";
+            case RoomType.Event:        return "EVENT";
+            case RoomType.Boss:         return "BOSS";
+            case RoomType.ConditionCombat:
+                string cond;
+                switch (node.conditionType)
+                {
+                    case NodeConditionType.NoLeftArm:  cond = "NO LEFT ARM";  break;
+                    case NodeConditionType.NoRightEye: cond = "NO RIGHT EYE"; break;
+                    case NodeConditionType.NoLeftLeg:  cond = "NO LEFT LEG";  break;
+                    case NodeConditionType.NoRightLeg: cond = "NO RIGHT LEG"; break;
+                    default:                           cond = "";              break;
+                }
+                return "COND\n" + cond;
+            default: return "";
         }
     }
     // ─────────────────────────────────────────────────────────────────────
@@ -192,7 +205,7 @@ public class MapUI : MonoBehaviour
         labelGO.transform.SetParent(transform);
         labelGO.transform.position = new Vector3(
             node.position.x,
-            node.position.y + nodeRadius + 0.25f,
+            node.position.y + nodeRadius + 0.5f,
             -0.1f);
 
         var tmp = labelGO.AddComponent<TextMeshPro>();
@@ -207,7 +220,7 @@ public class MapUI : MonoBehaviour
             : 2f;
         float labelW = Mathf.Clamp(safeHalfW * 2f, 1f, 4f);
         var rt = tmp.GetComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(labelW, 0.8f);
+        rt.sizeDelta = new Vector2(labelW, 1.6f);
         tmp.enableAutoSizing = true;
         tmp.fontSizeMax = conditionLabelFontSize;
         tmp.fontSizeMin = conditionLabelFontSize * 0.4f;
@@ -275,7 +288,7 @@ public class MapUI : MonoBehaviour
             if (node.state != NodeState.Visible) break; // Visible 노드만 판정
 
             var bodyState = BodyManager.Instance?.State;
-            bool pass = CanPass(node.conditionType, bodyState);
+            bool pass = CanPass(node, bodyState);
 
             Vector3 feedbackPos = new Vector3(node.position.x, node.position.y + nodeRadius + 0.6f, -0.2f);
             StartCoroutine(ShowConditionResultAndEnterRoom(node, feedbackPos, pass));
@@ -303,7 +316,10 @@ public class MapUI : MonoBehaviour
 
         if (MapManager.Instance != null && MapManager.Instance.TryBeginRoom(node))
         {
-            string scene = node.conditionType == NodeConditionType.Boss ? bossSceneName : roomSceneName;
+            string scene = node.roomType == RoomType.Boss   ? bossSceneName
+                         : node.roomType == RoomType.Supply  ? supplySceneName
+                         : node.roomType == RoomType.Event   ? eventSceneName
+                         : roomSceneName;
             SceneManager.LoadScene(scene);
         }
         else
@@ -332,7 +348,7 @@ public class MapUI : MonoBehaviour
             if (node.state == NodeState.Visible)
             {
                 tmp.gameObject.SetActive(true);
-                tmp.text  = ConditionText(node.conditionType);
+                tmp.text  = NodeLabel(node);
                 tmp.fontSize = conditionLabelFontSize;
                 tmp.color = Color.white;
             }
@@ -392,15 +408,22 @@ public class MapUI : MonoBehaviour
         if (n.state == NodeState.Hidden)    return ColHidden;
         if (n.state == NodeState.Visible)
         {
-            switch (n.conditionType)
+            switch (n.roomType)
             {
-                case NodeConditionType.Free:       return ColFree;
-                case NodeConditionType.NoLeftArm:  return ColNoLeftArm;
-                case NodeConditionType.NoRightEye: return ColNoRightEye;
-                case NodeConditionType.NoLeftLeg:  return ColNoLeftLeg;
-                case NodeConditionType.NoRightLeg: return ColNoRightLeg;
-                case NodeConditionType.Boss:       return ColBoss;
-                default:                           return ColRouteOnly;
+                case RoomType.NormalCombat: return ColFree;
+                case RoomType.Supply:       return ColSupply;
+                case RoomType.Event:        return ColEvent;
+                case RoomType.Boss:         return ColBoss;
+                case RoomType.ConditionCombat:
+                    switch (n.conditionType)
+                    {
+                        case NodeConditionType.NoLeftArm:  return ColNoLeftArm;
+                        case NodeConditionType.NoRightEye: return ColNoRightEye;
+                        case NodeConditionType.NoLeftLeg:  return ColNoLeftLeg;
+                        case NodeConditionType.NoRightLeg: return ColNoRightLeg;
+                        default:                           return ColRouteOnly;
+                    }
+                default: return ColRouteOnly;
             }
         }
         return Color.white;
