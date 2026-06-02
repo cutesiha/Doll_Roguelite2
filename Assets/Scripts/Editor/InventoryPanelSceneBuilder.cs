@@ -17,11 +17,13 @@ public static class InventoryPanelSceneBuilder
         if (canvasGO == null)
             canvasGO = new GameObject("InventoryCanvas");
 
-        Canvas canvas = canvasGO.GetComponent<Canvas>() ?? canvasGO.AddComponent<Canvas>();
+        Canvas canvas = canvasGO.GetComponent<Canvas>();
+        if (canvas == null) canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 150;
 
-        CanvasScaler scaler = canvasGO.GetComponent<CanvasScaler>() ?? canvasGO.AddComponent<CanvasScaler>();
+        CanvasScaler scaler = canvasGO.GetComponent<CanvasScaler>();
+        if (scaler == null) scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
@@ -29,7 +31,8 @@ public static class InventoryPanelSceneBuilder
         if (canvasGO.GetComponent<GraphicRaycaster>() == null)
             canvasGO.AddComponent<GraphicRaycaster>();
 
-        InventoryUI ui = canvasGO.GetComponent<InventoryUI>() ?? canvasGO.AddComponent<InventoryUI>();
+        InventoryUI ui = canvasGO.GetComponent<InventoryUI>();
+        if (ui == null) ui = canvasGO.AddComponent<InventoryUI>();
 
         for (int i = canvasGO.transform.childCount - 1; i >= 0; i--)
         {

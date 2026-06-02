@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [ExecuteAlways]
 [DefaultExecutionOrder(-1)]
@@ -11,6 +12,9 @@ public class MapManager : MonoBehaviour
 
     public System.Action OnMapChanged;
 
+    [SerializeField] bool autoStartRoomFlow = true;
+    [SerializeField] string roomSceneName = "RoomScene";
+
     void OnEnable()
     {
         if (Instance != null && Instance != this)
@@ -22,6 +26,16 @@ public class MapManager : MonoBehaviour
         Instance = this;
         MapRunState.EnsureRun();
         SyncFromRunState();
+    }
+
+    void Start()
+    {
+        if (!Application.isPlaying || !autoStartRoomFlow) return;
+        if (SceneManager.GetActiveScene().name != "MapScene") return;
+
+        MapRunState.EnsureRun();
+        if (MapRunState.PendingNode == null)
+            SceneManager.LoadScene(roomSceneName);
     }
 
     void OnDisable()

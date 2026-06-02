@@ -84,9 +84,7 @@ public class InventoryUI : MonoBehaviour
         if (kb == null || _panel == null) return;
         if (kb.tabKey.wasPressedThisFrame || kb.iKey.wasPressedThisFrame)
         {
-            bool show = !_panel.activeSelf;
-            _panel.SetActive(show);
-            if (show) RefreshUI();
+            TogglePanel();
         }
     }
 
@@ -100,6 +98,30 @@ public class InventoryUI : MonoBehaviour
     public void ClosePanel()
     {
         if (_panel != null) _panel.SetActive(false);
+    }
+
+    public void OpenPanel()
+    {
+        if (_panel == null) return;
+        _panel.SetActive(true);
+        RefreshUI();
+    }
+
+    public void TogglePanel()
+    {
+        if (_panel == null) return;
+        if (_panel.activeSelf) ClosePanel();
+        else OpenPanel();
+    }
+
+    public bool IsOpen => _panel != null && _panel.activeSelf;
+
+    public bool IsScreenPointInsidePanel(Vector2 screenPoint)
+    {
+        if (_panel == null || !_panel.activeSelf) return false;
+        RectTransform rect = _panel.transform as RectTransform;
+        if (rect == null) return false;
+        return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint);
     }
 
     static void EnsureEventSystem()
