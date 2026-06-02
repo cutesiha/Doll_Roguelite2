@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -24,12 +25,13 @@ public class InventoryUI : MonoBehaviour
     // ── Inspector 연결 필드 ────────────────────────────────────────────
     [Header("패널 루트 (Tab/I 로 토글)")]
     [SerializeField] GameObject _panel;
+    [SerializeField] Button _closeButton;
 
-    [Header("보관 슬롯 ×2")]
-    [SerializeField] Image[]           _storageImg  = new Image[2];
-    [SerializeField] Button[]          _storageBtn  = new Button[2];
-    [SerializeField] TextMeshProUGUI[] _storageName = new TextMeshProUGUI[2];
-    [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[2];
+    [Header("보관 슬롯 ×4")]
+    [SerializeField] Image[]           _storageImg  = new Image[4];
+    [SerializeField] Button[]          _storageBtn  = new Button[4];
+    [SerializeField] TextMeshProUGUI[] _storageName = new TextMeshProUGUI[4];
+    [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[4];
 
     [Header("캐릭터 부위 (EyeLeft=0 ~ LegRight=5)")]
     [SerializeField] Image[]  _charImg = new Image[6];
@@ -38,6 +40,9 @@ public class InventoryUI : MonoBehaviour
     [Header("부위 상태 텍스트 (0~5=슬롯, 6=몸)")]
     [SerializeField] TextMeshProUGUI[] _statName = new TextMeshProUGUI[7];
     [SerializeField] TextMeshProUGUI[] _statHp   = new TextMeshProUGUI[7];
+
+    [Header("재봉 상태")]
+    [SerializeField] TextMeshProUGUI _sewingStatus;
 
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color CSlot  = new Color(0.20f, 0.20f, 0.27f, 1f);
@@ -55,6 +60,7 @@ public class InventoryUI : MonoBehaviour
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
+        EnsureEventSystem();
         WireClicks();
     }
 
@@ -77,21 +83,41 @@ public class InventoryUI : MonoBehaviour
         var kb = Keyboard.current;
         if (kb == null || _panel == null) return;
         if (kb.tabKey.wasPressedThisFrame || kb.iKey.wasPressedThisFrame)
-            _panel.SetActive(!_panel.activeSelf);
+        {
+            bool show = !_panel.activeSelf;
+            _panel.SetActive(show);
+            if (show) RefreshUI();
+        }
     }
 
     void WireClicks()
     {
-        for (int i = 0; i < 2; i++)
-        {
-            int ci = i;
-            _storageBtn[i]?.onClick.AddListener(() => InventoryManager.Instance?.EquipFromStorage(ci));
-        }
-        for (int i = 0; i < 6; i++)
-        {
-            BodySlot slot = (BodySlot)i;
-            _charBtn[i]?.onClick.AddListener(() => InventoryManager.Instance?.TryUnequip(slot));
-        }
+        _closeButton?.onClick.AddListener(ClosePanel);
+
+        // Equip/unequip is intentionally drag-and-drop only.
+    }
+
+    public void ClosePanel()
+    {
+        if (_panel != null) _panel.SetActive(false);
+    }
+
+    static void EnsureEventSystem()
+    {
+        if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() != null)
+            return;
+
+        var eventGO = new GameObject("RuntimeEventSystem");
+        eventGO.hideFlags = HideFlags.HideInHierarchy;
+        eventGO.transform.position = new Vector3(99999f, 99999f, 99999f);
+        DontDestroyOnLoad(eventGO);
+        eventGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
+
+        var inputModuleType = System.Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+        if (inputModuleType != null)
+            eventGO.AddComponent(inputModuleType);
+        else
+            eventGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
     }
 
     // ── RefreshUI ─────────────────────────────────────────────────────
@@ -101,7 +127,8 @@ public class InventoryUI : MonoBehaviour
         if (inv == null) return;
 
         // 보관 슬롯
-        for (int i = 0; i < 2; i++)
+        int storageCount = Mathf.Min(inv.storage.Length, _storageImg.Length, _storageName.Length, _storageHp.Length);
+        for (int i = 0; i < storageCount; i++)
         {
             var p = inv.storage[i];
             if (_storageImg[i]  != null) _storageImg[i].color   = p != null ? CSlot : CEmpty;
@@ -134,6 +161,56 @@ public class InventoryUI : MonoBehaviour
         {
             _statHp[6].text  = new string('●', 5);
             _statHp[6].color = new Color(0.85f, 0.60f, 0.20f, 1f);
+        }
+
+        RefreshSewingStatus(inv);
+    }
+
+    void RefreshSewingStatus(InventoryManager inv)
+    {
+        if (_sewingStatus == null) return;
+
+        int emptyCount = 0;
+        var missingParts = new List<string>();
+
+        for (int i = 0; i < inv.equipped.Length; i++)
+        {
+            if (inv.equipped[i] != null) continue;
+
+            emptyCount++;
+            missingParts.Add(BodySlotLabel((BodySlot)i) + " 없음");
+        }
+
+        if (emptyCount == 0)
+        {
+            _sewingStatus.text = "[재봉 상태] 빈 슬롯 0개 · 안정적";
+            _sewingStatus.color = new Color(0.72f, 0.95f, 0.72f, 1f);
+        }
+        else if (emptyCount >= 3)
+        {
+            _sewingStatus.text = "[재봉 상태] 빈 슬롯 3개 이상 · 몸이 공격받을 수 있음!";
+            _sewingStatus.color = new Color(1.00f, 0.42f, 0.34f, 1f);
+        }
+        else
+        {
+            _sewingStatus.text = "[재봉 상태] "
+                + string.Join(" · ", missingParts)
+                + $" · 빈 슬롯 {emptyCount}개 · 몸 안전";
+            _sewingStatus.color = new Color(0.94f, 0.90f, 0.82f, 1f);
+        }
+    }
+
+    static string BodySlotLabel(BodySlot slot)
+    {
+        switch (slot)
+        {
+            case BodySlot.EyeLeft: return "왼쪽 눈";
+            case BodySlot.EyeRight: return "오른쪽 눈";
+            case BodySlot.ArmLeft: return "왼팔";
+            case BodySlot.ArmRight: return "오른팔";
+            case BodySlot.LegLeft: return "왼다리";
+            case BodySlot.LegRight: return "오른다리";
+            default: return "알 수 없는 부위";
         }
     }
 

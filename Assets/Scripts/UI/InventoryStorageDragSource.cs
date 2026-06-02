@@ -1,0 +1,71 @@
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+{
+    [SerializeField] int storageIndex;
+
+    RectTransform ghost;
+    Canvas rootCanvas;
+
+    public int StorageIndex => storageIndex;
+
+    public void SetStorageIndex(int index)
+    {
+        storageIndex = index;
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        var inv = InventoryManager.Instance;
+        if (inv == null || storageIndex < 0 || storageIndex >= inv.storage.Length || inv.storage[storageIndex] == null)
+            return;
+
+        rootCanvas = GetComponentInParent<Canvas>();
+        if (rootCanvas == null)
+            return;
+
+        GameObject go = new GameObject("InventoryDragGhost");
+        go.transform.SetParent(rootCanvas.transform, false);
+        ghost = go.AddComponent<RectTransform>();
+        ghost.sizeDelta = new Vector2(170f, 70f);
+
+        Image image = go.AddComponent<Image>();
+        image.color = new Color(0.23f, 0.22f, 0.28f, 0.92f);
+
+        CanvasGroup group = go.AddComponent<CanvasGroup>();
+        group.blocksRaycasts = false;
+
+        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
+        label.text = inv.storage[storageIndex].SlotName();
+        label.fontSize = 18f;
+        label.color = Color.white;
+        label.alignment = TextAlignmentOptions.Center;
+        label.raycastTarget = false;
+
+        MoveGhost(eventData);
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        MoveGhost(eventData);
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (ghost != null)
+            Destroy(ghost.gameObject);
+    }
+
+    void MoveGhost(PointerEventData eventData)
+    {
+        if (ghost == null || rootCanvas == null)
+            return;
+
+        RectTransform canvasRect = rootCanvas.transform as RectTransform;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, eventData.position, eventData.pressEventCamera, out Vector2 localPoint))
+            ghost.anchoredPosition = localPoint;
+    }
+}

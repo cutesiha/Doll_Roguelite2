@@ -16,8 +16,8 @@ public class InventoryManager : MonoBehaviour
 
     // indexed by (int)BodySlot — null means not equipped
     public BodyPart[] equipped  = new BodyPart[6];
-    // 2 storage slots — null means empty
-    public BodyPart[] storage   = new BodyPart[2];
+    // 4 storage slots — null means empty
+    public BodyPart[] storage   = new BodyPart[4];
 
     public event Action OnInventoryChanged;
 
@@ -52,10 +52,27 @@ public class InventoryManager : MonoBehaviour
         return true;
     }
 
+    public bool TryUnequipToStorage(BodySlot slot, int storageIdx)
+    {
+        if (storageIdx < 0 || storageIdx >= storage.Length) return false;
+        if (storage[storageIdx] != null) return false;
+
+        var part = equipped[(int)slot];
+        if (part == null) return false;
+
+        storage[storageIdx] = part;
+        equipped[(int)slot] = null;
+        SyncBodyState();
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
     // equips the part in storage[storageIdx] into its matching slot
     // if that slot is already occupied, the existing part goes to the same storage index
     public void EquipFromStorage(int storageIdx)
     {
+        if (storageIdx < 0 || storageIdx >= storage.Length) return;
+
         var part = storage[storageIdx];
         if (part == null) return;
 
