@@ -42,6 +42,8 @@ public class RunHudUI : MonoBehaviour
 
     void Awake()
     {
+        NormalizeRootCanvas();
+
         if (Application.isPlaying)
         {
             if (instance != null && instance != this)
@@ -69,6 +71,8 @@ public class RunHudUI : MonoBehaviour
 
     public void Rebuild()
     {
+        NormalizeRootCanvas();
+
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             Transform child = transform.GetChild(i);
@@ -82,6 +86,7 @@ public class RunHudUI : MonoBehaviour
         canvas = GetComponent<Canvas>();
         if (canvas == null) canvas = gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.overrideSorting = true;
         canvas.sortingOrder = 80;
 
         CanvasScaler scaler = GetComponent<CanvasScaler>();
@@ -103,6 +108,33 @@ public class RunHudUI : MonoBehaviour
         inventoryButton.onClick.AddListener(ToggleInventory);
 
         BuildMapOverlay();
+    }
+
+    void NormalizeRootCanvas()
+    {
+        gameObject.SetActive(true);
+        transform.localScale = Vector3.one;
+
+        RectTransform rect = transform as RectTransform;
+        if (rect != null)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = Vector2.zero;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        Canvas rootCanvas = GetComponent<Canvas>();
+        if (rootCanvas != null)
+        {
+            rootCanvas.enabled = true;
+            rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            rootCanvas.overrideSorting = true;
+            rootCanvas.sortingOrder = 80;
+        }
     }
 
     void EnsureBuilt()
@@ -132,8 +164,16 @@ public class RunHudUI : MonoBehaviour
         if (inventory == null)
             return;
 
-        inventory.TogglePanel();
-        suppressInventoryOutsideClick = true;
+        if (inventory.IsOpen)
+        {
+            inventory.ClosePanel();
+            suppressInventoryOutsideClick = false;
+        }
+        else
+        {
+            inventory.OpenPanel();
+            suppressInventoryOutsideClick = true;
+        }
     }
 
     void HandleInventoryOutsideClick()
@@ -157,8 +197,27 @@ public class RunHudUI : MonoBehaviour
             return;
 
         Vector2 screenPoint = mouse.position.ReadValue();
+        if (IsScreenPointInsideButton(inventoryButton, screenPoint))
+        {
+            inventory.ClosePanel();
+            suppressInventoryOutsideClick = true;
+            return;
+        }
+
         if (!inventory.IsScreenPointInsidePanel(screenPoint))
             inventory.ClosePanel();
+    }
+
+    bool IsScreenPointInsideButton(Button button, Vector2 screenPoint)
+    {
+        if (button == null)
+            return false;
+
+        RectTransform rect = button.transform as RectTransform;
+        if (rect == null)
+            return false;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint);
     }
 
     void BuildMapOverlay()

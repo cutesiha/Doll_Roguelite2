@@ -44,6 +44,9 @@ public class InventoryUI : MonoBehaviour
     [Header("재봉 상태")]
     [SerializeField] TextMeshProUGUI _sewingStatus;
 
+    GameObject _toggleHotspot;
+    Button _toggleHotspotButton;
+
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color CSlot  = new Color(0.20f, 0.20f, 0.27f, 1f);
     static readonly Color CEmpty = new Color(0.13f, 0.13f, 0.17f, 1f);
@@ -64,6 +67,7 @@ public class InventoryUI : MonoBehaviour
             DontDestroyOnLoad(gameObject);
         EnsureEventSystem();
         WireClicks();
+        EnsureToggleHotspot();
     }
 
     void Start()
@@ -100,14 +104,19 @@ public class InventoryUI : MonoBehaviour
     public void ClosePanel()
     {
         if (_panel != null) _panel.SetActive(false);
+        SetToggleHotspotVisible(false);
     }
 
     public void OpenPanel()
     {
         gameObject.SetActive(true);
         NormalizeCanvasTransform();
+        EnsureToggleHotspot();
         if (_panel == null) return;
+        transform.SetAsLastSibling();
+        _panel.transform.SetAsLastSibling();
         _panel.SetActive(true);
+        SetToggleHotspotVisible(true);
         RefreshUI();
     }
 
@@ -144,28 +153,77 @@ public class InventoryUI : MonoBehaviour
             rect.offsetMax = Vector2.zero;
         }
 
-        bool nestedUnderHudCanvas = transform.parent != null && transform.parent.GetComponentInParent<Canvas>() != null;
-
         Canvas canvas = GetComponent<Canvas>();
-        if (canvas != null && nestedUnderHudCanvas)
-        {
-            canvas.enabled = false;
-        }
-        else if (canvas != null)
+        if (canvas != null)
         {
             canvas.enabled = true;
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.overrideSorting = true;
-            canvas.sortingOrder = 150;
+            canvas.sortingOrder = 500;
         }
 
         CanvasScaler scaler = GetComponent<CanvasScaler>();
         if (scaler != null)
-            scaler.enabled = !nestedUnderHudCanvas;
+        {
+            scaler.enabled = true;
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+        }
 
         GraphicRaycaster raycaster = GetComponent<GraphicRaycaster>();
         if (raycaster != null)
-            raycaster.enabled = !nestedUnderHudCanvas;
+            raycaster.enabled = true;
+    }
+
+    void EnsureToggleHotspot()
+    {
+        if (_toggleHotspot != null)
+            return;
+
+        Transform existing = transform.Find("InventoryToggleHotspot");
+        if (existing != null)
+        {
+            _toggleHotspot = existing.gameObject;
+            _toggleHotspotButton = _toggleHotspot.GetComponent<Button>();
+        }
+        else
+        {
+            _toggleHotspot = new GameObject("InventoryToggleHotspot");
+            _toggleHotspot.transform.SetParent(transform, false);
+
+            RectTransform rect = _toggleHotspot.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 0f);
+            rect.anchorMax = new Vector2(0f, 0f);
+            rect.pivot = new Vector2(0f, 0f);
+            rect.anchoredPosition = new Vector2(32f, 28f);
+            rect.sizeDelta = new Vector2(132f, 100f);
+
+            Image image = _toggleHotspot.AddComponent<Image>();
+            image.color = new Color(1f, 1f, 1f, 0.001f);
+            image.raycastTarget = true;
+
+            _toggleHotspotButton = _toggleHotspot.AddComponent<Button>();
+            _toggleHotspotButton.targetGraphic = image;
+        }
+
+        if (_toggleHotspotButton != null)
+        {
+            _toggleHotspotButton.onClick.RemoveListener(ClosePanel);
+            _toggleHotspotButton.onClick.AddListener(ClosePanel);
+        }
+
+        SetToggleHotspotVisible(false);
+    }
+
+    void SetToggleHotspotVisible(bool visible)
+    {
+        if (_toggleHotspot == null)
+            return;
+
+        if (visible)
+            _toggleHotspot.transform.SetAsLastSibling();
+        _toggleHotspot.SetActive(visible);
     }
 
     static void EnsureEventSystem()
