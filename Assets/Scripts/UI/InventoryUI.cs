@@ -11,7 +11,7 @@ public class InventoryUI : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
-        if (FindObjectOfType<InventoryUI>() != null) return;
+        if (FindObjectsByType<InventoryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length > 0) return;
         var prefab = Resources.Load<GameObject>("InventoryCanvas");
         if (prefab == null)
         {
@@ -59,7 +59,9 @@ public class InventoryUI : MonoBehaviour
     // ── Unity 수명 ─────────────────────────────────────────────────────
     void Awake()
     {
-        DontDestroyOnLoad(gameObject);
+        NormalizeCanvasTransform();
+        if (transform.parent == null)
+            DontDestroyOnLoad(gameObject);
         EnsureEventSystem();
         WireClicks();
     }
@@ -102,6 +104,8 @@ public class InventoryUI : MonoBehaviour
 
     public void OpenPanel()
     {
+        gameObject.SetActive(true);
+        NormalizeCanvasTransform();
         if (_panel == null) return;
         _panel.SetActive(true);
         RefreshUI();
@@ -122,6 +126,46 @@ public class InventoryUI : MonoBehaviour
         RectTransform rect = _panel.transform as RectTransform;
         if (rect == null) return false;
         return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint);
+    }
+
+    void NormalizeCanvasTransform()
+    {
+        transform.localScale = Vector3.one;
+
+        RectTransform rect = transform as RectTransform;
+        if (rect != null && transform.parent != null)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = Vector2.zero;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        bool nestedUnderHudCanvas = transform.parent != null && transform.parent.GetComponentInParent<Canvas>() != null;
+
+        Canvas canvas = GetComponent<Canvas>();
+        if (canvas != null && nestedUnderHudCanvas)
+        {
+            canvas.enabled = false;
+        }
+        else if (canvas != null)
+        {
+            canvas.enabled = true;
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 150;
+        }
+
+        CanvasScaler scaler = GetComponent<CanvasScaler>();
+        if (scaler != null)
+            scaler.enabled = !nestedUnderHudCanvas;
+
+        GraphicRaycaster raycaster = GetComponent<GraphicRaycaster>();
+        if (raycaster != null)
+            raycaster.enabled = !nestedUnderHudCanvas;
     }
 
     static void EnsureEventSystem()

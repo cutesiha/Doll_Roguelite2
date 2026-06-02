@@ -71,8 +71,12 @@ public class RunHudUI : MonoBehaviour
     {
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
-            if (Application.isPlaying) Destroy(transform.GetChild(i).gameObject);
-            else DestroyImmediate(transform.GetChild(i).gameObject);
+            Transform child = transform.GetChild(i);
+            if (child.name == "InventoryCanvas")
+                continue;
+
+            if (Application.isPlaying) Destroy(child.gameObject);
+            else DestroyImmediate(child.gameObject);
         }
 
         canvas = GetComponent<Canvas>();
