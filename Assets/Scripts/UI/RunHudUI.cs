@@ -141,8 +141,89 @@ public class RunHudUI : MonoBehaviour
     {
         canvas = GetComponent<Canvas>();
         rootRect = transform as RectTransform;
+
+        BindExistingPrefabUi();
+
         if (mapButton == null || inventoryButton == null || mapOverlay == null || mapPanel == null || mapContent == null)
             Rebuild();
+        else
+            WireControlEvents();
+    }
+
+    void BindExistingPrefabUi()
+    {
+        if (mapButton == null)
+            mapButton = FindChildComponent<Button>("MapIconButton");
+
+        if (inventoryButton == null)
+            inventoryButton = FindChildComponent<Button>("InventoryIconButton");
+
+        if (mapOverlay == null)
+        {
+            Transform overlay = FindChildRecursive(transform, "MapOverlay");
+            if (overlay != null)
+                mapOverlay = overlay.gameObject;
+        }
+
+        if (mapPanel == null)
+            mapPanel = FindChildComponent<RectTransform>("MapPanel");
+
+        if (mapContent == null)
+            mapContent = FindChildComponent<RectTransform>("MapContent");
+    }
+
+    void WireControlEvents()
+    {
+        if (mapButton != null)
+        {
+            mapButton.onClick.RemoveListener(OpenMap);
+            mapButton.onClick.AddListener(OpenMap);
+        }
+
+        if (inventoryButton != null)
+        {
+            inventoryButton.onClick.RemoveListener(ToggleInventory);
+            inventoryButton.onClick.AddListener(ToggleInventory);
+        }
+
+        Button backdropButton = FindChildComponent<Button>("MapBackdrop");
+        if (backdropButton != null)
+        {
+            backdropButton.onClick.RemoveListener(CloseMap);
+            backdropButton.onClick.AddListener(CloseMap);
+        }
+
+        Button closeButton = FindChildComponent<Button>("MapCloseButton_X");
+        if (closeButton != null)
+        {
+            closeButton.onClick.RemoveListener(CloseMap);
+            closeButton.onClick.AddListener(CloseMap);
+        }
+    }
+
+    T FindChildComponent<T>(string childName) where T : Component
+    {
+        Transform child = FindChildRecursive(transform, childName);
+        return child != null ? child.GetComponent<T>() : null;
+    }
+
+    static Transform FindChildRecursive(Transform parent, string childName)
+    {
+        if (parent == null)
+            return null;
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == childName)
+                return child;
+
+            Transform found = FindChildRecursive(child, childName);
+            if (found != null)
+                return found;
+        }
+
+        return null;
     }
 
     void OpenMap()
