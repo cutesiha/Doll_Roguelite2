@@ -37,6 +37,12 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] Image[]  _charImg = new Image[6];
     [SerializeField] Button[] _charBtn = new Button[6];
 
+    [Header("Character Base Images")]
+    [SerializeField] Sprite _baseBodySprite;
+    [SerializeField] Sprite _baseFaceSprite;
+    [SerializeField] Image _baseBodyImg;
+    [SerializeField] Image _baseFaceImg;
+
     [Header("부위 상태 텍스트 (0~5=슬롯, 6=몸)")]
     [SerializeField] TextMeshProUGUI[] _statName = new TextMeshProUGUI[7];
     [SerializeField] TextMeshProUGUI[] _statHp   = new TextMeshProUGUI[7];
@@ -68,6 +74,7 @@ public class InventoryUI : MonoBehaviour
         EnsureEventSystem();
         WireClicks();
         EnsureToggleHotspot();
+        EnsureCharacterBaseImages();
     }
 
     void Start()
@@ -112,6 +119,7 @@ public class InventoryUI : MonoBehaviour
         gameObject.SetActive(true);
         NormalizeCanvasTransform();
         EnsureToggleHotspot();
+        EnsureCharacterBaseImages();
         if (_panel == null) return;
         transform.SetAsLastSibling();
         _panel.transform.SetAsLastSibling();
@@ -264,7 +272,12 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < 6; i++)
         {
             var p = inv.equipped[i];
-            if (_charImg[i] != null) _charImg[i].color = p != null ? HpColor(p) : CEmpty;
+            if (_charImg[i] != null)
+            {
+                _charImg[i].color = _charImg[i].sprite != null
+                    ? Color.white
+                    : (p != null ? HpColor(p) : CEmpty);
+            }
         }
 
         // 우측 상태
@@ -288,6 +301,113 @@ public class InventoryUI : MonoBehaviour
         }
 
         RefreshSewingStatus(inv);
+        ApplyCharacterBaseSprites();
+    }
+
+    void EnsureCharacterBaseImages()
+    {
+        Transform frame = FindChildRecursive(transform, "CharacterImageFrame");
+        if (frame == null)
+            return;
+
+        _baseBodyImg = EnsureBaseImage(frame, "BodyBaseImage", new Vector2(0f, -38f), new Vector2(250f, 340f), new Color(0.32f, 0.29f, 0.36f, 0.55f));
+        _baseFaceImg = EnsureBaseImage(frame, "FaceBaseImage", new Vector2(0f, 118f), new Vector2(190f, 170f), new Color(0.42f, 0.37f, 0.45f, 0.55f));
+
+        _baseBodyImg.transform.SetSiblingIndex(0);
+        _baseFaceImg.transform.SetSiblingIndex(1);
+
+        HideCharacterPartLabels();
+        ApplyCharacterBaseSprites();
+    }
+
+    Image EnsureBaseImage(Transform parent, string objectName, Vector2 anchoredPosition, Vector2 size, Color placeholderColor)
+    {
+        Transform existing = parent.Find(objectName);
+        GameObject go = existing != null ? existing.gameObject : new GameObject(objectName);
+        go.transform.SetParent(parent, false);
+        bool isNew = existing == null;
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        if (rect == null)
+        {
+            rect = go.AddComponent<RectTransform>();
+            isNew = true;
+        }
+
+        if (isNew)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
+            rect.localScale = Vector3.one;
+        }
+
+        Image image = go.GetComponent<Image>();
+        if (image == null)
+        {
+            image = go.AddComponent<Image>();
+            isNew = true;
+        }
+
+        image.raycastTarget = false;
+        image.preserveAspect = true;
+        if (isNew || image.sprite == null)
+            image.color = image.sprite == null ? placeholderColor : Color.white;
+        return image;
+    }
+
+    void ApplyCharacterBaseSprites()
+    {
+        if (_baseBodyImg != null)
+        {
+            if (_baseBodySprite != null)
+                _baseBodyImg.sprite = _baseBodySprite;
+            _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.32f, 0.29f, 0.36f, 0.55f) : Color.white;
+        }
+
+        if (_baseFaceImg != null)
+        {
+            if (_baseFaceSprite != null)
+                _baseFaceImg.sprite = _baseFaceSprite;
+            _baseFaceImg.color = _baseFaceImg.sprite == null ? new Color(0.42f, 0.37f, 0.45f, 0.55f) : Color.white;
+        }
+
+        Transform hint = FindChildRecursive(transform, "CharacterImageText");
+        if (hint != null)
+            hint.gameObject.SetActive((_baseBodyImg == null || _baseBodyImg.sprite == null) && (_baseFaceImg == null || _baseFaceImg.sprite == null));
+    }
+
+    void HideCharacterPartLabels()
+    {
+        for (int i = 0; i < _charImg.Length; i++)
+        {
+            if (_charImg[i] == null)
+                continue;
+
+            TextMeshProUGUI[] labels = _charImg[i].GetComponentsInChildren<TextMeshProUGUI>(true);
+            for (int j = 0; j < labels.Length; j++)
+                labels[j].gameObject.SetActive(false);
+        }
+    }
+
+    static Transform FindChildRecursive(Transform parent, string childName)
+    {
+        if (parent == null)
+            return null;
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == childName)
+                return child;
+
+            Transform found = FindChildRecursive(child, childName);
+            if (found != null)
+                return found;
+        }
+
+        return null;
     }
 
     void RefreshSewingStatus(InventoryManager inv)

@@ -99,6 +99,91 @@ public static class InventoryPanelSceneBuilder
         EditorGUIUtility.PingObject(panel);
     }
 
+    [MenuItem("Game/Inventory/Patch Character Base Images")]
+    public static void PatchCharacterBaseImages()
+    {
+        PatchCharacterBaseImages("Assets/Resources/InventoryCanvas.prefab");
+        PatchCharacterBaseImages("Assets/Prefabs/UI/InventoryCanvas.prefab");
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+    }
+
+    static void PatchCharacterBaseImages(string prefabPath)
+    {
+        GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+        try
+        {
+            Transform frame = FindChildRecursive(root.transform, "CharacterImageFrame");
+            if (frame == null)
+                return;
+
+            Image body = EnsureCharacterBaseImage(frame, "BodyBaseImage", V2(0f, -38f), V2(250f, 340f), new Color(0.32f, 0.29f, 0.36f, 0.55f));
+            Image face = EnsureCharacterBaseImage(frame, "FaceBaseImage", V2(0f, 118f), V2(190f, 170f), new Color(0.42f, 0.37f, 0.45f, 0.55f));
+
+            body.transform.SetSiblingIndex(0);
+            face.transform.SetSiblingIndex(1);
+
+            InventoryUI ui = root.GetComponent<InventoryUI>();
+            if (ui != null)
+            {
+                SerializedObject so = new SerializedObject(ui);
+                SerializedProperty bodyProp = so.FindProperty("_baseBodyImg");
+                if (bodyProp != null) bodyProp.objectReferenceValue = body;
+                SerializedProperty faceProp = so.FindProperty("_baseFaceImg");
+                if (faceProp != null) faceProp.objectReferenceValue = face;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+    }
+
+    static Image EnsureCharacterBaseImage(Transform parent, string name, Vector2 anchoredPosition, Vector2 size, Color color)
+    {
+        Transform existing = parent.Find(name);
+        GameObject go = existing != null ? existing.gameObject : new GameObject(name);
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = go.AddComponent<RectTransform>();
+
+        rect.anchorMin = rect.anchorMax = V2(0.5f, 0.5f);
+        rect.pivot = V2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = size;
+        rect.localScale = Vector3.one;
+
+        Image image = go.GetComponent<Image>();
+        if (image == null)
+            image = go.AddComponent<Image>();
+
+        image.color = color;
+        image.raycastTarget = false;
+        image.preserveAspect = true;
+        return image;
+    }
+
+    static Transform FindChildRecursive(Transform parent, string childName)
+    {
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == childName)
+                return child;
+
+            Transform found = FindChildRecursive(child, childName);
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
+
     static Button BuildCloseButton(Transform parent, Color redColor)
     {
         GameObject closeGO = Rect(parent, "CloseButton_X", V2(1f, 1f), V2(1f, 1f), V2(1f, 1f), V2(-22f, -22f), V2(72f, 72f));
@@ -165,6 +250,19 @@ public static class InventoryPanelSceneBuilder
 
         Text(frame.transform, "CharacterImageText", "캐릭터\n이미지", 36f, new Color(0.70f, 0.66f, 0.72f, 1f), TextAlignmentOptions.Center,
             Vector2.zero, Vector2.one, V2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+
+        Image bodyBase = Image(Rect(frame.transform, "BodyBaseImage", V2(0.5f, 0.5f), V2(0.5f, 0.5f), V2(0.5f, 0.5f), V2(0f, -38f), V2(250f, 340f)),
+            new Color(0.32f, 0.29f, 0.36f, 0.55f));
+        bodyBase.raycastTarget = false;
+        bodyBase.preserveAspect = true;
+
+        Image faceBase = Image(Rect(frame.transform, "FaceBaseImage", V2(0.5f, 0.5f), V2(0.5f, 0.5f), V2(0.5f, 0.5f), V2(0f, 118f), V2(190f, 170f)),
+            new Color(0.42f, 0.37f, 0.45f, 0.55f));
+        faceBase.raycastTarget = false;
+        faceBase.preserveAspect = true;
+
+        bodyBase.transform.SetSiblingIndex(0);
+        faceBase.transform.SetSiblingIndex(1);
 
         charImgs = new Image[6];
         charBtns = new Button[6];
