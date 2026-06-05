@@ -4,7 +4,6 @@ using UnityEngine;
 public class EnemyChaser : EnemyBase
 {
     [SerializeField] float moveSpeed = 1f;
-    [SerializeField] float detectionRange = 8f;
 
     Rigidbody2D rb;
     Transform player;
@@ -26,7 +25,6 @@ public class EnemyChaser : EnemyBase
     void FixedUpdate()
     {
         if (player == null) return;
-        if (Vector2.Distance(transform.position, player.position) > detectionRange) return;
 
         Vector2 dir = ((Vector2)player.position - rb.position).normalized;
         rb.MovePosition(rb.position + dir * moveSpeed * Time.fixedDeltaTime);

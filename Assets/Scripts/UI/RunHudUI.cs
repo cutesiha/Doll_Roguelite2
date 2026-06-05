@@ -66,6 +66,7 @@ public class RunHudUI : MonoBehaviour
         if (!Application.isPlaying)
             return;
 
+        HandleMapHotkey();
         HandleInventoryOutsideClick();
     }
 
@@ -231,6 +232,21 @@ public class RunHudUI : MonoBehaviour
         MapRunState.EnsureRun();
         BuildMapTree();
         mapOverlay.SetActive(true);
+    }
+
+    void ToggleMap()
+    {
+        if (mapOverlay != null && mapOverlay.activeSelf)
+            CloseMap();
+        else
+            OpenMap();
+    }
+
+    void HandleMapHotkey()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard != null && keyboard.mKey.wasPressedThisFrame)
+            ToggleMap();
     }
 
     public void CloseMap()

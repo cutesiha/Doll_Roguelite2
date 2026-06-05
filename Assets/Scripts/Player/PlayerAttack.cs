@@ -15,6 +15,7 @@ public class PlayerAttack : MonoBehaviour
     Key pendingAttackKey = Key.None;
     int pendingPressCount;
     GameObject flashObj;
+    PlayerController playerController;
 
     [SerializeField, Min(0f)] float pressTimeout = 0.5f;
     [SerializeField, Min(1)] int requiredPressCount = 3;
@@ -24,6 +25,8 @@ public class PlayerAttack : MonoBehaviour
 
     void Awake()
     {
+        playerController = GetComponent<PlayerController>();
+
         flashObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
         flashObj.name = "AttackFlash";
         flashObj.transform.SetParent(transform);
@@ -63,6 +66,8 @@ public class PlayerAttack : MonoBehaviour
         {
             if (!kb[dirKeys[i]].wasPressedThisFrame)
                 continue;
+
+            playerController?.FaceDirection(dirVecs[i]);
 
             if (needsMultiplePress)
             {
