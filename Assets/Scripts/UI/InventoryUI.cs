@@ -54,15 +54,15 @@ public class InventoryUI : MonoBehaviour
     Button _toggleHotspotButton;
 
     // ── 색상 ───────────────────────────────────────────────────────────
-    static readonly Color CSlot  = new Color(0.20f, 0.20f, 0.27f, 1f);
-    static readonly Color CEmpty = new Color(0.13f, 0.13f, 0.17f, 1f);
+    static readonly Color CSlot  = new Color(0.88f, 0.48f, 0.24f, 1f);
+    static readonly Color CEmpty = new Color(0.17f, 0.15f, 0.13f, 0.20f);
 
     static Color HpColor(BodyPart p)
     {
         float r = (float)p.currentHp / p.maxHp;
-        if (r > 0.66f) return new Color(0.22f, 0.52f, 0.22f, 1f);
-        if (r > 0.33f) return new Color(0.60f, 0.48f, 0.08f, 1f);
-        return new Color(0.60f, 0.15f, 0.15f, 1f);
+        if (r > 0.66f) return new Color(1.00f, 0.85f, 0.23f, 1f);
+        if (r > 0.33f) return new Color(0.94f, 0.62f, 0.15f, 1f);
+        return new Color(0.75f, 0.08f, 0.06f, 1f);
     }
 
     // ── Unity 수명 ─────────────────────────────────────────────────────
@@ -236,7 +236,7 @@ public class InventoryUI : MonoBehaviour
 
     static void EnsureEventSystem()
     {
-        if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() != null)
+        if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() != null)
             return;
 
         var eventGO = new GameObject("RuntimeEventSystem");
@@ -289,15 +289,15 @@ public class InventoryUI : MonoBehaviour
             {
                 _statHp[i].text  = p != null ? Dots(p) : new string('○', 5);
                 _statHp[i].color = p != null
-                    ? new Color(0.85f, 0.60f, 0.20f, 1f)
-                    : new Color(0.30f, 0.30f, 0.34f, 1f);
+                    ? new Color(0.88f, 0.48f, 0.24f, 1f)
+                    : new Color(0.17f, 0.15f, 0.13f, 0.42f);
             }
         }
         if (_statName[6] != null) _statName[6].text  = "장착됨 (고정)";
         if (_statHp[6]   != null)
         {
             _statHp[6].text  = new string('●', 5);
-            _statHp[6].color = new Color(0.85f, 0.60f, 0.20f, 1f);
+            _statHp[6].color = new Color(0.88f, 0.48f, 0.24f, 1f);
         }
 
         RefreshSewingStatus(inv);
@@ -310,8 +310,8 @@ public class InventoryUI : MonoBehaviour
         if (frame == null)
             return;
 
-        _baseBodyImg = EnsureBaseImage(frame, "BodyBaseImage", new Vector2(0f, -38f), new Vector2(250f, 340f), new Color(0.32f, 0.29f, 0.36f, 0.55f));
-        _baseFaceImg = EnsureBaseImage(frame, "FaceBaseImage", new Vector2(0f, 118f), new Vector2(190f, 170f), new Color(0.42f, 0.37f, 0.45f, 0.55f));
+        _baseBodyImg = EnsureBaseImage(frame, "BodyBaseImage", new Vector2(0f, -38f), new Vector2(250f, 340f), new Color(0.17f, 0.15f, 0.13f, 0.20f));
+        _baseFaceImg = EnsureBaseImage(frame, "FaceBaseImage", new Vector2(0f, 118f), new Vector2(190f, 170f), new Color(0.17f, 0.15f, 0.13f, 0.16f));
 
         _baseBodyImg.transform.SetSiblingIndex(0);
         _baseFaceImg.transform.SetSiblingIndex(1);
@@ -363,14 +363,14 @@ public class InventoryUI : MonoBehaviour
         {
             if (_baseBodySprite != null)
                 _baseBodyImg.sprite = _baseBodySprite;
-            _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.32f, 0.29f, 0.36f, 0.55f) : Color.white;
+            _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.20f) : Color.white;
         }
 
         if (_baseFaceImg != null)
         {
             if (_baseFaceSprite != null)
                 _baseFaceImg.sprite = _baseFaceSprite;
-            _baseFaceImg.color = _baseFaceImg.sprite == null ? new Color(0.42f, 0.37f, 0.45f, 0.55f) : Color.white;
+            _baseFaceImg.color = _baseFaceImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.16f) : Color.white;
         }
 
         Transform hint = FindChildRecursive(transform, "CharacterImageText");
@@ -428,19 +428,19 @@ public class InventoryUI : MonoBehaviour
         if (emptyCount == 0)
         {
             _sewingStatus.text = "[재봉 상태] 빈 슬롯 0개 · 안정적";
-            _sewingStatus.color = new Color(0.72f, 0.95f, 0.72f, 1f);
+            _sewingStatus.color = new Color(0.17f, 0.15f, 0.13f, 1f);
         }
         else if (emptyCount >= 3)
         {
             _sewingStatus.text = "[재봉 상태] 빈 슬롯 3개 이상 · 몸이 공격받을 수 있음!";
-            _sewingStatus.color = new Color(1.00f, 0.42f, 0.34f, 1f);
+            _sewingStatus.color = new Color(0.75f, 0.08f, 0.06f, 1f);
         }
         else
         {
             _sewingStatus.text = "[재봉 상태] "
                 + string.Join(" · ", missingParts)
                 + $" · 빈 슬롯 {emptyCount}개 · 몸 안전";
-            _sewingStatus.color = new Color(0.94f, 0.90f, 0.82f, 1f);
+            _sewingStatus.color = new Color(0.17f, 0.15f, 0.13f, 1f);
         }
     }
 

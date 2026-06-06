@@ -9,7 +9,7 @@ public class InventoryManager : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Bootstrap()
     {
-        if (FindObjectOfType<InventoryManager>() != null) return;
+        if (FindFirstObjectByType<InventoryManager>() != null) return;
         var go = new GameObject("InventoryManager");
         go.AddComponent<InventoryManager>();
     }

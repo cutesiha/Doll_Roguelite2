@@ -6,12 +6,14 @@ public static class InventorySpritePreviewPatcher
 {
     const string ResourcesPrefabPath = "Assets/Resources/InventoryCanvas.prefab";
     const string UiPrefabPath = "Assets/Prefabs/UI/InventoryCanvas.prefab";
+    const string RunHudPrefabPath = "Assets/Prefabs/UI/RunHudCanvas.prefab";
 
     [MenuItem("Game/Inventory/Assign Character Preview Sprites")]
     public static void AssignCharacterPreviewSprites()
     {
         AssignCharacterPreviewSprites(ResourcesPrefabPath);
         AssignCharacterPreviewSprites(UiPrefabPath);
+        AssignCharacterPreviewSprites(RunHudPrefabPath);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[InventoryUI] Character preview sprites assigned.");
@@ -22,14 +24,14 @@ public static class InventorySpritePreviewPatcher
         GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
         try
         {
-            SetImage(root.transform, "BodyBaseImage", "Assets/TextMesh Pro/Sprites/Player/body.png", "제목 없는 디자인 (9)_1");
-            SetImage(root.transform, "FaceBaseImage", "Assets/TextMesh Pro/Sprites/Player/head.png", "pixil-frame-0 (4)_0");
-            SetImage(root.transform, "EquipPart_EyeLeft", "Assets/TextMesh Pro/Sprites/Player/eye_left.png", null);
-            SetImage(root.transform, "EquipPart_EyeRight", "Assets/TextMesh Pro/Sprites/Player/eye_right.png", null);
-            SetImage(root.transform, "EquipPart_ArmLeft", "Assets/TextMesh Pro/Sprites/Player/arm_left.png", null);
-            SetImage(root.transform, "EquipPart_ArmRight", "Assets/TextMesh Pro/Sprites/Player/arm_right.png", null);
-            SetImage(root.transform, "EquipPart_LegLeft", "Assets/TextMesh Pro/Sprites/Player/leg_left.png", null);
-            SetImage(root.transform, "EquipPart_LegRight", "Assets/TextMesh Pro/Sprites/Player/leg_right.png", null);
+            SetImage(root.transform, "BodyBaseImage", "Assets/TextMesh Pro/Sprites/Player/body.png", null, false);
+            SetImage(root.transform, "FaceBaseImage", "Assets/TextMesh Pro/Sprites/Player/head.png", null, false);
+            SetImage(root.transform, "EquipPart_EyeLeft", "Assets/TextMesh Pro/Sprites/Player/eye_left.png", null, true);
+            SetImage(root.transform, "EquipPart_EyeRight", "Assets/TextMesh Pro/Sprites/Player/eye_right.png", null, true);
+            SetImage(root.transform, "EquipPart_ArmLeft", "Assets/TextMesh Pro/Sprites/Player/arm_left.png", null, true);
+            SetImage(root.transform, "EquipPart_ArmRight", "Assets/TextMesh Pro/Sprites/Player/arm_right.png", null, true);
+            SetImage(root.transform, "EquipPart_LegLeft", "Assets/TextMesh Pro/Sprites/Player/leg_left.png", null, true);
+            SetImage(root.transform, "EquipPart_LegRight", "Assets/TextMesh Pro/Sprites/Player/leg_right.png", null, true);
 
             PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
         }
@@ -39,7 +41,7 @@ public static class InventorySpritePreviewPatcher
         }
     }
 
-    static void SetImage(Transform root, string objectName, string spritePath, string spriteName)
+    static void SetImage(Transform root, string objectName, string spritePath, string spriteName, bool raycastTarget)
     {
         Transform child = FindChildRecursive(root, objectName);
         if (child == null)
@@ -51,10 +53,29 @@ public static class InventorySpritePreviewPatcher
             return;
 
         image.sprite = sprite;
+        image.type = Image.Type.Simple;
         image.color = Color.white;
         image.preserveAspect = true;
-        image.raycastTarget = false;
+        image.raycastTarget = raycastTarget;
         EditorUtility.SetDirty(image);
+
+        Button button = child.GetComponent<Button>();
+        if (button != null)
+        {
+            button.transition = Selectable.Transition.ColorTint;
+            button.targetGraphic = image;
+
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(0.72f, 0.63f, 0.52f, 1f);
+            colors.pressedColor = new Color(0.56f, 0.46f, 0.36f, 1f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.disabledColor = new Color(0.55f, 0.50f, 0.45f, 0.45f);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+            EditorUtility.SetDirty(button);
+        }
     }
 
     static Sprite LoadSprite(string path, string spriteName)
