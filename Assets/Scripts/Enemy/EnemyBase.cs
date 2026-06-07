@@ -9,6 +9,13 @@ public class EnemyBase : MonoBehaviour
     protected virtual void Awake()
     {
         currentHp = maxHp;
+        var spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = Color.white;
+            return;
+        }
+
         var rend = GetComponent<Renderer>();
         if (rend != null)
         {

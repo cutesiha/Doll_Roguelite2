@@ -24,6 +24,7 @@ public class Room : MonoBehaviour
     bool waveCleared;
     bool isCleared;
 
+    static readonly Color SpawnMarkerColor = new Color(1f, 0.38f, 0.22f, 0.9f);
     static Sprite markerSprite;
 
     IEnumerator Start()
@@ -108,7 +109,8 @@ public class Room : MonoBehaviour
         for (int i = 0; i < count; i++)
             positions.Add(randomizeEnemyPositions ? RandomPos() : template.transform.position);
 
-        yield return StartCoroutine(BlinkSpawnPositions(positions));
+        Vector2 markerSize = GetEnemyMarkerSize(template);
+        yield return StartCoroutine(BlinkSpawnPositions(positions, markerSize));
 
         for (int i = 0; i < positions.Count; i++)
         {
@@ -122,11 +124,63 @@ public class Room : MonoBehaviour
         }
     }
 
-    IEnumerator BlinkSpawnPositions(List<Vector3> positions)
+    Vector2 GetEnemyMarkerSize(GameObject template)
+    {
+        if (template == null)
+            return Vector2.one;
+
+        Renderer[] renderers = template.GetComponentsInChildren<Renderer>(true);
+        Bounds bounds = new Bounds(template.transform.position, Vector3.zero);
+        bool hasBounds = false;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] == null)
+                continue;
+
+            if (!hasBounds)
+            {
+                bounds = renderers[i].bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+        }
+
+        if (!hasBounds)
+        {
+            Collider2D[] colliders = template.GetComponentsInChildren<Collider2D>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] == null)
+                    continue;
+
+                if (!hasBounds)
+                {
+                    bounds = colliders[i].bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(colliders[i].bounds);
+                }
+            }
+        }
+
+        if (!hasBounds)
+            return Vector2.one;
+
+        float width = Mathf.Max(0.35f, bounds.size.x);
+        float height = Mathf.Max(0.35f, bounds.size.y);
+        return new Vector2(width, height);
+    }
+
+    IEnumerator BlinkSpawnPositions(List<Vector3> positions, Vector2 markerSize)
     {
         List<SpriteRenderer> markers = new List<SpriteRenderer>(positions.Count);
         for (int i = 0; i < positions.Count; i++)
-            markers.Add(CreateSpawnMarker(positions[i]));
+            markers.Add(CreateSpawnMarker(positions[i], markerSize));
 
         int blinkCount = Mathf.Max(1, spawnBlinkCount);
         float interval = Mathf.Max(0.03f, spawnBlinkInterval);
@@ -145,16 +199,16 @@ public class Room : MonoBehaviour
                 Destroy(markers[i].gameObject);
     }
 
-    SpriteRenderer CreateSpawnMarker(Vector3 position)
+    SpriteRenderer CreateSpawnMarker(Vector3 position, Vector2 markerSize)
     {
         GameObject marker = new GameObject("EnemySpawnBlink");
         marker.transform.SetParent(transform, false);
         marker.transform.position = position;
-        marker.transform.localScale = new Vector3(0.72f, 0.72f, 1f);
+        marker.transform.localScale = new Vector3(markerSize.x, markerSize.y, 1f);
 
         SpriteRenderer renderer = marker.AddComponent<SpriteRenderer>();
         renderer.sprite = CreateMarkerSprite();
-        renderer.color = new Color(1f, 1f, 1f, 0.88f);
+        renderer.color = SpawnMarkerColor;
         renderer.sortingOrder = 30;
         return renderer;
     }

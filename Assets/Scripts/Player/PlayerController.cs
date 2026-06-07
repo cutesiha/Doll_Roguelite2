@@ -55,10 +55,10 @@ public class PlayerController : MonoBehaviour
         if (kb == null) return;
 
         float h = 0f, v = 0f;
-        bool leftPressed = kb.aKey.isPressed || kb.leftArrowKey.isPressed;
-        bool rightPressed = kb.dKey.isPressed || kb.rightArrowKey.isPressed;
-        bool downPressed = kb.sKey.isPressed || kb.downArrowKey.isPressed;
-        bool upPressed = kb.wKey.isPressed || kb.upArrowKey.isPressed;
+        bool leftPressed = kb.aKey.isPressed;
+        bool rightPressed = kb.dKey.isPressed;
+        bool downPressed = kb.sKey.isPressed;
+        bool upPressed = kb.wKey.isPressed;
 
         if (leftPressed) h -= 1f;
         if (rightPressed) h += 1f;

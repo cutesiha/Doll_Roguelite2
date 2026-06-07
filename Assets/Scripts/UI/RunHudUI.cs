@@ -695,8 +695,8 @@ public class RunHudUI : MonoBehaviour
 
     System.Collections.IEnumerator WaveClearRoutine()
     {
-        const int flashes = 10;
-        const float interval = 0.07f;
+        const int flashes = 8;
+        const float interval = 0.14f;
 
         for (int i = 0; i < flashes; i++)
         {
