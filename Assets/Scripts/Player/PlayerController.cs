@@ -1,5 +1,10 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
@@ -50,10 +55,10 @@ public class PlayerController : MonoBehaviour
         if (kb == null) return;
 
         float h = 0f, v = 0f;
-        bool leftPressed = kb.aKey.isPressed;
-        bool rightPressed = kb.dKey.isPressed;
-        bool downPressed = kb.sKey.isPressed;
-        bool upPressed = kb.wKey.isPressed;
+        bool leftPressed = kb.aKey.isPressed || kb.leftArrowKey.isPressed;
+        bool rightPressed = kb.dKey.isPressed || kb.rightArrowKey.isPressed;
+        bool downPressed = kb.sKey.isPressed || kb.downArrowKey.isPressed;
+        bool upPressed = kb.wKey.isPressed || kb.upArrowKey.isPressed;
 
         if (leftPressed) h -= 1f;
         if (rightPressed) h += 1f;
@@ -61,17 +66,7 @@ public class PlayerController : MonoBehaviour
         if (upPressed) v += 1f;
         moveInput = new Vector2(h, v).normalized;
 
-        bool changedDirection = false;
-        if (kb.aKey.wasPressedThisFrame)
-            changedDirection = SetFacing(FacingDirection.Left);
-        if (kb.dKey.wasPressedThisFrame)
-            changedDirection = SetFacing(FacingDirection.Right);
-        if (kb.sKey.wasPressedThisFrame)
-            changedDirection = SetFacing(FacingDirection.Down);
-        if (kb.wKey.wasPressedThisFrame)
-            changedDirection = SetFacing(FacingDirection.Up);
-
-        if (!changedDirection && moveInput != Vector2.zero && !IsFacingInputStillPressed(leftPressed, rightPressed, downPressed, upPressed))
+        if (moveInput != Vector2.zero)
             SetFacingFromMoveInput();
     }
 
@@ -114,18 +109,6 @@ public class PlayerController : MonoBehaviour
             SetFacing(moveInput.y < 0f ? FacingDirection.Down : FacingDirection.Up);
     }
 
-    bool IsFacingInputStillPressed(bool leftPressed, bool rightPressed, bool downPressed, bool upPressed)
-    {
-        return facingDirection switch
-        {
-            FacingDirection.Left => leftPressed,
-            FacingDirection.Right => rightPressed,
-            FacingDirection.Down => downPressed,
-            FacingDirection.Up => upPressed,
-            _ => false
-        };
-    }
-
     void ApplyFacingSprite()
     {
         if (spriteRenderer == null)
@@ -146,14 +129,40 @@ public class PlayerController : MonoBehaviour
     void LoadDefaultSpritesIfMissing()
     {
         if (upSprite == null)
-            upSprite = LoadFirstSprite("Sprites/Player/Player_up");
+            upSprite = LoadPlayerSprite("3333333333333", "Player_up");
         if (downSprite == null)
-            downSprite = LoadFirstSprite("Sprites/Player/Player_down");
+            downSprite = LoadPlayerSprite("1111111", "Player_down");
         if (leftSprite == null)
-            leftSprite = LoadFirstSprite("Sprites/Player/Player_left");
+            leftSprite = LoadPlayerSprite("2222222", "Player_left");
         if (rightSprite == null)
-            rightSprite = LoadFirstSprite("Sprites/Player/Player_right");
+            rightSprite = LoadPlayerSprite("4444444444", "Player_right");
     }
+
+    Sprite LoadPlayerSprite(string spriteName, string fallbackName)
+    {
+        Sprite sprite = LoadFirstSprite("Sprites/Player/" + spriteName);
+        if (sprite != null)
+            return sprite;
+
+#if UNITY_EDITOR
+        sprite = LoadEditorSprite("Assets/TextMesh Pro/Sprites/Player/" + spriteName + ".png");
+        if (sprite != null)
+            return sprite;
+#endif
+
+        return LoadFirstSprite("Sprites/Player/" + fallbackName);
+    }
+
+#if UNITY_EDITOR
+    Sprite LoadEditorSprite(string assetPath)
+    {
+        Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(assetPath).OfType<Sprite>().ToArray();
+        if (sprites.Length > 0)
+            return sprites[0];
+
+        return AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+    }
+#endif
 
     Sprite LoadFirstSprite(string resourcePath)
     {

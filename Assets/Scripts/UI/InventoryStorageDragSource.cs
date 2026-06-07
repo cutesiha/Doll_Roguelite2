@@ -41,6 +41,7 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
         label.text = inv.storage[storageIndex].SlotName();
         label.fontSize = 18f;
+        label.font = UIThinDungFont.Get();
         label.color = Color.white;
         label.alignment = TextAlignmentOptions.Center;
         label.raycastTarget = false;

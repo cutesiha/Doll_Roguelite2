@@ -27,9 +27,12 @@ public class RunHudUI : MonoBehaviour
     RectTransform mapPanel;
     RectTransform mapContent;
     TextMeshProUGUI waveLabel;
+    TextMeshProUGUI waveClearLabel;
     TextMeshProUGUI diaryLabel;
+    readonly List<Image> waveDots = new List<Image>();
     readonly List<HudPipGroup> hudPipGroups = new List<HudPipGroup>();
     HudPipGroup bodyPips;
+    Coroutine waveClearRoutine;
     bool suppressInventoryOutsideClick;
 
     static RunHudUI instance;
@@ -118,7 +121,9 @@ public class RunHudUI : MonoBehaviour
         mapPanel = null;
         mapContent = null;
         waveLabel = null;
+        waveClearLabel = null;
         diaryLabel = null;
+        waveDots.Clear();
 
         canvas = GetComponent<Canvas>();
         if (canvas == null) canvas = gameObject.AddComponent<Canvas>();
@@ -199,10 +204,11 @@ public class RunHudUI : MonoBehaviour
 
         BindExistingPrefabUi();
 
-        if (mapButton == null || inventoryButton == null || menuButton == null || mapOverlay == null || mapPanel == null || mapContent == null || diaryLabel == null || waveLabel == null || !HasExistingBodyHud())
+        if (mapButton == null || inventoryButton == null || menuButton == null || mapOverlay == null || mapPanel == null || mapContent == null || diaryLabel == null || waveLabel == null || waveClearLabel == null || waveDots.Count < 3 || !HasExistingBodyHud())
             Rebuild();
         else
         {
+            BindExistingWaveUi();
             BindExistingPipGroups();
             WireControlEvents();
             UpdateHudState();
@@ -222,6 +228,11 @@ public class RunHudUI : MonoBehaviour
 
         if (waveLabel == null)
             waveLabel = FindChildComponent<TextMeshProUGUI>("WaveLabel");
+
+        if (waveClearLabel == null)
+            waveClearLabel = FindChildComponent<TextMeshProUGUI>("WaveClearLabel");
+
+        BindExistingWaveUi();
 
         if (diaryLabel == null)
             diaryLabel = FindChildComponent<TextMeshProUGUI>("DiaryMemoryText");
@@ -245,6 +256,17 @@ public class RunHudUI : MonoBehaviour
         return FindChildRecursive(transform, "BodyPipHud") != null
             && FindChildRecursive(transform, "EyesRow_L_Pip_0") != null
             && FindChildRecursive(transform, "BodyRow_Body_Pip_0") != null;
+    }
+
+    void BindExistingWaveUi()
+    {
+        waveDots.Clear();
+        for (int i = 0; i < 3; i++)
+        {
+            Image image = FindChildComponent<Image>("WaveDot_" + i);
+            if (image != null)
+                waveDots.Add(image);
+        }
     }
 
     void BindExistingPipGroups()
@@ -336,7 +358,7 @@ public class RunHudUI : MonoBehaviour
 
     void BuildBodyHud()
     {
-        GameObject group = Rect(transform, "BodyPipHud", Anchor.TopLeft, new Vector2(30f, -30f), new Vector2(470f, 188f));
+        GameObject group = Rect(transform, "BodyPipHud", Anchor.TopLeft, new Vector2(30f, -30f), new Vector2(470f, 176f));
         Image backing = group.AddComponent<Image>();
         SetRoundedImage(backing, roundedPanelSprite);
         backing.color = new Color(0.17f, 0.15f, 0.13f, 0.10f);
@@ -345,10 +367,10 @@ public class RunHudUI : MonoBehaviour
         BuildPixelDoll(group.transform);
 
         float rowX = 114f;
-        BuildPartRow(group.transform, "EyesRow", HudPartIcon.Eye, BodySlot.EyeLeft, 2, BodySlot.EyeRight, 2, new Vector2(rowX, -12f), false);
-        BuildPartRow(group.transform, "ArmsRow", HudPartIcon.Arm, BodySlot.ArmLeft, 3, BodySlot.ArmRight, 3, new Vector2(rowX, -44f), false);
-        BuildPartRow(group.transform, "LegsRow", HudPartIcon.Leg, BodySlot.LegLeft, 3, BodySlot.LegRight, 3, new Vector2(rowX, -76f), false);
-        BuildPartRow(group.transform, "BodyRow", HudPartIcon.Body, null, 0, null, 5, new Vector2(rowX, -110f), true);
+        BuildPartRow(group.transform, "EyesRow", HudPartIcon.Eye, BodySlot.EyeLeft, 2, BodySlot.EyeRight, 2, new Vector2(rowX, -10f), false);
+        BuildPartRow(group.transform, "ArmsRow", HudPartIcon.Arm, BodySlot.ArmLeft, 3, BodySlot.ArmRight, 3, new Vector2(rowX, -46f), false);
+        BuildPartRow(group.transform, "LegsRow", HudPartIcon.Leg, BodySlot.LegLeft, 3, BodySlot.LegRight, 3, new Vector2(rowX, -82f), false);
+        BuildPartRow(group.transform, "BodyRow", HudPartIcon.Body, null, 0, null, 5, new Vector2(rowX, -118f), true);
     }
 
     void BuildPixelDoll(Transform parent)
@@ -391,17 +413,17 @@ public class RunHudUI : MonoBehaviour
 
     void BuildPartRow(Transform parent, string name, HudPartIcon icon, BodySlot? leftSlot, int leftCount, BodySlot? rightSlot, int rightCount, Vector2 offset, bool bodyRow)
     {
-        float pipWidth = bodyRow ? 34f : 26f;
-        float pipHeight = bodyRow ? 24f : 21f;
-        float pipGap = 8f;
+        float pipWidth = 30f;
+        float pipHeight = 30f;
+        float pipGap = 6f;
         float separatorGap = 13f;
 
         int totalPips = leftCount + rightCount;
         float rowWidth = 34f + (pipWidth + pipGap) * totalPips + (leftCount > 0 ? separatorGap + 7f : 0f) + 24f;
-        GameObject row = Rect(parent, name, Anchor.TopLeft, offset, new Vector2(rowWidth, bodyRow ? 42f : 30f));
+        GameObject row = Rect(parent, name, Anchor.TopLeft, offset, new Vector2(rowWidth, 38f));
 
         if (bodyRow)
-            BuildBodyDangerFrame(row.transform, new Vector2(35f, -3f), new Vector2((pipWidth + pipGap) * rightCount - pipGap + 16f, 34f));
+            BuildBodyDangerFrame(row.transform, new Vector2(35f, -3f), new Vector2((pipWidth + pipGap) * rightCount - pipGap + 16f, 40f));
 
         BuildPartIcon(row.transform, icon, new Vector2(0f, -2f));
 
@@ -492,16 +514,18 @@ public class RunHudUI : MonoBehaviour
         bg.color = new Color(0.08f, 0.06f, 0.07f, 0.86f);
         bg.raycastTarget = false;
 
+        waveDots.Clear();
         for (int i = 0; i < 3; i++)
         {
             GameObject dot = Rect(wave.transform, "WaveDot_" + i, Anchor.Left, new Vector2(27f + i * 28f, 0f), new Vector2(14f, 14f));
             Image image = dot.AddComponent<Image>();
             SetRoundedImage(image, circleSprite);
-            image.color = i == 0 ? AccentColor : new Color(0.18f, 0.16f, 0.18f, 0.92f);
+            image.color = new Color(0.18f, 0.16f, 0.18f, 0.92f);
             image.raycastTarget = false;
             Outline outline = dot.AddComponent<Outline>();
-            outline.effectColor = i == 0 ? AccentColor : new Color(0.91f, 0.86f, 0.78f, 0.70f);
+            outline.effectColor = new Color(0.91f, 0.86f, 0.78f, 0.70f);
             outline.effectDistance = new Vector2(1f, -1f);
+            waveDots.Add(image);
         }
 
         waveLabel = Text(wave.transform, "WaveLabel", "WAVE 1/3", 21f, PanelColor, TextAlignmentOptions.MidlineLeft);
@@ -509,6 +533,17 @@ public class RunHudUI : MonoBehaviour
         waveLabel.rectTransform.anchorMax = new Vector2(1f, 1f);
         waveLabel.rectTransform.offsetMin = new Vector2(104f, 0f);
         waveLabel.rectTransform.offsetMax = new Vector2(-16f, 0f);
+
+        waveClearLabel = Text(transform, "WaveClearLabel", "Wave Clear!", 74f, Color.white, TextAlignmentOptions.Center);
+        waveClearLabel.rectTransform.anchorMin = new Vector2(0.5f, 1f);
+        waveClearLabel.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+        waveClearLabel.rectTransform.pivot = new Vector2(0.5f, 1f);
+        waveClearLabel.rectTransform.anchoredPosition = new Vector2(0f, -92f);
+        waveClearLabel.rectTransform.sizeDelta = new Vector2(720f, 96f);
+        waveClearLabel.raycastTarget = false;
+        SetTextAlpha(waveClearLabel, 0f);
+
+        ApplyWave(1, 3);
     }
 
     void BuildTopRightMapButton()
@@ -601,6 +636,86 @@ public class RunHudUI : MonoBehaviour
         image.raycastTarget = false;
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.localRotation = Quaternion.Euler(0f, 0f, rotation);
+    }
+
+    public static void SetWave(int currentWave, int totalWaves)
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.ApplyWave(currentWave, totalWaves);
+    }
+
+    public static void ShowWaveClear()
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.PlayWaveClear();
+    }
+
+    static RunHudUI ActiveInstance()
+    {
+        if (instance != null)
+            return instance;
+
+        return FindFirstObjectByType<RunHudUI>();
+    }
+
+    void ApplyWave(int currentWave, int totalWaves)
+    {
+        int safeTotal = Mathf.Max(1, totalWaves);
+        int safeCurrent = Mathf.Clamp(currentWave, 1, safeTotal);
+
+        if (waveLabel != null)
+            waveLabel.text = "WAVE " + safeCurrent + "/" + safeTotal;
+
+        for (int i = 0; i < waveDots.Count; i++)
+        {
+            Image dot = waveDots[i];
+            if (dot == null)
+                continue;
+
+            bool filled = i < safeCurrent;
+            dot.color = filled ? AccentColor : new Color(0.18f, 0.16f, 0.18f, 0.92f);
+            Outline outline = dot.GetComponent<Outline>();
+            if (outline != null)
+                outline.effectColor = filled ? Color.white : new Color(0.91f, 0.86f, 0.78f, 0.70f);
+        }
+    }
+
+    void PlayWaveClear()
+    {
+        if (waveClearLabel == null)
+            return;
+
+        if (waveClearRoutine != null)
+            StopCoroutine(waveClearRoutine);
+
+        waveClearRoutine = StartCoroutine(WaveClearRoutine());
+    }
+
+    System.Collections.IEnumerator WaveClearRoutine()
+    {
+        const int flashes = 10;
+        const float interval = 0.07f;
+
+        for (int i = 0; i < flashes; i++)
+        {
+            SetTextAlpha(waveClearLabel, i % 2 == 0 ? 1f : 0f);
+            yield return new WaitForSeconds(interval);
+        }
+
+        SetTextAlpha(waveClearLabel, 0f);
+        waveClearRoutine = null;
+    }
+
+    static void SetTextAlpha(TextMeshProUGUI text, float alpha)
+    {
+        if (text == null)
+            return;
+
+        Color color = text.color;
+        color.a = alpha;
+        text.color = color;
     }
 
     void UpdateHudState()
@@ -946,7 +1061,7 @@ public class RunHudUI : MonoBehaviour
         tmp.color = color;
         tmp.alignment = alignment;
         tmp.textWrappingMode = TextWrappingModes.NoWrap;
-        TMP_FontAsset font = uiFont != null ? uiFont : TMP_Settings.defaultFontAsset;
+        TMP_FontAsset font = UIThinDungFont.Get(uiFont);
         if (font != null) tmp.font = font;
         return tmp;
     }

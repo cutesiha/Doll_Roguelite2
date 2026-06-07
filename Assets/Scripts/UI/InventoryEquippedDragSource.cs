@@ -42,6 +42,7 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
         TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
         label.text = inv.equipped[index].SlotName();
         label.fontSize = 18f;
+        label.font = UIThinDungFont.Get();
         label.color = Color.white;
         label.alignment = TextAlignmentOptions.Center;
         label.raycastTarget = false;

@@ -14,7 +14,6 @@ public class ExitRoomUI : MonoBehaviour
 
     void BuildButton()
     {
-        // Canvas
         var canvasGO = new GameObject("ExitRoomCanvas");
         var canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -22,7 +21,6 @@ public class ExitRoomUI : MonoBehaviour
         canvasGO.AddComponent<CanvasScaler>();
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // 버튼
         var btnGO = new GameObject("ExitButton");
         btnGO.transform.SetParent(canvasGO.transform, false);
 
@@ -31,33 +29,35 @@ public class ExitRoomUI : MonoBehaviour
 
         var btn = btnGO.AddComponent<Button>();
         btn.targetGraphic = img;
-        var cols = btn.colors;
-        cols.highlightedColor = new Color(1f, 0.35f, 0.35f, 1f);
-        cols.pressedColor     = new Color(0.5f, 0.05f, 0.05f, 1f);
-        btn.colors = cols;
+        ColorBlock colors = btn.colors;
+        colors.highlightedColor = new Color(1f, 0.35f, 0.35f, 1f);
+        colors.pressedColor = new Color(0.5f, 0.05f, 0.05f, 1f);
+        btn.colors = colors;
         btn.onClick.AddListener(ExitRoom);
 
-        // 오른쪽 위 고정
         var rt = btnGO.GetComponent<RectTransform>();
-        rt.anchorMin        = new Vector2(1f, 1f);
-        rt.anchorMax        = new Vector2(1f, 1f);
-        rt.pivot            = new Vector2(1f, 1f);
-        rt.sizeDelta        = new Vector2(60f, 60f);
+        rt.anchorMin = new Vector2(1f, 1f);
+        rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot = new Vector2(1f, 1f);
+        rt.sizeDelta = new Vector2(60f, 60f);
         rt.anchoredPosition = new Vector2(-20f, -20f);
 
-        // X 텍스트
         var labelGO = new GameObject("Label");
         labelGO.transform.SetParent(btnGO.transform, false);
-        var tmp = labelGO.AddComponent<TextMeshProUGUI>();
-        tmp.text      = "X";
-        tmp.fontSize  = 30;
-        tmp.fontStyle = FontStyles.Bold;
-        tmp.color     = Color.white;
-        tmp.alignment = TextAlignmentOptions.Center;
+
+        var label = labelGO.AddComponent<TextMeshProUGUI>();
+        label.text = "X";
+        label.fontSize = 30f;
+        label.font = UIThinDungFont.Get();
+        label.fontStyle = FontStyles.Bold;
+        label.color = Color.white;
+        label.alignment = TextAlignmentOptions.Center;
+
         var labelRt = labelGO.GetComponent<RectTransform>();
         labelRt.anchorMin = Vector2.zero;
         labelRt.anchorMax = Vector2.one;
-        labelRt.offsetMin = labelRt.offsetMax = Vector2.zero;
+        labelRt.offsetMin = Vector2.zero;
+        labelRt.offsetMax = Vector2.zero;
     }
 
     void ExitRoom()

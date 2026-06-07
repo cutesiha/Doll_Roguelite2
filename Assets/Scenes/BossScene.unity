@@ -405,11 +405,11 @@ MonoBehaviour:
   moveSpeed: 5
   missingLegSpeedMultiplier: 0.5
   bodyColor: {r: 0.3, g: 0.6, b: 1, a: 1}
-  spriteRenderer: {fileID: 0}
-  upSprite: {fileID: 0}
-  downSprite: {fileID: 0}
-  leftSprite: {fileID: 0}
-  rightSprite: {fileID: 0}
+  spriteRenderer: {fileID: 211311193}
+  upSprite: {fileID: 21300000, guid: dc4f87adf8a30f2408fdf9fc5652f7e5, type: 3}
+  downSprite: {fileID: 21300000, guid: 490ca93b79508d0448588d1ae069cff7, type: 3}
+  leftSprite: {fileID: 21300000, guid: 5ecf4f84ff71725468866bba5d71272c, type: 3}
+  rightSprite: {fileID: 21300000, guid: ff51d710ccf359c4c965a7fe3c21a430, type: 3}
 --- !u!61 &211311188
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -547,7 +547,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -3624963018517930303, guid: 3506d2e69ca72334499f01769041b13e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 490ca93b79508d0448588d1ae069cff7, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -1855,7 +1855,6 @@ MonoBehaviour:
   maxHp: 10
   bodyColor: {r: 1, g: 0.1254902, b: 0.57254905, a: 1}
   moveSpeed: 1
-  detectionRange: 8
 --- !u!58 &1730252288
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -2023,6 +2022,10 @@ MonoBehaviour:
   enemyPrefab: {fileID: 0}
   minEnemies: 1
   maxEnemies: 1
+  waveCount: 3
+  spawnBlinkCount: 6
+  spawnBlinkInterval: 0.12
+  nextWaveDelay: 0.75
   spawnRange: {x: 4, y: 3}
   randomizeEnemyPositions: 0
   doors:

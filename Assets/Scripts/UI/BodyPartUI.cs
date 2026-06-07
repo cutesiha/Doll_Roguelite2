@@ -68,7 +68,8 @@ public class BodyPartUI : MonoBehaviour
 
         label.fontSize = fontSize;
         label.color    = textColor;
-        if (font != null) label.font = font;
+        TMP_FontAsset fontAsset = UIThinDungFont.Get(font);
+        if (fontAsset != null) label.font = fontAsset;
 
         var rt = label.GetComponent<RectTransform>();
         rt.anchoredPosition = anchoredPos;

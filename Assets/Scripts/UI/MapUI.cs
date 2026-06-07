@@ -449,7 +449,7 @@ public class MapUI : MonoBehaviour
     {
         if (tmp == null) return;
 
-        TMP_FontAsset fontAsset = mapTextFont != null ? mapTextFont : TMP_Settings.defaultFontAsset;
+        TMP_FontAsset fontAsset = UIThinDungFont.Get(mapTextFont);
         if (fontAsset == null) return;
 
         tmp.font = fontAsset;

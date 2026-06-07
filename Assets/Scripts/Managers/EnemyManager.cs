@@ -18,11 +18,16 @@ public class EnemyManager : MonoBehaviour
     {
         activeEnemies = new List<EnemyBase>(enemies);
         onRoomCleared = onCleared;
+
+        if (activeEnemies.Count == 0)
+            onRoomCleared?.Invoke();
     }
 
     public void OnEnemyDied(EnemyBase enemy)
     {
-        activeEnemies.Remove(enemy);
+        if (!activeEnemies.Remove(enemy))
+            return;
+
         if (activeEnemies.Count == 0)
             onRoomCleared?.Invoke();
     }
