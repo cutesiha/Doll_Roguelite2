@@ -293,6 +293,7 @@ MonoBehaviour:
   attackCooldown: 0.3
   attackSize: {x: 0.8, y: 0.8}
   flashDuration: 0.12
+  attackFacingLockDuration: 0.25
   pressTimeout: 0.5
   requiredPressCount: 3
 --- !u!114 &211311187
@@ -311,10 +312,10 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   bodyColor: {r: 0.3, g: 0.6, b: 1, a: 1}
   spriteRenderer: {fileID: 211311193}
-  upSprite: {fileID: 21300000, guid: dc4f87adf8a30f2408fdf9fc5652f7e5, type: 3}
-  downSprite: {fileID: 21300000, guid: 490ca93b79508d0448588d1ae069cff7, type: 3}
-  leftSprite: {fileID: 21300000, guid: 5ecf4f84ff71725468866bba5d71272c, type: 3}
-  rightSprite: {fileID: 21300000, guid: ff51d710ccf359c4c965a7fe3c21a430, type: 3}
+  upSprite: {fileID: 21300000, guid: 5d68198666cc7db4583ed20607359423, type: 3}
+  downSprite: {fileID: 21300000, guid: 88158f74bb94e454fa8721b2193b7098, type: 3}
+  leftSprite: {fileID: 21300000, guid: 474a29d0c1de385418aed8fd71d71052, type: 3}
+  rightSprite: {fileID: 21300000, guid: 44cac0d4aaa2ad64ea2f61b1a1821c75, type: 3}
 --- !u!61 &211311188
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1290,7 +1291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac0bee0b95eefe44c947442f8ee362cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyChaser
-  maxHp: 3
+  maxHp: 2
   bodyColor: {r: 0.93333334, g: 0.28573322, b: 0, a: 1}
   moveSpeed: 1
 --- !u!58 &1009779783
@@ -1712,7 +1713,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac0bee0b95eefe44c947442f8ee362cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyChaser
-  maxHp: 3
+  maxHp: 2
   bodyColor: {r: 0.93333334, g: 0.28573322, b: 0, a: 1}
   moveSpeed: 1
 --- !u!58 &1730252288
@@ -1966,7 +1967,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: -100
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: f830d1b04b98c2b4ca5457be78b47fab, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9adeac779e373494db6aa36be83686b1, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -2439,6 +2440,10 @@ PrefabInstance:
     - target: {fileID: 708916344383475794, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
       propertyPath: m_Name
       value: RunHudCanvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 708916344383475794, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 790736804410809461, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
       propertyPath: m_fontMaterial
@@ -2913,6 +2918,7 @@ MonoBehaviour:
   nextWaveDelay: 0.75
   spawnRange: {x: 4, y: 3}
   randomizeEnemyPositions: 1
+  spawnPositionAttempts: 30
   doors:
   - {fileID: 517243970}
   doorLine: {x: 8, y: 4}

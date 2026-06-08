@@ -14,6 +14,7 @@ public class Room : MonoBehaviour
     [SerializeField] float nextWaveDelay = 0.75f;
     [SerializeField] Vector2 spawnRange = new Vector2(4f, 3f);
     [SerializeField] bool randomizeEnemyPositions = true;
+    [SerializeField] int spawnPositionAttempts = 30;
 
     [SerializeField] GameObject[] doors;
     [SerializeField] Vector2 doorLine = new Vector2(8f, 4f);
@@ -40,6 +41,9 @@ public class Room : MonoBehaviour
         }
 
         bool useWaves = IsRoomScene();
+        if (useWaves)
+            yield return null;
+
         int totalWaves = useWaves ? Mathf.Max(1, waveCount) : 1;
         for (int wave = 1; wave <= totalWaves; wave++)
         {
@@ -68,10 +72,155 @@ public class Room : MonoBehaviour
         return SceneManager.GetActiveScene().name.StartsWith("RoomScene");
     }
 
-    Vector3 RandomPos() => new Vector3(
-        Random.Range(-spawnRange.x, spawnRange.x),
-        Random.Range(-spawnRange.y, spawnRange.y),
-        0f);
+    Vector3 RandomPos(Vector2 enemySize)
+    {
+        Rect playerExclusionRect = default;
+        bool hasPlayerExclusion = IsRoomScene() && TryGetPlayerExclusionRect(enemySize, out playerExclusionRect);
+
+        if (IsRoomScene() && TryGetCameraSpawnRect(enemySize, out Rect cameraRect))
+        {
+            int attempts = Mathf.Max(1, spawnPositionAttempts);
+            for (int i = 0; i < attempts; i++)
+            {
+                Vector3 position = new Vector3(
+                    Random.Range(cameraRect.xMin, cameraRect.xMax),
+                    Random.Range(cameraRect.yMin, cameraRect.yMax),
+                    0f);
+
+                if (!hasPlayerExclusion || !playerExclusionRect.Contains(position))
+                    return position;
+            }
+
+            if (hasPlayerExclusion)
+                return PushSpawnBesidePlayer(cameraRect, playerExclusionRect);
+        }
+
+        int fallbackAttempts = Mathf.Max(1, spawnPositionAttempts);
+        for (int i = 0; i < fallbackAttempts; i++)
+        {
+            Vector3 position = new Vector3(
+                Random.Range(-spawnRange.x, spawnRange.x),
+                Random.Range(-spawnRange.y, spawnRange.y),
+                0f);
+
+            if (!hasPlayerExclusion || !playerExclusionRect.Contains(position))
+                return position;
+        }
+
+        return hasPlayerExclusion
+            ? new Vector3(playerExclusionRect.xMax, playerExclusionRect.center.y, 0f)
+            : Vector3.zero;
+    }
+
+    bool TryGetPlayerExclusionRect(Vector2 enemySize, out Rect rect)
+    {
+        rect = default;
+
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player == null)
+            return false;
+
+        Bounds bounds = new Bounds(player.transform.position, Vector3.one);
+        bool hasBounds = false;
+
+        Collider2D[] colliders = player.GetComponentsInChildren<Collider2D>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i] == null || !colliders[i].enabled)
+                continue;
+
+            if (!hasBounds)
+            {
+                bounds = colliders[i].bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(colliders[i].bounds);
+            }
+        }
+
+        if (!hasBounds)
+        {
+            Renderer[] renderers = player.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] == null || !renderers[i].enabled)
+                    continue;
+
+                if (!hasBounds)
+                {
+                    bounds = renderers[i].bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderers[i].bounds);
+                }
+            }
+        }
+
+        Vector2 size = hasBounds ? bounds.size : Vector2.one;
+        Vector2 halfSize = new Vector2(
+            Mathf.Max(0.25f, size.x * 0.5f + enemySize.x * 0.5f),
+            Mathf.Max(0.25f, size.y * 0.5f + enemySize.y * 0.5f));
+        Vector2 center = bounds.center;
+
+        rect = Rect.MinMaxRect(
+            center.x - halfSize.x,
+            center.y - halfSize.y,
+            center.x + halfSize.x,
+            center.y + halfSize.y);
+        return true;
+    }
+
+    Vector3 PushSpawnBesidePlayer(Rect spawnRect, Rect playerExclusionRect)
+    {
+        bool hasLeft = playerExclusionRect.xMin > spawnRect.xMin;
+        bool hasRight = playerExclusionRect.xMax < spawnRect.xMax;
+        bool useLeft = hasLeft && (!hasRight || playerExclusionRect.center.x - spawnRect.xMin > spawnRect.xMax - playerExclusionRect.center.x);
+
+        float x;
+        if (useLeft)
+            x = Random.Range(spawnRect.xMin, playerExclusionRect.xMin);
+        else if (hasRight)
+            x = Random.Range(playerExclusionRect.xMax, spawnRect.xMax);
+        else
+            x = Mathf.Clamp(playerExclusionRect.center.x, spawnRect.xMin, spawnRect.xMax);
+
+        float y = Mathf.Clamp(playerExclusionRect.center.y, spawnRect.yMin, spawnRect.yMax);
+        return new Vector3(x, y, 0f);
+    }
+
+    bool TryGetCameraSpawnRect(Vector2 enemySize, out Rect rect)
+    {
+        rect = default;
+
+        Camera mainCamera = Camera.main;
+        if (mainCamera == null || !mainCamera.orthographic)
+            return false;
+
+        float halfHeight = mainCamera.orthographicSize;
+        float halfWidth = halfHeight * mainCamera.aspect;
+        Vector3 center = mainCamera.transform.position;
+
+        float paddingX = Mathf.Max(0.25f, enemySize.x * 0.5f);
+        float paddingY = Mathf.Max(0.25f, enemySize.y * 0.5f);
+
+        float minX = center.x - halfWidth + paddingX;
+        float maxX = center.x + halfWidth - paddingX;
+        float minY = center.y - halfHeight + paddingY;
+        float maxY = center.y + halfHeight - paddingY;
+
+        if (minX > maxX)
+            minX = maxX = center.x;
+
+        if (minY > maxY)
+            minY = maxY = center.y;
+
+        rect = Rect.MinMaxRect(minX, minY, maxX, maxY);
+        return true;
+    }
 
     void PrepareSceneEnemyTemplate()
     {
@@ -105,11 +254,11 @@ public class Room : MonoBehaviour
         int count = Random.Range(minCount, maxCount + 1);
         GameObject template = EnemyTemplate();
 
+        Vector2 markerSize = GetEnemyMarkerSize(template);
         List<Vector3> positions = new List<Vector3>(count);
         for (int i = 0; i < count; i++)
-            positions.Add(randomizeEnemyPositions ? RandomPos() : template.transform.position);
+            positions.Add(randomizeEnemyPositions ? RandomPos(markerSize) : template.transform.position);
 
-        Vector2 markerSize = GetEnemyMarkerSize(template);
         yield return StartCoroutine(BlinkSpawnPositions(positions, markerSize));
 
         for (int i = 0; i < positions.Count; i++)

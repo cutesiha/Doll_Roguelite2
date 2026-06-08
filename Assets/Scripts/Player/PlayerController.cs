@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     Rigidbody2D rb;
     Vector2 moveInput;
     FacingDirection facingDirection = FacingDirection.Down;
+    float facingLockTimer;
 
     enum FacingDirection
     {
@@ -66,7 +67,9 @@ public class PlayerController : MonoBehaviour
         if (upPressed) v += 1f;
         moveInput = new Vector2(h, v).normalized;
 
-        if (moveInput != Vector2.zero)
+        facingLockTimer -= Time.deltaTime;
+
+        if (moveInput != Vector2.zero && facingLockTimer <= 0f)
             SetFacingFromMoveInput();
     }
 
@@ -82,8 +85,15 @@ public class PlayerController : MonoBehaviour
 
     public void FaceDirection(Vector2 direction)
     {
+        FaceDirection(direction, 0f);
+    }
+
+    public void FaceDirection(Vector2 direction, float lockDuration)
+    {
         if (direction == Vector2.zero)
             return;
+
+        facingLockTimer = Mathf.Max(facingLockTimer, lockDuration);
 
         if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
             SetFacing(direction.x < 0f ? FacingDirection.Left : FacingDirection.Right);

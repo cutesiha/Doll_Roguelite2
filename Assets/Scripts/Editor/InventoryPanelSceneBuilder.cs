@@ -8,6 +8,7 @@ using UnityEngine.UI;
 
 public static class InventoryPanelSceneBuilder
 {
+    const int StorageSlotCount = 2;
     static TMP_FontAsset font;
 
     [MenuItem("Game/Inventory/Rebuild Scene Inventory Panel")]
@@ -209,15 +210,15 @@ public static class InventoryPanelSceneBuilder
         Text(parent, "LeftHeader", "[인벤토리 슬롯]", 24f, accentColor, TextAlignmentOptions.Center,
             V2(0f, 1f), V2(1f, 1f), V2(0.5f, 1f), V2(0f, -54f), V2(0f, 48f));
 
-        storageImgs = new Image[4];
-        storageBtns = new Button[4];
-        storageNames = new TextMeshProUGUI[4];
-        storageHps = new TextMeshProUGUI[4];
+        storageImgs = new Image[StorageSlotCount];
+        storageBtns = new Button[StorageSlotCount];
+        storageNames = new TextMeshProUGUI[StorageSlotCount];
+        storageHps = new TextMeshProUGUI[StorageSlotCount];
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < StorageSlotCount; i++)
         {
             float x = i % 2 == 0 ? -112f : 112f;
-            float y = i < 2 ? -122f : -278f;
+            float y = -122f;
             GameObject slot = Rect(parent, "StorageSlot_" + (i + 1), V2(0.5f, 1f), V2(0.5f, 1f), V2(0.5f, 1f), V2(x, y), V2(194f, 126f));
             storageImgs[i] = Image(slot, emptyColor);
             storageBtns[i] = AddButton(slot, storageImgs[i], new Color(0.42f, 0.38f, 0.48f, 1f));

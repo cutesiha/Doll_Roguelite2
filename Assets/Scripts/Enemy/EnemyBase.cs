@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class EnemyBase : MonoBehaviour
 {
-    [SerializeField] protected int maxHp = 3;
+    [SerializeField] protected int maxHp = 2;
     [SerializeField] Color bodyColor = new Color(0.45f, 0.45f, 0.45f, 1f);
     protected int currentHp;
 

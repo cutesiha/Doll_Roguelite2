@@ -9,6 +9,7 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] float attackCooldown = 0.3f;
     [SerializeField] Vector2 attackSize = new Vector2(1.2f, 1.2f);
     [SerializeField] float flashDuration = 0.12f;
+    [SerializeField] float attackFacingLockDuration = 0.25f;
 
     float cooldownTimer;
     float pendingKeyTimer;
@@ -67,7 +68,7 @@ public class PlayerAttack : MonoBehaviour
             if (!kb[dirKeys[i]].wasPressedThisFrame)
                 continue;
 
-            playerController?.FaceDirection(dirVecs[i]);
+            playerController?.FaceDirection(dirVecs[i], attackFacingLockDuration);
 
             if (needsMultiplePress)
             {

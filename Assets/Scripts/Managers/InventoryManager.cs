@@ -16,8 +16,8 @@ public class InventoryManager : MonoBehaviour
 
     // indexed by (int)BodySlot — null means not equipped
     public BodyPart[] equipped  = new BodyPart[6];
-    // 4 storage slots — null means empty
-    public BodyPart[] storage   = new BodyPart[4];
+    // 2 storage slots — null means empty
+    public BodyPart[] storage   = new BodyPart[2];
 
     public event Action OnInventoryChanged;
 

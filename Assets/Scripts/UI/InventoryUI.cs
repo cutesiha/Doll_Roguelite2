@@ -27,11 +27,11 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] GameObject _panel;
     [SerializeField] Button _closeButton;
 
-    [Header("보관 슬롯 ×4")]
-    [SerializeField] Image[]           _storageImg  = new Image[4];
-    [SerializeField] Button[]          _storageBtn  = new Button[4];
-    [SerializeField] TextMeshProUGUI[] _storageName = new TextMeshProUGUI[4];
-    [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[4];
+    [Header("보관 슬롯 ×2")]
+    [SerializeField] Image[]           _storageImg  = new Image[2];
+    [SerializeField] Button[]          _storageBtn  = new Button[2];
+    [SerializeField] TextMeshProUGUI[] _storageName = new TextMeshProUGUI[2];
+    [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[2];
 
     [Header("캐릭터 부위 (EyeLeft=0 ~ LegRight=5)")]
     [SerializeField] Image[]  _charImg = new Image[6];
@@ -260,6 +260,7 @@ public class InventoryUI : MonoBehaviour
 
         // 보관 슬롯
         int storageCount = Mathf.Min(inv.storage.Length, _storageImg.Length, _storageName.Length, _storageHp.Length);
+        SetExtraStorageSlotsVisible(storageCount);
         for (int i = 0; i < storageCount; i++)
         {
             var p = inv.storage[i];
@@ -302,6 +303,34 @@ public class InventoryUI : MonoBehaviour
 
         RefreshSewingStatus(inv);
         ApplyCharacterBaseSprites();
+    }
+
+    void SetExtraStorageSlotsVisible(int visibleCount)
+    {
+        int maxCount = Mathf.Max(_storageImg.Length, _storageBtn.Length, _storageName.Length, _storageHp.Length);
+        for (int i = 0; i < maxCount; i++)
+        {
+            GameObject slot = StorageSlotRoot(i);
+            if (slot != null)
+                slot.SetActive(i < visibleCount);
+        }
+    }
+
+    GameObject StorageSlotRoot(int index)
+    {
+        if (index < _storageImg.Length && _storageImg[index] != null)
+            return _storageImg[index].gameObject;
+
+        if (index < _storageBtn.Length && _storageBtn[index] != null)
+            return _storageBtn[index].gameObject;
+
+        if (index < _storageName.Length && _storageName[index] != null)
+            return _storageName[index].transform.parent != null ? _storageName[index].transform.parent.gameObject : _storageName[index].gameObject;
+
+        if (index < _storageHp.Length && _storageHp[index] != null)
+            return _storageHp[index].transform.parent != null ? _storageHp[index].transform.parent.gameObject : _storageHp[index].gameObject;
+
+        return null;
     }
 
     void EnsureCharacterBaseImages()
