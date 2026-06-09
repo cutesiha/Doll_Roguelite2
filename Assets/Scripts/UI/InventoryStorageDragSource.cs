@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -27,24 +26,23 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         if (rootCanvas == null)
             return;
 
+        Image sourceImage = GetComponent<Image>();
+
         GameObject go = new GameObject("InventoryDragGhost");
         go.transform.SetParent(rootCanvas.transform, false);
         ghost = go.AddComponent<RectTransform>();
-        ghost.sizeDelta = new Vector2(170f, 70f);
+        ghost.sizeDelta = SourceSize();
 
         Image image = go.AddComponent<Image>();
-        image.color = new Color(0.23f, 0.22f, 0.28f, 0.92f);
+        image.raycastTarget = false;
+        image.preserveAspect = true;
+        image.color = new Color(1f, 1f, 1f, 0.94f);
+        image.sprite = sourceImage != null && sourceImage.sprite != null
+            ? sourceImage.sprite
+            : InventoryUI.GetPartSprite(inv.storage[storageIndex].slot);
 
         CanvasGroup group = go.AddComponent<CanvasGroup>();
         group.blocksRaycasts = false;
-
-        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
-        label.text = inv.storage[storageIndex].SlotName();
-        label.fontSize = 18f;
-        label.font = UIThinDungFont.Get();
-        label.color = Color.white;
-        label.alignment = TextAlignmentOptions.Center;
-        label.raycastTarget = false;
 
         MoveGhost(eventData);
     }
@@ -68,5 +66,17 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         RectTransform canvasRect = rootCanvas.transform as RectTransform;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, eventData.position, eventData.pressEventCamera, out Vector2 localPoint))
             ghost.anchoredPosition = localPoint;
+    }
+
+    Vector2 SourceSize()
+    {
+        RectTransform sourceRect = transform as RectTransform;
+        if (sourceRect == null)
+            return new Vector2(170f, 170f);
+
+        Vector2 size = sourceRect.rect.size;
+        if (size.x <= 0f || size.y <= 0f)
+            size = sourceRect.sizeDelta;
+        return new Vector2(Mathf.Max(60f, size.x), Mathf.Max(60f, size.y));
     }
 }

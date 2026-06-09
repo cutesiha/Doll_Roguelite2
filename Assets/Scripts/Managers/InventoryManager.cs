@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [DefaultExecutionOrder(0)]
 public class InventoryManager : MonoBehaviour
@@ -27,6 +28,27 @@ public class InventoryManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
         InitEquipped();
+    }
+
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void Start()
+    {
+        SyncBodyState();
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        SyncBodyState();
+        OnInventoryChanged?.Invoke();
     }
 
     void InitEquipped()
@@ -91,12 +113,32 @@ public class InventoryManager : MonoBehaviour
         var s = BodyManager.Instance?.State;
         if (s == null) return;
 
-        s.eyeLeft  = equipped[(int)BodySlot.EyeLeft]  != null;
-        s.eyeRight = equipped[(int)BodySlot.EyeRight] != null;
-        s.armLeft  = equipped[(int)BodySlot.ArmLeft]  != null;
-        s.armRight = equipped[(int)BodySlot.ArmRight] != null;
-        s.legLeft  = equipped[(int)BodySlot.LegLeft]  != null;
-        s.legRight = equipped[(int)BodySlot.LegRight] != null;
+        BodyState snapshot = GetBodyStateSnapshot();
+        s.eyeLeft  = snapshot.eyeLeft;
+        s.eyeRight = snapshot.eyeRight;
+        s.armLeft  = snapshot.armLeft;
+        s.armRight = snapshot.armRight;
+        s.legLeft  = snapshot.legLeft;
+        s.legRight = snapshot.legRight;
+    }
+
+    public bool IsEquipped(BodySlot slot)
+    {
+        int index = (int)slot;
+        return index >= 0 && index < equipped.Length && equipped[index] != null;
+    }
+
+    public BodyState GetBodyStateSnapshot()
+    {
+        return new BodyState
+        {
+            eyeLeft = IsEquipped(BodySlot.EyeLeft),
+            eyeRight = IsEquipped(BodySlot.EyeRight),
+            armLeft = IsEquipped(BodySlot.ArmLeft),
+            armRight = IsEquipped(BodySlot.ArmRight),
+            legLeft = IsEquipped(BodySlot.LegLeft),
+            legRight = IsEquipped(BodySlot.LegRight)
+        };
     }
 
     int FreeStorageIndex()

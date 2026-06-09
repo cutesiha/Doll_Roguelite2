@@ -52,16 +52,7 @@ public class MapUI : MonoBehaviour
     // ── 조건 판정 ────────────────────────────────────────────────────────
     static bool CanPass(MapNode node, BodyState s)
     {
-        if (node.roomType != RoomType.ConditionCombat) return true;
-        if (s == null) s = new BodyState();
-        switch (node.conditionType)
-        {
-            case NodeConditionType.NoLeftArm:  return !s.armLeft;
-            case NodeConditionType.NoRightEye: return !s.eyeRight;
-            case NodeConditionType.NoLeftLeg:  return !s.legLeft;
-            case NodeConditionType.NoRightLeg: return !s.legRight;
-            default:                           return true;
-        }
+        return BodyConditionUtility.CanPass(node, s);
     }
 
     // 맵 라벨: 방 타입 + 조건 (2줄)
@@ -287,8 +278,7 @@ public class MapUI : MonoBehaviour
             var node = kvp.Key;
             if (node.state != NodeState.Visible) break; // Visible 노드만 판정
 
-            var bodyState = BodyManager.Instance?.State;
-            bool pass = CanPass(node, bodyState);
+            bool pass = BodyConditionUtility.CanPass(node);
 
             Vector3 feedbackPos = new Vector3(node.position.x, node.position.y + nodeRadius + 0.6f, -0.2f);
             StartCoroutine(ShowConditionResultAndEnterRoom(node, feedbackPos, pass));

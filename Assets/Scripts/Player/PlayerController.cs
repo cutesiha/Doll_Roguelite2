@@ -76,7 +76,7 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         float speed = moveSpeed;
-        var state = BodyManager.Instance != null ? BodyManager.Instance.State : null;
+        var state = BodyConditionUtility.CurrentState();
         if (state != null && (!state.legLeft || !state.legRight))
             speed *= missingLegSpeedMultiplier;
 

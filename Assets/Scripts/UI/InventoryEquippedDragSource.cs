@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -9,6 +8,8 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
 
     RectTransform ghost;
     Canvas rootCanvas;
+    Image sourceImage;
+    Color sourceColor;
 
     public BodySlot BodySlot => bodySlot;
 
@@ -28,24 +29,28 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
         if (rootCanvas == null)
             return;
 
+        sourceImage = GetComponent<Image>();
+        if (sourceImage != null)
+        {
+            sourceColor = sourceImage.color;
+            sourceImage.color = new Color(0.04f, 0.035f, 0.03f, 0.48f);
+        }
+
         GameObject go = new GameObject("EquippedPartDragGhost");
         go.transform.SetParent(rootCanvas.transform, false);
         ghost = go.AddComponent<RectTransform>();
-        ghost.sizeDelta = new Vector2(170f, 70f);
+        ghost.sizeDelta = SourceSize();
 
         Image image = go.AddComponent<Image>();
-        image.color = new Color(0.25f, 0.20f, 0.18f, 0.92f);
+        image.raycastTarget = false;
+        image.preserveAspect = true;
+        image.color = new Color(1f, 1f, 1f, 0.94f);
+        image.sprite = sourceImage != null && sourceImage.sprite != null
+            ? sourceImage.sprite
+            : InventoryUI.GetPartSprite(bodySlot);
 
         CanvasGroup group = go.AddComponent<CanvasGroup>();
         group.blocksRaycasts = false;
-
-        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
-        label.text = inv.equipped[index].SlotName();
-        label.fontSize = 18f;
-        label.font = UIThinDungFont.Get();
-        label.color = Color.white;
-        label.alignment = TextAlignmentOptions.Center;
-        label.raycastTarget = false;
 
         MoveGhost(eventData);
     }
@@ -59,6 +64,25 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
     {
         if (ghost != null)
             Destroy(ghost.gameObject);
+
+        var inv = InventoryManager.Instance;
+        int index = (int)bodySlot;
+        if (sourceImage != null)
+            sourceImage.color = inv != null && index >= 0 && index < inv.equipped.Length && inv.equipped[index] == null
+                ? new Color(0.04f, 0.035f, 0.03f, 0.48f)
+                : sourceColor;
+    }
+
+    Vector2 SourceSize()
+    {
+        RectTransform sourceRect = transform as RectTransform;
+        if (sourceRect == null)
+            return new Vector2(170f, 170f);
+
+        Vector2 size = sourceRect.rect.size;
+        if (size.x <= 0f || size.y <= 0f)
+            size = sourceRect.sizeDelta;
+        return new Vector2(Mathf.Max(60f, size.x), Mathf.Max(60f, size.y));
     }
 
     void MoveGhost(PointerEventData eventData)

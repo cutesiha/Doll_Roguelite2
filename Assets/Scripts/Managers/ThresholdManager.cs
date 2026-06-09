@@ -46,7 +46,7 @@ public class ThresholdManager : MonoBehaviour
         if (leftOverlay == null || rightOverlay == null)
             return;
 
-        BodyState state = bodyManager != null ? bodyManager.State : new BodyState();
+        BodyState state = BodyConditionUtility.CurrentState();
 
         bool showLeft  = !state.eyeLeft  && state.eyeRight;
         bool showRight = !state.eyeRight && state.eyeLeft;

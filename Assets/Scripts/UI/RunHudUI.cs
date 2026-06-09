@@ -725,7 +725,7 @@ public class RunHudUI : MonoBehaviour
 
         if (bodyPips != null)
         {
-            BodyState state = BodyManager.Instance != null ? BodyManager.Instance.State : null;
+            BodyState state = BodyConditionUtility.CurrentState();
             int remaining = state == null || state.body ? bodyPips.maxPips : 0;
             ApplyPipColors(bodyPips.pips, remaining, bodyPips.maxPips);
         }

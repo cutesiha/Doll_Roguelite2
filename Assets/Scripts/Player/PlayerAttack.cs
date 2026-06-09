@@ -60,7 +60,7 @@ public class PlayerAttack : MonoBehaviour
 
         if (cooldownTimer > 0f) return;
 
-        BodyState bodyState = BodyManager.Instance != null ? BodyManager.Instance.State : null;
+        BodyState bodyState = BodyConditionUtility.CurrentState();
         bool needsMultiplePress = bodyState != null && bodyState.armLeft != bodyState.armRight;
 
         for (int i = 0; i < dirKeys.Length; i++)

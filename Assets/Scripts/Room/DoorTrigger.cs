@@ -58,7 +58,7 @@ public class DoorTrigger : MonoBehaviour
         if (!playerNearby || !isOpen || targetNode == null) return;
 
         var kb = Keyboard.current;
-        bool canPass = CanPass(targetNode, BodyManager.Instance?.State);
+        bool canPass = BodyConditionUtility.CanPass(targetNode);
         ShowScreenPrompt(this, canPass);
 
         if (kb == null || (!kb.enterKey.wasPressedThisFrame && !kb.numpadEnterKey.wasPressedThisFrame))
@@ -84,7 +84,7 @@ public class DoorTrigger : MonoBehaviour
         if (!other.CompareTag("Player")) return;
         playerNearby = true;
         if (isOpen && targetNode != null)
-            ShowScreenPrompt(this, CanPass(targetNode, BodyManager.Instance?.State));
+            ShowScreenPrompt(this, BodyConditionUtility.CanPass(targetNode));
     }
 
     void OnTriggerExit2D(Collider2D other)
@@ -267,17 +267,7 @@ public class DoorTrigger : MonoBehaviour
 
     static bool CanPass(MapNode node, BodyState state)
     {
-        if (node.roomType != RoomType.ConditionCombat) return true;
-        if (state == null) state = new BodyState();
-
-        switch (node.conditionType)
-        {
-            case NodeConditionType.NoLeftArm: return !state.armLeft;
-            case NodeConditionType.NoRightEye: return !state.eyeRight;
-            case NodeConditionType.NoLeftLeg: return !state.legLeft;
-            case NodeConditionType.NoRightLeg: return !state.legRight;
-            default: return true;
-        }
+        return BodyConditionUtility.CanPass(node, state);
     }
 
     string SceneNameFor(MapNode node)

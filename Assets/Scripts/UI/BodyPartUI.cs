@@ -86,9 +86,7 @@ public class BodyPartUI : MonoBehaviour
     {
         if (label == null) return;
 
-        BodyState s = BodyManager.Instance != null
-            ? BodyManager.Instance.State
-            : new BodyState();
+        BodyState s = BodyConditionUtility.CurrentState();
 
         string Y = "O";
         string N = "<color=#FF4444>X</color>";

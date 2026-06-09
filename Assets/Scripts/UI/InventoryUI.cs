@@ -4,6 +4,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 public class InventoryUI : MonoBehaviour
 {
     // Bootstrap: Resources/InventoryCanvas 프리팹을 로드
@@ -36,6 +40,7 @@ public class InventoryUI : MonoBehaviour
     [Header("캐릭터 부위 (EyeLeft=0 ~ LegRight=5)")]
     [SerializeField] Image[]  _charImg = new Image[6];
     [SerializeField] Button[] _charBtn = new Button[6];
+    [SerializeField, Range(0f, 1f)] float partAlphaHitThreshold = 0.1f;
 
     [Header("Character Base Images")]
     [SerializeField] Sprite _baseBodySprite;
@@ -56,6 +61,16 @@ public class InventoryUI : MonoBehaviour
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color CSlot  = new Color(0.88f, 0.48f, 0.24f, 1f);
     static readonly Color CEmpty = new Color(0.17f, 0.15f, 0.13f, 0.20f);
+    static readonly Color CUnequippedPart = new Color(0.04f, 0.035f, 0.03f, 0.48f);
+    static readonly string[] PartSpriteNames =
+    {
+        "eye_left",
+        "eye_right",
+        "arm_left",
+        "arm_right",
+        "leg_left",
+        "leg_right"
+    };
 
     static Color HpColor(BodyPart p)
     {
@@ -68,6 +83,8 @@ public class InventoryUI : MonoBehaviour
     // ── Unity 수명 ─────────────────────────────────────────────────────
     void Awake()
     {
+        EnsurePanelReference();
+        ForceClosePanelImmediate();
         NormalizeCanvasTransform();
         if (transform.parent == null)
             DontDestroyOnLoad(gameObject);
@@ -75,13 +92,15 @@ public class InventoryUI : MonoBehaviour
         WireClicks();
         EnsureToggleHotspot();
         EnsureCharacterBaseImages();
+        ApplyInventoryHitTesting();
+        DisableTextRaycasts();
     }
 
     void Start()
     {
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.OnInventoryChanged += RefreshUI;
-        if (_panel != null) _panel.SetActive(false);
+        ForceClosePanelImmediate();
         RefreshUI();
     }
 
@@ -110,6 +129,7 @@ public class InventoryUI : MonoBehaviour
 
     public void ClosePanel()
     {
+        EnsurePanelReference();
         if (_panel != null) _panel.SetActive(false);
         SetToggleHotspotVisible(false);
     }
@@ -117,9 +137,11 @@ public class InventoryUI : MonoBehaviour
     public void OpenPanel()
     {
         gameObject.SetActive(true);
+        EnsurePanelReference();
         NormalizeCanvasTransform();
         EnsureToggleHotspot();
         EnsureCharacterBaseImages();
+        ApplyInventoryHitTesting();
         if (_panel == null) return;
         transform.SetAsLastSibling();
         _panel.transform.SetAsLastSibling();
@@ -128,21 +150,68 @@ public class InventoryUI : MonoBehaviour
         RefreshUI();
     }
 
+    void DisableTextRaycasts()
+    {
+        SetRaycastTargets(_storageName, false);
+        SetRaycastTargets(_storageHp, false);
+        SetRaycastTargets(_statName, false);
+        SetRaycastTargets(_statHp, false);
+        if (_sewingStatus != null)
+            _sewingStatus.raycastTarget = false;
+    }
+
+    void SetRaycastTargets(TextMeshProUGUI[] labels, bool value)
+    {
+        if (labels == null)
+            return;
+
+        for (int i = 0; i < labels.Length; i++)
+            if (labels[i] != null)
+                labels[i].raycastTarget = value;
+    }
+
     public void TogglePanel()
     {
+        EnsurePanelReference();
         if (_panel == null) return;
         if (_panel.activeSelf) ClosePanel();
         else OpenPanel();
     }
 
-    public bool IsOpen => _panel != null && _panel.activeSelf;
+    public bool IsOpen
+    {
+        get
+        {
+            EnsurePanelReference();
+            return _panel != null && _panel.activeSelf;
+        }
+    }
 
     public bool IsScreenPointInsidePanel(Vector2 screenPoint)
     {
+        EnsurePanelReference();
         if (_panel == null || !_panel.activeSelf) return false;
         RectTransform rect = _panel.transform as RectTransform;
         if (rect == null) return false;
         return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint);
+    }
+
+    void EnsurePanelReference()
+    {
+        if (_panel != null)
+            return;
+
+        Transform panel = FindChildRecursive(transform, "InventoryPanel");
+        if (panel != null)
+            _panel = panel.gameObject;
+    }
+
+    void ForceClosePanelImmediate()
+    {
+        EnsurePanelReference();
+        if (_panel != null)
+            _panel.SetActive(false);
+        SetToggleHotspotVisible(false);
     }
 
     void NormalizeCanvasTransform()
@@ -264,7 +333,17 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < storageCount; i++)
         {
             var p = inv.storage[i];
-            if (_storageImg[i]  != null) _storageImg[i].color   = p != null ? CSlot : CEmpty;
+            if (_storageImg[i] != null)
+            {
+                _storageImg[i].sprite = p != null ? GetPartSprite(p.slot) : null;
+                _storageImg[i].preserveAspect = true;
+                _storageImg[i].color = p != null
+                    ? (_storageImg[i].sprite != null ? Color.white : CSlot)
+                    : CEmpty;
+                ApplyAlphaHitTest(_storageImg[i], _storageImg[i].sprite != null ? partAlphaHitThreshold : 0f);
+            }
+            if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
+                _storageBtn[i].targetGraphic = _storageImg[i];
             if (_storageName[i] != null) _storageName[i].text   = p != null ? p.SlotName() : "빈 슬롯";
             if (_storageHp[i]   != null) _storageHp[i].text     = p != null ? Dots(p) : "";
         }
@@ -275,9 +354,11 @@ public class InventoryUI : MonoBehaviour
             var p = inv.equipped[i];
             if (_charImg[i] != null)
             {
-                _charImg[i].color = _charImg[i].sprite != null
-                    ? Color.white
-                    : (p != null ? HpColor(p) : CEmpty);
+                if (_charImg[i].sprite == null)
+                    _charImg[i].sprite = GetPartSprite((BodySlot)i);
+                _charImg[i].preserveAspect = true;
+                _charImg[i].color = p != null ? Color.white : CUnequippedPart;
+                ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
             }
         }
 
@@ -303,6 +384,89 @@ public class InventoryUI : MonoBehaviour
 
         RefreshSewingStatus(inv);
         ApplyCharacterBaseSprites();
+        ApplyInventoryHitTesting();
+    }
+
+    void ApplyInventoryHitTesting()
+    {
+        for (int i = 0; i < _charImg.Length; i++)
+        {
+            if (_charImg[i] == null)
+                continue;
+
+            if (_charImg[i].sprite == null)
+                _charImg[i].sprite = GetPartSprite((BodySlot)i);
+            ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
+        }
+
+        for (int i = 0; i < _storageImg.Length; i++)
+            if (_storageImg[i] != null)
+                ApplyAlphaHitTest(_storageImg[i], _storageImg[i].sprite != null ? partAlphaHitThreshold : 0f);
+    }
+
+    public static void ApplyAlphaHitTest(Image image, float threshold)
+    {
+        if (image == null)
+            return;
+
+        image.raycastTarget = true;
+
+        float safeThreshold = 0f;
+        if (image.sprite != null && threshold > 0f)
+        {
+            Texture2D texture = image.sprite.texture;
+            if (texture != null && texture.isReadable)
+                safeThreshold = threshold;
+        }
+
+        if (safeThreshold > 0f)
+        {
+            try
+            {
+                image.alphaHitTestMinimumThreshold = safeThreshold;
+            }
+            catch (System.Exception)
+            {
+                // Leave the default rectangular hit area for sprites Unity cannot alpha-test.
+            }
+        }
+
+        Button button = image.GetComponent<Button>();
+        if (button != null)
+            button.targetGraphic = image;
+    }
+
+    public static Sprite GetPartSprite(BodySlot slot)
+    {
+        int index = (int)slot;
+        if (index < 0 || index >= PartSpriteNames.Length)
+            return null;
+
+        string spriteName = PartSpriteNames[index];
+        Sprite sprite = LoadResourceSprite("Sprites/Player/" + spriteName);
+        if (sprite != null)
+            return sprite;
+
+#if UNITY_EDITOR
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/Player/" + spriteName + ".png");
+        for (int i = 0; i < assets.Length; i++)
+            if (assets[i] is Sprite editorSprite)
+                return editorSprite;
+
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Player/" + spriteName + ".png");
+#else
+        return null;
+#endif
+    }
+
+    static Sprite LoadResourceSprite(string resourcePath)
+    {
+        Sprite sprite = Resources.Load<Sprite>(resourcePath);
+        if (sprite != null)
+            return sprite;
+
+        Sprite[] sprites = Resources.LoadAll<Sprite>(resourcePath);
+        return sprites.Length > 0 ? sprites[0] : null;
     }
 
     void SetExtraStorageSlotsVisible(int visibleCount)
