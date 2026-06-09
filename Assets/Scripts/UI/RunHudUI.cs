@@ -1010,7 +1010,7 @@ public class RunHudUI : MonoBehaviour
         button.interactable = false;
 
         Outline outline = nodeGO.AddComponent<Outline>();
-        outline.effectColor = node.state == NodeState.Current ? Color.white : new Color(0f, 0f, 0f, 0.65f);
+        outline.effectColor = IsCurrentOrPending(node) ? Color.white : new Color(0f, 0f, 0f, 0.65f);
         outline.effectDistance = new Vector2(2f, -2f);
 
         TextMeshProUGUI label = Text(nodeGO.transform, "NodeLabel", NodeLabel(node), 16f, Color.white, TextAlignmentOptions.Center);
@@ -1203,6 +1203,7 @@ public class RunHudUI : MonoBehaviour
 
     static Color GetColor(MapNode node)
     {
+        if (MapRunState.PendingNode == node) return ColCurrent;
         if (node.state == NodeState.Current) return ColCurrent;
         if (node.state == NodeState.Cleared) return ColCleared;
         if (node.state == NodeState.RouteOnly) return ColRouteOnly;
@@ -1229,6 +1230,11 @@ public class RunHudUI : MonoBehaviour
         }
 
         return Color.white;
+    }
+
+    static bool IsCurrentOrPending(MapNode node)
+    {
+        return node != null && (node.state == NodeState.Current || MapRunState.PendingNode == node);
     }
 
     class HudPipGroup

@@ -13,7 +13,7 @@ public class DoorTrigger : MonoBehaviour
     [SerializeField] Color openColor = new Color(0.85f, 0.62f, 0.25f, 1f);
     [SerializeField] Color blockedColor = new Color(0.65f, 0.15f, 0.15f, 1f);
     [SerializeField] Color enterPromptColor = new Color(0.46f, 1f, 0.58f, 1f);
-    [SerializeField] Color blockedPromptColor = new Color(1f, 0.26f, 0.24f, 1f);
+    [SerializeField] Color blockedPromptColor = new Color(1f, 0.32f, 0.28f, 1f);
 
     MapNode targetNode;
     bool isOpen;
@@ -64,7 +64,11 @@ public class DoorTrigger : MonoBehaviour
         if (kb == null || (!kb.enterKey.wasPressedThisFrame && !kb.numpadEnterKey.wasPressedThisFrame))
             return;
 
-        if (!canPass) return;
+        if (!canPass)
+        {
+            ShowScreenPrompt(this, false);
+            return;
+        }
 
         if (!MapRunState.BeginRoom(targetNode))
         {
@@ -217,7 +221,7 @@ public class DoorTrigger : MonoBehaviour
         screenPromptLabel = labelGO.AddComponent<TMPro.TextMeshProUGUI>();
         screenPromptLabel.alignment = TMPro.TextAlignmentOptions.Center;
         screenPromptLabel.font = UIThinDungFont.Get();
-        screenPromptLabel.fontSize = 52f;
+        screenPromptLabel.fontSize = 58f;
         screenPromptLabel.fontStyle = TMPro.FontStyles.Bold;
         screenPromptLabel.raycastTarget = false;
         screenPromptLabel.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
@@ -232,7 +236,7 @@ public class DoorTrigger : MonoBehaviour
         screenPromptOwner = owner;
         screenPromptLabel.text = canEnter
             ? "[Enter\uB97C \uB20C\uB7EC \uC785\uC7A5\uD558\uC138\uC694]"
-            : "[\uC870\uAC74\uC5D0 \uBD80\uD569\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4]";
+            : "\uC870\uAC74\uC5D0 \uBD80\uD569\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4";
         screenPromptLabel.color = canEnter ? owner.enterPromptColor : owner.blockedPromptColor;
         screenPromptLabel.gameObject.SetActive(true);
     }
@@ -264,7 +268,7 @@ public class DoorTrigger : MonoBehaviour
     static bool CanPass(MapNode node, BodyState state)
     {
         if (node.roomType != RoomType.ConditionCombat) return true;
-        if (state == null) return true;
+        if (state == null) state = new BodyState();
 
         switch (node.conditionType)
         {

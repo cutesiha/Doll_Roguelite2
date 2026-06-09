@@ -3,6 +3,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 public class StartSceneTransition : MonoBehaviour
 {
     [SerializeField] Button startButton;
@@ -32,10 +36,26 @@ public class StartSceneTransition : MonoBehaviour
 
     public void BeginTransition()
     {
+        BeginTransition(targetSceneName);
+    }
+
+    public void BeginTransition(string sceneName)
+    {
         if (isTransitioning)
             return;
 
+        if (!string.IsNullOrWhiteSpace(sceneName))
+            targetSceneName = sceneName;
+
         StartCoroutine(FadeAndLoad());
+    }
+
+    public void BeginQuit()
+    {
+        if (isTransitioning)
+            return;
+
+        StartCoroutine(FadeAndQuit());
     }
 
     IEnumerator FadeAndLoad()
@@ -43,6 +63,9 @@ public class StartSceneTransition : MonoBehaviour
         isTransitioning = true;
         if (startButton != null)
             startButton.interactable = false;
+
+        if (fadeImage != null)
+            fadeImage.transform.SetAsLastSibling();
 
         float duration = Mathf.Max(0.01f, fadeDuration);
         float elapsed = 0f;
@@ -59,6 +82,37 @@ public class StartSceneTransition : MonoBehaviour
 
         SetFadeAlpha(1f);
         SceneManager.LoadScene(targetSceneName);
+    }
+
+    IEnumerator FadeAndQuit()
+    {
+        isTransitioning = true;
+        if (startButton != null)
+            startButton.interactable = false;
+
+        if (fadeImage != null)
+            fadeImage.transform.SetAsLastSibling();
+
+        float duration = Mathf.Max(0.01f, fadeDuration);
+        float elapsed = 0f;
+        while (true)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float alpha = Mathf.Clamp01(elapsed / duration);
+            SetFadeAlpha(alpha);
+            if (alpha >= 1f)
+                break;
+
+            yield return null;
+        }
+
+        SetFadeAlpha(1f);
+
+#if UNITY_EDITOR
+        EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     void SetFadeAlpha(float alpha)

@@ -312,10 +312,10 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   bodyColor: {r: 0.3, g: 0.6, b: 1, a: 1}
   spriteRenderer: {fileID: 211311193}
-  upSprite: {fileID: 21300000, guid: 5d68198666cc7db4583ed20607359423, type: 3}
-  downSprite: {fileID: 21300000, guid: 88158f74bb94e454fa8721b2193b7098, type: 3}
-  leftSprite: {fileID: 21300000, guid: 474a29d0c1de385418aed8fd71d71052, type: 3}
-  rightSprite: {fileID: 21300000, guid: 44cac0d4aaa2ad64ea2f61b1a1821c75, type: 3}
+  upSprite: {fileID: 21300000, guid: c727c2a5638681142aade69f41d688c1, type: 3}
+  downSprite: {fileID: 21300000, guid: 9f80d95ea6e98c44c8bf084cf41be622, type: 3}
+  leftSprite: {fileID: 21300000, guid: 8af45f27638b96445b38435f7ca046e8, type: 3}
+  rightSprite: {fileID: 21300000, guid: 17efd7a745da1be4481875b69d3a6586, type: 3}
 --- !u!61 &211311188
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -586,9 +586,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorTrigger
   roomSceneName: RoomScene
   bossSceneName: BossScene
+  supplySceneName: PresentScene
+  eventSceneName: EventScene
   lockedColor: {r: 0.25, g: 0.25, b: 0.25, a: 1}
   openColor: {r: 0.85, g: 0.62, b: 0.25, a: 1}
   blockedColor: {r: 0.65, g: 0.15, b: 0.15, a: 1}
+  enterPromptColor: {r: 0.46, g: 1, b: 0.58, a: 1}
+  blockedPromptColor: {r: 1, g: 0.26, b: 0.24, a: 1}
 --- !u!61 &517243976
 BoxCollider2D:
   m_ObjectHideFlags: 0

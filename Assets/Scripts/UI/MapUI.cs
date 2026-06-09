@@ -53,7 +53,7 @@ public class MapUI : MonoBehaviour
     static bool CanPass(MapNode node, BodyState s)
     {
         if (node.roomType != RoomType.ConditionCombat) return true;
-        if (s == null) return true;
+        if (s == null) s = new BodyState();
         switch (node.conditionType)
         {
             case NodeConditionType.NoLeftArm:  return !s.armLeft;
@@ -259,7 +259,7 @@ public class MapUI : MonoBehaviour
         feedbackLabel.fontSize   = feedbackLabelFontSize;
         feedbackLabel.sortingOrder = 4;
         ApplyFont(feedbackLabel);
-        feedbackLabel.GetComponent<RectTransform>().sizeDelta = new Vector2(2f, 1f);
+        feedbackLabel.GetComponent<RectTransform>().sizeDelta = new Vector2(9f, 1.2f);
         go.SetActive(false);
     }
 
@@ -302,7 +302,7 @@ public class MapUI : MonoBehaviour
         enteringRoom = pass;
 
         feedbackLabel.transform.position = worldPos;
-        feedbackLabel.text = pass ? "O" : "X";
+        feedbackLabel.text = pass ? "O" : "\uC870\uAC74\uC5D0 \uBD80\uD569\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4";
         feedbackLabel.color = pass ? new Color(0.2f, 1f, 0.3f) : new Color(1f, 0.25f, 0.2f);
         feedbackLabel.gameObject.SetActive(true);
         yield return new WaitForSeconds(conditionFeedbackDelay);
