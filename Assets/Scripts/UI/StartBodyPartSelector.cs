@@ -7,29 +7,79 @@ public class StartBodyPartSelector : MonoBehaviour
     [SerializeField] StartSceneTransition transition;
     [SerializeField] GameObject optionPanel;
     [SerializeField] string targetSceneName = "RoomScene";
-    [SerializeField] float moveDuration = 0.33f;
+    [SerializeField] float moveDuration = 0.30f;
     [SerializeField] Color hoverColor = new Color(0.72f, 0.72f, 0.72f, 1f);
     [SerializeField, Range(0f, 1f)] float bodyPartAlphaHitThreshold = 0.1f;
-    [SerializeField] Vector2 optionClosePosition = new Vector2(533f, -383f);
-    [SerializeField] Vector2 optionCloseSize = new Vector2(140f, 130f);
+    [SerializeField] Sprite optionPanelSprite;
+    [SerializeField] Sprite optionLabelSprite;
+    [SerializeField] Vector2 optionPanelSize = new Vector2(900f, 562.5f);
+    [SerializeField] Vector2 optionClosePosition = new Vector2(354f, 142f);
+    [SerializeField] Vector2 optionCloseSize = new Vector2(64f, 64f);
     [SerializeField] float panelSlideDuration = 0.36f;
     [SerializeField] float panelOvershootDistance = 46f;
+    [SerializeField] Image eyeAnimationImage;
+    [SerializeField] Sprite[] eyeOpenFrames;
+    [SerializeField] float[] eyeFrameDurations = { 0.12f, 0.10f, 0.08f, 0.25f };
+    [SerializeField] float eyeFinalHoldDuration = 0.5f;
+    [SerializeField] float autoAttachPause = 0.05f;
+    [SerializeField] GameObject exitPanel;
+    [SerializeField] float exitPanelFadeDuration = 0.18f;
+    [SerializeField, Range(0f, 1f)] float exitAnswerAlphaHitThreshold = 0.1f;
+    [SerializeField] Sprite roadPanelSprite;
+    [SerializeField] Sprite roadBackgroundSprite;
+    [SerializeField] Sprite roadPanelOverlaySprite;
+    [SerializeField] Sprite roadButtonSprite;
+    [SerializeField] Vector2 roadPanelSize = new Vector2(900f, 562.5f);
+    [SerializeField] Vector2 roadClosePosition = new Vector2(360f, 300f);
+    [SerializeField] Vector2 roadCloseSize = new Vector2(130f, 110f);
+    [SerializeField] Vector2 roadButtonBasePosition = Vector2.zero;
+    [SerializeField] float roadButtonFloatAmplitude = 6f;
+    [SerializeField] float roadButtonFloatSpeed = 2.2f;
+    [SerializeField, Range(0f, 1f)] float roadButtonAlphaHitThreshold = 0.1f;
     [SerializeField] AudioClip inventoryPanelOpenSound;
     [SerializeField] AudioClip inventoryPanelCloseSound;
     [SerializeField] string inventoryPanelOpenSoundResourcePath = "Sounds/inventory_panel_open";
     [SerializeField] string inventoryPanelCloseSoundResourcePath = "Sounds/inventory_panel_close";
 
+    StartBodyPartChoice leftHandChoice;
     StartBodyPartChoice leftLegChoice;
     StartBodyPartChoice rightHandChoice;
     StartBodyPartChoice rightLegChoice;
     Button optionCloseButton;
+    Button roadCloseButton;
+    Image roadButtonImage;
+    RectTransform roadButtonRect;
     AudioSource inventoryPanelAudioSource;
     GameObject roadPanel;
     GameObject quitPanel;
+    SpriteRenderer exitQuestionRenderer;
+    SpriteRenderer exitAnswer1Renderer;
+    SpriteRenderer exitAnswer2Renderer;
+    CanvasGroup exitPanelCanvasGroup;
+    Image exitQuestionImage;
+    Image exitAnswer1Image;
+    Image exitAnswer2Image;
+    TextMeshPro exitQuestionText;
+    TextMeshPro exitAnswer1Text;
+    TextMeshPro exitAnswer2Text;
+    TextMeshProUGUI exitQuestionUIText;
+    TextMeshProUGUI exitAnswer1UIText;
+    TextMeshProUGUI exitAnswer2UIText;
+    Color exitQuestionColor = Color.white;
+    Color exitAnswer1Color = Color.white;
+    Color exitAnswer2Color = Color.white;
+    Coroutine quitPanelFadeRoutine;
     RectTransform optionPanelRect;
     Vector2 optionPanelCenterPosition;
     Vector2 optionPanelHiddenPosition;
     Coroutine optionPanelRoutine;
+    RectTransform roadPanelRect;
+    Vector2 roadPanelCenterPosition;
+    Vector2 roadPanelHiddenPosition;
+    Coroutine roadPanelRoutine;
+    Coroutine roadButtonFloatRoutine;
+    Coroutine startSequenceRoutine;
+    bool isEyeAnimationPlaying;
 
     void Awake()
     {
@@ -47,7 +97,14 @@ public class StartBodyPartSelector : MonoBehaviour
                 optionPanel = option.gameObject;
         }
 
-        ConfigureChoice("lefthand", new Vector2(-163f, -88f), StartBodyPartChoice.ClickAction.LoadScene);
+        if (exitPanel == null)
+        {
+            Transform exit = transform.Find("ExitPanel");
+            if (exit != null)
+                exitPanel = exit.gameObject;
+        }
+
+        leftHandChoice = ConfigureChoice("lefthand", new Vector2(-163f, -88f), StartBodyPartChoice.ClickAction.LoadScene);
         leftLegChoice = ConfigureChoice("leftleg", new Vector2(-92f, -311f), StartBodyPartChoice.ClickAction.ShowOptionPanel);
         rightLegChoice = ConfigureChoice("rightleg", new Vector2(64f, -317f), StartBodyPartChoice.ClickAction.ShowQuitPanel);
         rightHandChoice = ConfigureChoice("righthand", new Vector2(131f, -90f), StartBodyPartChoice.ClickAction.ShowRoadPanel);
@@ -56,10 +113,12 @@ public class StartBodyPartSelector : MonoBehaviour
         if (hotspot != null)
             hotspot.gameObject.SetActive(false);
 
+        EnsureOptionPanelVisuals();
         EnsureOptionCloseButton();
         EnsureRoadPanel();
         EnsureQuitPanel();
         CacheOptionPanelPositions();
+        CacheRoadPanelPositions();
 
         if (optionPanel != null)
             optionPanel.SetActive(false);
@@ -69,6 +128,16 @@ public class StartBodyPartSelector : MonoBehaviour
 
         if (quitPanel != null)
             quitPanel.SetActive(false);
+
+        PrepareEyeAnimationImage();
+    }
+
+    void Update()
+    {
+        if (exitAnswer1Image != null)
+            return;
+
+        HandleExitPanelPointer();
     }
 
     StartBodyPartChoice ConfigureChoice(string childName, Vector2 selectedPosition, StartBodyPartChoice.ClickAction action)
@@ -128,12 +197,94 @@ public class StartBodyPartSelector : MonoBehaviour
         optionCloseButton.onClick.AddListener(CloseOptionPanel);
     }
 
+    void EnsureOptionPanelVisuals()
+    {
+        if (optionPanel == null)
+            return;
+
+        RectTransform panelRect = optionPanel.GetComponent<RectTransform>();
+        if (panelRect != null)
+        {
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = optionPanelSize;
+            panelRect.localScale = Vector3.one;
+        }
+
+        Image panelImage = optionPanel.GetComponent<Image>();
+        if (panelImage != null)
+        {
+            if (optionPanelSprite != null)
+                panelImage.sprite = optionPanelSprite;
+
+            panelImage.color = Color.white;
+            panelImage.preserveAspect = true;
+            panelImage.raycastTarget = true;
+        }
+
+        Image labelImage = EnsureOptionLabelImage();
+        ConfigureOptionText(labelImage != null ? labelImage.transform : optionPanel.transform);
+    }
+
+    Image EnsureOptionLabelImage()
+    {
+        Transform existing = optionPanel.transform.Find("OptionLabel");
+        GameObject labelObject = existing != null ? existing.gameObject : new GameObject("OptionLabel");
+        labelObject.transform.SetParent(optionPanel.transform, false);
+        labelObject.SetActive(true);
+
+        RectTransform rect = labelObject.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = labelObject.AddComponent<RectTransform>();
+
+        StretchToParent(rect);
+
+        Image image = labelObject.GetComponent<Image>();
+        if (image == null)
+            image = labelObject.AddComponent<Image>();
+
+        if (optionLabelSprite != null)
+            image.sprite = optionLabelSprite;
+
+        image.color = Color.white;
+        image.preserveAspect = false;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    void ConfigureOptionText(Transform parent)
+    {
+        ConfigureOptionLabelText(parent, "OptionTitleText", "설정 <<", new Vector2(-285f, 133f), new Vector2(180f, 58f), 34f);
+        ConfigureOptionLabelText(parent, "BgmVolumeText", "BGM 음량", new Vector2(-282f, 62f), new Vector2(230f, 44f), 30f);
+        ConfigureOptionLabelText(parent, "SfxVolumeText", "SFX 음량", new Vector2(-282f, -50f), new Vector2(230f, 44f), 30f);
+    }
+
+    void ConfigureOptionLabelText(Transform parent, string textName, string textValue, Vector2 position, Vector2 size, float fontSize)
+    {
+        TextMeshProUGUI text = EnsureTMPText(parent, textName);
+        text.font = UIThinDungFont.Get();
+        text.text = textValue;
+        text.fontSize = fontSize;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.black;
+        text.raycastTarget = false;
+
+        RectTransform rect = text.rectTransform;
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+    }
+
     public void HandleChoiceComplete(StartBodyPartChoice choice, StartBodyPartChoice.ClickAction action)
     {
         if (action == StartBodyPartChoice.ClickAction.LoadScene)
         {
-            if (transition != null)
-                transition.BeginTransition(targetSceneName);
+            if (startSequenceRoutine == null)
+                startSequenceRoutine = StartCoroutine(StartSequenceRoutine());
 
             return;
         }
@@ -146,6 +297,158 @@ public class StartBodyPartSelector : MonoBehaviour
 
         if (action == StartBodyPartChoice.ClickAction.ShowQuitPanel)
             ShowQuitPanel();
+    }
+
+    System.Collections.IEnumerator StartSequenceRoutine()
+    {
+        SetChoicesInputEnabled(false);
+        HidePanels();
+
+        yield return AttachChoiceRoutine(rightHandChoice);
+        yield return AttachChoiceRoutine(leftLegChoice);
+        yield return AttachChoiceRoutine(rightLegChoice);
+        yield return PlayEyeOpeningRoutine();
+
+        if (transition != null)
+            transition.BeginTransition(targetSceneName);
+    }
+
+    System.Collections.IEnumerator AttachChoiceRoutine(StartBodyPartChoice choice)
+    {
+        if (choice == null)
+            yield break;
+
+        bool done = false;
+        choice.AttachToBody(() => done = true);
+        while (!done)
+            yield return null;
+
+        if (autoAttachPause > 0f)
+            yield return new WaitForSecondsRealtime(autoAttachPause);
+    }
+
+    System.Collections.IEnumerator PlayEyeOpeningRoutine()
+    {
+        if (isEyeAnimationPlaying)
+            yield break;
+
+        if (eyeAnimationImage == null || eyeOpenFrames == null || eyeOpenFrames.Length == 0)
+            yield break;
+
+        isEyeAnimationPlaying = true;
+        eyeAnimationImage.gameObject.SetActive(true);
+        eyeAnimationImage.transform.SetAsLastSibling();
+        SetImageAlpha(eyeAnimationImage, 1f);
+
+        Sprite lastFrame = null;
+        for (int i = 0; i < eyeOpenFrames.Length; i++)
+        {
+            if (eyeOpenFrames[i] == null)
+                continue;
+
+            eyeAnimationImage.sprite = eyeOpenFrames[i];
+            lastFrame = eyeOpenFrames[i];
+
+            float duration = GetEyeFrameDuration(i);
+            SetImageAlpha(eyeAnimationImage, 1f);
+            if (duration > 0f)
+                yield return new WaitForSecondsRealtime(duration);
+        }
+
+        if (lastFrame != null)
+            eyeAnimationImage.sprite = lastFrame;
+
+        if (eyeFinalHoldDuration > 0f)
+            yield return new WaitForSecondsRealtime(eyeFinalHoldDuration);
+
+        isEyeAnimationPlaying = false;
+    }
+
+    void PrepareEyeAnimationImage()
+    {
+        if (eyeAnimationImage == null)
+        {
+            Transform existing = transform.Find("EyeOpeningAnimation");
+            if (existing != null)
+                eyeAnimationImage = existing.GetComponent<Image>();
+        }
+
+        if (eyeAnimationImage == null)
+            return;
+
+        eyeAnimationImage.raycastTarget = false;
+        SetImageAlpha(eyeAnimationImage, 0f);
+        eyeAnimationImage.gameObject.SetActive(false);
+    }
+
+    void SetImageAlpha(Image image, float alpha)
+    {
+        if (image == null)
+            return;
+
+        Color color = image.color;
+        color.a = alpha;
+        image.color = color;
+    }
+
+    float GetEyeFrameDuration(int frameIndex)
+    {
+        if (eyeFrameDurations == null || eyeFrameDurations.Length == 0)
+            return 0.05f;
+
+        int durationIndex = Mathf.Clamp(frameIndex, 0, eyeFrameDurations.Length - 1);
+        return Mathf.Max(0f, eyeFrameDurations[durationIndex]);
+    }
+
+    void SetChoicesInputEnabled(bool enabled)
+    {
+        if (leftHandChoice != null)
+            leftHandChoice.SetInputEnabled(enabled);
+
+        if (rightHandChoice != null)
+            rightHandChoice.SetInputEnabled(enabled);
+
+        if (leftLegChoice != null)
+            leftLegChoice.SetInputEnabled(enabled);
+
+        if (rightLegChoice != null)
+            rightLegChoice.SetInputEnabled(enabled);
+    }
+
+    void HidePanels()
+    {
+        if (optionPanelRoutine != null)
+        {
+            StopCoroutine(optionPanelRoutine);
+            optionPanelRoutine = null;
+        }
+
+        if (roadPanelRoutine != null)
+        {
+            StopCoroutine(roadPanelRoutine);
+            roadPanelRoutine = null;
+        }
+
+        if (roadButtonFloatRoutine != null)
+        {
+            StopCoroutine(roadButtonFloatRoutine);
+            roadButtonFloatRoutine = null;
+        }
+
+        if (quitPanelFadeRoutine != null)
+        {
+            StopCoroutine(quitPanelFadeRoutine);
+            quitPanelFadeRoutine = null;
+        }
+
+        if (optionPanel != null)
+            optionPanel.SetActive(false);
+
+        if (roadPanel != null)
+            roadPanel.SetActive(false);
+
+        if (quitPanel != null)
+            quitPanel.SetActive(false);
     }
 
     void ShowOptionPanel()
@@ -217,16 +520,30 @@ public class StartBodyPartSelector : MonoBehaviour
     System.Collections.IEnumerator SlideOptionPanel(Vector2 start, Vector2 destination, Vector2 reactionPosition, System.Action onComplete)
     {
         float duration = Mathf.Max(0.01f, panelSlideDuration);
-        yield return SlideOptionPanelSegment(start, reactionPosition, duration * 0.38f);
-        yield return SlideOptionPanelSegment(reactionPosition, destination, duration * 0.62f);
+        yield return SlidePanelSegment(optionPanelRect, start, reactionPosition, duration * 0.38f);
+        yield return SlidePanelSegment(optionPanelRect, reactionPosition, destination, duration * 0.62f);
 
         optionPanelRect.anchoredPosition = destination;
         optionPanelRoutine = null;
         onComplete?.Invoke();
     }
 
-    System.Collections.IEnumerator SlideOptionPanelSegment(Vector2 start, Vector2 destination, float duration)
+    System.Collections.IEnumerator SlideRoadPanel(Vector2 start, Vector2 destination, Vector2 reactionPosition, System.Action onComplete)
     {
+        float duration = Mathf.Max(0.01f, panelSlideDuration);
+        yield return SlidePanelSegment(roadPanelRect, start, reactionPosition, duration * 0.38f);
+        yield return SlidePanelSegment(roadPanelRect, reactionPosition, destination, duration * 0.62f);
+
+        roadPanelRect.anchoredPosition = destination;
+        roadPanelRoutine = null;
+        onComplete?.Invoke();
+    }
+
+    System.Collections.IEnumerator SlidePanelSegment(RectTransform panelRect, Vector2 start, Vector2 destination, float duration)
+    {
+        if (panelRect == null)
+            yield break;
+
         float elapsed = 0f;
         duration = Mathf.Max(0.01f, duration);
 
@@ -235,14 +552,14 @@ public class StartBodyPartSelector : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
             t = t * t * (3f - 2f * t);
-            optionPanelRect.anchoredPosition = Vector2.LerpUnclamped(start, destination, t);
+            panelRect.anchoredPosition = Vector2.LerpUnclamped(start, destination, t);
             if (t >= 1f)
                 break;
 
             yield return null;
         }
 
-        optionPanelRect.anchoredPosition = destination;
+        panelRect.anchoredPosition = destination;
     }
 
     AudioClip GetInventoryPanelOpenSound()
@@ -272,69 +589,247 @@ public class StartBodyPartSelector : MonoBehaviour
     void EnsureRoadPanel()
     {
         Transform existing = transform.Find("RoadPanel");
-        roadPanel = existing != null ? existing.gameObject : CreatePanel("RoadPanel", new Vector2(720f, 420f));
+        roadPanel = existing != null ? existing.gameObject : CreatePanel("RoadPanel", roadPanelSize);
         roadPanel.transform.SetParent(transform, false);
 
+        RectTransform rect = roadPanel.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = roadPanelSize;
+            rect.localScale = Vector3.one;
+        }
+
         Image panelImage = roadPanel.GetComponent<Image>();
-        panelImage.color = new Color(0.06f, 0.06f, 0.06f, 0.94f);
+        if (roadBackgroundSprite != null)
+            panelImage.sprite = roadBackgroundSprite;
+        else if (roadPanelSprite != null)
+            panelImage.sprite = roadPanelSprite;
+
+        panelImage.color = Color.white;
+        panelImage.preserveAspect = true;
         panelImage.raycastTarget = true;
 
-        TextMeshProUGUI title = EnsureTMPText(roadPanel.transform, "RoadText");
-        title.text = "ROAD";
-        title.fontSize = 110f;
-        title.alignment = TextAlignmentOptions.Center;
-        title.color = Color.white;
-        RectTransform titleRect = title.rectTransform;
-        titleRect.anchorMin = Vector2.zero;
-        titleRect.anchorMax = Vector2.one;
-        titleRect.offsetMin = new Vector2(0f, 0f);
-        titleRect.offsetMax = new Vector2(0f, 0f);
+        Transform oldTitle = roadPanel.transform.Find("RoadText");
+        if (oldTitle != null)
+            oldTitle.gameObject.SetActive(false);
 
-        Button closeButton = EnsureButton(roadPanel.transform, "RoadCloseCheckbox", new Vector2(270f, 130f), new Vector2(84f, 84f), Color.white);
-        closeButton.onClick.RemoveListener(CloseRoadPanel);
-        closeButton.onClick.AddListener(CloseRoadPanel);
+        Image overlayImage = EnsureRoadLayerImage("RoadPanelOverlay", roadPanelOverlaySprite, false);
+        if (overlayImage != null)
+            overlayImage.transform.SetAsLastSibling();
 
-        TextMeshProUGUI xText = EnsureTMPText(closeButton.transform, "RoadCloseX");
-        xText.text = "X";
-        xText.fontSize = 54f;
-        xText.alignment = TextAlignmentOptions.Center;
-        xText.color = Color.black;
-        StretchToParent(xText.rectTransform);
+        roadButtonImage = EnsureRoadLayerImage("RoadButton", roadButtonSprite, true);
+        if (roadButtonImage != null)
+        {
+            roadButtonImage.transform.SetAsLastSibling();
+            roadButtonRect = roadButtonImage.rectTransform;
+            roadButtonRect.anchoredPosition = roadButtonBasePosition;
+            ConfigureRoadButton(roadButtonImage);
+        }
+
+        ConfigureRoadText(overlayImage != null ? overlayImage.transform : roadPanel.transform);
+        EnsureRoadSaveSlotHotspots();
+
+        roadCloseButton = EnsureButton(roadPanel.transform, "RoadCloseHotspot", new Vector2(354f, 142f), new Vector2(64f, 64f), new Color(1f, 1f, 1f, 0f));
+        roadCloseButton.transition = Selectable.Transition.None;
+        roadCloseButton.onClick.RemoveListener(CloseRoadPanel);
+        roadCloseButton.onClick.AddListener(CloseRoadPanel);
+        roadCloseButton.transform.SetAsLastSibling();
+
+        Transform oldClose = roadPanel.transform.Find("RoadCloseCheckbox");
+        if (oldClose != null)
+            oldClose.gameObject.SetActive(false);
+    }
+
+    Image EnsureRoadLayerImage(string childName, Sprite sprite, bool raycastTarget)
+    {
+        Transform existing = roadPanel.transform.Find(childName);
+        GameObject layerObject = existing != null ? existing.gameObject : new GameObject(childName);
+        layerObject.transform.SetParent(roadPanel.transform, false);
+        layerObject.SetActive(true);
+
+        RectTransform rect = layerObject.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = layerObject.AddComponent<RectTransform>();
+
+        StretchToParent(rect);
+
+        Image image = layerObject.GetComponent<Image>();
+        if (image == null)
+            image = layerObject.AddComponent<Image>();
+
+        if (sprite != null)
+            image.sprite = sprite;
+
+        image.color = Color.white;
+        image.preserveAspect = false;
+        image.raycastTarget = raycastTarget;
+        return image;
+    }
+
+    void ConfigureRoadButton(Image image)
+    {
+        if (image == null)
+            return;
+
+        try
+        {
+            image.alphaHitTestMinimumThreshold = roadButtonAlphaHitThreshold;
+        }
+        catch (System.InvalidOperationException)
+        {
+            // Read/write import settings are applied from the editor setup path.
+        }
+
+        Button button = image.GetComponent<Button>();
+        if (button == null)
+            button = image.gameObject.AddComponent<Button>();
+
+        button.transition = Selectable.Transition.ColorTint;
+        ApplyButtonTint(button, Color.white, new Color(1.18f, 1.18f, 1.18f, 1f));
+        button.onClick.RemoveAllListeners();
+    }
+
+    void ConfigureRoadText(Transform parent)
+    {
+        ConfigureRoadLabelText(parent, "RoadTitleText", "저장 <<", new Vector2(-285f, 133f), new Vector2(180f, 58f), 34f);
+    }
+
+    void ConfigureRoadLabelText(Transform parent, string textName, string textValue, Vector2 position, Vector2 size, float fontSize)
+    {
+        TextMeshProUGUI text = EnsureTMPText(parent, textName);
+        text.font = UIThinDungFont.Get();
+        text.text = textValue;
+        text.fontSize = fontSize;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.black;
+        text.raycastTarget = false;
+
+        RectTransform rect = text.rectTransform;
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+    }
+
+    void EnsureRoadSaveSlotHotspots()
+    {
+        float[] rowY = { 37f, -17f, -71f, -125f };
+        for (int i = 0; i < rowY.Length; i++)
+        {
+            EnsureRoadSlotButton("RoadSaveSlot" + (i + 1) + "Left", new Vector2(-285f, rowY[i]), new Vector2(169f, 52f));
+            EnsureRoadSlotButton("RoadSaveSlot" + (i + 1) + "Right", new Vector2(87f, rowY[i]), new Vector2(574f, 52f));
+        }
+    }
+
+    void EnsureRoadSlotButton(string buttonName, Vector2 position, Vector2 size)
+    {
+        Button slot = EnsureButton(roadPanel.transform, buttonName, position, size, new Color(1f, 1f, 1f, 0f));
+        slot.transition = Selectable.Transition.None;
+        slot.onClick.RemoveAllListeners();
+        slot.transform.SetAsLastSibling();
+    }
+
+    void CacheRoadPanelPositions()
+    {
+        if (roadPanel == null)
+            return;
+
+        roadPanelRect = roadPanel.GetComponent<RectTransform>();
+        if (roadPanelRect == null)
+            return;
+
+        roadPanelCenterPosition = roadPanelRect.anchoredPosition;
+        RectTransform canvasRect = GetComponent<RectTransform>();
+        float canvasHeight = canvasRect != null ? canvasRect.rect.height : 1080f;
+        float panelHeight = roadPanelRect.rect.height > 0f ? roadPanelRect.rect.height : canvasHeight;
+        roadPanelHiddenPosition = roadPanelCenterPosition + new Vector2(0f, -(canvasHeight + panelHeight) * 0.55f);
+        roadPanelRect.anchoredPosition = roadPanelCenterPosition;
     }
 
     void EnsureQuitPanel()
     {
-        Transform existing = transform.Find("QuitConfirmPanel");
-        quitPanel = existing != null ? existing.gameObject : CreatePanel("QuitConfirmPanel", new Vector2(980f, 410f));
-        quitPanel.transform.SetParent(transform, false);
+        Transform oldPanel = transform.Find("QuitConfirmPanel");
+        if (oldPanel != null)
+            Destroy(oldPanel.gameObject);
 
-        Image panelImage = quitPanel.GetComponent<Image>();
-        panelImage.color = new Color(0.05f, 0.05f, 0.05f, 0.94f);
-        panelImage.raycastTarget = true;
+        if (exitPanel == null)
+        {
+            Transform existing = transform.Find("ExitPanel");
+            if (existing != null)
+                exitPanel = existing.gameObject;
+        }
 
-        TextMeshProUGUI question = EnsureTMPText(quitPanel.transform, "QuitQuestionText");
-        question.text = "정말로 게임을 종료하시겠습니까?";
-        question.fontSize = 56f;
-        question.alignment = TextAlignmentOptions.Center;
-        question.color = Color.white;
-        RectTransform questionRect = question.rectTransform;
-        questionRect.anchorMin = new Vector2(0.5f, 0.5f);
-        questionRect.anchorMax = new Vector2(0.5f, 0.5f);
-        questionRect.pivot = new Vector2(0.5f, 0.5f);
-        questionRect.anchoredPosition = new Vector2(0f, 85f);
-        questionRect.sizeDelta = new Vector2(900f, 130f);
+        quitPanel = exitPanel;
+        if (quitPanel == null)
+            return;
 
-        Button yesButton = EnsureButton(quitPanel.transform, "QuitYesButton", new Vector2(-135f, -95f), new Vector2(210f, 92f), new Color(0.88f, 0.88f, 0.88f, 1f));
-        ApplyButtonTint(yesButton, new Color(0.88f, 0.88f, 0.88f, 1f), new Color(0.68f, 0.68f, 0.68f, 1f));
-        yesButton.onClick.RemoveListener(ConfirmQuit);
-        yesButton.onClick.AddListener(ConfirmQuit);
-        EnsureButtonText(yesButton.transform, "예");
+        Transform question = quitPanel.transform.Find("question");
+        Transform answer1 = quitPanel.transform.Find("answer1");
+        Transform answer2 = quitPanel.transform.Find("answer2");
 
-        Button noButton = EnsureButton(quitPanel.transform, "QuitNoButton", new Vector2(135f, -95f), new Vector2(210f, 92f), new Color(0.88f, 0.88f, 0.88f, 1f));
-        ApplyButtonTint(noButton, new Color(0.88f, 0.88f, 0.88f, 1f), new Color(0.68f, 0.68f, 0.68f, 1f));
-        noButton.onClick.RemoveListener(CloseQuitPanel);
-        noButton.onClick.AddListener(CloseQuitPanel);
-        EnsureButtonText(noButton.transform, "아니오");
+        exitQuestionRenderer = question != null ? question.GetComponent<SpriteRenderer>() : null;
+        exitAnswer1Renderer = answer1 != null ? answer1.GetComponent<SpriteRenderer>() : null;
+        exitAnswer2Renderer = answer2 != null ? answer2.GetComponent<SpriteRenderer>() : null;
+
+        if (exitQuestionRenderer != null)
+        {
+            exitQuestionColor = exitQuestionRenderer.color;
+            exitQuestionColor.a = 1f;
+        }
+
+        if (exitAnswer1Renderer != null)
+        {
+            exitAnswer1Color = exitAnswer1Renderer.color;
+            exitAnswer1Color.a = 1f;
+        }
+
+        if (exitAnswer2Renderer != null)
+        {
+            exitAnswer2Color = exitAnswer2Renderer.color;
+            exitAnswer2Color.a = 1f;
+        }
+
+        exitQuestionText = EnsureWorldTMPText(question, "QuestionText", "정말로 게임을 종료하시겠습니까?", Color.black, 0.24f);
+        exitAnswer1Text = EnsureWorldTMPText(answer1, "AnswerText", "예", Color.black, 0.42f);
+        exitAnswer2Text = EnsureWorldTMPText(answer2, "AnswerText", "아니오", Color.black, 0.34f);
+
+        exitPanelCanvasGroup = quitPanel.GetComponent<CanvasGroup>();
+        if (exitPanelCanvasGroup == null)
+            exitPanelCanvasGroup = quitPanel.AddComponent<CanvasGroup>();
+
+        exitQuestionImage = GetExitUIImage("question_ui");
+        exitAnswer1Image = GetExitUIImage("answer1_ui");
+        exitAnswer2Image = GetExitUIImage("answer2_ui");
+        exitQuestionUIText = exitQuestionImage != null ? EnsureTMPText(exitQuestionImage.transform, "QuestionLabel") : null;
+        exitAnswer1UIText = exitAnswer1Image != null ? EnsureTMPText(exitAnswer1Image.transform, "AnswerLabel") : null;
+        exitAnswer2UIText = exitAnswer2Image != null ? EnsureTMPText(exitAnswer2Image.transform, "AnswerLabel") : null;
+
+        ConfigureExitUIText(exitQuestionUIText, "정말로 게임을 종료하시겠습니까?", 46f);
+        ConfigureExitUIText(exitAnswer1UIText, "예", 52f);
+        ConfigureExitUIText(exitAnswer2UIText, "아니오", 48f);
+        ConfigureExitAnswerButton(exitAnswer1Image, ConfirmQuit);
+        ConfigureExitAnswerButton(exitAnswer2Image, CloseQuitPanel);
+
+        if (exitQuestionRenderer != null)
+            exitQuestionRenderer.enabled = exitQuestionImage == null;
+
+        if (exitAnswer1Renderer != null)
+            exitAnswer1Renderer.enabled = exitAnswer1Image == null;
+
+        if (exitAnswer2Renderer != null)
+            exitAnswer2Renderer.enabled = exitAnswer2Image == null;
+
+        SetExitPanelAlpha(0f);
+        if (exitPanelCanvasGroup != null)
+        {
+            exitPanelCanvasGroup.interactable = false;
+            exitPanelCanvasGroup.blocksRaycasts = false;
+        }
     }
 
     GameObject CreatePanel(string panelName, Vector2 size)
@@ -395,6 +890,248 @@ public class StartBodyPartSelector : MonoBehaviour
         button.colors = colors;
     }
 
+    Image GetExitUIImage(string childName)
+    {
+        if (quitPanel == null)
+            return null;
+
+        Transform child = quitPanel.transform.Find(childName);
+        return child != null ? child.GetComponent<Image>() : null;
+    }
+
+    void ConfigureExitUIText(TextMeshProUGUI text, string value, float fontSize)
+    {
+        if (text == null)
+            return;
+
+        text.font = UIThinDungFont.Get();
+        text.text = value;
+        text.fontSize = fontSize;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.black;
+        text.raycastTarget = false;
+        StretchToParent(text.rectTransform);
+    }
+
+    void ConfigureExitAnswerButton(Image image, UnityEngine.Events.UnityAction onClick)
+    {
+        if (image == null)
+            return;
+
+        image.raycastTarget = true;
+        try
+        {
+            image.alphaHitTestMinimumThreshold = exitAnswerAlphaHitThreshold;
+        }
+        catch (System.InvalidOperationException)
+        {
+            // Non-readable textures reject alpha hit testing; import settings below keep the intended behavior.
+        }
+
+        Button button = image.GetComponent<Button>();
+        if (button == null)
+            button = image.gameObject.AddComponent<Button>();
+
+        button.transition = Selectable.Transition.ColorTint;
+        ApplyButtonTint(button, Color.white, new Color(0.82f, 0.82f, 0.82f, 1f));
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(onClick);
+    }
+
+    TextMeshPro EnsureWorldTMPText(Transform parent, string textName, string textValue, Color color, float fontSize)
+    {
+        if (parent == null)
+            return null;
+
+        Transform existing = parent.Find(textName);
+        GameObject textObject = existing != null ? existing.gameObject : new GameObject(textName);
+        textObject.transform.SetParent(parent, false);
+        textObject.transform.localPosition = new Vector3(0f, 0f, -0.02f);
+        textObject.transform.localRotation = Quaternion.identity;
+        textObject.transform.localScale = Vector3.one;
+
+        TextMeshPro text = textObject.GetComponent<TextMeshPro>();
+        if (text == null)
+            text = textObject.AddComponent<TextMeshPro>();
+
+        text.font = UIThinDungFont.Get();
+        text.text = textValue;
+        text.fontSize = fontSize;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = color;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
+        text.raycastTarget = false;
+
+        RectTransform rect = text.rectTransform;
+        SpriteRenderer parentRenderer = parent.GetComponent<SpriteRenderer>();
+        if (parentRenderer != null && parentRenderer.sprite != null)
+        {
+            Vector2 size = parentRenderer.sprite.bounds.size;
+            rect.sizeDelta = new Vector2(size.x * 0.92f, size.y * 0.78f);
+
+            MeshRenderer meshRenderer = text.GetComponent<MeshRenderer>();
+            if (meshRenderer != null)
+            {
+                meshRenderer.sortingLayerID = parentRenderer.sortingLayerID;
+                meshRenderer.sortingOrder = parentRenderer.sortingOrder + 1;
+            }
+        }
+
+        return text;
+    }
+
+    void HandleExitPanelPointer()
+    {
+        if (quitPanel == null || !quitPanel.activeInHierarchy)
+            return;
+
+        bool overAnswer1 = IsMouseOverOpaqueSprite(exitAnswer1Renderer);
+        bool overAnswer2 = IsMouseOverOpaqueSprite(exitAnswer2Renderer);
+
+        SetAnswerHover(exitAnswer1Renderer, exitAnswer1Color, overAnswer1);
+        SetAnswerHover(exitAnswer2Renderer, exitAnswer2Color, overAnswer2);
+
+        if (!Input.GetMouseButtonDown(0))
+            return;
+
+        if (overAnswer1)
+            ConfirmQuit();
+        else if (overAnswer2)
+            CloseQuitPanel();
+    }
+
+    bool IsMouseOverOpaqueSprite(SpriteRenderer renderer)
+    {
+        if (renderer == null || renderer.sprite == null || Camera.main == null)
+            return false;
+
+        Vector3 screenPoint = Input.mousePosition;
+        float distance = Mathf.Abs(renderer.transform.position.z - Camera.main.transform.position.z);
+        Vector3 world = Camera.main.ScreenToWorldPoint(new Vector3(screenPoint.x, screenPoint.y, distance));
+        world.z = renderer.transform.position.z;
+
+        Vector3 local = renderer.transform.InverseTransformPoint(world);
+        Bounds bounds = renderer.sprite.bounds;
+        if (!bounds.Contains(local))
+            return false;
+
+        Rect textureRect = renderer.sprite.textureRect;
+        float u = Mathf.InverseLerp(bounds.min.x, bounds.max.x, local.x);
+        float v = Mathf.InverseLerp(bounds.min.y, bounds.max.y, local.y);
+
+        if (renderer.flipX)
+            u = 1f - u;
+
+        if (renderer.flipY)
+            v = 1f - v;
+
+        int x = Mathf.Clamp(Mathf.FloorToInt(textureRect.x + textureRect.width * u), Mathf.FloorToInt(textureRect.x), Mathf.FloorToInt(textureRect.xMax) - 1);
+        int y = Mathf.Clamp(Mathf.FloorToInt(textureRect.y + textureRect.height * v), Mathf.FloorToInt(textureRect.y), Mathf.FloorToInt(textureRect.yMax) - 1);
+
+        try
+        {
+            Color pixel = renderer.sprite.texture.GetPixel(x, y);
+            return pixel.a > exitAnswerAlphaHitThreshold;
+        }
+        catch (UnityException)
+        {
+            return true;
+        }
+    }
+
+    void SetAnswerHover(SpriteRenderer renderer, Color baseColor, bool hovering)
+    {
+        if (renderer == null)
+            return;
+
+        Color color = hovering ? new Color(baseColor.r * 0.82f, baseColor.g * 0.82f, baseColor.b * 0.82f, baseColor.a) : baseColor;
+        color.a = renderer.color.a;
+        renderer.color = color;
+    }
+
+    void SetExitPanelAlpha(float alpha)
+    {
+        if (exitPanelCanvasGroup != null)
+            exitPanelCanvasGroup.alpha = alpha;
+
+        SetRendererAlpha(exitQuestionRenderer, exitQuestionColor, alpha);
+        SetRendererAlpha(exitAnswer1Renderer, exitAnswer1Color, alpha);
+        SetRendererAlpha(exitAnswer2Renderer, exitAnswer2Color, alpha);
+        SetTMPAlpha(exitQuestionText, alpha);
+        SetTMPAlpha(exitAnswer1Text, alpha);
+        SetTMPAlpha(exitAnswer2Text, alpha);
+    }
+
+    void SetRendererAlpha(SpriteRenderer renderer, Color baseColor, float alpha)
+    {
+        if (renderer == null)
+            return;
+
+        Color color = baseColor;
+        color.a *= alpha;
+        renderer.color = color;
+    }
+
+    void SetTMPAlpha(TMP_Text text, float alpha)
+    {
+        if (text == null)
+            return;
+
+        Color color = text.color;
+        color.a = alpha;
+        text.color = color;
+    }
+
+    System.Collections.IEnumerator FadeQuitPanel(bool show, System.Action onComplete)
+    {
+        if (quitPanel == null)
+        {
+            onComplete?.Invoke();
+            yield break;
+        }
+
+        if (show)
+        {
+            quitPanel.SetActive(true);
+            quitPanel.transform.SetAsLastSibling();
+            if (exitPanelCanvasGroup != null)
+            {
+                exitPanelCanvasGroup.interactable = true;
+                exitPanelCanvasGroup.blocksRaycasts = true;
+            }
+        }
+
+        float start = show ? 0f : 1f;
+        float end = show ? 1f : 0f;
+        float duration = Mathf.Max(0.01f, exitPanelFadeDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            t = t * t * (3f - 2f * t);
+            SetExitPanelAlpha(Mathf.Lerp(start, end, t));
+            yield return null;
+        }
+
+        SetExitPanelAlpha(end);
+
+        if (!show)
+        {
+            if (exitPanelCanvasGroup != null)
+            {
+                exitPanelCanvasGroup.interactable = false;
+                exitPanelCanvasGroup.blocksRaycasts = false;
+            }
+
+            quitPanel.SetActive(false);
+        }
+
+        quitPanelFadeRoutine = null;
+        onComplete?.Invoke();
+    }
+
     TextMeshProUGUI EnsureTMPText(Transform parent, string textName)
     {
         Transform existing = parent.Find(textName);
@@ -431,20 +1168,94 @@ public class StartBodyPartSelector : MonoBehaviour
 
     void ShowRoadPanel()
     {
-        if (roadPanel == null)
+        if (roadPanel == null || roadPanelRect == null)
             return;
 
+        if (roadPanelRoutine != null)
+            StopCoroutine(roadPanelRoutine);
+
+        SetChoicesInputEnabled(false);
         roadPanel.SetActive(true);
         roadPanel.transform.SetAsLastSibling();
+        roadPanelRect.anchoredPosition = roadPanelHiddenPosition;
+
+        if (roadCloseButton != null)
+            roadCloseButton.gameObject.SetActive(true);
+
+        StartRoadButtonFloat();
+        PlayInventoryPanelSound(GetInventoryPanelOpenSound());
+        roadPanelRoutine = StartCoroutine(SlideRoadPanel(
+            roadPanelHiddenPosition,
+            roadPanelCenterPosition,
+            roadPanelCenterPosition + Vector2.up * panelOvershootDistance,
+            null));
     }
 
     public void CloseRoadPanel()
     {
-        if (roadPanel != null)
+        if (roadPanel == null || roadPanelRect == null)
+        {
+            if (rightHandChoice != null)
+                rightHandChoice.ReturnHome(() => SetChoicesInputEnabled(true));
+            else
+                SetChoicesInputEnabled(true);
+
+            return;
+        }
+
+        if (roadPanelRoutine != null)
+            StopCoroutine(roadPanelRoutine);
+
+        StopRoadButtonFloat();
+        PlayInventoryPanelSound(GetInventoryPanelCloseSound());
+        roadPanelRoutine = StartCoroutine(SlideRoadPanel(
+            roadPanelRect.anchoredPosition,
+            roadPanelHiddenPosition,
+            roadPanelRect.anchoredPosition + Vector2.up * panelOvershootDistance,
+            () =>
+        {
             roadPanel.SetActive(false);
 
-        if (rightHandChoice != null)
-            rightHandChoice.ReturnHome();
+            if (rightHandChoice != null)
+                rightHandChoice.ReturnHome(() => SetChoicesInputEnabled(true));
+            else
+                SetChoicesInputEnabled(true);
+        }));
+    }
+
+    void StartRoadButtonFloat()
+    {
+        StopRoadButtonFloat();
+
+        if (roadButtonRect != null)
+        {
+            roadButtonRect.anchoredPosition = roadButtonBasePosition;
+            roadButtonFloatRoutine = StartCoroutine(RoadButtonFloatRoutine());
+        }
+    }
+
+    void StopRoadButtonFloat()
+    {
+        if (roadButtonFloatRoutine != null)
+        {
+            StopCoroutine(roadButtonFloatRoutine);
+            roadButtonFloatRoutine = null;
+        }
+
+        if (roadButtonRect != null)
+            roadButtonRect.anchoredPosition = roadButtonBasePosition;
+    }
+
+    System.Collections.IEnumerator RoadButtonFloatRoutine()
+    {
+        while (roadPanel != null && roadPanel.activeInHierarchy)
+        {
+            float offset = Mathf.Sin(Time.unscaledTime * roadButtonFloatSpeed) * roadButtonFloatAmplitude;
+            roadButtonRect.anchoredPosition = roadButtonBasePosition + Vector2.up * offset;
+            yield return null;
+        }
+
+        roadButtonFloatRoutine = null;
     }
 
     void ShowQuitPanel()
@@ -452,17 +1263,22 @@ public class StartBodyPartSelector : MonoBehaviour
         if (quitPanel == null)
             return;
 
-        quitPanel.SetActive(true);
-        quitPanel.transform.SetAsLastSibling();
+        if (quitPanelFadeRoutine != null)
+            StopCoroutine(quitPanelFadeRoutine);
+
+        quitPanelFadeRoutine = StartCoroutine(FadeQuitPanel(true, null));
     }
 
     public void CloseQuitPanel()
     {
-        if (quitPanel != null)
-            quitPanel.SetActive(false);
+        if (quitPanelFadeRoutine != null)
+            StopCoroutine(quitPanelFadeRoutine);
 
-        if (rightLegChoice != null)
-            rightLegChoice.ReturnHome();
+        quitPanelFadeRoutine = StartCoroutine(FadeQuitPanel(false, () =>
+        {
+            if (rightLegChoice != null)
+                rightLegChoice.ReturnHome();
+        }));
     }
 
     void ConfirmQuit()

@@ -110,6 +110,27 @@ public class StartBodyPartChoice : MonoBehaviour, IPointerEnterHandler, IPointer
         moveRoutine = StartCoroutine(ReturnRoutine(onComplete));
     }
 
+    public void AttachToBody(System.Action onComplete)
+    {
+        if (!configured || rectTransform == null)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        selected = true;
+        if (graphic != null)
+            graphic.color = normalColor;
+
+        MoveToSelected(onComplete);
+    }
+
+    public void SetInputEnabled(bool enabled)
+    {
+        if (graphic != null)
+            graphic.raycastTarget = enabled;
+    }
+
     void MoveToSelected(System.Action onComplete)
     {
         if (moveRoutine != null)
