@@ -84,6 +84,12 @@ public class StartBodyPartChoice : MonoBehaviour, IPointerEnterHandler, IPointer
         if (graphic != null)
             graphic.color = VisibleColor(normalColor);
 
+        if (action == ClickAction.LoadScene)
+        {
+            owner.HandleChoiceComplete(this, action);
+            return;
+        }
+
         MoveToSelected(() => owner.HandleChoiceComplete(this, action));
     }
 

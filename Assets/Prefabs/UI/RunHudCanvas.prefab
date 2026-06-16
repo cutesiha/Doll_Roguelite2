@@ -348,7 +348,6 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4928419065690651177}
   - {fileID: 5589349680133730417}
   - {fileID: 5571044296015986593}
   - {fileID: 8381957086473180909}
@@ -357,6 +356,7 @@ RectTransform:
   - {fileID: 2978249334601609857}
   - {fileID: 4137499935213710961}
   - {fileID: 2510575050391902295}
+  - {fileID: 2296127743455502808}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1488,7 +1488,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -3347,7 +3347,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4280362539
   m_fontColor: {r: 0.17, g: 0.15, b: 0.13, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3360,7 +3360,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -6044,6 +6044,10 @@ PrefabInstance:
       propertyPath: m_fontColor32.rgba
       value: 4280428075
       objectReference: {fileID: 0}
+    - target: {fileID: 1822986382293484901, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1855381351401277284, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4280428075
@@ -6252,6 +6256,10 @@ PrefabInstance:
       propertyPath: m_fontColor32.rgba
       value: 4280428075
       objectReference: {fileID: 0}
+    - target: {fileID: 8838500683115222482, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9044310941044516542, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4280428075
@@ -6265,8 +6273,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
---- !u!224 &4928419065690651177 stripped
+--- !u!224 &2296127743455502808 stripped
 RectTransform:
-  m_CorrespondingSourceObject: {fileID: 222666153531544830, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
+  m_CorrespondingSourceObject: {fileID: 6390377716584369935, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
   m_PrefabInstance: {fileID: 5148268208129634007}
   m_PrefabAsset: {fileID: 0}

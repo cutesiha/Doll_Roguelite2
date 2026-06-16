@@ -450,6 +450,12 @@ MonoBehaviour:
   downSprite: {fileID: 21300000, guid: 490ca93b79508d0448588d1ae069cff7, type: 3}
   leftSprite: {fileID: 21300000, guid: 5ecf4f84ff71725468866bba5d71272c, type: 3}
   rightSprite: {fileID: 21300000, guid: ff51d710ccf359c4c965a7fe3c21a430, type: 3}
+  standingFrontLeftArmSprite: {fileID: -4706531463584566454, guid: 35f5218046229814f9023c62163f8d7b, type: 3}
+  standingFrontRightArmSprite: {fileID: -7464868504674820624, guid: 5b75646851792d8498bc596e7fdd88fd, type: 3}
+  standingBehindLeftArmSprite: {fileID: -7837593423996081070, guid: 18f069333af234d44a3db82be857a638, type: 3}
+  standingBehindRightArmSprite: {fileID: -7964203262691041264, guid: 39ce1b87ec2636748a3de09e86d957bc, type: 3}
+  standingLeftFacingRightArmSprite: {fileID: 756329615232465846, guid: 1ab56237c0b4bb74dbaa1fa7f69d724b, type: 3}
+  standingRightFacingLeftArmSprite: {fileID: 1753347790717330207, guid: d3a6e8c0c5c76ba4daf01160ee0a7d10, type: 3}
 --- !u!61 &211311188
 BoxCollider2D:
   m_ObjectHideFlags: 0

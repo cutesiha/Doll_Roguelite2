@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -21,6 +22,10 @@ public class StartBodyPartSelector : MonoBehaviour
     [SerializeField] Sprite[] eyeOpenFrames;
     [SerializeField] float[] eyeFrameDurations = { 0.12f, 0.10f, 0.08f, 0.25f };
     [SerializeField] float eyeFinalHoldDuration = 0.5f;
+    [SerializeField] Image startBackgroundImage;
+    [SerializeField] Image finalTitleImage;
+    [SerializeField, Min(0f)] float startBackdropFadeDuration = 0.42f;
+    [SerializeField, Min(0f)] float startSequenceInitialDelay = 0.3f;
     [SerializeField] float autoAttachPause = 0.05f;
     [SerializeField] float panelShowDelayAfterAttach = 0.12f;
     [SerializeField] GameObject exitPanel;
@@ -125,6 +130,7 @@ public class StartBodyPartSelector : MonoBehaviour
         if (quitPanel != null)
             quitPanel.SetActive(false);
 
+        AutoWireStartBackdropImages();
         PrepareEyeAnimationImage();
     }
 
@@ -165,6 +171,7 @@ public class StartBodyPartSelector : MonoBehaviour
             return;
 
         Transform existing = optionPanel.transform.Find("OptionCloseHotspot");
+        bool created = existing == null;
         GameObject hotspot = existing != null ? existing.gameObject : new GameObject("OptionCloseHotspot");
         hotspot.transform.SetParent(optionPanel.transform, false);
         hotspot.SetActive(true);
@@ -172,13 +179,19 @@ public class StartBodyPartSelector : MonoBehaviour
 
         RectTransform rect = hotspot.GetComponent<RectTransform>();
         if (rect == null)
+        {
             rect = hotspot.AddComponent<RectTransform>();
+            created = true;
+        }
 
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = optionClosePosition;
-        rect.sizeDelta = optionCloseSize;
+        if (created)
+        {
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = optionClosePosition;
+            rect.sizeDelta = optionCloseSize;
+        }
 
         Image image = hotspot.GetComponent<Image>();
         if (image == null)
@@ -194,6 +207,7 @@ public class StartBodyPartSelector : MonoBehaviour
             optionCloseButton = hotspot.AddComponent<Button>();
 
         optionCloseButton.transition = Selectable.Transition.None;
+        optionCloseButton.targetGraphic = image;
         ApplyHiddenButtonHoverTint(optionCloseButton);
         optionCloseButton.onClick.RemoveListener(CloseOptionPanel);
         optionCloseButton.onClick.AddListener(CloseOptionPanel);
@@ -327,9 +341,14 @@ public class StartBodyPartSelector : MonoBehaviour
         SetChoicesInputEnabled(false);
         HidePanels();
 
+        if (startSequenceInitialDelay > 0f)
+            yield return new WaitForSecondsRealtime(startSequenceInitialDelay);
+
+        yield return AttachChoiceRoutine(leftHandChoice);
         yield return AttachChoiceRoutine(rightHandChoice);
         yield return AttachChoiceRoutine(leftLegChoice);
         yield return AttachChoiceRoutine(rightLegChoice);
+        yield return FadeStartBackdropOutRoutine();
         yield return PlayEyeOpeningRoutine();
 
         if (transition != null)
@@ -385,6 +404,115 @@ public class StartBodyPartSelector : MonoBehaviour
             yield return new WaitForSecondsRealtime(eyeFinalHoldDuration);
 
         isEyeAnimationPlaying = false;
+    }
+
+    System.Collections.IEnumerator FadeStartBackdropOutRoutine()
+    {
+        AutoWireStartBackdropImages();
+
+        if (startBackgroundImage == null && finalTitleImage == null)
+        {
+            List<Image> fallbackImages = CollectStartBackdropImages();
+            if (fallbackImages.Count == 0)
+                yield break;
+        }
+
+        float duration = Mathf.Max(0f, startBackdropFadeDuration);
+        List<Image> fadeImages = CollectStartBackdropImages();
+        List<float> startAlphas = new List<float>(fadeImages.Count);
+        for (int i = 0; i < fadeImages.Count; i++)
+            startAlphas.Add(GetImageAlpha(fadeImages[i]));
+
+        if (duration <= 0f)
+        {
+            for (int i = 0; i < fadeImages.Count; i++)
+            {
+                SetImageAlpha(fadeImages[i], 0f);
+                DeactivateFadedImage(fadeImages[i]);
+            }
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            for (int i = 0; i < fadeImages.Count; i++)
+                SetImageAlpha(fadeImages[i], Mathf.Lerp(startAlphas[i], 0f, t));
+            yield return null;
+        }
+
+        for (int i = 0; i < fadeImages.Count; i++)
+        {
+            SetImageAlpha(fadeImages[i], 0f);
+            DeactivateFadedImage(fadeImages[i]);
+        }
+    }
+
+    void AutoWireStartBackdropImages()
+    {
+        if (startBackgroundImage == null)
+            startBackgroundImage = FindChildImage("StartBackground");
+
+        if (finalTitleImage == null)
+            finalTitleImage = FindChildImage("titleimage (1)");
+    }
+
+    Image FindChildImage(string childName)
+    {
+        Transform child = transform.Find(childName);
+        return child != null ? child.GetComponent<Image>() : null;
+    }
+
+    List<Image> CollectStartBackdropImages()
+    {
+        Image[] images = GetComponentsInChildren<Image>(true);
+        List<Image> results = new List<Image>(images.Length);
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            Image image = images[i];
+            if (image == null || ShouldKeepDuringBackdropFade(image))
+                continue;
+
+            if (!results.Contains(image))
+                results.Add(image);
+        }
+
+        return results;
+    }
+
+    bool ShouldKeepDuringBackdropFade(Image image)
+    {
+        Transform current = image.transform;
+        while (current != null && current != transform)
+        {
+            string objectName = current.name;
+            if (objectName == "body" ||
+                objectName == "lefthand" ||
+                objectName == "righthand" ||
+                objectName == "leftleg" ||
+                objectName == "rightleg" ||
+                objectName == "EyeOpeningAnimation" ||
+                objectName == "FadePanel")
+                return true;
+
+            current = current.parent;
+        }
+
+        return image.GetComponentInParent<StartSceneTransition>(true) != null;
+    }
+
+    float GetImageAlpha(Image image)
+    {
+        return image != null ? image.color.a : 0f;
+    }
+
+    void DeactivateFadedImage(Image image)
+    {
+        if (image != null)
+            image.gameObject.SetActive(false);
     }
 
     void PrepareEyeAnimationImage()

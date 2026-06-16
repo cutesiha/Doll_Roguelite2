@@ -10,13 +10,21 @@ using UnityEditor;
 
 public class InventoryUI : MonoBehaviour
 {
+    const string EditorInventoryPrefabPath = "Assets/Prefabs/UI/InventoryCanvas.prefab";
+
     // Bootstrap: Resources/InventoryCanvas 프리팹을 로드
     // 씬에 이미 있으면 아무것도 안 함
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
         if (FindObjectsByType<InventoryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length > 0) return;
-        var prefab = Resources.Load<GameObject>("InventoryCanvas");
+        GameObject prefab = null;
+#if UNITY_EDITOR
+        prefab = AssetDatabase.LoadAssetAtPath<GameObject>(EditorInventoryPrefabPath);
+#endif
+        if (prefab == null)
+            prefab = Resources.Load<GameObject>("InventoryCanvas");
+
         if (prefab == null)
         {
             Debug.LogWarning("[InventoryUI] Resources/InventoryCanvas 프리팹 없음. 에디터 메뉴 Game > 인벤토리 UI 생성 후 저장하세요.");
@@ -143,8 +151,6 @@ public class InventoryUI : MonoBehaviour
         EnsureCharacterBaseImages();
         ApplyInventoryHitTesting();
         if (_panel == null) return;
-        transform.SetAsLastSibling();
-        _panel.transform.SetAsLastSibling();
         _panel.SetActive(true);
         SetToggleHotspotVisible(true);
         RefreshUI();
@@ -216,22 +222,12 @@ public class InventoryUI : MonoBehaviour
 
     void NormalizeCanvasTransform()
     {
-        transform.localScale = Vector3.one;
-
-        RectTransform rect = transform as RectTransform;
-        if (rect != null && transform.parent != null)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = Vector2.zero;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
+        bool isTopLevelCanvas = transform.parent == null;
+        if (isTopLevelCanvas)
+            transform.localScale = Vector3.one;
 
         Canvas canvas = GetComponent<Canvas>();
-        if (canvas != null)
+        if (canvas != null && isTopLevelCanvas)
         {
             canvas.enabled = true;
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -240,7 +236,7 @@ public class InventoryUI : MonoBehaviour
         }
 
         CanvasScaler scaler = GetComponent<CanvasScaler>();
-        if (scaler != null)
+        if (scaler != null && isTopLevelCanvas)
         {
             scaler.enabled = true;
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -357,6 +353,7 @@ public class InventoryUI : MonoBehaviour
                 if (_charImg[i].sprite == null)
                     _charImg[i].sprite = GetPartSprite((BodySlot)i);
                 _charImg[i].preserveAspect = true;
+                _charImg[i].type = Image.Type.Simple;
                 _charImg[i].color = p != null ? Color.white : CUnequippedPart;
                 ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
             }
@@ -505,9 +502,6 @@ public class InventoryUI : MonoBehaviour
 
         _baseBodyImg = EnsureBaseImage(frame, "BodyBaseImage", new Vector2(0f, -38f), new Vector2(250f, 340f), new Color(0.17f, 0.15f, 0.13f, 0.20f));
         _baseFaceImg = EnsureBaseImage(frame, "FaceBaseImage", new Vector2(0f, 118f), new Vector2(190f, 170f), new Color(0.17f, 0.15f, 0.13f, 0.16f));
-
-        _baseBodyImg.transform.SetSiblingIndex(0);
-        _baseFaceImg.transform.SetSiblingIndex(1);
 
         HideCharacterPartLabels();
         ApplyCharacterBaseSprites();

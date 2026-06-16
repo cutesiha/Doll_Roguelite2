@@ -20,6 +20,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Sprite downSprite;
     [SerializeField] Sprite leftSprite;
     [SerializeField] Sprite rightSprite;
+    [SerializeField] Sprite standingFrontLeftArmSprite;
+    [SerializeField] Sprite standingFrontRightArmSprite;
+    [SerializeField] Sprite standingBehindLeftArmSprite;
+    [SerializeField] Sprite standingBehindRightArmSprite;
+    [SerializeField] Sprite standingLeftFacingRightArmSprite;
+    [SerializeField] Sprite standingRightFacingLeftArmSprite;
     [SerializeField] Sprite[] frontWalkBodyFrames;
     [SerializeField] Sprite[] frontWalkLeftArmFrames;
     [SerializeField] Sprite[] frontWalkRightArmFrames;
@@ -181,13 +187,13 @@ public class PlayerController : MonoBehaviour
 
         if (ShouldUseDirectionalWalkAnimation(FacingDirection.Left, leftWalkBodyFrames))
         {
-            ApplyDirectionalWalkFrame(FacingDirection.Left, leftWalkBodyFrames, leftWalkLeftArmFrames, leftWalkRightArmFrames);
+            ApplyDirectionalWalkFrame(FacingDirection.Left, leftWalkBodyFrames, leftWalkRightArmFrames, leftWalkLeftArmFrames);
             return;
         }
 
         if (ShouldUseDirectionalWalkAnimation(FacingDirection.Right, rightWalkBodyFrames))
         {
-            ApplyDirectionalWalkFrame(FacingDirection.Right, rightWalkBodyFrames, rightWalkLeftArmFrames, rightWalkRightArmFrames);
+            ApplyDirectionalWalkFrame(FacingDirection.Right, rightWalkBodyFrames, rightWalkRightArmFrames, rightWalkLeftArmFrames);
             return;
         }
 
@@ -198,7 +204,6 @@ public class PlayerController : MonoBehaviour
         }
 
         lastWalkFrame = -1;
-        SetArmRenderersVisible(false, false);
 
         Sprite nextSprite = facingDirection switch
         {
@@ -210,18 +215,40 @@ public class PlayerController : MonoBehaviour
 
         if (nextSprite != null)
             spriteRenderer.sprite = nextSprite;
+
+        ApplyStandingArmSprites(spriteRenderer.sprite);
     }
 
     void LoadDefaultSpritesIfMissing()
     {
         if (upSprite == null)
+            upSprite = LoadPlayerStandingSprite("player_standing_behind");
+        if (upSprite == null)
             upSprite = LoadPlayerSprite("behind", "Player_up");
+        if (downSprite == null)
+            downSprite = LoadPlayerStandingSprite("player_standing");
         if (downSprite == null)
             downSprite = LoadPlayerSprite("front", "Player_down");
         if (leftSprite == null)
+            leftSprite = LoadPlayerStandingSprite("player_standing_left");
+        if (leftSprite == null)
             leftSprite = LoadPlayerSprite("left", "Player_left");
         if (rightSprite == null)
+            rightSprite = LoadPlayerStandingSprite("player_standing_right");
+        if (rightSprite == null)
             rightSprite = LoadPlayerSprite("right", "Player_right");
+        if (standingFrontLeftArmSprite == null)
+            standingFrontLeftArmSprite = LoadPlayerStandingSprite("standing_leftarm");
+        if (standingFrontRightArmSprite == null)
+            standingFrontRightArmSprite = LoadPlayerStandingSprite("standing_rightarm");
+        if (standingBehindLeftArmSprite == null)
+            standingBehindLeftArmSprite = LoadPlayerStandingSprite("standing_leftarm_behind");
+        if (standingBehindRightArmSprite == null)
+            standingBehindRightArmSprite = LoadPlayerStandingSprite("standing_rightarm_behind");
+        if (standingLeftFacingRightArmSprite == null)
+            standingLeftFacingRightArmSprite = LoadPlayerStandingSprite("standing_rightarm_left");
+        if (standingRightFacingLeftArmSprite == null)
+            standingRightFacingLeftArmSprite = LoadPlayerStandingSprite("standing_leftarm_right");
         if (NeedsFrameReload(frontWalkBodyFrames, "front_walk_body"))
             frontWalkBodyFrames = LoadPlayerSprites("front_walk_body");
         if (NeedsFrameReload(frontWalkLeftArmFrames, "front_onlyleft"))
@@ -231,15 +258,15 @@ public class PlayerController : MonoBehaviour
         if (NeedsFrameReload(leftWalkBodyFrames, "left_walk_body"))
             leftWalkBodyFrames = LoadPlayerSprites("left_walk_body");
         if (NeedsFrameReload(leftWalkLeftArmFrames, "left_onlyleft"))
-            leftWalkLeftArmFrames = LoadPlayerWalkSprites("left_onlyleft");
-        if (NeedsFrameReload(leftWalkRightArmFrames, "left_onlyright"))
-            leftWalkRightArmFrames = LoadPlayerWalkSprites("left_onlyright");
+            leftWalkLeftArmFrames = LoadPlayerWalkSprites("left_onlyleft1");
+        if (NeedsFrameReload(leftWalkRightArmFrames, "left_onltright"))
+            leftWalkRightArmFrames = LoadPlayerWalkSprites("left_onltright1");
         if (NeedsFrameReload(rightWalkBodyFrames, "right_walk_body"))
             rightWalkBodyFrames = LoadPlayerSprites("right_walk_body");
-        if (NeedsFrameReload(rightWalkLeftArmFrames, "right_onlyleft"))
-            rightWalkLeftArmFrames = LoadPlayerWalkSprites("right_onlyleft");
-        if (NeedsFrameReload(rightWalkRightArmFrames, "right_onlyright"))
-            rightWalkRightArmFrames = LoadPlayerWalkSprites("right_onlyright");
+        if (NeedsFrameReload(rightWalkLeftArmFrames, "right_onlyright"))
+            rightWalkLeftArmFrames = LoadPlayerWalkSprites("right_onlyright1");
+        if (NeedsFrameReload(rightWalkRightArmFrames, "right_onlyleft"))
+            rightWalkRightArmFrames = LoadPlayerWalkSprites("right_onlyleft1");
         if (NeedsFrameReload(behindWalkBodyFrames, "behind_walk_body"))
             behindWalkBodyFrames = LoadPlayerSprites("behind_walk_body");
         if (NeedsFrameReload(behindWalkLeftArmFrames, "behind_onlyleft"))
@@ -349,6 +376,47 @@ public class PlayerController : MonoBehaviour
             lastWalkFrame = sequenceFrame;
             lastWalkDirection = direction;
         }
+    }
+
+    void ApplyStandingArmSprites(Sprite bodySprite)
+    {
+        switch (facingDirection)
+        {
+            case FacingDirection.Up:
+                ApplyStandingArmFrame(leftArmRenderer, standingBehindLeftArmSprite, bodySprite, BodySlot.ArmLeft);
+                ApplyStandingArmFrame(rightArmRenderer, standingBehindRightArmSprite, bodySprite, BodySlot.ArmRight);
+                break;
+            case FacingDirection.Left:
+                SetRendererVisible(leftArmRenderer, false);
+                ApplyStandingArmFrame(rightArmRenderer, standingLeftFacingRightArmSprite, bodySprite, BodySlot.ArmRight);
+                break;
+            case FacingDirection.Right:
+                ApplyStandingArmFrame(leftArmRenderer, standingRightFacingLeftArmSprite, bodySprite, BodySlot.ArmLeft);
+                SetRendererVisible(rightArmRenderer, false);
+                break;
+            default:
+                ApplyStandingArmFrame(leftArmRenderer, standingFrontLeftArmSprite, bodySprite, BodySlot.ArmLeft);
+                ApplyStandingArmFrame(rightArmRenderer, standingFrontRightArmSprite, bodySprite, BodySlot.ArmRight);
+                break;
+        }
+    }
+
+    void ApplyStandingArmFrame(SpriteRenderer renderer, Sprite armSprite, Sprite bodySprite, BodySlot slot)
+    {
+        if (renderer == null)
+            return;
+
+        if (armSprite == null || bodySprite == null || !BodyConditionUtility.HasPart(slot))
+        {
+            renderer.enabled = false;
+            return;
+        }
+
+        renderer.sprite = armSprite;
+        renderer.transform.localPosition = CalculatePartOffset(bodySprite, 0, 1, armSprite, 0, 1);
+        renderer.sortingLayerID = spriteRenderer.sortingLayerID;
+        renderer.sortingOrder = spriteRenderer.sortingOrder + 1;
+        renderer.enabled = true;
     }
 
     int CurrentWalkSequenceFrame(int bodyFrameCount)
@@ -478,6 +546,19 @@ public class PlayerController : MonoBehaviour
 #endif
 
         return new Sprite[0];
+    }
+
+    Sprite LoadPlayerStandingSprite(string spriteName)
+    {
+        Sprite sprite = LoadFirstSprite("Sprites/Playerstanding/" + spriteName);
+        if (sprite != null)
+            return sprite;
+
+#if UNITY_EDITOR
+        return LoadEditorSprite("Assets/Sprites/Playerstanding/" + spriteName + ".png");
+#else
+        return null;
+#endif
     }
 
     Sprite[] SortSprites(Sprite[] sprites)

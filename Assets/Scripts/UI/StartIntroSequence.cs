@@ -160,11 +160,14 @@ public class StartIntroSequence : MonoBehaviour
         if (backgroundImage != null)
             backgroundImage.transform.SetSiblingIndex(Mathf.Min(2, transform.childCount - 1));
 
+        if (finalTitleImage != null)
+            finalTitleImage.transform.SetSiblingIndex(Mathf.Min(3, transform.childCount - 1));
+
         if (bodyPartImages != null)
             BringBodyPartsToFront();
 
         if (finalTitleImage != null)
-            finalTitleImage.transform.SetSiblingIndex(Mathf.Min(3, transform.childCount - 1));
+            finalTitleImage.transform.SetAsLastSibling();
     }
 
     IEnumerator RunIntroSequence()
@@ -206,8 +209,8 @@ public class StartIntroSequence : MonoBehaviour
         Vector2 overshoot = finalTitlePosition + Vector2.down * titleDropOvershootDistance;
 
         finalTitleImage.gameObject.SetActive(true);
-        finalTitleImage.transform.SetAsLastSibling();
         BringBodyPartsToFront();
+        finalTitleImage.transform.SetAsLastSibling();
         SetImageAlpha(finalTitleImage, 1f);
         titleRect.anchoredPosition = start;
 
@@ -216,6 +219,7 @@ public class StartIntroSequence : MonoBehaviour
         yield return MoveRect(titleRect, overshoot, finalTitlePosition, duration * 0.62f);
         titleRect.anchoredPosition = finalTitlePosition;
         BringBodyPartsToFront();
+        finalTitleImage.transform.SetAsLastSibling();
     }
 
     void BringBodyPartsToFront()
