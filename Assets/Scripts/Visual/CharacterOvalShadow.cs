@@ -1,26 +1,38 @@
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 [ExecuteAlways]
+[DisallowMultipleComponent]
 public class CharacterOvalShadow : MonoBehaviour
 {
-    const string ShadowName = "Oval Shadow";
-    const string ShadowResourcePath = "Sprites/oval_shadow";
+    const string ShadowName = "Player Direction Shadow";
+    const string LegacyShadowName = "Oval Shadow";
 
-    [SerializeField] Vector2 offset = new Vector2(0.08f, -0.42f);
-    [SerializeField] Vector2 shadowSize = new Vector2(0.82f, 0.24f);
-    [SerializeField] Color shadowColor = new Color(0.08f, 0.045f, 0.03f, 0.48f);
+    [SerializeField] Vector2 footAnchorOffset = new Vector2(0f, 0f);
+    [SerializeField] Vector2 shadowScale = new Vector2(1.08f, 0.42f);
+    [SerializeField] float rotationZ = -28f;
+    [SerializeField] Color shadowColor = new Color(0.03f, 0.022f, 0.018f, 0.5f);
     [SerializeField] int sortingOrderOffset = -1;
 
-    static Sprite shadowSprite;
     SpriteRenderer ownerRenderer;
     SpriteRenderer shadowRenderer;
+    PlayerController playerController;
 
     void Awake()
     {
-        Configure();
+        if (Application.isPlaying)
+            Configure();
     }
 
     void OnEnable()
+    {
+        RequestConfigure();
+    }
+
+    void LateUpdate()
     {
         Configure();
     }
@@ -28,30 +40,72 @@ public class CharacterOvalShadow : MonoBehaviour
 #if UNITY_EDITOR
     void OnValidate()
     {
+        RequestConfigure();
+    }
+#endif
+
+    void RequestConfigure()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            EditorApplication.delayCall -= DelayedConfigure;
+            EditorApplication.delayCall += DelayedConfigure;
+            return;
+        }
+#endif
+
         Configure();
+    }
+
+#if UNITY_EDITOR
+    void DelayedConfigure()
+    {
+        if (this != null)
+            Configure();
     }
 #endif
 
     void Configure()
     {
         ownerRenderer = GetComponent<SpriteRenderer>();
+        playerController = GetComponent<PlayerController>();
+
+        if (!IsPlayerShadowTarget())
+        {
+            HideShadow();
+            return;
+        }
+
         shadowRenderer = EnsureShadowRenderer();
         if (shadowRenderer == null)
             return;
 
-        shadowRenderer.sprite = GetShadowSprite();
+        Sprite sourceSprite = playerController != null ? playerController.GetShadowSourceSprite() : ownerRenderer.sprite;
+        shadowRenderer.sprite = sourceSprite;
         shadowRenderer.color = shadowColor;
         shadowRenderer.sortingLayerID = ownerRenderer != null ? ownerRenderer.sortingLayerID : 0;
         shadowRenderer.sortingOrder = ownerRenderer != null ? ownerRenderer.sortingOrder + sortingOrderOffset : sortingOrderOffset;
+        shadowRenderer.sharedMaterial = ownerRenderer != null ? ownerRenderer.sharedMaterial : null;
+        shadowRenderer.enabled = sourceSprite != null;
 
         Transform shadowTransform = shadowRenderer.transform;
-        shadowTransform.localPosition = new Vector3(offset.x, offset.y, 0.02f);
-        shadowTransform.localRotation = Quaternion.identity;
-        shadowTransform.localScale = new Vector3(Mathf.Max(0.01f, shadowSize.x), Mathf.Max(0.01f, shadowSize.y), 1f);
+        shadowTransform.localRotation = Quaternion.Euler(0f, 0f, rotationZ);
+        shadowTransform.localScale = new Vector3(Mathf.Max(0.01f, shadowScale.x), Mathf.Max(0.01f, shadowScale.y), 1f);
+        shadowTransform.localPosition = CalculateFootLockedShadowPosition(sourceSprite, shadowTransform.localRotation);
+    }
+
+    bool IsPlayerShadowTarget()
+    {
+        return ownerRenderer != null && CompareTag("Player");
     }
 
     SpriteRenderer EnsureShadowRenderer()
     {
+        Transform legacy = transform.Find(LegacyShadowName);
+        if (legacy != null)
+            legacy.gameObject.SetActive(false);
+
         Transform existing = transform.Find(ShadowName);
         if (existing == null)
         {
@@ -60,6 +114,8 @@ public class CharacterOvalShadow : MonoBehaviour
             existing = shadowObject.transform;
         }
 
+        existing.gameObject.SetActive(true);
+
         SpriteRenderer renderer = existing.GetComponent<SpriteRenderer>();
         if (renderer == null)
             renderer = existing.gameObject.AddComponent<SpriteRenderer>();
@@ -67,37 +123,53 @@ public class CharacterOvalShadow : MonoBehaviour
         return renderer;
     }
 
-    static Sprite GetShadowSprite()
+    Vector3 CalculateFootLockedShadowPosition(Sprite sourceSprite, Quaternion shadowRotation)
     {
-        if (shadowSprite != null)
-            return shadowSprite;
+        Bounds sourceBounds = sourceSprite != null ? sourceSprite.bounds : ownerRenderer.localBounds;
+        Vector2 footAnchor = new Vector2(sourceBounds.center.x, sourceBounds.min.y) + footAnchorOffset;
+        Vector2 shadowFootPoint = new Vector2(sourceBounds.center.x, sourceBounds.min.y);
+        Vector2 scaledShadowFootPoint = new Vector2(shadowFootPoint.x * shadowScale.x, shadowFootPoint.y * shadowScale.y);
+        Vector2 rotatedShadowFootPoint = shadowRotation * scaledShadowFootPoint;
+        Vector2 position = footAnchor - rotatedShadowFootPoint;
+        position.y += Mathf.Max(0f, sourceBounds.min.y - MinTransformedShadowY(sourceBounds, position, shadowRotation));
 
-        shadowSprite = Resources.Load<Sprite>(ShadowResourcePath);
-        if (shadowSprite != null)
-            return shadowSprite;
+        return new Vector3(position.x, position.y, 0.02f);
+    }
 
-        const int width = 128;
-        const int height = 64;
-        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-        texture.name = "Generated Oval Shadow";
-        texture.filterMode = FilterMode.Bilinear;
-        texture.wrapMode = TextureWrapMode.Clamp;
-
-        for (int y = 0; y < height; y++)
+    float MinTransformedShadowY(Bounds sourceBounds, Vector2 position, Quaternion shadowRotation)
+    {
+        Vector2[] corners =
         {
-            for (int x = 0; x < width; x++)
-            {
-                float nx = (x + 0.5f) / width * 2f - 1f;
-                float ny = (y + 0.5f) / height * 2f - 1f;
-                float distance = nx * nx + ny * ny;
-                float alpha = Mathf.SmoothStep(1f, 0f, Mathf.InverseLerp(0.35f, 1f, distance));
-                texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
-            }
+            new Vector2(sourceBounds.min.x, sourceBounds.min.y),
+            new Vector2(sourceBounds.min.x, sourceBounds.max.y),
+            new Vector2(sourceBounds.max.x, sourceBounds.min.y),
+            new Vector2(sourceBounds.max.x, sourceBounds.max.y)
+        };
+
+        float minY = float.MaxValue;
+        for (int i = 0; i < corners.Length; i++)
+        {
+            Vector2 scaled = new Vector2(corners[i].x * shadowScale.x, corners[i].y * shadowScale.y);
+            Vector2 transformed = position + (Vector2)(shadowRotation * scaled);
+            minY = Mathf.Min(minY, transformed.y);
         }
 
-        texture.Apply(false, true);
-        shadowSprite = Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), width);
-        shadowSprite.name = "Oval Shadow Sprite";
-        return shadowSprite;
+        return minY;
+    }
+
+    void HideShadow()
+    {
+        HideChild(ShadowName);
+        HideChild(LegacyShadowName);
+
+        if (shadowRenderer != null)
+            shadowRenderer.enabled = false;
+    }
+
+    void HideChild(string childName)
+    {
+        Transform child = transform.Find(childName);
+        if (child != null)
+            child.gameObject.SetActive(false);
     }
 }
