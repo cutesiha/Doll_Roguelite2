@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using TMPro;
 using UnityEngine.UI;
 
@@ -41,6 +42,10 @@ public class StartBodyPartSelector : MonoBehaviour
     [SerializeField] float roadButtonFloatAmplitude = 6f;
     [SerializeField] float roadButtonFloatSpeed = 2.2f;
     [SerializeField, Range(0f, 1f)] float roadButtonAlphaHitThreshold = 0.1f;
+    [SerializeField] Color panelLineColor = new Color(0.30f, 0.18f, 0.10f, 1f);
+    [SerializeField] AudioSource optionVolumeClickSource;
+    [SerializeField] AudioSource roadPageClickSource;
+    [SerializeField] AudioSource roadEmptySlotClickSource;
     StartBodyPartChoice leftHandChoice;
     StartBodyPartChoice leftLegChoice;
     StartBodyPartChoice rightHandChoice;
@@ -49,6 +54,7 @@ public class StartBodyPartSelector : MonoBehaviour
     Button roadCloseButton;
     Image roadButtonImage;
     RectTransform roadButtonRect;
+    Vector3 roadButtonBaseScale = Vector3.one;
     GameObject roadPanel;
     GameObject quitPanel;
     SpriteRenderer exitQuestionRenderer;
@@ -76,14 +82,24 @@ public class StartBodyPartSelector : MonoBehaviour
     Vector2 roadPanelHiddenPosition;
     Coroutine roadPanelRoutine;
     Coroutine roadButtonFloatRoutine;
+    Coroutine roadEmptySlotMessageRoutine;
     Coroutine startSequenceRoutine;
     Coroutine delayedChoicePanelRoutine;
+    readonly Button[] bgmVolumeButtons = new Button[10];
+    readonly Button[] sfxVolumeButtons = new Button[10];
+    readonly Image[] bgmVolumeFills = new Image[10];
+    readonly Image[] sfxVolumeFills = new Image[10];
+    TextMeshProUGUI roadEmptySlotMessage;
+    int roadPageIndex;
+    bool roadEmptySlotMessageActive;
+    float roadEmptySlotMessageElapsed;
     bool isEyeAnimationPlaying;
     bool optionPanelClosing;
     bool roadPanelClosing;
     float lastPanelOpenSoundTime = -1f;
     const float PanelOpenSoundRepeatGuard = 0.2f;
     const float HiddenButtonAlpha = 0.001f;
+    static readonly Vector2 PanelSpriteSize = new Vector2(400f, 250f);
 
     void Awake()
     {
@@ -117,6 +133,8 @@ public class StartBodyPartSelector : MonoBehaviour
         EnsureOptionCloseButton();
         EnsureRoadPanel();
         DisablePanelChildAudioSources();
+        EnsurePanelAudioSources();
+        ApplySavedVolumeControls();
         EnsureQuitPanel();
         CacheOptionPanelPositions();
         CacheRoadPanelPositions();
@@ -136,6 +154,7 @@ public class StartBodyPartSelector : MonoBehaviour
 
     void Update()
     {
+        UpdateRoadEmptySlotMessageFade();
         HandlePanelCloseHotkeys();
 
         if (exitAnswer1Image != null)
@@ -271,6 +290,7 @@ public class StartBodyPartSelector : MonoBehaviour
         ConfigureOptionLabelText(parent, "OptionTitleText", "설정 <<", new Vector2(-285f, 133f), new Vector2(180f, 58f), 34f);
         ConfigureOptionLabelText(parent, "BgmVolumeText", "BGM 음량", new Vector2(-282f, 62f), new Vector2(230f, 44f), 30f);
         ConfigureOptionLabelText(parent, "SfxVolumeText", "SFX 음량", new Vector2(-282f, -50f), new Vector2(230f, 44f), 30f);
+        EnsureOptionVolumeControls(parent);
     }
 
     void ConfigureOptionLabelText(Transform parent, string textName, string textValue, Vector2 position, Vector2 size, float fontSize)
@@ -294,6 +314,236 @@ public class StartBodyPartSelector : MonoBehaviour
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = position;
         rect.sizeDelta = size;
+    }
+
+    void EnsureOptionVolumeControls(Transform parent)
+    {
+        Transform bgmGroup = EnsureVolumeGroup(parent, "BgmVolumeCells", new Rect(36f, 114f, 330f, 25f));
+        Transform sfxGroup = EnsureVolumeGroup(parent, "SfxVolumeCells", new Rect(36f, 164f, 330f, 25f));
+
+        for (int i = 0; i < 10; i++)
+        {
+            bgmVolumeButtons[i] = EnsureVolumeCell(bgmGroup, i, true, out bgmVolumeFills[i]);
+            sfxVolumeButtons[i] = EnsureVolumeCell(sfxGroup, i, false, out sfxVolumeFills[i]);
+        }
+
+        UpdateVolumeCells();
+    }
+
+    Transform EnsureVolumeGroup(Transform parent, string groupName, Rect panelPixelRect)
+    {
+        Transform existing = parent.Find(groupName);
+        GameObject groupObject = existing != null ? existing.gameObject : new GameObject(groupName);
+        groupObject.transform.SetParent(parent, false);
+        groupObject.SetActive(true);
+
+        RectTransform rect = groupObject.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = groupObject.AddComponent<RectTransform>();
+
+        ApplyPanelPixelRect(rect, parent, panelPixelRect);
+
+        return groupObject.transform;
+    }
+
+    Button EnsureVolumeCell(Transform parent, int index, bool isBgm, out Image fillImage)
+    {
+        string cellName = "Cell" + (index + 1).ToString("00");
+        Transform existing = parent.Find(cellName);
+        GameObject cellObject = existing != null ? existing.gameObject : new GameObject(cellName);
+        cellObject.transform.SetParent(parent, false);
+        cellObject.SetActive(true);
+
+        RectTransform rect = cellObject.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = cellObject.AddComponent<RectTransform>();
+
+        RectTransform parentRect = parent as RectTransform;
+        Vector2 groupSize = parentRect != null ? parentRect.rect.size : new Vector2(330f, 25f);
+        if (groupSize.x <= 0.01f)
+            groupSize.x = 330f;
+        if (groupSize.y <= 0.01f)
+            groupSize.y = 25f;
+
+        float cellWidth = groupSize.x / 10f;
+        float cellHeight = groupSize.y;
+        float x = -groupSize.x * 0.5f + cellWidth * (index + 0.5f);
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(x, 0f);
+        rect.sizeDelta = new Vector2(cellWidth, cellHeight);
+
+        Image hitImage = cellObject.GetComponent<Image>();
+        if (hitImage == null)
+            hitImage = cellObject.AddComponent<Image>();
+
+        hitImage.color = WithAlpha(panelLineColor, 0f);
+        hitImage.raycastTarget = true;
+
+        fillImage = EnsureVolumeCellFill(cellObject.transform);
+        FitVolumeCellFill(fillImage, cellWidth, cellHeight);
+        RemoveChildIfExists(cellObject.transform, "BorderTop");
+        RemoveChildIfExists(cellObject.transform, "BorderBottom");
+        RemoveChildIfExists(cellObject.transform, "BorderLeft");
+        RemoveChildIfExists(cellObject.transform, "BorderRight");
+
+        Button button = cellObject.GetComponent<Button>();
+        if (button == null)
+            button = cellObject.AddComponent<Button>();
+
+        button.targetGraphic = hitImage;
+        ApplyHiddenButtonHoverTint(button);
+        button.onClick.RemoveAllListeners();
+        int level = index + 1;
+        button.onClick.AddListener(() => SetOptionVolumeLevel(isBgm, level, true));
+        return button;
+    }
+
+    Image EnsureVolumeCellFill(Transform parent)
+    {
+        Transform existing = parent.Find("Fill");
+        GameObject fillObject = existing != null ? existing.gameObject : new GameObject("Fill");
+        fillObject.transform.SetParent(parent, false);
+        fillObject.transform.SetAsFirstSibling();
+
+        RectTransform rect = fillObject.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = fillObject.AddComponent<RectTransform>();
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = new Vector2(3f, 3f);
+        rect.offsetMax = new Vector2(-3f, -3f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+
+        Image image = fillObject.GetComponent<Image>();
+        if (image == null)
+            image = fillObject.AddComponent<Image>();
+
+        image.raycastTarget = false;
+        return image;
+    }
+
+    void FitVolumeCellFill(Image fillImage, float cellWidth, float cellHeight)
+    {
+        if (fillImage == null)
+            return;
+
+        RectTransform rect = fillImage.rectTransform;
+        float inset = Mathf.Min(cellWidth, cellHeight) * 0.12f;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = new Vector2(inset, inset);
+        rect.offsetMax = new Vector2(-inset, -inset);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+    }
+
+    void RemoveChildIfExists(Transform parent, string childName)
+    {
+        Transform child = parent != null ? parent.Find(childName) : null;
+        if (child == null)
+            return;
+
+        if (Application.isPlaying)
+            Destroy(child.gameObject);
+        else
+            DestroyImmediate(child.gameObject);
+    }
+
+    void ApplyPanelPixelRect(RectTransform rect, Transform referenceParent, Rect panelPixelRect)
+    {
+        if (rect == null)
+            return;
+
+        Vector2 referenceSize = GetPanelReferenceSize(referenceParent);
+        float scaleX = referenceSize.x / PanelSpriteSize.x;
+        float scaleY = referenceSize.y / PanelSpriteSize.y;
+        float centerX = panelPixelRect.x + panelPixelRect.width * 0.5f;
+        float centerY = panelPixelRect.y + panelPixelRect.height * 0.5f;
+
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(
+            (centerX - PanelSpriteSize.x * 0.5f) * scaleX,
+            (PanelSpriteSize.y * 0.5f - centerY) * scaleY);
+        rect.sizeDelta = new Vector2(panelPixelRect.width * scaleX, panelPixelRect.height * scaleY);
+    }
+
+    Vector2 GetPanelReferenceSize(Transform referenceParent)
+    {
+        RectTransform rect = referenceParent as RectTransform;
+        if (rect == null && referenceParent != null)
+            rect = referenceParent.GetComponent<RectTransform>();
+
+        if (rect != null)
+        {
+            Vector2 size = rect.rect.size;
+            if (size.x > 0.01f && size.y > 0.01f)
+                return size;
+        }
+
+        Transform current = referenceParent != null ? referenceParent.parent : null;
+        while (current != null)
+        {
+            RectTransform parentRect = current as RectTransform;
+            if (parentRect == null)
+                parentRect = current.GetComponent<RectTransform>();
+
+            if (parentRect != null)
+            {
+                Vector2 size = parentRect.rect.size;
+                if (size.x > 0.01f && size.y > 0.01f)
+                    return size;
+            }
+
+            current = current.parent;
+        }
+
+        return PanelSpriteSize;
+    }
+
+    void ApplySavedVolumeControls()
+    {
+        SoundManager.ApplySavedVolumes();
+        UpdateVolumeCells();
+    }
+
+    void SetOptionVolumeLevel(bool isBgm, int level, bool playSound)
+    {
+        level = Mathf.Clamp(level, 0, 10);
+        if (isBgm)
+            SoundManager.SetBgmVolumeLevel(level);
+        else
+            SoundManager.SetSfxVolumeLevel(level);
+
+        UpdateVolumeCells();
+
+        if (playSound)
+            PlayPanelAudioSource(optionVolumeClickSource, true);
+    }
+
+    void UpdateVolumeCells()
+    {
+        UpdateVolumeCells(bgmVolumeFills, SoundManager.GetBgmVolumeLevel());
+        UpdateVolumeCells(sfxVolumeFills, SoundManager.GetSfxVolumeLevel());
+    }
+
+    void UpdateVolumeCells(Image[] fills, int level)
+    {
+        if (fills == null)
+            return;
+
+        for (int i = 0; i < fills.Length; i++)
+        {
+            if (fills[i] == null)
+                continue;
+
+            Color color = panelLineColor;
+            color.a = i < level ? panelLineColor.a : 0f;
+            fills[i].color = color;
+        }
     }
 
     public void HandleChoiceComplete(StartBodyPartChoice choice, StartBodyPartChoice.ClickAction action)
@@ -753,6 +1003,54 @@ public class StartBodyPartSelector : MonoBehaviour
             SoundManager.DisableAudioSourcesInChildren(road.gameObject);
     }
 
+    void EnsurePanelAudioSources()
+    {
+        if (optionPanel != null)
+            optionVolumeClickSource = EnsurePanelAudioSource(optionPanel.transform, "OptionVolumeClickSound", optionVolumeClickSource);
+
+        if (roadPanel != null)
+        {
+            roadPageClickSource = EnsurePanelAudioSource(roadPanel.transform, "RoadPageClickSound", roadPageClickSource);
+            roadEmptySlotClickSource = EnsurePanelAudioSource(roadPanel.transform, "RoadEmptySlotClickSound", roadEmptySlotClickSource);
+        }
+    }
+
+    AudioSource EnsurePanelAudioSource(Transform parent, string objectName, AudioSource current)
+    {
+        if (current != null)
+        {
+            current.playOnAwake = false;
+            current.enabled = true;
+            return current;
+        }
+
+        Transform existing = parent.Find(objectName);
+        GameObject soundObject = existing != null ? existing.gameObject : new GameObject(objectName);
+        soundObject.transform.SetParent(parent, false);
+        soundObject.SetActive(true);
+
+        AudioSource source = soundObject.GetComponent<AudioSource>();
+        if (source == null)
+            source = soundObject.AddComponent<AudioSource>();
+
+        source.playOnAwake = false;
+        source.enabled = true;
+        return source;
+    }
+
+    void PlayPanelAudioSource(AudioSource source, bool fallbackToClick)
+    {
+        if (source != null && source.clip != null)
+        {
+            source.enabled = true;
+            source.PlayOneShot(source.clip, SoundManager.GetSfxVolume01());
+            return;
+        }
+
+        if (fallbackToClick)
+            SoundManager.PlayClick();
+    }
+
     void EnsureRoadPanel()
     {
         Transform existing = transform.Find("RoadPanel");
@@ -786,16 +1084,19 @@ public class StartBodyPartSelector : MonoBehaviour
 
             roadButtonRect = roadButtonImage.rectTransform;
             roadButtonBasePosition = roadButtonRect.anchoredPosition;
+            roadButtonBaseScale = roadButtonRect.localScale;
             ConfigureRoadButton(roadButtonImage);
         }
 
         ConfigureRoadText(overlayImage != null ? overlayImage.transform : roadPanel.transform);
+        EnsureRoadEmptySlotMessage(overlayImage != null ? overlayImage.transform : roadPanel.transform);
         EnsureRoadSaveSlotHotspots();
 
+        bool roadCloseCreated = roadPanel.transform.Find("RoadCloseHotspot") == null;
         roadCloseButton = EnsureButton(roadPanel.transform, "RoadCloseHotspot", roadClosePosition, roadCloseSize, new Color(1f, 1f, 1f, HiddenButtonAlpha));
         roadCloseButton.gameObject.SetActive(true);
         RectTransform roadCloseRect = roadCloseButton.GetComponent<RectTransform>();
-        if (roadCloseRect != null)
+        if (roadCloseRect != null && roadCloseCreated)
         {
             roadCloseRect.anchorMin = new Vector2(0.5f, 0.5f);
             roadCloseRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -858,7 +1159,7 @@ public class StartBodyPartSelector : MonoBehaviour
         if (image == null)
             return;
 
-        image.raycastTarget = false;
+        image.raycastTarget = true;
 
         try
         {
@@ -877,54 +1178,168 @@ public class StartBodyPartSelector : MonoBehaviour
             ApplyButtonTint(button, Color.white, new Color(1.18f, 1.18f, 1.18f, 1f));
         }
 
-        button.interactable = false;
-        button.enabled = false;
+        button.targetGraphic = image;
+        button.interactable = true;
+        button.enabled = true;
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(ToggleRoadPage);
+        ApplyButtonTint(button, Color.white, new Color(1.18f, 1.18f, 1.18f, 1f));
+        UpdateRoadPageButtonVisual();
     }
 
     void ConfigureRoadText(Transform parent)
     {
-        ConfigureRoadLabelText(parent, "RoadTitleText", "저장 <<", new Vector2(-285f, 133f), new Vector2(180f, 58f), 34f);
+        ConfigureRoadLabelText(parent, "RoadTitleText", "저장 <<", new Rect(36f, 50f, 75f, 32f), 34f);
     }
 
-    void ConfigureRoadLabelText(Transform parent, string textName, string textValue, Vector2 position, Vector2 size, float fontSize)
+    void ConfigureRoadLabelText(Transform parent, string textName, string textValue, Rect panelPixelRect, float fontSize)
     {
         bool created = parent.Find(textName) == null;
         TextMeshProUGUI text = EnsureTMPText(parent, textName);
         text.raycastTarget = false;
-
-        if (!created)
-            return;
-
-        text.font = UIThinDungFont.Get();
-        text.text = textValue;
+        if (text.font == null || created)
+            text.font = UIThinDungFont.Get();
+        if (created)
+            text.text = textValue;
         text.fontSize = fontSize;
         text.alignment = TextAlignmentOptions.Center;
         text.color = Color.black;
 
         RectTransform rect = text.rectTransform;
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
+        ApplyPanelPixelRect(rect, parent, panelPixelRect);
     }
 
     void EnsureRoadSaveSlotHotspots()
     {
-        float[] rowY = { 37f, -17f, -71f, -125f };
-        for (int i = 0; i < rowY.Length; i++)
+        float[] rowTop = { 97f, 120f, 144f, 167f };
+        float[] rowBottom = { 120f, 144f, 167f, 190f };
+        for (int i = 0; i < rowTop.Length; i++)
         {
-            EnsureRoadSlotButton("RoadSaveSlot" + (i + 1) + "Left", new Vector2(-285f, rowY[i]), new Vector2(169f, 52f));
-            EnsureRoadSlotButton("RoadSaveSlot" + (i + 1) + "Right", new Vector2(87f, rowY[i]), new Vector2(574f, 52f));
+            float rowHeight = rowBottom[i] - rowTop[i];
+            EnsureRoadSlotButton("RoadSaveSlot" + (i + 1) + "Left", i, new Rect(36f, rowTop[i], 75f, rowHeight));
+            EnsureRoadSlotButton("RoadSaveSlot" + (i + 1) + "Right", i, new Rect(111f, rowTop[i], 255f, rowHeight));
         }
     }
 
-    void EnsureRoadSlotButton(string buttonName, Vector2 position, Vector2 size)
+    void EnsureRoadSlotButton(string buttonName, int rowIndex, Rect panelPixelRect)
     {
-        Button slot = EnsureButton(roadPanel.transform, buttonName, position, size, new Color(1f, 1f, 1f, HiddenButtonAlpha));
-        slot.transition = Selectable.Transition.None;
+        Button slot = EnsureButton(roadPanel.transform, buttonName, Vector2.zero, Vector2.zero, WithAlpha(panelLineColor, 0f));
+        slot.gameObject.SetActive(true);
+
+        RectTransform rect = slot.GetComponent<RectTransform>();
+        ApplyPanelPixelRect(rect, roadPanel.transform, panelPixelRect);
+
+        Image image = slot.GetComponent<Image>();
+        if (image != null)
+        {
+            image.color = WithAlpha(panelLineColor, 0f);
+            image.raycastTarget = true;
+        }
+
+        ApplyHiddenButtonHoverTint(slot);
         slot.onClick.RemoveAllListeners();
+        int capturedRow = rowIndex;
+        slot.onClick.AddListener(() => HandleRoadSlotClicked(capturedRow));
         slot.transform.SetAsLastSibling();
+    }
+
+    void EnsureRoadEmptySlotMessage(Transform parent)
+    {
+        TextMeshProUGUI text = EnsureTMPText(parent, "RoadEmptySlotMessage");
+        text.font = UIThinDungFont.Get();
+        text.text = "그 칸에 저장된 파일이 없습니다!";
+        text.fontSize = 25f;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = WithAlpha(panelLineColor, 0f);
+        text.raycastTarget = false;
+
+        RectTransform rect = text.rectTransform;
+        if (rect != null)
+        {
+            ApplyPanelPixelRect(rect, parent, new Rect(111f, 195f, 255f, 35f));
+        }
+
+        roadEmptySlotMessage = text;
+    }
+
+    void HandleRoadSlotClicked(int rowIndex)
+    {
+        PlayPanelAudioSource(roadEmptySlotClickSource, false);
+        ShowRoadEmptySlotMessage();
+    }
+
+    void ShowRoadEmptySlotMessage()
+    {
+        if (roadEmptySlotMessage == null)
+            return;
+
+        if (roadEmptySlotMessageRoutine != null)
+        {
+            StopCoroutine(roadEmptySlotMessageRoutine);
+            roadEmptySlotMessageRoutine = null;
+        }
+
+        roadEmptySlotMessageElapsed = 0f;
+        roadEmptySlotMessageActive = true;
+        roadEmptySlotMessage.color = WithAlpha(panelLineColor, 0f);
+    }
+
+    void UpdateRoadEmptySlotMessageFade()
+    {
+        if (!roadEmptySlotMessageActive || roadEmptySlotMessage == null)
+            return;
+
+        const float fadeIn = 0.12f;
+        const float hold = 0.55f;
+        const float fadeOut = 0.32f;
+        float total = fadeIn + hold + fadeOut;
+
+        roadEmptySlotMessageElapsed += Time.unscaledDeltaTime;
+        float alpha;
+        if (roadEmptySlotMessageElapsed < fadeIn)
+            alpha = Mathf.Lerp(0f, 1f, roadEmptySlotMessageElapsed / fadeIn);
+        else if (roadEmptySlotMessageElapsed < fadeIn + hold)
+            alpha = 1f;
+        else if (roadEmptySlotMessageElapsed < total)
+            alpha = Mathf.Lerp(1f, 0f, (roadEmptySlotMessageElapsed - fadeIn - hold) / fadeOut);
+        else
+        {
+            alpha = 0f;
+            roadEmptySlotMessageActive = false;
+        }
+
+        roadEmptySlotMessage.color = WithAlpha(panelLineColor, alpha);
+    }
+
+    System.Collections.IEnumerator RoadEmptySlotMessageRoutine()
+    {
+        float fadeIn = 0.12f;
+        float hold = 0.55f;
+        float fadeOut = 0.32f;
+
+        yield return FadeRoadEmptySlotMessage(0f, 1f, fadeIn);
+
+        if (hold > 0f)
+            yield return new WaitForSecondsRealtime(hold);
+
+        yield return FadeRoadEmptySlotMessage(1f, 0f, fadeOut);
+        roadEmptySlotMessageRoutine = null;
+    }
+
+    System.Collections.IEnumerator FadeRoadEmptySlotMessage(float from, float to, float duration)
+    {
+        duration = Mathf.Max(0.01f, duration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            roadEmptySlotMessage.color = WithAlpha(panelLineColor, Mathf.Lerp(from, to, t));
+            yield return null;
+        }
+
+        roadEmptySlotMessage.color = WithAlpha(panelLineColor, to);
     }
 
     void CacheRoadPanelPositions()
@@ -1078,6 +1493,7 @@ public class StartBodyPartSelector : MonoBehaviour
             button.transition = Selectable.Transition.ColorTint;
         }
 
+        button.targetGraphic = image;
         return button;
     }
 
@@ -1099,16 +1515,32 @@ public class StartBodyPartSelector : MonoBehaviour
         if (button == null)
             return;
 
-        button.transition = Selectable.Transition.ColorTint;
-        ColorBlock colors = button.colors;
-        colors.normalColor = new Color(0f, 0f, 0f, 0f);
-        colors.highlightedColor = new Color(0f, 0f, 0f, 0.18f);
-        colors.selectedColor = colors.highlightedColor;
-        colors.pressedColor = new Color(0f, 0f, 0f, 0.28f);
-        colors.disabledColor = new Color(0f, 0f, 0f, 0f);
-        colors.colorMultiplier = 1f;
-        colors.fadeDuration = 0.06f;
-        button.colors = colors;
+        Image image = button.targetGraphic as Image;
+        if (image == null)
+            image = button.GetComponent<Image>();
+        if (image == null)
+            return;
+
+        Color normalColor = WithAlpha(panelLineColor, 0f);
+        Color hoverColor = WithAlpha(panelLineColor, 0.34f);
+        Color pressedColor = WithAlpha(panelLineColor, 0.50f);
+
+        image.color = normalColor;
+        image.raycastTarget = true;
+        button.transition = Selectable.Transition.None;
+        button.targetGraphic = image;
+
+        StartPanelHoverTint hoverTint = button.GetComponent<StartPanelHoverTint>();
+        if (hoverTint == null)
+            hoverTint = button.gameObject.AddComponent<StartPanelHoverTint>();
+
+        hoverTint.Configure(image, normalColor, hoverColor, pressedColor);
+    }
+
+    Color WithAlpha(Color color, float alpha)
+    {
+        color.a = alpha;
+        return color;
     }
 
     Image GetExitUIImage(string childName)
@@ -1479,6 +1911,7 @@ public class StartBodyPartSelector : MonoBehaviour
         if (roadButtonRect != null)
         {
             roadButtonRect.anchoredPosition = roadButtonBasePosition;
+            UpdateRoadPageButtonVisual();
             roadButtonFloatRoutine = StartCoroutine(RoadButtonFloatRoutine());
         }
     }
@@ -1492,7 +1925,10 @@ public class StartBodyPartSelector : MonoBehaviour
         }
 
         if (roadButtonRect != null)
+        {
             roadButtonRect.anchoredPosition = roadButtonBasePosition;
+            UpdateRoadPageButtonVisual();
+        }
     }
 
     System.Collections.IEnumerator RoadButtonFloatRoutine()
@@ -1505,6 +1941,33 @@ public class StartBodyPartSelector : MonoBehaviour
         }
 
         roadButtonFloatRoutine = null;
+    }
+
+    void ToggleRoadPage()
+    {
+        roadPageIndex = roadPageIndex == 0 ? 1 : 0;
+        PlayPanelAudioSource(roadPageClickSource, true);
+        UpdateRoadPageButtonVisual();
+
+        if (roadEmptySlotMessage != null)
+        {
+            roadEmptySlotMessageActive = false;
+            roadEmptySlotMessage.color = WithAlpha(panelLineColor, 0f);
+        }
+    }
+
+    void UpdateRoadPageButtonVisual()
+    {
+        if (roadButtonRect == null)
+            return;
+
+        float pageDirection = roadPageIndex == 0 ? 1f : -1f;
+        float baseX = Mathf.Abs(roadButtonBaseScale.x);
+        if (baseX <= 0.0001f)
+            baseX = 1f;
+
+        float baseXSign = roadButtonBaseScale.x < 0f ? -1f : 1f;
+        roadButtonRect.localScale = new Vector3(baseX * baseXSign * pageDirection, roadButtonBaseScale.y, roadButtonBaseScale.z);
     }
 
     void ShowQuitPanel()
@@ -1546,5 +2009,57 @@ public class StartBodyPartSelector : MonoBehaviour
     {
         if (transition != null)
             transition.BeginQuit();
+    }
+}
+
+public class StartPanelHoverTint : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
+{
+    Image targetImage;
+    Color normalColor;
+    Color hoverColor;
+    Color pressedColor;
+    bool isPointerInside;
+
+    public void Configure(Image target, Color normal, Color hover, Color pressed)
+    {
+        targetImage = target;
+        normalColor = normal;
+        hoverColor = hover;
+        pressedColor = pressed;
+        Apply(normalColor);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        isPointerInside = true;
+        Apply(hoverColor);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isPointerInside = false;
+        Apply(normalColor);
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        Apply(pressedColor);
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        Apply(isPointerInside ? hoverColor : normalColor);
+    }
+
+    void OnDisable()
+    {
+        isPointerInside = false;
+        Apply(normalColor);
+    }
+
+    void Apply(Color color)
+    {
+        if (targetImage != null)
+            targetImage.color = color;
     }
 }

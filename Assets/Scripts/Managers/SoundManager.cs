@@ -1,5 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class SoundManager : MonoBehaviour
 {
@@ -7,6 +11,9 @@ public class SoundManager : MonoBehaviour
     public const string SlimeSfxPath = "Sounds/slime";
     public const string ClickSfxPath = "Sounds/click";
     public const float DefaultRepeatGuard = 0.08f;
+    public const int DefaultVolumeLevel = 7;
+    const string BgmVolumeLevelKey = "StartOptionBgmVolumeLevel";
+    const string SfxVolumeLevelKey = "StartOptionSfxVolumeLevel";
 
     static SoundManager instance;
     static readonly Dictionary<string, AudioClip> clipCache = new Dictionary<string, AudioClip>();
@@ -48,6 +55,9 @@ public class SoundManager : MonoBehaviour
         }
 
         EnsureSource();
+        ApplySavedVolumes();
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
     }
 
     void OnEnable()
@@ -56,6 +66,7 @@ public class SoundManager : MonoBehaviour
         {
             instance = this;
             EnsureSource();
+            ApplySavedVolumes();
         }
     }
 
@@ -86,7 +97,15 @@ public class SoundManager : MonoBehaviour
     void OnDestroy()
     {
         if (instance == this)
+        {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
             instance = null;
+        }
+    }
+
+    static void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ApplySavedVolumes();
     }
 
     void OnValidate()
@@ -131,6 +150,49 @@ public class SoundManager : MonoBehaviour
         EnsureInstance().PlayInternal(clip, repeatGuard, volumeScale);
     }
 
+    public static int GetBgmVolumeLevel()
+    {
+        return Mathf.Clamp(PlayerPrefs.GetInt(BgmVolumeLevelKey, DefaultVolumeLevel), 0, 10);
+    }
+
+    public static int GetSfxVolumeLevel()
+    {
+        return Mathf.Clamp(PlayerPrefs.GetInt(SfxVolumeLevelKey, DefaultVolumeLevel), 0, 10);
+    }
+
+    public static float GetBgmVolume01()
+    {
+        return GetBgmVolumeLevel() / 10f;
+    }
+
+    public static float GetSfxVolume01()
+    {
+        return GetSfxVolumeLevel() / 10f;
+    }
+
+    public static void SetBgmVolumeLevel(int level)
+    {
+        PlayerPrefs.SetInt(BgmVolumeLevelKey, Mathf.Clamp(level, 0, 10));
+        PlayerPrefs.Save();
+        ApplyBgmVolumeToSceneSources();
+    }
+
+    public static void SetSfxVolumeLevel(int level)
+    {
+        PlayerPrefs.SetInt(SfxVolumeLevelKey, Mathf.Clamp(level, 0, 10));
+        PlayerPrefs.Save();
+        ApplySfxVolumeToSceneSources();
+    }
+
+    public static void ApplySavedVolumes()
+    {
+        if (instance != null)
+            instance.masterSfxVolume = GetSfxVolume01();
+
+        ApplyBgmVolumeToSceneSources();
+        ApplySfxVolumeToSceneSources();
+    }
+
     public static AudioClip LoadClipResource(string resourcePath, string fallbackResourcePath = null)
     {
         AudioClip clip = LoadClip(resourcePath);
@@ -150,8 +212,67 @@ public class SoundManager : MonoBehaviour
         {
             sources[i].Stop();
             sources[i].playOnAwake = false;
-            sources[i].enabled = false;
+            sources[i].enabled = true;
         }
+    }
+
+    static void ApplyBgmVolumeToSceneSources()
+    {
+        float volume = GetBgmVolume01();
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < sources.Length; i++)
+            if (IsBgmSource(sources[i]))
+                sources[i].volume = volume;
+    }
+
+    static void ApplySfxVolumeToSceneSources()
+    {
+        float volume = GetSfxVolume01();
+        if (instance != null)
+            instance.masterSfxVolume = volume;
+
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < sources.Length; i++)
+        {
+            if (instance != null && sources[i] == instance.sfxSource)
+                continue;
+
+            if (IsSfxSource(sources[i]))
+                sources[i].volume = volume;
+        }
+    }
+
+    static bool IsBgmSource(AudioSource source)
+    {
+        if (source == null)
+            return false;
+
+        if (source.name.ToLowerInvariant().Contains("bgm"))
+            return true;
+
+        return IsClipInResourceFolder(source.clip, "/Resources/BGM/");
+    }
+
+    static bool IsSfxSource(AudioSource source)
+    {
+        if (source == null)
+            return false;
+
+        return IsClipInResourceFolder(source.clip, "/Resources/Sounds/");
+    }
+
+    static bool IsClipInResourceFolder(AudioClip clip, string folderMarker)
+    {
+        if (clip == null)
+            return false;
+
+#if UNITY_EDITOR
+        string path = AssetDatabase.GetAssetPath(clip).Replace('\\', '/');
+        if (!string.IsNullOrEmpty(path) && path.Contains(folderMarker))
+            return true;
+#endif
+
+        return false;
     }
 
     static AudioClip LoadClip(string resourcePath)

@@ -27,6 +27,7 @@ public class StartIntroSequence : MonoBehaviour
     void Awake()
     {
         AutoWireMissingReferences();
+        SoundManager.ApplySavedVolumes();
         CacheOriginalState();
         PrepareIntroState();
     }
@@ -193,6 +194,7 @@ public class StartIntroSequence : MonoBehaviour
         if (bgmSource == null || bgmSource.isPlaying)
             return;
 
+        bgmSource.volume = SoundManager.GetBgmVolume01();
         bgmSource.Play();
     }
 
