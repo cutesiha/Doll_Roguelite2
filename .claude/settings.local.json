@@ -7,7 +7,13 @@
       "Bash(git rm *)",
       "Bash(claude mcp *)",
       "Bash(cat \"C:/Users/USER/.claude/settings.json\" 2>/dev/null || echo \"NOT FOUND\")",
-      "Bash(cat \"C:/Users/USER/.claude/claude_desktop_config.json\" 2>/dev/null || echo \"NOT FOUND\" *)"
+      "Bash(cat \"C:/Users/USER/.claude/claude_desktop_config.json\" 2>/dev/null || echo \"NOT FOUND\" *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\USER\\\\AppData\\\\Roaming\\\\Claude\\\\logs\\\\\" | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | ForEach-Object { Write-Host $_.FullName; Get-Content $_.FullName -Tail 30 })",
+      "PowerShell(node \"C:\\\\Users\\\\USER\\\\Documents\\\\GitHub\\\\Doll_Roguelite2\\\\Library\\\\PackageCache\\\\com.gamelovers.mcp-unity@aade29c7dd84\\\\Server~\\\\build\\\\index.js\" 2>&1)",
+      "PowerShell(\\(Get-Command node -ErrorAction SilentlyContinue\\).Source; Get-ChildItem \"C:\\\\Program Files\\\\nodejs\\\\node.exe\" -ErrorAction SilentlyContinue | Select-Object FullName; Get-ChildItem \"$env:APPDATA\\\\npm\\\\node.exe\" -ErrorAction SilentlyContinue | Select-Object FullName)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" \"/c/Users/USER/Documents/GitHub/Doll_Roguelite2/Library/PackageCache/com.gamelovers.mcp-unity@aade29c7dd84/Server~/build/index.js\")"
     ]
   }
 }
