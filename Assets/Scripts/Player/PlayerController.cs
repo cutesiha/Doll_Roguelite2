@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] SpriteRenderer spriteRenderer;
     [SerializeField] SpriteRenderer leftArmRenderer;
     [SerializeField] SpriteRenderer rightArmRenderer;
+    [SerializeField] int playerSortingOrder = 120;
     [SerializeField] Sprite upSprite;
     [SerializeField] Sprite downSprite;
     [SerializeField] Sprite leftSprite;
@@ -93,6 +94,7 @@ public class PlayerController : MonoBehaviour
 
         LoadDefaultSpritesIfMissing();
         BuildLayeredRenderers();
+        ApplyPlayerSorting();
 
         if (spriteRenderer != null)
         {
@@ -104,6 +106,11 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         PlayerManager.Instance?.ApplyTo(gameObject);
+    }
+
+    void LateUpdate()
+    {
+        ApplyPlayerSorting();
     }
 
 #if UNITY_EDITOR
@@ -353,6 +360,7 @@ public class PlayerController : MonoBehaviour
         leftArmRenderer = EnsureArmRenderer(leftArmRenderer, "PlayerArm_Left");
         rightArmRenderer = EnsureArmRenderer(rightArmRenderer, "PlayerArm_Right");
         SetArmRenderersVisible(false, false);
+        ApplyPlayerSorting();
     }
 
     SpriteRenderer EnsureArmRenderer(SpriteRenderer renderer, string objectName)
@@ -374,6 +382,26 @@ public class PlayerController : MonoBehaviour
         renderer.sortingOrder = spriteRenderer.sortingOrder + 1;
         renderer.sharedMaterial = spriteRenderer.sharedMaterial;
         return renderer;
+    }
+
+    void ApplyPlayerSorting()
+    {
+        if (spriteRenderer == null)
+            return;
+
+        spriteRenderer.sortingOrder = playerSortingOrder;
+
+        if (leftArmRenderer != null)
+        {
+            leftArmRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+            leftArmRenderer.sortingOrder = playerSortingOrder + 1;
+        }
+
+        if (rightArmRenderer != null)
+        {
+            rightArmRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+            rightArmRenderer.sortingOrder = playerSortingOrder + 1;
+        }
     }
 
     void UpdateWalkAnimationTime()

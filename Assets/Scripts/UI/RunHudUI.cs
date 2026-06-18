@@ -25,7 +25,10 @@ public class RunHudUI : MonoBehaviour
     Button menuButton;
     GameObject mapOverlay;
     RectTransform mapPanel;
+    ScrollRect mapScrollRect;
+    RectTransform mapViewport;
     RectTransform mapContent;
+    RectTransform miniMapContent;
     TextMeshProUGUI waveLabel;
     TextMeshProUGUI waveClearLabel;
     TextMeshProUGUI diaryLabel;
@@ -33,7 +36,10 @@ public class RunHudUI : MonoBehaviour
     readonly List<HudPipGroup> hudPipGroups = new List<HudPipGroup>();
     HudPipGroup bodyPips;
     Coroutine waveClearRoutine;
+    Coroutine mapAnimationRoutine;
     bool suppressInventoryOutsideClick;
+    int lastMiniMapCurrentId = -999;
+    Vector2 miniMapTargetOffset;
 
     static RunHudUI instance;
 
@@ -129,7 +135,10 @@ public class RunHudUI : MonoBehaviour
         menuButton = null;
         mapOverlay = null;
         mapPanel = null;
+        mapScrollRect = null;
+        mapViewport = null;
         mapContent = null;
+        miniMapContent = null;
         waveLabel = null;
         waveClearLabel = null;
         diaryLabel = null;
@@ -214,15 +223,26 @@ public class RunHudUI : MonoBehaviour
 
         BindExistingPrefabUi();
 
-        if (mapButton == null || inventoryButton == null || menuButton == null || mapOverlay == null || mapPanel == null || mapContent == null || diaryLabel == null || waveLabel == null || waveClearLabel == null || waveDots.Count < 3 || !HasExistingBodyHud())
-            Rebuild();
-        else
+        bool hasCoreHud = inventoryButton != null
+            && menuButton != null
+            && diaryLabel != null
+            && waveLabel != null
+            && waveClearLabel != null
+            && waveDots.Count >= 3
+            && HasExistingBodyHud();
+
+        if (!hasCoreHud)
         {
-            BindExistingWaveUi();
-            BindExistingPipGroups();
-            WireControlEvents();
-            UpdateHudState();
+            Rebuild();
+            return;
         }
+
+        EnsureMapUiPieces();
+        BindExistingPrefabUi();
+        BindExistingWaveUi();
+        BindExistingPipGroups();
+        WireControlEvents();
+        UpdateHudState();
     }
 
     void BindExistingPrefabUi()
@@ -259,6 +279,80 @@ public class RunHudUI : MonoBehaviour
 
         if (mapContent == null)
             mapContent = FindChildComponent<RectTransform>("MapContent");
+
+        if (mapViewport == null)
+            mapViewport = FindChildComponent<RectTransform>("MapViewport");
+
+        if (mapScrollRect == null && mapPanel != null)
+            mapScrollRect = mapPanel.GetComponentInChildren<ScrollRect>(true);
+
+        if (miniMapContent == null)
+            miniMapContent = FindChildComponent<RectTransform>("MiniMapContent");
+    }
+
+    void EnsureMapUiPieces()
+    {
+        if (mapButton == null)
+        {
+            BuildTopRightMapButton();
+        }
+        else
+        {
+            EnsureMiniMapOnExistingButton();
+        }
+
+        if (mapOverlay != null && mapScrollRect == null)
+        {
+            DestroyUiObject(mapOverlay);
+            mapOverlay = null;
+            mapPanel = null;
+            mapViewport = null;
+            mapContent = null;
+        }
+
+        if (mapOverlay == null || mapPanel == null || mapContent == null)
+            BuildMapOverlay();
+    }
+
+    void EnsureMiniMapOnExistingButton()
+    {
+        if (mapButton == null)
+            return;
+
+        RectTransform buttonRect = mapButton.transform as RectTransform;
+        if (buttonRect != null)
+            buttonRect.sizeDelta = new Vector2(154f, 154f);
+
+        Transform existingContent = FindChildRecursive(mapButton.transform, "MiniMapContent");
+        if (existingContent != null)
+        {
+            miniMapContent = existingContent as RectTransform;
+            BuildMiniMap();
+            return;
+        }
+
+        DestroyDirectChild(mapButton.transform, "TreeMapLineIcon");
+        DestroyDirectChild(mapButton.transform, "MapButtonLabel");
+
+        GameObject viewport = Rect(mapButton.transform, "MiniMapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
+        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+        viewportRect.offsetMin = new Vector2(10f, 10f);
+        viewportRect.offsetMax = new Vector2(-10f, -10f);
+        viewport.AddComponent<RectMask2D>();
+
+        GameObject content = Rect(viewport.transform, "MiniMapContent", Anchor.Center, Vector2.zero, new Vector2(440f, 440f));
+        miniMapContent = content.GetComponent<RectTransform>();
+        BuildMiniMap();
+    }
+
+    void DestroyDirectChild(Transform parent, string childName)
+    {
+        if (parent == null)
+            return;
+
+        Transform child = parent.Find(childName);
+        if (child != null)
+            DestroyUiObject(child.gameObject);
     }
 
     bool HasExistingBodyHud()
@@ -320,6 +414,7 @@ public class RunHudUI : MonoBehaviour
             mapButton.onClick.RemoveListener(OpenMap);
             mapButton.onClick.AddListener(PlayClickSound);
             mapButton.onClick.AddListener(OpenMap);
+            ConfigureMiniMapButtonHover(mapButton);
         }
 
         if (inventoryButton != null)
@@ -578,28 +673,150 @@ public class RunHudUI : MonoBehaviour
         ApplyWave(1, 3);
     }
 
-    void BuildTopRightMapButton()
+void BuildTopRightMapButton()
     {
-        mapButton = BuildHudButton(transform, "MapIconButton", Anchor.TopRight, new Vector2(-38f, -38f), new Vector2(184f, 104f));
+        mapButton = BuildHudButton(transform, "MapIconButton", Anchor.TopRight, new Vector2(-38f, -38f), new Vector2(154f, 154f));
         mapButton.onClick.AddListener(OpenMap);
+        ConfigureMiniMapButtonHover(mapButton);
 
-        BuildTreeMapIcon(mapButton.transform, new Vector2(25f, -24f));
-        TextMeshProUGUI label = Text(mapButton.transform, "MapButtonLabel", "트리 맵", 20f, TextColor, TextAlignmentOptions.Center);
-        label.rectTransform.anchorMin = Vector2.zero;
-        label.rectTransform.anchorMax = Vector2.one;
-        label.rectTransform.offsetMin = new Vector2(54f, 8f);
-        label.rectTransform.offsetMax = new Vector2(-14f, -8f);
+        GameObject viewport = Rect(mapButton.transform, "MiniMapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
+        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+        viewportRect.offsetMin = new Vector2(10f, 10f);
+        viewportRect.offsetMax = new Vector2(-10f, -10f);
+        viewport.AddComponent<RectMask2D>();
+
+        GameObject content = Rect(viewport.transform, "MiniMapContent", Anchor.Center, Vector2.zero, new Vector2(440f, 440f));
+        miniMapContent = content.GetComponent<RectTransform>();
+        BuildMiniMap();
     }
 
-    void BuildTreeMapIcon(Transform parent, Vector2 offset)
+    void ConfigureMiniMapButtonHover(Button button)
     {
-        GameObject icon = Rect(parent, "TreeMapLineIcon", Anchor.TopLeft, offset, new Vector2(44f, 54f));
-        AddLine(icon.transform, "Stem", new Vector2(20f, -11f), new Vector2(4f, 29f), SoftLineColor);
-        AddLine(icon.transform, "BranchL", new Vector2(11f, -25f), new Vector2(21f, 3f), SoftLineColor, 27f);
-        AddLine(icon.transform, "BranchR", new Vector2(21f, -25f), new Vector2(20f, 3f), SoftLineColor, -27f);
-        AddPixel(icon.transform, "NodeA", new Vector2(16f, -4f), new Vector2(10f, 10f), AccentColor);
-        AddPixel(icon.transform, "NodeB", new Vector2(3f, -36f), new Vector2(10f, 10f), SoftLineColor);
-        AddPixel(icon.transform, "NodeC", new Vector2(31f, -36f), new Vector2(10f, 10f), SoftLineColor);
+        if (button == null)
+            return;
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(0.76f, 0.66f, 0.55f, 1f);
+        colors.pressedColor = new Color(0.58f, 0.47f, 0.36f, 1f);
+        button.colors = colors;
+    }
+
+    void UpdateMiniMap()
+    {
+        if (miniMapContent == null)
+            return;
+
+        MapRunState.EnsureRun();
+        MapNode current = MapRunState.CurrentNode;
+        if (current == null)
+            return;
+
+        if (current.id != lastMiniMapCurrentId || miniMapContent.childCount == 0)
+            BuildMiniMap();
+
+        miniMapContent.anchoredPosition = Vector2.Lerp(
+            miniMapContent.anchoredPosition,
+            miniMapTargetOffset,
+            Application.isPlaying ? Time.deltaTime * 8f : 1f);
+    }
+
+    void BuildMiniMap()
+    {
+        if (miniMapContent == null)
+            return;
+
+        for (int i = miniMapContent.childCount - 1; i >= 0; i--)
+            DestroyUiObject(miniMapContent.GetChild(i).gameObject);
+
+        MapRunState.EnsureRun();
+        MapNode root = MapRunState.Root;
+        MapNode current = MapRunState.CurrentNode;
+        if (root == null || current == null)
+            return;
+
+        Dictionary<MapNode, Vector2> positions = BuildMiniMapPositions(root);
+        Vector2 currentPosition = positions.ContainsKey(current) ? positions[current] : Vector2.zero;
+        miniMapTargetOffset = -currentPosition;
+        if (lastMiniMapCurrentId == -999)
+            miniMapContent.anchoredPosition = miniMapTargetOffset;
+        lastMiniMapCurrentId = current.id;
+
+        HashSet<MapNode> nodeSet = new HashSet<MapNode>();
+        nodeSet.Add(current);
+        foreach (MapNode child in current.children)
+            nodeSet.Add(child);
+
+        HashSet<string> lineKeys = new HashSet<string>();
+        foreach (MapNode child in current.children)
+        {
+            AddMiniMapLine(lineKeys, positions, current, child, true);
+            foreach (MapNode grand in child.children)
+                AddMiniMapLine(lineKeys, positions, child, grand, false);
+        }
+
+        foreach (MapNode node in nodeSet)
+            if (positions.ContainsKey(node))
+                BuildMiniMapNode(node, positions[node], node == current);
+    }
+
+    Dictionary<MapNode, Vector2> BuildMiniMapPositions(MapNode root)
+    {
+        List<List<MapNode>> layers = CollectLayers(root);
+        Dictionary<MapNode, Vector2> positions = new Dictionary<MapNode, Vector2>();
+        const float xSpacing = 88f;
+        const float ySpacing = 62f;
+
+        for (int layerIndex = 0; layerIndex < layers.Count; layerIndex++)
+        {
+            List<MapNode> layer = layers[layerIndex];
+            float startX = -(layer.Count - 1) * xSpacing * 0.5f;
+            for (int nodeIndex = 0; nodeIndex < layer.Count; nodeIndex++)
+                positions[layer[nodeIndex]] = new Vector2(startX + nodeIndex * xSpacing, -layerIndex * ySpacing);
+        }
+
+        return positions;
+    }
+
+    void AddMiniMapLine(HashSet<string> lineKeys, Dictionary<MapNode, Vector2> positions, MapNode from, MapNode to, bool solid)
+    {
+        if (from == null || to == null || !positions.ContainsKey(from) || !positions.ContainsKey(to))
+            return;
+
+        string key = from.id + "_" + to.id;
+        if (!lineKeys.Add(key))
+            return;
+
+        BuildMiniMapLine(positions[from], positions[to], solid);
+    }
+
+    void BuildMiniMapLine(Vector2 from, Vector2 to, bool solid)
+    {
+        GameObject line = Rect(miniMapContent, "MiniMapLine", Anchor.Center, Vector2.zero, Vector2.zero);
+        Image image = line.AddComponent<Image>();
+        Color color = solid ? LineColor : SoftLineColor;
+        color.a = solid ? 0.72f : 0.32f;
+        image.color = color;
+        image.raycastTarget = false;
+
+        RectTransform rt = line.GetComponent<RectTransform>();
+        Vector2 delta = to - from;
+        rt.anchoredPosition = (from + to) * 0.5f;
+        rt.sizeDelta = new Vector2(delta.magnitude, solid ? 3f : 2f);
+        rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+    }
+
+    void BuildMiniMapNode(MapNode node, Vector2 position, bool current)
+    {
+        GameObject nodeGO = Rect(miniMapContent, "MiniMapNode_" + node.id, Anchor.Center, position, current ? new Vector2(24f, 24f) : new Vector2(18f, 18f));
+        Image image = nodeGO.AddComponent<Image>();
+        SetRoundedImage(image, circleSprite);
+        image.color = current ? ColCurrent : GetColor(node);
+        image.raycastTarget = false;
+
+        Outline outline = nodeGO.AddComponent<Outline>();
+        outline.effectColor = current ? Color.white : LineColor;
+        outline.effectDistance = new Vector2(1f, -1f);
     }
 
     void BuildDiaryText()
@@ -763,6 +980,8 @@ public class RunHudUI : MonoBehaviour
             int remaining = state == null || state.body ? bodyPips.maxPips : 0;
             ApplyPipColors(bodyPips.pips, remaining, bodyPips.maxPips);
         }
+
+        UpdateMiniMap();
     }
 
     void UpdatePipGroup(HudPipGroup group)
@@ -851,7 +1070,17 @@ public class RunHudUI : MonoBehaviour
     {
         MapRunState.EnsureRun();
         BuildMapTree();
+        if (mapScrollRect != null)
+            mapScrollRect.verticalNormalizedPosition = 1f;
+
+        if (mapOverlay == null)
+            return;
+
         mapOverlay.SetActive(true);
+        if (Application.isPlaying)
+            PlayMapPanelAnimation(true);
+        else if (mapPanel != null)
+            mapPanel.anchoredPosition = Vector2.zero;
     }
 
     void ToggleMap()
@@ -886,8 +1115,70 @@ public class RunHudUI : MonoBehaviour
 
     public void CloseMap()
     {
-        if (mapOverlay != null)
+        if (mapOverlay == null)
+            return;
+
+        if (Application.isPlaying && mapOverlay.activeSelf)
+        {
+            PlayMapPanelAnimation(false);
+            return;
+        }
+
+        mapOverlay.SetActive(false);
+    }
+
+    void PlayMapPanelAnimation(bool show)
+    {
+        if (mapPanel == null)
+        {
+            mapOverlay.SetActive(show);
+            return;
+        }
+
+        if (mapAnimationRoutine != null)
+            StopCoroutine(mapAnimationRoutine);
+
+        mapAnimationRoutine = StartCoroutine(MapPanelAnimationRoutine(show));
+    }
+
+    System.Collections.IEnumerator MapPanelAnimationRoutine(bool show)
+    {
+        Vector2 shown = Vector2.zero;
+        Vector2 hidden = new Vector2(0f, -980f);
+        Vector2 overshoot = new Vector2(0f, 36f);
+        if (show)
+        {
+            mapPanel.anchoredPosition = hidden;
+            yield return StartCoroutine(AnimateMapPanelSegment(hidden, overshoot, 0.25f));
+            yield return StartCoroutine(AnimateMapPanelSegment(overshoot, shown, 0.10f));
+        }
+        else
+        {
+            Vector2 from = mapPanel.anchoredPosition;
+            yield return StartCoroutine(AnimateMapPanelSegment(from, overshoot, 0.09f));
+            yield return StartCoroutine(AnimateMapPanelSegment(overshoot, hidden, 0.24f));
+        }
+
+        mapPanel.anchoredPosition = show ? shown : hidden;
+        if (!show && mapOverlay != null)
             mapOverlay.SetActive(false);
+        mapAnimationRoutine = null;
+    }
+
+    System.Collections.IEnumerator AnimateMapPanelSegment(Vector2 from, Vector2 to, float duration)
+    {
+        float elapsed = 0f;
+        float safeDuration = Mathf.Max(0.01f, duration);
+        while (elapsed < safeDuration)
+        {
+            float t = Mathf.Clamp01(elapsed / safeDuration);
+            t = 1f - Mathf.Pow(1f - t, 3f);
+            mapPanel.anchoredPosition = Vector2.Lerp(from, to, t);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        mapPanel.anchoredPosition = to;
     }
 
     void ToggleInventory()
@@ -963,7 +1254,7 @@ public class RunHudUI : MonoBehaviour
         backdropButton.targetGraphic = backdropImage;
         backdropButton.onClick.AddListener(CloseMap);
 
-        GameObject panelGO = Rect(mapOverlay.transform, "MapPanel", Anchor.Center, Vector2.zero, new Vector2(1260f, 780f));
+        GameObject panelGO = Rect(mapOverlay.transform, "MapPanel", Anchor.Center, Vector2.zero, new Vector2(1160f, 860f));
         mapPanel = panelGO.GetComponent<RectTransform>();
         Image panelImage = panelGO.AddComponent<Image>();
         SetRoundedImage(panelImage, roundedPanelSprite);
@@ -984,10 +1275,28 @@ public class RunHudUI : MonoBehaviour
         closeButton.onClick.AddListener(CloseMap);
         closeButton.transform.SetAsLastSibling();
 
-        GameObject content = Rect(panelGO.transform, "MapContent", Anchor.Stretch, Vector2.zero, Vector2.zero);
+        GameObject scrollGO = Rect(panelGO.transform, "MapScroll", Anchor.Stretch, Vector2.zero, Vector2.zero);
+        RectTransform scrollRectTransform = scrollGO.GetComponent<RectTransform>();
+        scrollRectTransform.offsetMin = new Vector2(54f, 44f);
+        scrollRectTransform.offsetMax = new Vector2(-54f, -88f);
+        mapScrollRect = scrollGO.AddComponent<ScrollRect>();
+        mapScrollRect.horizontal = false;
+        mapScrollRect.vertical = true;
+        mapScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        mapScrollRect.scrollSensitivity = 42f;
+
+        GameObject viewport = Rect(scrollGO.transform, "MapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
+        mapViewport = viewport.GetComponent<RectTransform>();
+        viewport.AddComponent<RectMask2D>();
+        Image viewportImage = viewport.AddComponent<Image>();
+        viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+        viewportImage.raycastTarget = true;
+        mapScrollRect.viewport = mapViewport;
+
+        GameObject content = Rect(viewport.transform, "MapContent", Anchor.TopCenter, Vector2.zero, new Vector2(1040f, 1500f));
         mapContent = content.GetComponent<RectTransform>();
-        mapContent.offsetMin = new Vector2(54f, 44f);
-        mapContent.offsetMax = new Vector2(-54f, -88f);
+        mapContent.pivot = new Vector2(0.5f, 1f);
+        mapScrollRect.content = mapContent;
     }
 
     void BuildMapTree()
@@ -1004,9 +1313,9 @@ public class RunHudUI : MonoBehaviour
 
         List<List<MapNode>> layers = CollectLayers(root);
         Dictionary<MapNode, Vector2> positions = new Dictionary<MapNode, Vector2>();
-        Rect rect = mapContent.rect;
-        float width = Mathf.Max(100f, rect.width);
-        float height = Mathf.Max(100f, rect.height);
+        float width = 1040f;
+        float height = Mathf.Max(1420f, 160f + Mathf.Max(0, layers.Count - 1) * 276f);
+        mapContent.sizeDelta = new Vector2(width, height);
         float yGap = layers.Count <= 1 ? 0f : (height - 120f) / (layers.Count - 1);
 
         for (int layerIndex = 0; layerIndex < layers.Count; layerIndex++)

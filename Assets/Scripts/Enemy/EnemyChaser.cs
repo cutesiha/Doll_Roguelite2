@@ -12,19 +12,11 @@ public class EnemyChaser : EnemyBase
     [SerializeField, Min(1)] int slamDamage = 28;
     [SerializeField, Min(1)] int slamEdgeDamage = 40;
     [SerializeField, Range(0.1f, 1f)] float slamEdgeInnerRatio = 0.68f;
-    [SerializeField, Min(1)] int firstShockwaveDamage = 18;
-    [SerializeField, Min(1)] int secondShockwaveDamage = 10;
-    [SerializeField, Min(1f)] float firstShockwaveRadiusMultiplier = 1.12f;
-    [SerializeField, Min(1f)] float secondShockwaveRadiusMultiplier = 1.28f;
-    [SerializeField, Min(0.02f)] float shockwaveDelay = 0.16f;
-    [SerializeField, Min(0.05f)] float shockwaveDuration = 0.55f;
     [SerializeField, Min(0.05f)] float slamJumpDuration = 0.78f;
     [SerializeField, Min(0f)] float slamJumpArcHeight = 1.15f;
     [SerializeField, Min(0f)] float slamJumpScaleBoost = 0.26f;
     [SerializeField, Min(0.01f)] float slamSquashDuration = 0.32f;
     [SerializeField] Color slamTelegraphColor = new Color(1f, 0.12f, 0.08f, 0.28f);
-    [SerializeField] Color firstShockwaveColor = new Color(1f, 0.34f, 0.16f, 0.22f);
-    [SerializeField] Color secondShockwaveColor = new Color(1f, 0.62f, 0.28f, 0.12f);
     [Header("Split On Death")]
     [SerializeField] bool splitOnDeath = true;
     [SerializeField, Min(0)] int smallButtonCount = 4;
@@ -108,9 +100,6 @@ public class EnemyChaser : EnemyBase
         yield return StartCoroutine(JumpToTarget(targetPosition, baseScale));
 
         DealSlamDamage(targetPosition, impactRadius);
-        yield return StartCoroutine(ShockwaveRoutine(targetPosition, impactRadius, impactRadius * firstShockwaveRadiusMultiplier, firstShockwaveDamage, firstShockwaveColor));
-        yield return new WaitForSeconds(shockwaveDelay);
-        yield return StartCoroutine(ShockwaveRoutine(targetPosition, impactRadius * firstShockwaveRadiusMultiplier, impactRadius * secondShockwaveRadiusMultiplier, secondShockwaveDamage, secondShockwaveColor));
 
         elapsed = 0f;
         while (elapsed < slamSquashDuration)
@@ -186,45 +175,6 @@ public class EnemyChaser : EnemyBase
 
         int damage = distance >= radius * slamEdgeInnerRatio ? slamEdgeDamage : slamDamage;
         receiver.TryTakePatternDamage(damage);
-    }
-
-    System.Collections.IEnumerator ShockwaveRoutine(Vector2 center, float innerRadius, float outerRadius, int damage, Color color)
-    {
-        GameObject visual = EnemyTelegraph.CreateCircle("ButtonShockwave", center, innerRadius, color, 71);
-        bool dealtDamage = false;
-        float elapsed = 0f;
-        while (elapsed < shockwaveDuration)
-        {
-            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, shockwaveDuration));
-            float eased = 1f - Mathf.Pow(1f - t, 2f);
-            float radius = Mathf.Lerp(innerRadius, outerRadius, eased);
-
-            if (visual != null)
-                visual.transform.localScale = new Vector3(radius * 2f, radius * 2f, 1f);
-
-            if (!dealtDamage)
-                dealtDamage = TryDealShockwaveDamage(center, innerRadius, radius, damage);
-
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        TryDealShockwaveDamage(center, innerRadius, outerRadius, damage);
-        if (visual != null)
-            Destroy(visual);
-    }
-
-    bool TryDealShockwaveDamage(Vector2 center, float innerRadius, float outerRadius, int damage)
-    {
-        PlayerDamageReceiver receiver = FindFirstObjectByType<PlayerDamageReceiver>();
-        if (receiver == null)
-            return false;
-
-        float distance = Vector2.Distance(receiver.transform.position, center);
-        if (distance <= innerRadius || distance > outerRadius)
-            return false;
-
-        return receiver.TryTakePatternDamage(damage, 0.08f);
     }
 
     void ResetSlamTimer()

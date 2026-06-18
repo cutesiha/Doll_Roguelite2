@@ -49,6 +49,12 @@ public class InventoryUI : MonoBehaviour
 
     GameObject _toggleHotspot;
     Button _toggleHotspotButton;
+    RectTransform _panelRect;
+    Coroutine _panelAnimationRoutine;
+    Vector2 _panelShownPosition;
+    bool _panelPositionCaptured;
+    const float PanelHiddenOffsetY = 980f;
+    const float PanelOvershootY = 36f;
 
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color CSlot  = new Color(0.88f, 0.48f, 0.24f, 1f);
@@ -117,8 +123,20 @@ public class InventoryUI : MonoBehaviour
     public void ClosePanel()
     {
         EnsurePanelReference();
-        if (_panel != null) _panel.SetActive(false);
-        SetToggleHotspotVisible(false);
+        if (_panel == null)
+        {
+            SetToggleHotspotVisible(false);
+            return;
+        }
+
+        CapturePanelShownPosition();
+        if (!_panel.activeSelf)
+        {
+            SetToggleHotspotVisible(false);
+            return;
+        }
+
+        PlayPanelAnimation(false);
     }
 
     public void OpenPanel()
@@ -129,9 +147,11 @@ public class InventoryUI : MonoBehaviour
         EnsureToggleHotspot();
         ApplyInventoryHitTesting();
         if (_panel == null) return;
+        CapturePanelShownPosition();
         _panel.SetActive(true);
         SetToggleHotspotVisible(true);
         RefreshUI();
+        PlayPanelAnimation(true);
     }
 
     void DisableTextRaycasts()
@@ -183,19 +203,106 @@ public class InventoryUI : MonoBehaviour
     void EnsurePanelReference()
     {
         if (_panel != null)
+        {
+            if (_panelRect == null)
+                _panelRect = _panel.transform as RectTransform;
             return;
+        }
 
         Transform panel = FindChildRecursive(transform, "InventoryPanel");
         if (panel != null)
+        {
             _panel = panel.gameObject;
+            _panelRect = panel as RectTransform;
+        }
     }
 
     void ForceClosePanelImmediate()
     {
         EnsurePanelReference();
+        if (_panelAnimationRoutine != null)
+        {
+            StopCoroutine(_panelAnimationRoutine);
+            _panelAnimationRoutine = null;
+        }
+
+        CapturePanelShownPosition();
         if (_panel != null)
+        {
+            if (_panelRect != null)
+                _panelRect.anchoredPosition = _panelShownPosition;
             _panel.SetActive(false);
+        }
         SetToggleHotspotVisible(false);
+    }
+
+    void CapturePanelShownPosition()
+    {
+        EnsurePanelReference();
+        if (_panelRect == null || _panelPositionCaptured)
+            return;
+
+        _panelShownPosition = _panelRect.anchoredPosition;
+        _panelPositionCaptured = true;
+    }
+
+    void PlayPanelAnimation(bool show)
+    {
+        if (_panelRect == null)
+        {
+            if (_panel != null)
+                _panel.SetActive(show);
+            SetToggleHotspotVisible(show);
+            return;
+        }
+
+        if (_panelAnimationRoutine != null)
+            StopCoroutine(_panelAnimationRoutine);
+
+        _panelAnimationRoutine = StartCoroutine(PanelAnimationRoutine(show));
+    }
+
+    System.Collections.IEnumerator PanelAnimationRoutine(bool show)
+    {
+        Vector2 shown = _panelShownPosition;
+        Vector2 hidden = shown + Vector2.down * PanelHiddenOffsetY;
+        Vector2 overshoot = shown + Vector2.up * PanelOvershootY;
+
+        if (show)
+        {
+            _panelRect.anchoredPosition = hidden;
+            yield return StartCoroutine(AnimatePanelSegment(hidden, overshoot, 0.25f));
+            yield return StartCoroutine(AnimatePanelSegment(overshoot, shown, 0.10f));
+            _panelRect.anchoredPosition = shown;
+        }
+        else
+        {
+            Vector2 from = _panelRect.anchoredPosition;
+            yield return StartCoroutine(AnimatePanelSegment(from, overshoot, 0.09f));
+            yield return StartCoroutine(AnimatePanelSegment(overshoot, hidden, 0.24f));
+            _panelRect.anchoredPosition = shown;
+            if (_panel != null)
+                _panel.SetActive(false);
+            SetToggleHotspotVisible(false);
+        }
+
+        _panelAnimationRoutine = null;
+    }
+
+    System.Collections.IEnumerator AnimatePanelSegment(Vector2 from, Vector2 to, float duration)
+    {
+        float elapsed = 0f;
+        float safeDuration = Mathf.Max(0.01f, duration);
+        while (elapsed < safeDuration)
+        {
+            float t = Mathf.Clamp01(elapsed / safeDuration);
+            t = 1f - Mathf.Pow(1f - t, 3f);
+            _panelRect.anchoredPosition = Vector2.Lerp(from, to, t);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        _panelRect.anchoredPosition = to;
     }
 
     void NormalizeCanvasTransform()
