@@ -18,6 +18,7 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
         if (source == null || InventoryManager.Instance == null)
             return;
 
-        InventoryManager.Instance.TryUnequipToStorage(source.BodySlot, storageIndex);
+        if (InventoryManager.Instance.TryUnequipToStorage(source.BodySlot, storageIndex))
+            SoundManager.PlayClick();
     }
 }

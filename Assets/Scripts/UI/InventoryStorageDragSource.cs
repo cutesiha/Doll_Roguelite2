@@ -26,6 +26,8 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         if (rootCanvas == null)
             return;
 
+        SoundManager.PlayClick();
+
         Image sourceImage = GetComponent<Image>();
 
         GameObject go = new GameObject("InventoryDragGhost");
@@ -39,7 +41,7 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         image.color = new Color(1f, 1f, 1f, 0.94f);
         image.sprite = sourceImage != null && sourceImage.sprite != null
             ? sourceImage.sprite
-            : InventoryUI.GetPartSprite(inv.storage[storageIndex].slot);
+            : InventoryUI.FindDisplaySpriteForSlot(inv.storage[storageIndex].slot);
 
         CanvasGroup group = go.AddComponent<CanvasGroup>();
         group.blocksRaycasts = false;

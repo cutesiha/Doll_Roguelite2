@@ -38,6 +38,7 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField, Min(0f)] float attackStartOffset = 0.22f;
     [FormerlySerializedAs("sideAttackDistanceBonus")]
     [SerializeField, Min(0f)] float attackDistanceBonus = 0.4f;
+    [SerializeField, Min(0f)] float verticalAttackDistanceBonus = 0.12f;
 
     [Header("Trail")]
     [SerializeField, Min(0.01f)] float trailSpawnInterval = 0.025f;
@@ -108,6 +109,7 @@ public class PlayerAttack : MonoBehaviour
         float newAttackCooldown,
         float newAttackDistance,
         float newAttackDistanceBonus,
+        float newVerticalAttackDistanceBonus,
         Vector2 newAttackSize,
         float newAttackDuration,
         Vector2 newFistScale)
@@ -116,6 +118,7 @@ public class PlayerAttack : MonoBehaviour
         attackCooldown = Mathf.Max(0f, newAttackCooldown);
         attackDistance = Mathf.Max(0f, newAttackDistance);
         attackDistanceBonus = Mathf.Max(0f, newAttackDistanceBonus);
+        verticalAttackDistanceBonus = Mathf.Max(0f, newVerticalAttackDistanceBonus);
         attackSize = new Vector2(Mathf.Max(0f, newAttackSize.x), Mathf.Max(0f, newAttackSize.y));
         attackDuration = Mathf.Clamp(newAttackDuration, 0.05f, 0.5f);
         fistScale = new Vector2(Mathf.Max(0f, newFistScale.x), Mathf.Max(0f, newFistScale.y));
@@ -348,7 +351,7 @@ public class PlayerAttack : MonoBehaviour
         Collider2D[] hits = Physics2D.OverlapBoxAll(origin, hitSize, 0f);
         foreach (Collider2D hit in hits)
         {
-            EnemyBase enemy = hit.GetComponent<EnemyBase>();
+            EnemyBase enemy = hit.GetComponentInParent<EnemyBase>();
             if (enemy != null)
                 enemy.TakeDamage(attackDamage);
         }
@@ -542,7 +545,11 @@ public class PlayerAttack : MonoBehaviour
 
     float EffectiveAttackDistance(Vector2 direction)
     {
-        return attackDistance + attackDistanceBonus;
+        float distance = attackDistance + attackDistanceBonus;
+        if (!IsSideDirection(direction))
+            distance += verticalAttackDistanceBonus;
+
+        return distance;
     }
 
     bool IsSideDirection(Vector2 direction)

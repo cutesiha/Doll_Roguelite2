@@ -30,6 +30,12 @@ public class SoundManager : MonoBehaviour
     [SerializeField] AudioClip clickClip;
     [SerializeField, Range(0f, 3f)] float clickVolume = 1.35f;
 
+    [Header("Combat Clips")]
+    [SerializeField] AudioClip enemyHitClip;
+    [SerializeField, Range(0f, 3f)] float enemyHitVolume = 1f;
+    [SerializeField] AudioClip playerHitClip;
+    [SerializeField, Range(0f, 3f)] float playerHitVolume = 1f;
+
     AudioClip lastClip;
     float lastPlayTime = -999f;
 
@@ -135,6 +141,20 @@ public class SoundManager : MonoBehaviour
     {
         SoundManager manager = EnsureInstance();
         manager.PlayManaged(manager.GetClickClip(), manager.clickVolume, repeatGuard);
+    }
+
+    public static void PlayEnemyHit(float repeatGuard = DefaultRepeatGuard)
+    {
+        SoundManager manager = EnsureInstance();
+        if (manager.enemyHitClip != null)
+            manager.PlayManaged(manager.enemyHitClip, manager.enemyHitVolume, repeatGuard);
+    }
+
+    public static void PlayPlayerHit(float repeatGuard = DefaultRepeatGuard)
+    {
+        SoundManager manager = EnsureInstance();
+        if (manager.playerHitClip != null)
+            manager.PlayManaged(manager.playerHitClip, manager.playerHitVolume, repeatGuard);
     }
 
     public static void PlaySfxResource(string resourcePath, string fallbackResourcePath = null, float repeatGuard = DefaultRepeatGuard, float volumeScale = 1f)

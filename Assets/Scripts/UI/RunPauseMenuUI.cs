@@ -55,8 +55,15 @@ public class RunPauseMenuUI : MonoBehaviour
         if (menuButton != null)
         {
             menuButton.onClick.RemoveListener(ToggleMenu);
-            menuButton.onClick.AddListener(ToggleMenu);
+            menuButton.onClick.RemoveListener(OnMenuButtonClicked);
+            menuButton.onClick.AddListener(OnMenuButtonClicked);
         }
+    }
+
+    void OnMenuButtonClicked()
+    {
+        SoundManager.PlayClick();
+        ToggleMenu();
     }
 
     public void ToggleMenu()
@@ -354,8 +361,14 @@ public class RunPauseMenuUI : MonoBehaviour
         colors.colorMultiplier = 1f;
         colors.fadeDuration = 0.08f;
         button.colors = colors;
+        button.onClick.AddListener(PlayClickSound);
         CreateLabel(image.transform, "Label", label, Vector2.zero, size, fontSize);
         return button;
+    }
+
+    void PlayClickSound()
+    {
+        SoundManager.PlayClick();
     }
 
     Image CreateImage(Transform parent, string name, Sprite sprite, Vector2 position, Vector2 size)

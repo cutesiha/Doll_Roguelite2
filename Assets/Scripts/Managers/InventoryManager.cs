@@ -91,12 +91,12 @@ public class InventoryManager : MonoBehaviour
 
     // equips the part in storage[storageIdx] into its matching slot
     // if that slot is already occupied, the existing part goes to the same storage index
-    public void EquipFromStorage(int storageIdx)
+    public bool EquipFromStorage(int storageIdx)
     {
-        if (storageIdx < 0 || storageIdx >= storage.Length) return;
+        if (storageIdx < 0 || storageIdx >= storage.Length) return false;
 
         var part = storage[storageIdx];
-        if (part == null) return;
+        if (part == null) return false;
 
         int idx = (int)part.slot;
         var displaced = equipped[idx];
@@ -106,6 +106,7 @@ public class InventoryManager : MonoBehaviour
 
         SyncBodyState();
         OnInventoryChanged?.Invoke();
+        return true;
     }
 
     public void SyncBodyState()
@@ -126,6 +127,39 @@ public class InventoryManager : MonoBehaviour
     {
         int index = (int)slot;
         return index >= 0 && index < equipped.Length && equipped[index] != null;
+    }
+
+    public BodyPart GetEquippedPart(BodySlot slot)
+    {
+        int index = (int)slot;
+        if (index < 0 || index >= equipped.Length)
+            return null;
+
+        return equipped[index];
+    }
+
+    public bool TryDamageEquippedPart(BodySlot slot, int damage, out BodyPart brokenPart)
+    {
+        brokenPart = null;
+        if (damage <= 0)
+            return false;
+
+        BodyPart part = GetEquippedPart(slot);
+        if (part == null)
+            return false;
+
+        part.maxHp = Mathf.Max(1, part.maxHp);
+        part.currentHp = Mathf.Clamp(part.currentHp - damage, 0, part.maxHp);
+
+        if (part.currentHp <= 0)
+        {
+            brokenPart = part;
+            equipped[(int)slot] = null;
+        }
+
+        SyncBodyState();
+        OnInventoryChanged?.Invoke();
+        return true;
     }
 
     public BodyState GetBodyStateSnapshot()

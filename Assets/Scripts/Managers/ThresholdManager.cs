@@ -7,6 +7,7 @@ public class ThresholdManager : MonoBehaviour
     [SerializeField] Color overlayColor = new Color(0f, 0f, 0f, 0.95f);
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] string bossSceneName = "BossScene";
+    [SerializeField] int overlaySortingOrder = 60;
     [SerializeField] Canvas overlayCanvas;
     [SerializeField] Image leftOverlay;
     [SerializeField] Image rightOverlay;
@@ -24,6 +25,9 @@ public class ThresholdManager : MonoBehaviour
     {
         if (bodyManager == null)
             bodyManager = BodyManager.Instance;
+
+        if (overlayCanvas != null)
+            overlayCanvas.sortingOrder = overlaySortingOrder;
 
         if (!IsRoomOrBossScene())
         {
@@ -64,7 +68,7 @@ public class ThresholdManager : MonoBehaviour
 
         overlayCanvas = canvasGO.AddComponent<Canvas>();
         overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        overlayCanvas.sortingOrder = 1000;
+        overlayCanvas.sortingOrder = overlaySortingOrder;
         canvasGO.AddComponent<CanvasScaler>();
         canvasGO.AddComponent<GraphicRaycaster>();
 

@@ -29,6 +29,8 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
         if (rootCanvas == null)
             return;
 
+        SoundManager.PlayClick();
+
         sourceImage = GetComponent<Image>();
         if (sourceImage != null)
         {
@@ -47,7 +49,7 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
         image.color = new Color(1f, 1f, 1f, 0.94f);
         image.sprite = sourceImage != null && sourceImage.sprite != null
             ? sourceImage.sprite
-            : InventoryUI.GetPartSprite(bodySlot);
+            : InventoryUI.FindDisplaySpriteForSlot(bodySlot);
 
         CanvasGroup group = go.AddComponent<CanvasGroup>();
         group.blocksRaycasts = false;

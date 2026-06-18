@@ -83,7 +83,6 @@ public class InventoryUI : MonoBehaviour
         EnsureEventSystem();
         WireClicks();
         EnsureToggleHotspot();
-        EnsureCharacterBaseImages();
         ApplyInventoryHitTesting();
         DisableTextRaycasts();
     }
@@ -104,12 +103,8 @@ public class InventoryUI : MonoBehaviour
 
     void Update()
     {
-        var kb = Keyboard.current;
-        if (kb == null || _panel == null) return;
-        if (kb.tabKey.wasPressedThisFrame || kb.iKey.wasPressedThisFrame)
-        {
-            TogglePanel();
-        }
+        // Tab/I 키는 RunHudUI.HandleInventoryHotkey 에서 일괄 처리.
+        // 여기서 중복 처리하면 같은 프레임에 열기→닫기가 발생해 아무것도 안 됨.
     }
 
     void WireClicks()
@@ -132,7 +127,6 @@ public class InventoryUI : MonoBehaviour
         EnsurePanelReference();
         NormalizeCanvasTransform();
         EnsureToggleHotspot();
-        EnsureCharacterBaseImages();
         ApplyInventoryHitTesting();
         if (_panel == null) return;
         _panel.SetActive(true);
@@ -315,8 +309,9 @@ public class InventoryUI : MonoBehaviour
             var p = inv.storage[i];
             if (_storageImg[i] != null)
             {
-                _storageImg[i].sprite = p != null ? GetPartSprite(p.slot) : null;
+                SetImageSpriteSafely(_storageImg[i], p != null ? DisplaySpriteForSlot(p.slot) : null);
                 _storageImg[i].preserveAspect = true;
+                _storageImg[i].type = Image.Type.Simple;
                 _storageImg[i].color = p != null
                     ? (_storageImg[i].sprite != null ? Color.white : CSlot)
                     : CEmpty;
@@ -328,14 +323,13 @@ public class InventoryUI : MonoBehaviour
             if (_storageHp[i]   != null) _storageHp[i].text     = p != null ? Dots(p) : "";
         }
 
-        // 캐릭터 부위
+        // 캐릭터 부위 — sprite/color/type 은 프리팹 설정을 그대로 유지.
+        // 드래그 충돌 감지(AlphaHitTest)만 적용.
         for (int i = 0; i < 6; i++)
         {
             var p = inv.equipped[i];
             if (_charImg[i] != null)
             {
-                if (_charImg[i].sprite == null)
-                    _charImg[i].sprite = GetPartSprite((BodySlot)i);
                 _charImg[i].preserveAspect = true;
                 _charImg[i].type = Image.Type.Simple;
                 _charImg[i].color = p != null ? Color.white : CUnequippedPart;
@@ -364,7 +358,6 @@ public class InventoryUI : MonoBehaviour
         }
 
         RefreshSewingStatus(inv);
-        ApplyCharacterBaseSprites();
         ApplyInventoryHitTesting();
     }
 
@@ -375,8 +368,6 @@ public class InventoryUI : MonoBehaviour
             if (_charImg[i] == null)
                 continue;
 
-            if (_charImg[i].sprite == null)
-                _charImg[i].sprite = GetPartSprite((BodySlot)i);
             ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
         }
 
@@ -404,17 +395,67 @@ public class InventoryUI : MonoBehaviour
         {
             try
             {
-                image.alphaHitTestMinimumThreshold = safeThreshold;
+                SetAlphaHitThresholdSafely(image, safeThreshold);
             }
             catch (System.Exception)
             {
                 // Leave the default rectangular hit area for sprites Unity cannot alpha-test.
             }
         }
+        else
+        {
+            SetAlphaHitThresholdSafely(image, 0f);
+        }
 
         Button button = image.GetComponent<Button>();
         if (button != null)
             button.targetGraphic = image;
+    }
+
+    public Sprite DisplaySpriteForSlot(BodySlot slot)
+    {
+        int index = (int)slot;
+        if (_charImg != null && index >= 0 && index < _charImg.Length && _charImg[index] != null && _charImg[index].sprite != null)
+            return _charImg[index].sprite;
+
+        return GetPartSprite(slot);
+    }
+
+    public static Sprite FindDisplaySpriteForSlot(BodySlot slot)
+    {
+        InventoryUI[] inventories = FindObjectsByType<InventoryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < inventories.Length; i++)
+        {
+            Sprite sprite = inventories[i].DisplaySpriteForSlot(slot);
+            if (sprite != null)
+                return sprite;
+        }
+
+        return GetPartSprite(slot);
+    }
+
+    static void SetImageSpriteSafely(Image image, Sprite sprite)
+    {
+        if (image == null)
+            return;
+
+        SetAlphaHitThresholdSafely(image, 0f);
+        image.sprite = sprite;
+    }
+
+    static void SetAlphaHitThresholdSafely(Image image, float value)
+    {
+        if (image == null)
+            return;
+
+        try
+        {
+            image.alphaHitTestMinimumThreshold = value;
+        }
+        catch (System.InvalidOperationException)
+        {
+            // Some UI sprites are intentionally not read/write. Rectangular hit testing is fine for them.
+        }
     }
 
     public static Sprite GetPartSprite(BodySlot slot)

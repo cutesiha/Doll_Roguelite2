@@ -26,6 +26,7 @@ public class InventoryEquipDropTarget : MonoBehaviour, IDropHandler
         if (part == null || part.slot != acceptedSlot)
             return;
 
-        InventoryManager.Instance.EquipFromStorage(storageIndex);
+        if (InventoryManager.Instance.EquipFromStorage(storageIndex))
+            SoundManager.PlayClick();
     }
 }

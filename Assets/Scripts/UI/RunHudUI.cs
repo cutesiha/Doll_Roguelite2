@@ -86,6 +86,13 @@ public class RunHudUI : MonoBehaviour
         EnsureEventSystem();
         EnsureBuilt();
         CloseMap();
+
+        // InventoryCanvas 가 비활성 상태이면 지금 활성화해서 Awake/Start 를 씬 로드 시점에 실행.
+        // 이렇게 하지 않으면 OpenPanel() 안에서 SetActive(true) 를 호출할 때 Start() 가
+        // 다음 프레임에 실행되어 ForceClosePanelImmediate() 가 패널을 다시 닫아버린다.
+        InventoryUI inventoryUI = GetComponentInChildren<InventoryUI>(true);
+        if (inventoryUI != null && !inventoryUI.gameObject.activeSelf)
+            inventoryUI.gameObject.SetActive(true);
     }
 
     void Update()
@@ -307,27 +314,35 @@ public class RunHudUI : MonoBehaviour
     {
         if (mapButton != null)
         {
+            mapButton.onClick.RemoveListener(PlayClickSound);
             mapButton.onClick.RemoveListener(OpenMap);
+            mapButton.onClick.AddListener(PlayClickSound);
             mapButton.onClick.AddListener(OpenMap);
         }
 
         if (inventoryButton != null)
         {
+            inventoryButton.onClick.RemoveListener(PlayClickSound);
             inventoryButton.onClick.RemoveListener(ToggleInventory);
+            inventoryButton.onClick.AddListener(PlayClickSound);
             inventoryButton.onClick.AddListener(ToggleInventory);
         }
 
         Button backdropButton = FindChildComponent<Button>("MapBackdrop");
         if (backdropButton != null)
         {
+            backdropButton.onClick.RemoveListener(PlayClickSound);
             backdropButton.onClick.RemoveListener(CloseMap);
+            backdropButton.onClick.AddListener(PlayClickSound);
             backdropButton.onClick.AddListener(CloseMap);
         }
 
         Button closeButton = FindChildComponent<Button>("MapCloseButton_X");
         if (closeButton != null)
         {
+            closeButton.onClick.RemoveListener(PlayClickSound);
             closeButton.onClick.RemoveListener(CloseMap);
+            closeButton.onClick.AddListener(PlayClickSound);
             closeButton.onClick.AddListener(CloseMap);
         }
 
@@ -599,6 +614,7 @@ public class RunHudUI : MonoBehaviour
     void BuildBottomRightButtons()
     {
         inventoryButton = BuildHudButton(transform, "InventoryIconButton", Anchor.BottomRight, new Vector2(-116f, 36f), new Vector2(66f, 66f));
+        inventoryButton.onClick.AddListener(PlayClickSound);
         inventoryButton.onClick.AddListener(ToggleInventory);
         BuildInventoryIcon(inventoryButton.transform);
 
@@ -849,6 +865,11 @@ public class RunHudUI : MonoBehaviour
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.mKey.wasPressedThisFrame)
             ToggleMap();
+    }
+
+    void PlayClickSound()
+    {
+        SoundManager.PlayClick();
     }
 
     void HandleInventoryHotkey()

@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -10,6 +12,14 @@ public class EnemyBase : MonoBehaviour
     [SerializeField] protected int maxHp = 2;
     [SerializeField] Color bodyColor = new Color(0.45f, 0.45f, 0.45f, 1f);
     [SerializeField, Min(1f)] float framesPerSecond = 8f;
+    [Header("Hit Area")]
+    [SerializeField] Collider2D hitCollider;
+    [SerializeField] bool fitColliderToCurrentSprite = true;
+    [SerializeField, Min(0f)] float colliderPadding = 0f;
+    [Header("Hit Feedback")]
+    [SerializeField, Range(0.03f, 0.35f)] float hitFeedbackDuration = 0.12f;
+    [SerializeField, Min(0f)] float hitShakeDistance = 0.045f;
+    [SerializeField] Color hitTint = new Color(1f, 0.28f, 0.24f, 1f);
     protected int currentHp;
     public bool HasManagedProfile { get; private set; }
 
@@ -17,6 +27,8 @@ public class EnemyBase : MonoBehaviour
     Sprite[] animationFrames;
     float animationTime;
     int currentFrame = -1;
+    Coroutine hitFeedbackRoutine;
+    Color spriteBaseColor = Color.white;
 
     protected virtual void Awake()
     {
@@ -27,6 +39,8 @@ public class EnemyBase : MonoBehaviour
             animationFrames = LoadRandomEnemyFrames();
             ApplyAnimationFrame(0);
             spriteRenderer.color = Color.white;
+            spriteBaseColor = Color.white;
+            EnsureHitCollider();
             return;
         }
 
@@ -37,6 +51,8 @@ public class EnemyBase : MonoBehaviour
             mat.SetColor("_BaseColor", bodyColor);
             rend.material = mat;
         }
+
+        EnsureHitCollider();
     }
 
     protected virtual void Start()
@@ -65,6 +81,136 @@ public class EnemyBase : MonoBehaviour
 
         spriteRenderer.sprite = animationFrames[frame];
         currentFrame = frame;
+        FitColliderToSprite(spriteRenderer.sprite);
+    }
+
+    void EnsureHitCollider()
+    {
+        if (hitCollider == null)
+            hitCollider = GetComponent<Collider2D>();
+
+        if (hitCollider != null
+            && !(hitCollider is PolygonCollider2D)
+            && !(hitCollider is BoxCollider2D)
+            && !(hitCollider is CapsuleCollider2D))
+        {
+            hitCollider.enabled = false;
+            hitCollider = null;
+        }
+
+        if (hitCollider == null && spriteRenderer != null)
+            hitCollider = gameObject.AddComponent<PolygonCollider2D>();
+
+        FitColliderToSprite(spriteRenderer != null ? spriteRenderer.sprite : null);
+    }
+
+    void FitColliderToSprite(Sprite sprite)
+    {
+        if (!fitColliderToCurrentSprite || sprite == null)
+            return;
+
+        if (hitCollider == null)
+            EnsureHitCollider();
+
+        if (hitCollider == null)
+            return;
+
+        if (hitCollider is PolygonCollider2D polygon)
+        {
+            if (TryApplySpritePhysicsShape(polygon, sprite))
+                return;
+
+            ApplyBoxPath(polygon, sprite);
+            return;
+        }
+
+        if (hitCollider is BoxCollider2D box)
+        {
+            Bounds bounds = sprite.bounds;
+            box.offset = bounds.center;
+            box.size = new Vector2(
+                Mathf.Max(0.01f, bounds.size.x + colliderPadding * 2f),
+                Mathf.Max(0.01f, bounds.size.y + colliderPadding * 2f));
+            return;
+        }
+
+        if (hitCollider is CapsuleCollider2D capsule)
+        {
+            Bounds bounds = sprite.bounds;
+            capsule.offset = bounds.center;
+            capsule.size = new Vector2(
+                Mathf.Max(0.01f, bounds.size.x + colliderPadding * 2f),
+                Mathf.Max(0.01f, bounds.size.y + colliderPadding * 2f));
+            capsule.direction = bounds.size.y >= bounds.size.x
+                ? CapsuleDirection2D.Vertical
+                : CapsuleDirection2D.Horizontal;
+        }
+    }
+
+    bool TryApplySpritePhysicsShape(PolygonCollider2D polygon, Sprite sprite)
+    {
+        int shapeCount = sprite.GetPhysicsShapeCount();
+        if (shapeCount <= 0)
+            return false;
+
+        List<Vector2> path = new List<Vector2>(32);
+        List<List<Vector2>> validPaths = new List<List<Vector2>>(shapeCount);
+        for (int i = 0; i < shapeCount; i++)
+        {
+            path.Clear();
+            sprite.GetPhysicsShape(i, path);
+            if (path.Count < 3)
+                continue;
+
+            if (colliderPadding > 0f)
+                ExpandPath(path, colliderPadding);
+
+            validPaths.Add(new List<Vector2>(path));
+        }
+
+        if (validPaths.Count == 0)
+            return false;
+
+        polygon.pathCount = validPaths.Count;
+        for (int i = 0; i < validPaths.Count; i++)
+            polygon.SetPath(i, validPaths[i]);
+        return true;
+    }
+
+    void ApplyBoxPath(PolygonCollider2D polygon, Sprite sprite)
+    {
+        Bounds bounds = sprite.bounds;
+        float minX = bounds.min.x - colliderPadding;
+        float minY = bounds.min.y - colliderPadding;
+        float maxX = bounds.max.x + colliderPadding;
+        float maxY = bounds.max.y + colliderPadding;
+
+        polygon.pathCount = 1;
+        polygon.SetPath(0, new[]
+        {
+            new Vector2(minX, minY),
+            new Vector2(minX, maxY),
+            new Vector2(maxX, maxY),
+            new Vector2(maxX, minY)
+        });
+    }
+
+    void ExpandPath(List<Vector2> path, float padding)
+    {
+        if (path == null || path.Count == 0 || padding <= 0f)
+            return;
+
+        Vector2 center = Vector2.zero;
+        for (int i = 0; i < path.Count; i++)
+            center += path[i];
+        center /= path.Count;
+
+        for (int i = 0; i < path.Count; i++)
+        {
+            Vector2 direction = path[i] - center;
+            if (direction.sqrMagnitude > 0.0001f)
+                path[i] += direction.normalized * padding;
+        }
     }
 
     public virtual void ApplyProfile(EnemyProfile profile)
@@ -91,6 +237,7 @@ public class EnemyBase : MonoBehaviour
         if (spriteRenderer != null)
         {
             spriteRenderer.color = bodyColor;
+            spriteBaseColor = bodyColor;
             ApplyAnimationFrame(0);
             return;
         }
@@ -151,7 +298,50 @@ public class EnemyBase : MonoBehaviour
             Die();
     }
 
-    protected virtual void OnDamaged() { }
+    protected virtual void OnDamaged()
+    {
+        PlayHitFeedback();
+    }
+
+    protected virtual void PlayHitFeedback()
+    {
+        SoundManager.PlayEnemyHit();
+
+        if (spriteRenderer == null || !gameObject.activeInHierarchy)
+            return;
+
+        if (hitFeedbackRoutine != null)
+            StopCoroutine(hitFeedbackRoutine);
+
+        hitFeedbackRoutine = StartCoroutine(HitFeedbackRoutine());
+    }
+
+    IEnumerator HitFeedbackRoutine()
+    {
+        float duration = Mathf.Max(0.01f, hitFeedbackDuration);
+        float elapsed = 0f;
+        Vector3 appliedOffset = Vector3.zero;
+        Color baseColor = spriteBaseColor;
+
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            transform.position -= appliedOffset;
+            appliedOffset = (Vector3)(Random.insideUnitCircle * hitShakeDistance * (1f - t));
+            transform.position += appliedOffset;
+
+            if (spriteRenderer != null)
+                spriteRenderer.color = Color.Lerp(hitTint, baseColor, t);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.position -= appliedOffset;
+        if (spriteRenderer != null)
+            spriteRenderer.color = baseColor;
+        hitFeedbackRoutine = null;
+    }
 
     protected virtual void Die()
     {
