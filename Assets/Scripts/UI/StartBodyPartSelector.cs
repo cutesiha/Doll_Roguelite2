@@ -91,6 +91,7 @@ public class StartBodyPartSelector : MonoBehaviour
     readonly Image[] sfxVolumeFills = new Image[10];
     TextMeshProUGUI roadEmptySlotMessage;
     int roadPageIndex;
+    int pendingLoadSlot = -1;
     bool roadEmptySlotMessageActive;
     float roadEmptySlotMessageElapsed;
     bool isEyeAnimationPlaying;
@@ -1091,6 +1092,7 @@ public class StartBodyPartSelector : MonoBehaviour
         ConfigureRoadText(overlayImage != null ? overlayImage.transform : roadPanel.transform);
         EnsureRoadEmptySlotMessage(overlayImage != null ? overlayImage.transform : roadPanel.transform);
         EnsureRoadSaveSlotHotspots();
+        RefreshRoadSaveLabels();
 
         bool roadCloseCreated = roadPanel.transform.Find("RoadCloseHotspot") == null;
         roadCloseButton = EnsureButton(roadPanel.transform, "RoadCloseHotspot", roadClosePosition, roadCloseSize, new Color(1f, 1f, 1f, HiddenButtonAlpha));
@@ -1221,6 +1223,38 @@ public class StartBodyPartSelector : MonoBehaviour
         }
     }
 
+    void RefreshRoadSaveLabels()
+    {
+        if (roadPanel == null)
+            return;
+
+        float[] rowTop = { 97f, 120f, 144f, 167f };
+        float[] rowBottom = { 120f, 144f, 167f, 190f };
+        for (int i = 0; i < rowTop.Length; i++)
+        {
+            float rowHeight = rowBottom[i] - rowTop[i];
+            GameSaveSystem.SlotInfo info = GameSaveSystem.GetSlotInfo(i);
+
+            TextMeshProUGUI nameText = EnsureTMPText(roadPanel.transform, "RoadSaveSlotNameText" + (i + 1));
+            nameText.font = UIThinDungFont.Get();
+            nameText.text = info.exists ? info.saveName : "";
+            nameText.fontSize = 18f;
+            nameText.alignment = TextAlignmentOptions.Center;
+            nameText.color = Color.black;
+            nameText.raycastTarget = false;
+            ApplyPanelPixelRect(nameText.rectTransform, roadPanel.transform, new Rect(36f, rowTop[i], 75f, rowHeight));
+
+            TextMeshProUGUI dateText = EnsureTMPText(roadPanel.transform, "RoadSaveSlotDateText" + (i + 1));
+            dateText.font = UIThinDungFont.Get();
+            dateText.text = info.exists ? info.savedAt + " 저장됨" : "";
+            dateText.fontSize = 17f;
+            dateText.alignment = TextAlignmentOptions.Center;
+            dateText.color = Color.black;
+            dateText.raycastTarget = false;
+            ApplyPanelPixelRect(dateText.rectTransform, roadPanel.transform, new Rect(111f, rowTop[i], 255f, rowHeight));
+        }
+    }
+
     void EnsureRoadSlotButton(string buttonName, int rowIndex, Rect panelPixelRect)
     {
         Button slot = EnsureButton(roadPanel.transform, buttonName, Vector2.zero, Vector2.zero, WithAlpha(panelLineColor, 0f));
@@ -1265,7 +1299,23 @@ public class StartBodyPartSelector : MonoBehaviour
     void HandleRoadSlotClicked(int rowIndex)
     {
         PlayPanelAudioSource(roadEmptySlotClickSource, false);
-        ShowRoadEmptySlotMessage();
+        if (GameSaveSystem.HasSave(rowIndex))
+            ShowLoadConfirmPanel(rowIndex);
+        else
+            ShowRoadEmptySlotMessage();
+    }
+
+    void ShowLoadConfirmPanel(int rowIndex)
+    {
+        pendingLoadSlot = rowIndex;
+        ShowConfirmPanel("불러오시겠습니까?", ConfirmLoadSlot, CloseQuitPanel);
+    }
+
+    void ConfirmLoadSlot()
+    {
+        int slot = pendingLoadSlot;
+        pendingLoadSlot = -1;
+        GameSaveSystem.LoadSlotAndEnter(slot);
     }
 
     void ShowRoadEmptySlotMessage()
@@ -1789,6 +1839,7 @@ public class StartBodyPartSelector : MonoBehaviour
             StopCoroutine(roadPanelRoutine);
 
         SetChoicesInputEnabled(false);
+        RefreshRoadSaveLabels();
         roadPanel.SetActive(true);
         roadPanel.transform.SetAsLastSibling();
         roadPanelRect.anchoredPosition = roadPanelHiddenPosition;
@@ -1972,8 +2023,19 @@ public class StartBodyPartSelector : MonoBehaviour
 
     void ShowQuitPanel()
     {
+        ShowConfirmPanel("정말로 게임을 종료하시겠습니까?", ConfirmQuit, CloseQuitPanel);
+    }
+
+    void ShowConfirmPanel(string question, UnityEngine.Events.UnityAction yesAction, UnityEngine.Events.UnityAction noAction)
+    {
         if (quitPanel == null)
             return;
+
+        ConfigureExitUIText(exitQuestionUIText, question, 46f);
+        ConfigureExitUIText(exitAnswer1UIText, "예", 52f);
+        ConfigureExitUIText(exitAnswer2UIText, "아니오", 48f);
+        ConfigureExitAnswerButton(exitAnswer1Image, yesAction);
+        ConfigureExitAnswerButton(exitAnswer2Image, noAction);
 
         quitPanel.SetActive(true);
         quitPanel.transform.SetAsLastSibling();
@@ -1988,6 +2050,8 @@ public class StartBodyPartSelector : MonoBehaviour
 
     public void CloseQuitPanel()
     {
+        pendingLoadSlot = -1;
+
         if (quitPanel != null)
         {
             SetExitPanelAlpha(0f);

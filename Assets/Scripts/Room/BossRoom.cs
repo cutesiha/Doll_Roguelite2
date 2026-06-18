@@ -26,6 +26,7 @@ public class BossRoom : MonoBehaviour
         {
             var boss = Instantiate(bossPrefab, bossSpawnPos, Quaternion.identity);
             boss.transform.localScale = bossScale;
+            EnemyManager.Instance?.ConfigureEnemy(boss, true);
             enemies.Add(boss);
         }
 

@@ -11,6 +11,7 @@ public class EnemyBase : MonoBehaviour
     [SerializeField] Color bodyColor = new Color(0.45f, 0.45f, 0.45f, 1f);
     [SerializeField, Min(1f)] float framesPerSecond = 8f;
     protected int currentHp;
+    public bool HasManagedProfile { get; private set; }
 
     SpriteRenderer spriteRenderer;
     Sprite[] animationFrames;
@@ -38,6 +39,11 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
+    protected virtual void Start()
+    {
+        EnemyManager.Instance?.ConfigureEnemy(this);
+    }
+
     protected virtual void Update()
     {
         if (animationFrames == null || animationFrames.Length == 0 || spriteRenderer == null)
@@ -59,6 +65,43 @@ public class EnemyBase : MonoBehaviour
 
         spriteRenderer.sprite = animationFrames[frame];
         currentFrame = frame;
+    }
+
+    public virtual void ApplyProfile(EnemyProfile profile)
+    {
+        if (profile == null)
+            return;
+
+        HasManagedProfile = true;
+        maxHp = Mathf.Max(1, profile.maxHp);
+        currentHp = maxHp;
+        framesPerSecond = Mathf.Max(1f, profile.framesPerSecond);
+        bodyColor = profile.tint;
+
+        if (profile.HasAnimationFrames)
+        {
+            animationFrames = SortSprites(profile.animationFrames);
+            animationTime = 0f;
+            currentFrame = -1;
+        }
+
+        if (spriteRenderer == null)
+            spriteRenderer = GetComponent<SpriteRenderer>();
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = bodyColor;
+            ApplyAnimationFrame(0);
+            return;
+        }
+
+        Renderer renderer = GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            Material material = renderer.material;
+            if (material != null)
+                material.SetColor("_BaseColor", bodyColor);
+        }
     }
 
     Sprite[] LoadRandomEnemyFrames()

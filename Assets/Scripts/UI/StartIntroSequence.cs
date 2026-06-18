@@ -4,6 +4,8 @@ using UnityEngine.UI;
 
 public class StartIntroSequence : MonoBehaviour
 {
+    public static bool SkipNextIntro { get; set; }
+
     [Header("Timing")]
     [SerializeField] float fadeDuration = 1.25f;
     [SerializeField] float pauseAfterIntroTitleFade = 1.5f;
@@ -29,11 +31,23 @@ public class StartIntroSequence : MonoBehaviour
         AutoWireMissingReferences();
         SoundManager.ApplySavedVolumes();
         CacheOriginalState();
+
+        if (SkipNextIntro)
+        {
+            SkipNextIntro = false;
+            ApplySkippedIntroState();
+            enabled = false;
+            return;
+        }
+
         PrepareIntroState();
     }
 
     IEnumerator Start()
     {
+        if (!enabled)
+            yield break;
+
         yield return RunIntroSequence();
     }
 
@@ -148,6 +162,30 @@ public class StartIntroSequence : MonoBehaviour
             bgmSource.playOnAwake = false;
             bgmSource.Stop();
         }
+    }
+
+    void ApplySkippedIntroState()
+    {
+        SetImageAlpha(blackPanel, 0f);
+        SetImageAlpha(introTitleImage, 0f);
+        if (introTitleImage != null)
+            introTitleImage.gameObject.SetActive(false);
+
+        SetImageAlpha(backgroundImage, 1f);
+        if (backgroundImage != null)
+            backgroundImage.gameObject.SetActive(true);
+
+        SetImageAlpha(finalTitleImage, 1f);
+        if (finalTitleImage != null)
+        {
+            finalTitleImage.gameObject.SetActive(true);
+            finalTitleImage.rectTransform.anchoredPosition = finalTitlePosition;
+        }
+
+        SetBodyPartsAlpha(1f);
+        SetBodyPartsRaycast(true);
+        SetLayerOrder();
+        PlayBgmOnce();
     }
 
     void SetLayerOrder()

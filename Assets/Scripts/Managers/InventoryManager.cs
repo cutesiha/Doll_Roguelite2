@@ -141,6 +141,27 @@ public class InventoryManager : MonoBehaviour
         };
     }
 
+    public void ReplaceState(BodyPart[] newEquipped, BodyPart[] newStorage)
+    {
+        equipped = NormalizeParts(newEquipped, 6);
+        storage = NormalizeParts(newStorage, 2);
+        SyncBodyState();
+        OnInventoryChanged?.Invoke();
+    }
+
+    BodyPart[] NormalizeParts(BodyPart[] source, int length)
+    {
+        BodyPart[] result = new BodyPart[length];
+        if (source == null)
+            return result;
+
+        int count = Mathf.Min(source.Length, length);
+        for (int i = 0; i < count; i++)
+            result[i] = source[i];
+
+        return result;
+    }
+
     int FreeStorageIndex()
     {
         for (int i = 0; i < storage.Length; i++)

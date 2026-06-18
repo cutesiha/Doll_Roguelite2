@@ -57,6 +57,30 @@ public class PlayerController : MonoBehaviour
         Right
     }
 
+    public SpriteRenderer BodyRenderer => spriteRenderer;
+    public SpriteRenderer LeftArmRenderer => leftArmRenderer;
+    public SpriteRenderer RightArmRenderer => rightArmRenderer;
+
+    public Vector2 FacingVector
+    {
+        get
+        {
+            return facingDirection switch
+            {
+                FacingDirection.Up => Vector2.up,
+                FacingDirection.Left => Vector2.left,
+                FacingDirection.Right => Vector2.right,
+                _ => Vector2.down
+            };
+        }
+    }
+
+    public void ApplyPlayerManagerSettings(float newMoveSpeed, float newMissingLegSpeedMultiplier)
+    {
+        moveSpeed = Mathf.Max(0f, newMoveSpeed);
+        missingLegSpeedMultiplier = Mathf.Clamp01(newMissingLegSpeedMultiplier);
+    }
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -74,6 +98,11 @@ public class PlayerController : MonoBehaviour
             spriteRenderer.color = Color.white;
             ApplyFacingSprite();
         }
+    }
+
+    void Start()
+    {
+        PlayerManager.Instance?.ApplyTo(gameObject);
     }
 
 #if UNITY_EDITOR

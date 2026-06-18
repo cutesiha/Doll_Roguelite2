@@ -96,6 +96,7 @@ public class RunHudUI : MonoBehaviour
             return;
 
         HandleMapHotkey();
+        HandleInventoryHotkey();
         HandleInventoryOutsideClick();
     }
 
@@ -329,6 +330,20 @@ public class RunHudUI : MonoBehaviour
             closeButton.onClick.RemoveListener(CloseMap);
             closeButton.onClick.AddListener(CloseMap);
         }
+
+        WirePauseMenu();
+    }
+
+    void WirePauseMenu()
+    {
+        if (menuButton == null)
+            return;
+
+        RunPauseMenuUI pauseMenu = GetComponent<RunPauseMenuUI>();
+        if (pauseMenu == null)
+            pauseMenu = gameObject.AddComponent<RunPauseMenuUI>();
+
+        pauseMenu.SetMenuButton(menuButton);
     }
 
     T FindChildComponent<T>(string childName) where T : Component
@@ -589,6 +604,7 @@ public class RunHudUI : MonoBehaviour
 
         menuButton = BuildHudButton(transform, "MenuIconButton", Anchor.BottomRight, new Vector2(-38f, 36f), new Vector2(66f, 66f));
         BuildMenuIcon(menuButton.transform);
+        WirePauseMenu();
     }
 
     void BuildInventoryIcon(Transform parent)
@@ -833,6 +849,16 @@ public class RunHudUI : MonoBehaviour
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.mKey.wasPressedThisFrame)
             ToggleMap();
+    }
+
+    void HandleInventoryHotkey()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
+            return;
+
+        if (keyboard.tabKey.wasPressedThisFrame || keyboard.iKey.wasPressedThisFrame)
+            ToggleInventory();
     }
 
     public void CloseMap()
@@ -1115,6 +1141,10 @@ public class RunHudUI : MonoBehaviour
 
     InventoryUI FindInventory()
     {
+        InventoryUI ownInventory = GetComponentInChildren<InventoryUI>(true);
+        if (ownInventory != null)
+            return ownInventory;
+
         InventoryUI[] inventories = FindObjectsByType<InventoryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         return inventories.Length > 0 ? inventories[0] : null;
     }

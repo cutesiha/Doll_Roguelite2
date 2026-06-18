@@ -10,28 +10,12 @@ using UnityEditor;
 
 public class InventoryUI : MonoBehaviour
 {
-    const string EditorInventoryPrefabPath = "Assets/Prefabs/UI/InventoryCanvas.prefab";
-
-    // Bootstrap: Resources/InventoryCanvas 프리팹을 로드
-    // 씬에 이미 있으면 아무것도 안 함
+    // RunHudCanvas.prefab owns the in-game inventory panel.
+    // Keep this bootstrap empty so an older standalone InventoryCanvas prefab
+    // cannot override the layout edited inside RunHudCanvas.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
-        if (FindObjectsByType<InventoryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length > 0) return;
-        GameObject prefab = null;
-#if UNITY_EDITOR
-        prefab = AssetDatabase.LoadAssetAtPath<GameObject>(EditorInventoryPrefabPath);
-#endif
-        if (prefab == null)
-            prefab = Resources.Load<GameObject>("InventoryCanvas");
-
-        if (prefab == null)
-        {
-            Debug.LogWarning("[InventoryUI] Resources/InventoryCanvas 프리팹 없음. 에디터 메뉴 Game > 인벤토리 UI 생성 후 저장하세요.");
-            return;
-        }
-        var go = Instantiate(prefab);
-        DontDestroyOnLoad(go);
     }
 
     // ── Inspector 연결 필드 ────────────────────────────────────────────

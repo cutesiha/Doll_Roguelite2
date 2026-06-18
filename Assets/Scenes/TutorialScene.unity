@@ -266,6 +266,7 @@ GameObject:
   m_Component:
   - component: {fileID: 161824398}
   - component: {fileID: 161824397}
+  - component: {fileID: 161824399}
   m_Layer: 0
   m_Name: Managers
   m_TagString: Untagged
@@ -285,6 +286,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3bc1a752ae2fda4380ef73d09e85239, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyManager
+  enemyProfiles:
+  - profileName: d1
+    maxHp: 2
+    moveSpeed: 1
+    framesPerSecond: 8
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    animationFrames:
+    - {fileID: 3589117536062990964, guid: 8d48d4a40e7e73341a6aec53def23ccd, type: 3}
+    - {fileID: 4721942824303273186, guid: 8d48d4a40e7e73341a6aec53def23ccd, type: 3}
+    - {fileID: 3270595210023892928, guid: 8d48d4a40e7e73341a6aec53def23ccd, type: 3}
+    - {fileID: -3679629864974252039, guid: 8d48d4a40e7e73341a6aec53def23ccd, type: 3}
+  - profileName: d2
+    maxHp: 2
+    moveSpeed: 1.15
+    framesPerSecond: 8
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    animationFrames:
+    - {fileID: -3213338478731498277, guid: ac2ad8597f44afb4f8cde87fd4eb74b0, type: 3}
+    - {fileID: -9068294909388791593, guid: ac2ad8597f44afb4f8cde87fd4eb74b0, type: 3}
+    - {fileID: 5685342351560230757, guid: ac2ad8597f44afb4f8cde87fd4eb74b0, type: 3}
+    - {fileID: 5300844473013436364, guid: ac2ad8597f44afb4f8cde87fd4eb74b0, type: 3}
+  - profileName: d3
+    maxHp: 3
+    moveSpeed: 0.9
+    framesPerSecond: 8
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    animationFrames:
+    - {fileID: -1317026252678793333, guid: 311cda14ffc940940b276da8c8a20224, type: 3}
+    - {fileID: 7490358358114565894, guid: 311cda14ffc940940b276da8c8a20224, type: 3}
+    - {fileID: -3557125825966626529, guid: 311cda14ffc940940b276da8c8a20224, type: 3}
+    - {fileID: -371533097180688288, guid: 311cda14ffc940940b276da8c8a20224, type: 3}
+  randomizeEnemyProfiles: 1
 --- !u!4 &161824398
 Transform:
   m_ObjectHideFlags: 0
@@ -300,6 +333,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &161824399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 161824396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8a8720917cc9f74d8d23f5a37e33d1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerManager
+  maxHp: 10
+  currentHp: 10
+  moveSpeed: 5
+  missingLegSpeedMultiplier: 0.5
+  attackDamage: 1
+  attackCooldown: 0.3
+  attackDistance: 1
+  attackDistanceBonus: 0.4
+  attackSize: {x: 1, y: 1}
+  attackDuration: 0.12
+  fistScale: {x: 1.65, y: 1.65}
 --- !u!1 &178391432
 GameObject:
   m_ObjectHideFlags: 0
@@ -423,11 +479,42 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e2edcb20cf59a444be258d88c61017f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttack
+  playerController: {fileID: 211311187}
+  bodyRenderer: {fileID: 211311193}
+  leftArmRenderer: {fileID: 0}
+  rightArmRenderer: {fileID: 0}
+  fistSprite: {fileID: -2151256579594707336, guid: ef9e5b455ab12494980e166c13e8c36e, type: 3}
+  fistPrefab: {fileID: 0}
+  leftAttackStart: {fileID: 0}
+  rightAttackStart: {fileID: 0}
+  useFixedBodyAttackOrigin: 1
+  attackDistance: 1
+  attackDuration: 0.12
+  swingArcHeight: 0.22
+  swingRotation: 70
+  fistRotationOffset: 0
+  fistScale: {x: 1.65, y: 1.65}
+  attackStartOffset: 0.22
+  attackDistanceBonus: 0.4
+  trailSpawnInterval: 0.025
+  trailLifetime: 0.12
+  trailStartAlpha: 0.32
+  prewarmTrailCount: 6
+  useRedSlashEffect: 1
+  slashSpawnInterval: 0.018
+  slashLifetime: 0.1
+  slashColor: {r: 1, g: 0.08, b: 0.02, a: 0.42}
+  slashScale: {x: 2, y: 0.72}
+  prewarmSlashCount: 8
+  frontAndSideAttackSortingOrder: 1
+  backAttackSortingOrder: -1
+  fistSortingOrderOffset: 1
+  effectSortingOrderOffset: -1
   attackDamage: 1
-  attackRange: 0.8
   attackCooldown: 0.3
-  attackSize: {x: 0.8, y: 0.8}
-  flashDuration: 0.12
+  attackSize: {x: 1, y: 1}
+  hitAreaExtraLength: 0.35
+  attackFacingLockDuration: 0.25
   pressTimeout: 0.5
   requiredPressCount: 3
 --- !u!114 &211311187
@@ -446,10 +533,31 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   bodyColor: {r: 0.3, g: 0.6, b: 1, a: 1}
   spriteRenderer: {fileID: 211311193}
+  leftArmRenderer: {fileID: 0}
+  rightArmRenderer: {fileID: 0}
   upSprite: {fileID: 21300000, guid: dc4f87adf8a30f2408fdf9fc5652f7e5, type: 3}
   downSprite: {fileID: 21300000, guid: 490ca93b79508d0448588d1ae069cff7, type: 3}
   leftSprite: {fileID: 21300000, guid: 5ecf4f84ff71725468866bba5d71272c, type: 3}
   rightSprite: {fileID: 21300000, guid: ff51d710ccf359c4c965a7fe3c21a430, type: 3}
+  standingFrontLeftArmSprite: {fileID: 0}
+  standingFrontRightArmSprite: {fileID: 0}
+  standingBehindLeftArmSprite: {fileID: 0}
+  standingBehindRightArmSprite: {fileID: 0}
+  standingLeftFacingRightArmSprite: {fileID: 0}
+  standingRightFacingLeftArmSprite: {fileID: 0}
+  frontWalkBodyFrames: []
+  frontWalkLeftArmFrames: []
+  frontWalkRightArmFrames: []
+  leftWalkBodyFrames: []
+  leftWalkLeftArmFrames: []
+  leftWalkRightArmFrames: []
+  rightWalkBodyFrames: []
+  rightWalkLeftArmFrames: []
+  rightWalkRightArmFrames: []
+  behindWalkBodyFrames: []
+  behindWalkLeftArmFrames: []
+  behindWalkRightArmFrames: []
+  frontWalkFramesPerSecond: 8
 --- !u!61 &211311188
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -595,7 +703,7 @@ SpriteRenderer:
   m_Size: {x: 0.82, y: 1.1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
 --- !u!21 &337259044
 Material:
@@ -815,9 +923,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorTrigger
   roomSceneName: RoomScene
   bossSceneName: BossScene
+  supplySceneName: PresentScene
+  eventSceneName: EventScene
   lockedColor: {r: 0.25, g: 0.25, b: 0.25, a: 1}
   openColor: {r: 0.85, g: 0.62, b: 0.25, a: 1}
   blockedColor: {r: 0.65, g: 0.15, b: 0.15, a: 1}
+  enterPromptColor: {r: 0.46, g: 1, b: 0.58, a: 1}
+  blockedPromptColor: {r: 1, g: 0.32, b: 0.28, a: 1}
 --- !u!61 &517243976
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1257,6 +1369,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyChaser
   maxHp: 2
   bodyColor: {r: 0.93333334, g: 0.28573322, b: 0, a: 1}
+  framesPerSecond: 8
   moveSpeed: 1
 --- !u!58 &1009779783
 CircleCollider2D:
@@ -1995,6 +2108,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyChaser
   maxHp: 2
   bodyColor: {r: 0.93333334, g: 0.28573322, b: 0, a: 1}
+  framesPerSecond: 8
   moveSpeed: 1
 --- !u!58 &1730252288
 CircleCollider2D:
@@ -2421,6 +2535,7 @@ MonoBehaviour:
   nextWaveDelay: 0.75
   spawnRange: {x: 4, y: 3}
   randomizeEnemyPositions: 1
+  spawnPositionAttempts: 30
   doors:
   - {fileID: 517243970}
   doorLine: {x: 8, y: 4}

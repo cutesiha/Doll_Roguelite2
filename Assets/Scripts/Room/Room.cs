@@ -269,7 +269,10 @@ public class Room : MonoBehaviour
 
             EnemyBase enemy = enemyGO.GetComponent<EnemyBase>();
             if (enemy != null)
+            {
+                EnemyManager.Instance?.ConfigureEnemy(enemy, true);
                 enemies.Add(enemy);
+            }
         }
     }
 

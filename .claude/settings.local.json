@@ -5,7 +5,9 @@
       "Bash(git check-ignore *)",
       "Bash(grep -E \"\\\\.\\(csproj|slnx\\)$\")",
       "Bash(git rm *)",
-      "Bash(claude mcp *)"
+      "Bash(claude mcp *)",
+      "Bash(cat \"C:/Users/USER/.claude/settings.json\" 2>/dev/null || echo \"NOT FOUND\")",
+      "Bash(cat \"C:/Users/USER/.claude/claude_desktop_config.json\" 2>/dev/null || echo \"NOT FOUND\" *)"
     ]
   }
 }

@@ -16,10 +16,20 @@ public class EnemyChaser : EnemyBase
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
     }
 
-    void Start()
+    protected override void Start()
     {
+        base.Start();
+
         var playerObj = GameObject.FindWithTag("Player");
         if (playerObj != null) player = playerObj.transform;
+    }
+
+    public override void ApplyProfile(EnemyProfile profile)
+    {
+        base.ApplyProfile(profile);
+
+        if (profile != null)
+            moveSpeed = Mathf.Max(0f, profile.moveSpeed);
     }
 
     void FixedUpdate()
