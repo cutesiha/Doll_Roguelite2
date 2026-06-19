@@ -61,6 +61,7 @@ public class EnemyChaser : EnemyBase
     {
         if (player == null) return;
         if (isSlamming || isDying) return;
+        if (TryMoveSpawnApproach()) return;
 
         Vector2 dir = ((Vector2)player.position - rb.position).normalized;
         rb.MovePosition(rb.position + dir * moveSpeed * Time.fixedDeltaTime);

@@ -62,6 +62,8 @@ public class NeedleEnemy : EnemyBase
     {
         if (player == null || isBusy)
             return;
+        if (TryMoveSpawnApproach())
+            return;
 
         Vector2 direction = ((Vector2)player.position - rb.position).normalized;
         rb.MovePosition(rb.position + direction * chaseSpeed * Time.fixedDeltaTime);

@@ -7,6 +7,8 @@ public class DroppedBodyPart : MonoBehaviour
     [SerializeField, Range(0.05f, 1f)] float fallDuration = 0.42f;
     [SerializeField, Min(0f)] float bounceHeight = 0.18f;
     [SerializeField] float spinDegrees = 90f;
+    [SerializeField, Min(0.05f)] float minVisibleWorldSize = 0.22f;
+    [SerializeField, Min(0.05f)] float maxVisibleWorldSize = 0.72f;
 
     SpriteRenderer spriteRenderer;
 
@@ -33,7 +35,7 @@ public class DroppedBodyPart : MonoBehaviour
 
         transform.position = startPosition;
         transform.rotation = Quaternion.identity;
-        transform.localScale = KeepReadableScale(worldScale);
+        transform.localScale = KeepReadableScale(worldScale, sprite);
         StartCoroutine(FallRoutine(startPosition, endPosition));
     }
 
@@ -59,11 +61,28 @@ public class DroppedBodyPart : MonoBehaviour
         transform.position = endPosition;
     }
 
-    Vector3 KeepReadableScale(Vector3 sourceScale)
+    Vector3 KeepReadableScale(Vector3 sourceScale, Sprite sprite)
     {
         float x = Mathf.Abs(sourceScale.x);
         float y = Mathf.Abs(sourceScale.y);
         float uniform = Mathf.Max(0.01f, Mathf.Max(x, y));
+
+        if (sprite != null)
+        {
+            float largestSpriteSize = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
+            if (largestSpriteSize > 0f)
+            {
+                float visibleSize = largestSpriteSize * uniform;
+                float minSize = Mathf.Min(minVisibleWorldSize, maxVisibleWorldSize);
+                float maxSize = Mathf.Max(minVisibleWorldSize, maxVisibleWorldSize);
+
+                if (visibleSize > maxSize)
+                    uniform *= maxSize / visibleSize;
+                else if (visibleSize < minSize)
+                    uniform *= minSize / visibleSize;
+            }
+        }
+
         return new Vector3(
             Mathf.Sign(sourceScale.x == 0f ? 1f : sourceScale.x) * uniform,
             Mathf.Sign(sourceScale.y == 0f ? 1f : sourceScale.y) * uniform,

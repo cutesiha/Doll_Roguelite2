@@ -603,7 +603,9 @@ public class StartBodyPartSelector : MonoBehaviour
         if (startPartToOtherPartsDelay > 0f)
             yield return new WaitForSecondsRealtime(startPartToOtherPartsDelay);
 
-        yield return AttachChoicesTogetherRoutine(rightHandChoice, leftLegChoice, rightLegChoice);
+        yield return AttachChoiceRoutine(rightHandChoice);
+        yield return AttachChoiceRoutine(leftLegChoice);
+        yield return AttachChoiceRoutine(rightLegChoice);
 
         if (allPartsToBackdropFadeDelay > 0f)
             yield return new WaitForSecondsRealtime(allPartsToBackdropFadeDelay);

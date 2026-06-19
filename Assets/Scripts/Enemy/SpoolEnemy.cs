@@ -67,6 +67,12 @@ public class SpoolEnemy : EnemyBase
     {
     }
 
+    void FixedUpdate()
+    {
+        if (!isAttacking)
+            TryMoveSpawnApproach();
+    }
+
     protected override void Update()
     {
         UpdateIdleMotion();

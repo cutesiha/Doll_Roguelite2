@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 #if UNITY_EDITOR
@@ -11,6 +12,8 @@ using UnityEditor;
 
 public class RunHudUI : MonoBehaviour
 {
+    public static bool ShowControlHintsOnNextRoom { get; set; }
+
     [SerializeField] Vector2 referenceResolution = new Vector2(1920f, 1080f);
     [SerializeField] TMP_FontAsset uiFont;
     [SerializeField] Sprite roundedPanelSprite;
@@ -33,6 +36,8 @@ public class RunHudUI : MonoBehaviour
     TextMeshProUGUI waveLabel;
     TextMeshProUGUI waveClearLabel;
     TextMeshProUGUI diaryLabel;
+    GameObject mapControlHint;
+    GameObject menuControlHint;
     readonly List<Image> waveDots = new List<Image>();
     readonly List<HudPipGroup> hudPipGroups = new List<HudPipGroup>();
     HudPipGroup bodyPips;
@@ -95,6 +100,7 @@ public class RunHudUI : MonoBehaviour
         EnsureEventSystem();
         EnsureBuilt();
         CloseMap();
+        ShowPendingControlHintsIfNeeded();
 
         // InventoryCanvas 가 비활성 상태이면 지금 활성화해서 Awake/Start 를 씬 로드 시점에 실행.
         // 이렇게 하지 않으면 OpenPanel() 안에서 SetActive(true) 를 호출할 때 Start() 가
@@ -112,6 +118,7 @@ public class RunHudUI : MonoBehaviour
             return;
 
         HandleMapHotkey();
+        HandleMenuHotkey();
         HandleInventoryHotkey();
         HandleInventoryOutsideClick();
     }
@@ -143,6 +150,8 @@ public class RunHudUI : MonoBehaviour
         waveLabel = null;
         waveClearLabel = null;
         diaryLabel = null;
+        mapControlHint = null;
+        menuControlHint = null;
         waveDots.Clear();
 
         canvas = GetComponent<Canvas>();
@@ -168,6 +177,7 @@ public class RunHudUI : MonoBehaviour
         BuildTopRightMapButton();
         BuildDiaryText();
         BuildBottomRightButtons();
+        BuildControlHints();
         BuildMapOverlay();
         CloseMap();
         UpdateHudState();
@@ -261,6 +271,7 @@ public class RunHudUI : MonoBehaviour
         BindExistingWaveUi();
         BindExistingPipGroups();
         WireControlEvents();
+        EnsureControlHints();
         UpdateHudState();
     }
 
@@ -438,6 +449,12 @@ public class RunHudUI : MonoBehaviour
             inventoryButton.onClick.RemoveListener(ToggleInventory);
             inventoryButton.onClick.AddListener(PlayClickSound);
             inventoryButton.onClick.AddListener(ToggleInventory);
+        }
+
+        if (menuButton != null)
+        {
+            menuButton.onClick.RemoveListener(DismissMenuControlHint);
+            menuButton.onClick.AddListener(DismissMenuControlHint);
         }
 
         Button backdropButton = FindChildComponent<Button>("MapBackdrop");
@@ -854,8 +871,101 @@ void BuildTopRightMapButton()
         BuildInventoryIcon(inventoryButton.transform);
 
         menuButton = BuildHudButton(transform, "MenuIconButton", Anchor.BottomRight, new Vector2(-100f, 100f), new Vector2(170f, 170f));
+        menuButton.onClick.AddListener(DismissMenuControlHint);
         BuildMenuIcon(menuButton.transform);
         WirePauseMenu();
+    }
+
+    void BuildControlHints()
+    {
+        mapControlHint = BuildControlHint(
+            "MapControlHint",
+            Anchor.TopRight,
+            new Vector2(-38f, -212f),
+            new Vector2(430f, 76f),
+            "[M] 키를 눌러 지도 열기");
+
+        menuControlHint = BuildControlHint(
+            "MenuControlHint",
+            Anchor.BottomRight,
+            new Vector2(-100f, 286f),
+            new Vector2(470f, 76f),
+            "[ESC] 를 눌러 메뉴 열기");
+
+        SetControlHintsVisible(false);
+    }
+
+    void EnsureControlHints()
+    {
+        if (mapControlHint == null)
+        {
+            Transform existing = FindChildRecursive(transform, "MapControlHint");
+            if (existing != null)
+                mapControlHint = existing.gameObject;
+        }
+
+        if (menuControlHint == null)
+        {
+            Transform existing = FindChildRecursive(transform, "MenuControlHint");
+            if (existing != null)
+                menuControlHint = existing.gameObject;
+        }
+
+        if (mapControlHint == null || menuControlHint == null)
+            BuildControlHints();
+    }
+
+    GameObject BuildControlHint(string objectName, Anchor anchor, Vector2 offset, Vector2 size, string textValue)
+    {
+        GameObject hint = Rect(transform, objectName, anchor, offset, size);
+        Image background = hint.AddComponent<Image>();
+        SetRoundedImage(background, roundedButtonSprite);
+        background.color = new Color(0.98f, 0.94f, 0.82f, 0.94f);
+        background.raycastTarget = false;
+
+        AddDashedBorder(hint.GetComponent<RectTransform>(), size, LineColor);
+
+        TextMeshProUGUI label = Text(hint.transform, "Label", textValue, 28f, TextColor, TextAlignmentOptions.Center);
+        label.fontStyle = FontStyles.Bold;
+        label.raycastTarget = false;
+        label.rectTransform.anchorMin = Vector2.zero;
+        label.rectTransform.anchorMax = Vector2.one;
+        label.rectTransform.offsetMin = new Vector2(18f, 10f);
+        label.rectTransform.offsetMax = new Vector2(-18f, -10f);
+        hint.SetActive(false);
+        return hint;
+    }
+
+    void ShowPendingControlHintsIfNeeded()
+    {
+        if (!ShowControlHintsOnNextRoom)
+            return;
+
+        if (!SceneManager.GetActiveScene().name.StartsWith("RoomScene"))
+            return;
+
+        ShowControlHintsOnNextRoom = false;
+        SetControlHintsVisible(true);
+    }
+
+    void SetControlHintsVisible(bool visible)
+    {
+        if (mapControlHint != null)
+            mapControlHint.SetActive(visible);
+        if (menuControlHint != null)
+            menuControlHint.SetActive(visible);
+    }
+
+    void DismissMapControlHint()
+    {
+        if (mapControlHint != null)
+            mapControlHint.SetActive(false);
+    }
+
+    void DismissMenuControlHint()
+    {
+        if (menuControlHint != null)
+            menuControlHint.SetActive(false);
     }
 
     void BuildInventoryIcon(Transform parent)
@@ -903,6 +1013,36 @@ void BuildTopRightMapButton()
         image.raycastTarget = false;
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.localRotation = Quaternion.Euler(0f, 0f, rotation);
+    }
+
+    void AddDashedBorder(RectTransform parent, Vector2 size, Color color)
+    {
+        if (parent == null)
+            return;
+
+        const float dash = 28f;
+        const float gap = 14f;
+        AddDashedEdge(parent, new Vector2(-size.x * 0.5f, size.y * 0.5f), Vector2.right, size.x, dash, gap, color);
+        AddDashedEdge(parent, new Vector2(-size.x * 0.5f, -size.y * 0.5f), Vector2.right, size.x, dash, gap, color);
+        AddDashedEdge(parent, new Vector2(-size.x * 0.5f, -size.y * 0.5f), Vector2.up, size.y, dash, gap, color);
+        AddDashedEdge(parent, new Vector2(size.x * 0.5f, -size.y * 0.5f), Vector2.up, size.y, dash, gap, color);
+    }
+
+    void AddDashedEdge(RectTransform parent, Vector2 start, Vector2 direction, float length, float dash, float gap, Color color)
+    {
+        float offset = 0f;
+        int index = 0;
+        while (offset < length)
+        {
+            float segment = Mathf.Min(dash, length - offset);
+            Vector2 size = Mathf.Abs(direction.x) > 0f ? new Vector2(segment, 4f) : new Vector2(4f, segment);
+            GameObject go = Rect(parent, "HintDash_" + index, Anchor.Center, start + direction * (offset + segment * 0.5f), size);
+            Image image = go.AddComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+            offset += dash + gap;
+            index++;
+        }
     }
 
     public static void SetWave(int currentWave, int totalWaves)
@@ -1084,6 +1224,7 @@ void BuildTopRightMapButton()
 
     void OpenMap()
     {
+        DismissMapControlHint();
         MapRunState.EnsureRun();
         BuildMapTree();
         if (mapScrollRect != null)
@@ -1111,7 +1252,23 @@ void BuildTopRightMapButton()
     {
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.mKey.wasPressedThisFrame)
+        {
+            DismissMapControlHint();
             ToggleMap();
+        }
+    }
+
+    void HandleMenuHotkey()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
+            return;
+
+        DismissMenuControlHint();
+
+        RunPauseMenuUI pauseMenu = GetComponent<RunPauseMenuUI>();
+        if (pauseMenu != null)
+            pauseMenu.ToggleMenu();
     }
 
     void PlayClickSound()

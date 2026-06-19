@@ -312,7 +312,10 @@ public class InventoryUI : MonoBehaviour
             transform.localScale = Vector3.one;
 
         Canvas canvas = GetComponent<Canvas>();
-        if (canvas != null && isTopLevelCanvas)
+        if (canvas == null)
+            canvas = gameObject.AddComponent<Canvas>();
+
+        if (canvas != null)
         {
             canvas.enabled = true;
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -321,7 +324,10 @@ public class InventoryUI : MonoBehaviour
         }
 
         CanvasScaler scaler = GetComponent<CanvasScaler>();
-        if (scaler != null && isTopLevelCanvas)
+        if (scaler == null)
+            scaler = gameObject.AddComponent<CanvasScaler>();
+
+        if (scaler != null)
         {
             scaler.enabled = true;
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;

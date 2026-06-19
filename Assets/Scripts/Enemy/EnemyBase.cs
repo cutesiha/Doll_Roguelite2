@@ -20,6 +20,10 @@ public class EnemyBase : MonoBehaviour
     [SerializeField, Range(0.03f, 0.35f)] float hitFeedbackDuration = 0.12f;
     [SerializeField, Min(0f)] float hitShakeDistance = 0.045f;
     [SerializeField] Color hitTint = new Color(1f, 0.28f, 0.24f, 1f);
+    [Header("Camera Shake")]
+    [SerializeField] bool shakeCameraOnHit = true;
+    [SerializeField, Range(0.02f, 0.35f)] float cameraShakeDuration = 0.10f;
+    [SerializeField, Min(0f)] float cameraShakeMagnitude = 0.08f;
     protected int currentHp;
     public bool HasManagedProfile { get; private set; }
 
@@ -30,6 +34,10 @@ public class EnemyBase : MonoBehaviour
     Coroutine hitFeedbackRoutine;
     Color spriteBaseColor = Color.white;
     readonly List<GameObject> ownedTelegraphs = new List<GameObject>();
+    Transform spawnApproachTarget;
+    Rigidbody2D spawnApproachBody;
+    float spawnApproachEndsAt;
+    float spawnApproachSpeed;
 
     protected virtual void Awake()
     {
@@ -306,6 +314,40 @@ public class EnemyBase : MonoBehaviour
             Die();
     }
 
+    public void StartSpawnApproach(float duration, float speed)
+    {
+        if (duration <= 0f || speed <= 0f)
+            return;
+
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        spawnApproachTarget = playerObject != null ? playerObject.transform : null;
+        if (spawnApproachTarget == null)
+            return;
+
+        spawnApproachBody = GetComponent<Rigidbody2D>();
+        spawnApproachSpeed = Mathf.Max(0f, speed);
+        spawnApproachEndsAt = Time.time + Mathf.Max(0f, duration);
+    }
+
+    protected bool TryMoveSpawnApproach()
+    {
+        if (spawnApproachTarget == null || Time.time >= spawnApproachEndsAt || spawnApproachSpeed <= 0f)
+            return false;
+
+        Vector2 current = spawnApproachBody != null ? spawnApproachBody.position : (Vector2)transform.position;
+        Vector2 direction = ((Vector2)spawnApproachTarget.position - current).normalized;
+        if (direction.sqrMagnitude <= 0.0001f)
+            return true;
+
+        Vector2 next = current + direction * spawnApproachSpeed * Time.fixedDeltaTime;
+        if (spawnApproachBody != null)
+            spawnApproachBody.MovePosition(next);
+        else
+            transform.position = new Vector3(next.x, next.y, transform.position.z);
+
+        return true;
+    }
+
     protected virtual void OnDamaged()
     {
         PlayHitFeedback();
@@ -314,6 +356,8 @@ public class EnemyBase : MonoBehaviour
     protected virtual void PlayHitFeedback()
     {
         SoundManager.PlayEnemyHit();
+        if (shakeCameraOnHit)
+            CameraShake.Shake(cameraShakeDuration, cameraShakeMagnitude);
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();

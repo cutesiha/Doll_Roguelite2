@@ -60,6 +60,8 @@ public class SmallButtonEnemy : EnemyBase
 
         if (player == null)
             return;
+        if (TryMoveSpawnApproach())
+            return;
 
         Vector2 direction = ((Vector2)player.position - rb.position).normalized;
         rb.MovePosition(rb.position + direction * moveSpeed * Time.fixedDeltaTime);

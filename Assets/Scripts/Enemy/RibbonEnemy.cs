@@ -74,6 +74,8 @@ public class RibbonEnemy : EnemyBase
     {
         if (player == null || isAttacking)
             return;
+        if (TryMoveSpawnApproach())
+            return;
 
         Vector2 toPlayer = (Vector2)player.position - rb.position;
         if (toPlayer.sqrMagnitude <= 0.0001f)

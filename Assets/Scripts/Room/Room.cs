@@ -16,6 +16,8 @@ public class Room : MonoBehaviour
     [SerializeField] bool randomizeEnemyPositions = true;
     [SerializeField] int spawnPositionAttempts = 30;
     [SerializeField, Min(0f)] float minSpawnDistanceFromPlayer = 4.2f;
+    [SerializeField, Min(0f)] float spawnApproachDuration = 1.75f;
+    [SerializeField, Min(0f)] float spawnApproachSpeed = 0.45f;
     [SerializeField, Min(1)] int firstRoomButtonWeight = 5;
     [SerializeField, Min(0)] int firstRoomGuaranteedButtonMin = 1;
     [SerializeField, Min(0)] int firstRoomGuaranteedButtonMax = 2;
@@ -378,6 +380,7 @@ public class Room : MonoBehaviour
             if (enemy != null)
             {
                 EnemyManager.Instance?.ConfigureEnemy(enemy, true);
+                enemy.StartSpawnApproach(spawnApproachDuration, spawnApproachSpeed);
                 enemies.Add(enemy);
             }
         }

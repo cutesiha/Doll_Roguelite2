@@ -4,7 +4,11 @@ using UnityEngine.SceneManagement;
 
 public class ThresholdManager : MonoBehaviour
 {
-    [SerializeField] Color overlayColor = new Color(0f, 0f, 0f, 0.95f);
+    [Header("Vision Overlay")]
+    [SerializeField] Color overlayColor = Color.black;
+    [SerializeField, Range(0f, 1f)] float overlayAlpha = 0.72f;
+
+    [Header("Scene")]
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] string bossSceneName = "BossScene";
     [SerializeField] int overlaySortingOrder = 60;
@@ -26,6 +30,8 @@ public class ThresholdManager : MonoBehaviour
         if (bodyManager == null)
             bodyManager = BodyManager.Instance;
 
+        ApplyOverlayColor();
+
         if (overlayCanvas != null)
             overlayCanvas.sortingOrder = overlaySortingOrder;
 
@@ -37,6 +43,12 @@ public class ThresholdManager : MonoBehaviour
         }
 
         UpdateOverlay();
+    }
+
+    void OnValidate()
+    {
+        overlayAlpha = Mathf.Clamp01(overlayAlpha);
+        ApplyOverlayColor();
     }
 
     bool IsRoomOrBossScene()
@@ -86,7 +98,7 @@ public class ThresholdManager : MonoBehaviour
         imageGO.transform.SetParent(overlayCanvas.transform, false);
 
         var image = imageGO.AddComponent<Image>();
-        image.color = overlayColor;
+        image.color = CurrentOverlayColor();
         image.raycastTarget = false;
 
         var rt = image.GetComponent<RectTransform>();
@@ -96,5 +108,21 @@ public class ThresholdManager : MonoBehaviour
         rt.offsetMax = Vector2.zero;
 
         return image;
+    }
+
+    void ApplyOverlayColor()
+    {
+        Color color = CurrentOverlayColor();
+        if (leftOverlay != null)
+            leftOverlay.color = color;
+        if (rightOverlay != null)
+            rightOverlay.color = color;
+    }
+
+    Color CurrentOverlayColor()
+    {
+        Color color = overlayColor;
+        color.a = overlayAlpha;
+        return color;
     }
 }

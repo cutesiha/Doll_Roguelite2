@@ -20,12 +20,17 @@ public class PlayerDamageReceiver : MonoBehaviour
     [SerializeField, Min(1f)] float hitScaleMultiplier = 1.08f;
     [SerializeField] Color hitTint = new Color(1f, 0.42f, 0.38f, 1f);
 
+    [Header("Camera Shake")]
+    [SerializeField] bool shakeCameraOnHit = true;
+    [SerializeField, Range(0.02f, 0.35f)] float cameraShakeDuration = 0.12f;
+    [SerializeField, Min(0f)] float cameraShakeMagnitude = 0.11f;
+
     [Header("Dropped Parts")]
     [SerializeField, Min(0f)] float dropDownDistance = 0.52f;
     [SerializeField, Min(0f)] float dropSideDistance = 0.16f;
     [SerializeField] int droppedPartSortingOrder = 4;
 
-    static readonly BodySlot[] DamageOrder =
+    static readonly BodySlot[] DamageSlots =
     {
         BodySlot.ArmLeft,
         BodySlot.ArmRight,
@@ -36,6 +41,7 @@ public class PlayerDamageReceiver : MonoBehaviour
     };
 
     readonly Dictionary<SpriteRenderer, Color> rendererColors = new Dictionary<SpriteRenderer, Color>();
+    readonly List<BodySlot> damageCandidates = new List<BodySlot>();
 
     PlayerController playerController;
     SpriteRenderer bodyRenderer;
@@ -96,6 +102,7 @@ public class PlayerDamageReceiver : MonoBehaviour
         nextDamageTime = Time.time + damageCooldown;
         DamageNextBodyTarget(contactDamage);
         PlayHitFeedback();
+        ShakeCamera();
         SoundManager.PlayPlayerHit();
     }
 
@@ -109,6 +116,7 @@ public class PlayerDamageReceiver : MonoBehaviour
         nextDamageTime = Time.time + Mathf.Max(0.01f, cooldown);
         DamageNextBodyTarget(finalDamage);
         PlayHitFeedback();
+        ShakeCamera();
         SoundManager.PlayPlayerHit();
         return true;
     }
@@ -125,13 +133,9 @@ public class PlayerDamageReceiver : MonoBehaviour
         InventoryManager inventory = InventoryManager.Instance;
         if (inventory != null)
         {
-            for (int i = 0; i < DamageOrder.Length; i++)
+            BodySlot slot;
+            if (TryPickRandomDamageSlot(inventory, out slot))
             {
-                BodySlot slot = DamageOrder[i];
-                BodyPart part = inventory.GetEquippedPart(slot);
-                if (part == null)
-                    continue;
-
                 Sprite dropSprite = SpriteForSlot(slot);
                 SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
                 BodyPart brokenPart;
@@ -148,6 +152,31 @@ public class PlayerDamageReceiver : MonoBehaviour
             bodyDropped = true;
             DropPart(bodyRenderer != null ? bodyRenderer.sprite : null, bodyRenderer);
         }
+    }
+
+    bool TryPickRandomDamageSlot(InventoryManager inventory, out BodySlot slot)
+    {
+        slot = BodySlot.ArmLeft;
+        damageCandidates.Clear();
+
+        for (int i = 0; i < DamageSlots.Length; i++)
+        {
+            BodySlot candidate = DamageSlots[i];
+            if (inventory.GetEquippedPart(candidate) != null)
+                damageCandidates.Add(candidate);
+        }
+
+        if (damageCandidates.Count == 0)
+            return false;
+
+        slot = damageCandidates[Random.Range(0, damageCandidates.Count)];
+        return true;
+    }
+
+    void ShakeCamera()
+    {
+        if (shakeCameraOnHit)
+            CameraShake.Shake(cameraShakeDuration, cameraShakeMagnitude);
     }
 
     void PlayHitFeedback()

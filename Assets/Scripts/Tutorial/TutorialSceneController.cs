@@ -323,6 +323,8 @@ public class TutorialSceneController : MonoBehaviour
         if (runHud != null)
             Destroy(runHud.gameObject);
 
+        RunHudUI.ShowControlHintsOnNextRoom = true;
+
         fadeImage.transform.SetAsLastSibling();
         float elapsed = 0f;
         const float duration = 0.55f;
@@ -385,7 +387,7 @@ public class TutorialSceneController : MonoBehaviour
         GameObject canvasObject = new GameObject("TutorialCanvas");
         tutorialCanvas = canvasObject.AddComponent<Canvas>();
         tutorialCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        tutorialCanvas.sortingOrder = 240;
+        tutorialCanvas.sortingOrder = 120;
 
         CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -438,6 +440,7 @@ public class TutorialSceneController : MonoBehaviour
         rect.offsetMax = Vector2.zero;
         Image image = go.AddComponent<Image>();
         image.color = color;
+        image.raycastTarget = false;
         return image;
     }
 
@@ -454,10 +457,10 @@ public class TutorialSceneController : MonoBehaviour
         CanvasGroup group = root.AddComponent<CanvasGroup>();
 
         Image background = root.AddComponent<Image>();
-        background.color = new Color(1f, 1f, 1f, 0.12f);
+        background.color = new Color(0.98f, 0.94f, 0.82f, 0.94f);
         background.raycastTarget = false;
 
-        AddDashedBorder(rect, size, new Color(0.08f, 0.08f, 0.08f, 0.66f));
+        AddDashedBorder(rect, size, new Color(0.04f, 0.035f, 0.03f, 0.96f));
 
         GameObject textObject = new GameObject("Label");
         textObject.transform.SetParent(root.transform, false);
@@ -470,7 +473,8 @@ public class TutorialSceneController : MonoBehaviour
         label.text = text;
         label.font = UIThinDungFont.Get();
         label.fontSize = 42f;
-        label.color = new Color(0.1f, 0.1f, 0.1f, 0.90f);
+        label.fontStyle = FontStyles.Bold;
+        label.color = new Color(0.04f, 0.035f, 0.03f, 1f);
         label.alignment = TextAlignmentOptions.Center;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.raycastTarget = false;
@@ -757,7 +761,7 @@ public class TutorialSceneController : MonoBehaviour
             return;
 
         float t = Mathf.Sin(promptPulseTime * 2.2f) * 0.5f + 0.5f;
-        group.alpha = Mathf.Lerp(0.58f, 0.95f, t);
+        group.alpha = Mathf.Lerp(0.88f, 1f, t);
     }
 
     void SetCanvasGroup(CanvasGroup group, bool visible, float alpha)

@@ -1,7 +1,7 @@
 using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 public enum SpecialRoomKind
 {
@@ -12,7 +12,6 @@ public enum SpecialRoomKind
 public class SpecialRoomController : MonoBehaviour
 {
     [SerializeField] SpecialRoomKind roomKind = SpecialRoomKind.Treasure;
-    [SerializeField] string mapSceneName = "MapScene";
     [SerializeField] Vector2 mapSize = new Vector2(28.8f, 16.2f);
     [SerializeField] float cameraOrthographicSize = 5.4f;
     [SerializeField] float interactRadius = 1.8f;
@@ -20,14 +19,16 @@ public class SpecialRoomController : MonoBehaviour
     [SerializeField] Color wallColor = new Color(0.42f, 0.30f, 0.22f, 1f);
     [SerializeField] Color treasureColor = new Color(1.00f, 0.72f, 0.16f, 1f);
     [SerializeField] Color shopColor = new Color(0.36f, 0.62f, 0.74f, 1f);
+    [SerializeField] Vector2 nextDoorLine = new Vector2(8f, -2.45f);
+    [SerializeField] Vector2 nextDoorSize = new Vector2(2.8f, 0.75f);
     [SerializeField] Sprite rectangleSprite;
 
     Transform player;
     TextMeshPro promptText;
     TextMeshPro messageText;
     GameObject chestObject;
-    GameObject exitObject;
     readonly GameObject[] shopObjects = new GameObject[3];
+    readonly List<DoorTrigger> nextDoors = new List<DoorTrigger>();
     bool treasureClaimed;
     bool shopChoiceUsed;
 
@@ -36,6 +37,7 @@ public class SpecialRoomController : MonoBehaviour
     void Start()
     {
         MapRunState.EnsureRun();
+        CompletePendingRoomIfNeeded();
         BuildRoomVisuals();
         SetupPlayerAndCamera();
         UpdatePrompt();
@@ -51,12 +53,6 @@ public class SpecialRoomController : MonoBehaviour
 
         if (player == null)
             return;
-
-        if (IsNear(exitObject))
-        {
-            ReturnToMap();
-            return;
-        }
 
         if (roomKind == SpecialRoomKind.Treasure)
         {
@@ -93,13 +89,12 @@ public class SpecialRoomController : MonoBehaviour
         string title = roomKind == SpecialRoomKind.Treasure ? "보물방" : "상점";
         CreateWorldText(art.transform, "RoomTitle", title, new Vector2(0f, mapSize.y * 0.5f - 1.25f), 1.1f, Color.white, 25);
 
-        exitObject = CreateRect(art.transform, "MapExitPortal", new Vector2(0f, mapSize.y * 0.5f - 2.1f), new Vector2(2.8f, 0.7f), new Color(0.25f, 0.70f, 0.42f, 1f), 5);
-        CreateWorldText(exitObject.transform, "ExitLabel", "MAP", new Vector2(0f, 0.08f), 0.55f, Color.white, 30);
-
         if (roomKind == SpecialRoomKind.Treasure)
             BuildTreasureProps(art.transform);
         else
             BuildShopProps(art.transform);
+
+        BuildNextDoors(art.transform);
 
         promptText = CreateWorldText(art.transform, "InteractionPrompt", "", new Vector2(0f, -mapSize.y * 0.5f + 1.2f), 0.62f, new Color(1f, 0.90f, 0.68f, 1f), 40);
         messageText = CreateWorldText(art.transform, "RoomMessage", "", new Vector2(0f, -mapSize.y * 0.5f + 2.0f), 0.58f, new Color(1f, 0.86f, 0.48f, 1f), 40);
@@ -126,6 +121,45 @@ public class SpecialRoomController : MonoBehaviour
         CreateRect(option.transform, "ShopItem_" + label, new Vector2(0f, 0.55f), new Vector2(1.15f, 0.75f), color, 12);
         CreateWorldText(option.transform, "Label", label, new Vector2(0f, -1.05f), 0.48f, Color.white, 20);
         shopObjects[index] = option;
+    }
+
+    void BuildNextDoors(Transform parent)
+    {
+        nextDoors.Clear();
+
+        MapNode current = MapRunState.CurrentNode;
+        if (current == null || current.children == null || current.children.Count == 0)
+        {
+            CreateWorldText(parent, "NoNextNodeLabel", "다음 노드가 없습니다", new Vector2(0f, nextDoorLine.y), 0.52f, Color.white, 30);
+            return;
+        }
+
+        for (int i = 0; i < current.children.Count; i++)
+        {
+            MapNode child = current.children[i];
+            GameObject door = CreateRect(
+                parent,
+                "NextDoor_ToNode_" + child.id,
+                NextDoorPosition(i, current.children.Count),
+                nextDoorSize,
+                new Color(0.85f, 0.62f, 0.25f, 1f),
+                14);
+
+            BoxCollider2D collider = door.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+
+            DoorTrigger trigger = door.AddComponent<DoorTrigger>();
+            trigger.Configure(child, true);
+            nextDoors.Add(trigger);
+        }
+    }
+
+    Vector2 NextDoorPosition(int index, int count)
+    {
+        float x = count <= 1
+            ? 0f
+            : Mathf.Lerp(-nextDoorLine.x * 0.5f, nextDoorLine.x * 0.5f, index / (float)(count - 1));
+        return new Vector2(x, nextDoorLine.y);
     }
 
     GameObject CreateRect(Transform parent, string objectName, Vector2 position, Vector2 size, Color color, int sortingOrder)
@@ -238,9 +272,7 @@ public class SpecialRoomController : MonoBehaviour
             return;
 
         string prompt = "";
-        if (IsNear(exitObject))
-            prompt = "[Enter] 맵으로 돌아가기";
-        else if (roomKind == SpecialRoomKind.Treasure && !treasureClaimed && IsNear(chestObject))
+        if (roomKind == SpecialRoomKind.Treasure && !treasureClaimed && IsNear(chestObject))
             prompt = "[E] 상자 열기";
         else if (roomKind == SpecialRoomKind.Shop && !shopChoiceUsed)
         {
@@ -319,10 +351,10 @@ public class SpecialRoomController : MonoBehaviour
         return repaired > 0 ? "보유 부위를 수리했습니다" : "보관함이 가득합니다";
     }
 
-    void ReturnToMap()
+    void CompletePendingRoomIfNeeded()
     {
-        MapRunState.CompletePendingRoom();
-        SceneManager.LoadScene(mapSceneName);
+        if (MapRunState.PendingNode != null)
+            MapRunState.CompletePendingRoom();
     }
 
     static Sprite SquareSprite()
