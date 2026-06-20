@@ -17,13 +17,13 @@ public class EnemyBase : MonoBehaviour
     [SerializeField] bool fitColliderToCurrentSprite = true;
     [SerializeField, Min(0f)] float colliderPadding = 0f;
     [Header("Hit Feedback")]
-    [SerializeField, Range(0.03f, 0.35f)] float hitFeedbackDuration = 0.12f;
-    [SerializeField, Min(0f)] float hitShakeDistance = 0.045f;
+    [SerializeField, Range(0.03f, 0.35f)] float hitFeedbackDuration = 0.18f;
+    [SerializeField, Min(0f)] float hitShakeDistance = 0.12f;
     [SerializeField] Color hitTint = new Color(1f, 0.28f, 0.24f, 1f);
     [Header("Camera Shake")]
     [SerializeField] bool shakeCameraOnHit = true;
-    [SerializeField, Range(0.02f, 0.35f)] float cameraShakeDuration = 0.10f;
-    [SerializeField, Min(0f)] float cameraShakeMagnitude = 0.08f;
+    [SerializeField, Range(0.02f, 0.35f)] float cameraShakeDuration = 0.12f;
+    [SerializeField, Min(0f)] float cameraShakeMagnitude = 0.10f;
     protected int currentHp;
     public bool HasManagedProfile { get; private set; }
 

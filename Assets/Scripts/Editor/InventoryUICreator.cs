@@ -16,6 +16,7 @@ public static class InventoryUICreator
     const float PH   = 940f;
     const float TopH    = 48f;
     const float BottomH = 72f;
+    const int StorageSlotCount = 9;
     const float LeftRatio   = 0.30f;
     const float CenterRatio = 0.38f;
     const float RightRatio  = 0.32f;
@@ -154,15 +155,24 @@ public static class InventoryUICreator
         Txt(bg.transform, "[ 인벤토리 슬롯 ]", 16f, CHeader, TextAlignmentOptions.Center,
             V2(0, h * 0.5f - 22f), V2(w - 16f, 34f));
 
-        float slotW = w * 0.78f;
-        float slotH = (h - 100f) * 0.45f;
-        float sy0   =  (slotH + 16f) * 0.5f;
-        float sy1   = -(slotH + 16f) * 0.5f;
+        float slotW = w * 0.28f;
+        float slotH = (h - 150f) / 3f;
+        float gapX = w * 0.04f;
+        float gapY = 12f;
 
-        for (int i = 0; i < 2; i++)
+        var so = new SerializedObject(ui);
+        so.FindProperty("_storageImg").arraySize = StorageSlotCount;
+        so.FindProperty("_storageBtn").arraySize = StorageSlotCount;
+        so.FindProperty("_storageName").arraySize = StorageSlotCount;
+        so.FindProperty("_storageHp").arraySize = StorageSlotCount;
+
+        for (int i = 0; i < StorageSlotCount; i++)
         {
-            float sy   = i == 0 ? sy0 : sy1;
-            var slotGO = MakeRect(bg.transform, $"StorageSlot{i}", V2(0, sy), V2(slotW, slotH));
+            int col = i % 3;
+            int row = i / 3;
+            float sx = (col - 1) * (slotW + gapX);
+            float sy = h * 0.5f - 76f - slotH * 0.5f - row * (slotH + gapY);
+            var slotGO = MakeRect(bg.transform, $"StorageSlot_{i + 1}", V2(sx, sy), V2(slotW, slotH));
             var slotImg = Img(slotGO, CEmpty);
             var btn     = slotGO.AddComponent<Button>();
             btn.targetGraphic = slotImg;
@@ -184,13 +194,13 @@ public static class InventoryUICreator
                 V2(0, -slotH * 0.20f), V2(slotW - 12f, slotH * 0.28f));
 
             // InventoryUI 참조 연결
-            var so = new SerializedObject(ui);
             so.FindProperty("_storageImg").GetArrayElementAtIndex(i).objectReferenceValue  = slotImg;
             so.FindProperty("_storageBtn").GetArrayElementAtIndex(i).objectReferenceValue  = btn;
             so.FindProperty("_storageName").GetArrayElementAtIndex(i).objectReferenceValue = nameTxt;
             so.FindProperty("_storageHp").GetArrayElementAtIndex(i).objectReferenceValue   = hpTxt;
-            so.ApplyModifiedProperties();
         }
+
+        so.ApplyModifiedProperties();
 
         Txt(bg.transform, "클릭하여 장착", 13f, new Color(0.45f, 0.45f, 0.50f),
             TextAlignmentOptions.Center,

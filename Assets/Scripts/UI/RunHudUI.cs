@@ -48,6 +48,7 @@ public class RunHudUI : MonoBehaviour
     Vector2 miniMapTargetOffset;
 
     static RunHudUI instance;
+    static bool sceneHookRegistered;
 
     static readonly Color PanelColor = new Color(0.91f, 0.86f, 0.78f, 0.98f);
     static readonly Color HudPanelColor = new Color(0.91f, 0.86f, 0.78f, 0.96f);
@@ -81,6 +82,39 @@ public class RunHudUI : MonoBehaviour
     static readonly Color ColRouteOnly = new Color(0.45f, 0.45f, 0.45f, 1f);
     static readonly Color ColHidden = new Color(0.22f, 0.22f, 0.22f, 1f);
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void BootstrapRunHud()
+    {
+        if (sceneHookRegistered)
+            return;
+
+        SceneManager.sceneLoaded += EnsureRunHudForScene;
+        sceneHookRegistered = true;
+    }
+
+    static void EnsureRunHudForScene(Scene scene, LoadSceneMode mode)
+    {
+        if (!Application.isPlaying)
+            return;
+
+        RunHudUI[] existing = FindObjectsByType<RunHudUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        if (scene.name == "StartScene")
+        {
+            for (int i = 0; i < existing.Length; i++)
+                if (existing[i] != null)
+                    Destroy(existing[i].gameObject);
+
+            return;
+        }
+
+        if (existing.Length > 0)
+            return;
+
+        GameObject hud = new GameObject("RunHudCanvas");
+        hud.AddComponent<RectTransform>();
+        hud.AddComponent<RunHudUI>();
+    }
+
     void Awake()
     {
         EnsureRootCanvasComponents(false);
@@ -108,6 +142,14 @@ public class RunHudUI : MonoBehaviour
         InventoryUI inventoryUI = GetComponentInChildren<InventoryUI>(true);
         if (inventoryUI != null && !inventoryUI.gameObject.activeSelf)
             inventoryUI.gameObject.SetActive(true);
+    }
+
+    void OnDestroy()
+    {
+        if (instance == this)
+            instance = null;
+
+        RunUiPauseManager.SetPaused("Map", false);
     }
 
     void Update()
@@ -438,9 +480,11 @@ public class RunHudUI : MonoBehaviour
         {
             mapButton.onClick.RemoveListener(PlayClickSound);
             mapButton.onClick.RemoveListener(OpenMap);
+            mapButton.onClick.RemoveListener(ToggleMap);
             mapButton.onClick.AddListener(PlayClickSound);
-            mapButton.onClick.AddListener(OpenMap);
+            mapButton.onClick.AddListener(ToggleMap);
             ConfigureMiniMapButtonHover(mapButton);
+            AttachHudTooltip(mapButton, "지도");
         }
 
         if (inventoryButton != null)
@@ -449,12 +493,14 @@ public class RunHudUI : MonoBehaviour
             inventoryButton.onClick.RemoveListener(ToggleInventory);
             inventoryButton.onClick.AddListener(PlayClickSound);
             inventoryButton.onClick.AddListener(ToggleInventory);
+            AttachHudTooltip(inventoryButton, "인벤토리");
         }
 
         if (menuButton != null)
         {
             menuButton.onClick.RemoveListener(DismissMenuControlHint);
             menuButton.onClick.AddListener(DismissMenuControlHint);
+            AttachHudTooltip(menuButton, "메뉴");
         }
 
         Button backdropButton = FindChildComponent<Button>("MapBackdrop");
@@ -488,6 +534,18 @@ public class RunHudUI : MonoBehaviour
             pauseMenu = gameObject.AddComponent<RunPauseMenuUI>();
 
         pauseMenu.SetMenuButton(menuButton);
+    }
+
+    void AttachHudTooltip(Button button, string text)
+    {
+        if (button == null)
+            return;
+
+        HudIconTooltip tooltip = button.GetComponent<HudIconTooltip>();
+        if (tooltip == null)
+            tooltip = button.gameObject.AddComponent<HudIconTooltip>();
+
+        tooltip.SetText(text);
     }
 
     T FindChildComponent<T>(string childName) where T : Component
@@ -709,8 +767,10 @@ void BuildPixelDoll(Transform parent)
 void BuildTopRightMapButton()
     {
         mapButton = BuildHudButton(transform, "MapIconButton", Anchor.TopRight, new Vector2(-38f, -38f), new Vector2(154f, 154f));
-        mapButton.onClick.AddListener(OpenMap);
+        mapButton.onClick.AddListener(PlayClickSound);
+        mapButton.onClick.AddListener(ToggleMap);
         ConfigureMiniMapButtonHover(mapButton);
+        AttachHudTooltip(mapButton, "지도");
 
         GameObject viewport = Rect(mapButton.transform, "MiniMapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
         RectTransform viewportRect = viewport.GetComponent<RectTransform>();
@@ -869,10 +929,12 @@ void BuildTopRightMapButton()
         inventoryButton.onClick.AddListener(PlayClickSound);
         inventoryButton.onClick.AddListener(ToggleInventory);
         BuildInventoryIcon(inventoryButton.transform);
+        AttachHudTooltip(inventoryButton, "인벤토리");
 
         menuButton = BuildHudButton(transform, "MenuIconButton", Anchor.BottomRight, new Vector2(-100f, 100f), new Vector2(170f, 170f));
         menuButton.onClick.AddListener(DismissMenuControlHint);
         BuildMenuIcon(menuButton.transform);
+        AttachHudTooltip(menuButton, "메뉴");
         WirePauseMenu();
     }
 
@@ -938,14 +1000,8 @@ void BuildTopRightMapButton()
 
     void ShowPendingControlHintsIfNeeded()
     {
-        if (!ShowControlHintsOnNextRoom)
-            return;
-
-        if (!SceneManager.GetActiveScene().name.StartsWith("RoomScene"))
-            return;
-
         ShowControlHintsOnNextRoom = false;
-        SetControlHintsVisible(true);
+        SetControlHintsVisible(false);
     }
 
     void SetControlHintsVisible(bool visible)
@@ -1234,6 +1290,7 @@ void BuildTopRightMapButton()
             return;
 
         mapOverlay.SetActive(true);
+        RunUiPauseManager.SetPaused("Map", true);
         if (Application.isPlaying)
             PlayMapPanelAnimation(true);
         else if (mapPanel != null)
@@ -1291,6 +1348,7 @@ void BuildTopRightMapButton()
         if (mapOverlay == null)
             return;
 
+        RunUiPauseManager.SetPaused("Map", false);
         if (Application.isPlaying && mapOverlay.activeSelf)
         {
             PlayMapPanelAnimation(false);

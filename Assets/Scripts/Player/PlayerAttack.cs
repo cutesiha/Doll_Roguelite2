@@ -151,7 +151,7 @@ public class PlayerAttack : MonoBehaviour
 
         for (int i = 0; i < DirKeys.Length; i++)
         {
-            if (!keyboard[DirKeys[i]].wasPressedThisFrame)
+            if (!keyboard[DirKeys[i]].wasPressedThisFrame && !keyboard[DirKeys[i]].isPressed)
                 continue;
 
             Vector2 attackDirection = DirVectors[i];

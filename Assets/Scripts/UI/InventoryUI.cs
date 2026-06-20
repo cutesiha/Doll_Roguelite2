@@ -23,16 +23,17 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] GameObject _panel;
     [SerializeField] Button _closeButton;
 
-    [Header("보관 슬롯 ×2")]
-    [SerializeField] Image[]           _storageImg  = new Image[2];
-    [SerializeField] Button[]          _storageBtn  = new Button[2];
-    [SerializeField] TextMeshProUGUI[] _storageName = new TextMeshProUGUI[2];
-    [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[2];
+    [Header("보관 슬롯 ×9")]
+    [SerializeField] Image[]           _storageImg  = new Image[InventoryManager.StorageSlotCount];
+    [SerializeField] Button[]          _storageBtn  = new Button[InventoryManager.StorageSlotCount];
+    [SerializeField] TextMeshProUGUI[] _storageName = new TextMeshProUGUI[InventoryManager.StorageSlotCount];
+    [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[InventoryManager.StorageSlotCount];
 
     [Header("캐릭터 부위 (EyeLeft=0 ~ LegRight=5)")]
     [SerializeField] Image[]  _charImg = new Image[6];
     [SerializeField] Button[] _charBtn = new Button[6];
     [SerializeField, Range(0f, 1f)] float partAlphaHitThreshold = 0.1f;
+    readonly GameObject[] _charLockBadge = new GameObject[6];
 
     [Header("Character Base Images")]
     [SerializeField] Sprite _baseBodySprite;
@@ -82,6 +83,7 @@ public class InventoryUI : MonoBehaviour
     void Awake()
     {
         EnsurePanelReference();
+        EnsureStorageSlots();
         ForceClosePanelImmediate();
         NormalizeCanvasTransform();
         if (transform.parent == null)
@@ -103,6 +105,7 @@ public class InventoryUI : MonoBehaviour
 
     void OnDestroy()
     {
+        RunUiPauseManager.SetPaused("Inventory", false);
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.OnInventoryChanged -= RefreshUI;
     }
@@ -126,6 +129,7 @@ public class InventoryUI : MonoBehaviour
         if (_panel == null)
         {
             SetToggleHotspotVisible(false);
+            RunUiPauseManager.SetPaused("Inventory", false);
             return;
         }
 
@@ -133,9 +137,12 @@ public class InventoryUI : MonoBehaviour
         if (!_panel.activeSelf)
         {
             SetToggleHotspotVisible(false);
+            RunUiPauseManager.SetPaused("Inventory", false);
             return;
         }
 
+        RunUiPauseManager.SetPaused("Inventory", false);
+        SoundManager.PlayPanel();
         PlayPanelAnimation(false);
     }
 
@@ -148,9 +155,13 @@ public class InventoryUI : MonoBehaviour
         ApplyInventoryHitTesting();
         if (_panel == null) return;
         CapturePanelShownPosition();
+        bool wasOpen = _panel.activeSelf;
         _panel.SetActive(true);
+        RunUiPauseManager.SetPaused("Inventory", true);
         SetToggleHotspotVisible(true);
         RefreshUI();
+        if (!wasOpen)
+            SoundManager.PlayPanel();
         PlayPanelAnimation(true);
     }
 
@@ -217,6 +228,176 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
+    void EnsureStorageSlots()
+    {
+        EnsurePanelReference();
+        EnsureStorageArrays();
+
+        Transform parent = StorageSlotsParent();
+        if (parent == null)
+            return;
+
+        for (int i = 0; i < InventoryManager.StorageSlotCount; i++)
+        {
+            GameObject slot = StorageSlotRoot(i);
+            if (slot == null)
+                slot = FindExistingStorageSlot(parent, i);
+            if (slot == null)
+                slot = new GameObject("StorageSlot_" + (i + 1));
+
+            ConfigureStorageSlot(slot, parent, i);
+        }
+    }
+
+    void EnsureStorageArrays()
+    {
+        _storageImg = EnsureArrayLength(_storageImg, InventoryManager.StorageSlotCount);
+        _storageBtn = EnsureArrayLength(_storageBtn, InventoryManager.StorageSlotCount);
+        _storageName = EnsureArrayLength(_storageName, InventoryManager.StorageSlotCount);
+        _storageHp = EnsureArrayLength(_storageHp, InventoryManager.StorageSlotCount);
+    }
+
+    static T[] EnsureArrayLength<T>(T[] source, int length)
+    {
+        if (source != null && source.Length == length)
+            return source;
+
+        T[] result = new T[length];
+        if (source == null)
+            return result;
+
+        int count = Mathf.Min(source.Length, length);
+        for (int i = 0; i < count; i++)
+            result[i] = source[i];
+        return result;
+    }
+
+    Transform StorageSlotsParent()
+    {
+        GameObject existing = StorageSlotRoot(0);
+        if (existing != null && existing.transform.parent != null)
+            return existing.transform.parent;
+
+        if (_panel != null)
+        {
+            Transform left = FindChildRecursive(_panel.transform, "Left_InventorySlots");
+            if (left != null)
+                return left;
+
+            left = FindChildRecursive(_panel.transform, "LeftSection");
+            if (left != null)
+                return left;
+        }
+
+        return _panel != null ? _panel.transform : transform;
+    }
+
+    GameObject FindExistingStorageSlot(Transform parent, int index)
+    {
+        string[] names =
+        {
+            "StorageSlot_" + (index + 1),
+            "StorageSlot" + (index + 1),
+            "StorageSlot" + index
+        };
+
+        for (int i = 0; i < names.Length; i++)
+        {
+            Transform found = FindChildRecursive(parent, names[i]);
+            if (found != null)
+                return found.gameObject;
+        }
+
+        return null;
+    }
+
+    void ConfigureStorageSlot(GameObject slot, Transform parent, int index)
+    {
+        slot.name = "StorageSlot_" + (index + 1);
+        slot.transform.SetParent(parent, false);
+        slot.SetActive(true);
+
+        RectTransform rect = slot.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = slot.AddComponent<RectTransform>();
+
+        const float slotWidth = 148f;
+        const float slotHeight = 92f;
+        const float gapX = 16f;
+        const float gapY = 14f;
+        int col = index % 3;
+        int row = index / 3;
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2((col - 1) * (slotWidth + gapX), -96f - row * (slotHeight + gapY));
+        rect.sizeDelta = new Vector2(slotWidth, slotHeight);
+        rect.localScale = Vector3.one;
+
+        Image image = slot.GetComponent<Image>();
+        if (image == null)
+            image = slot.AddComponent<Image>();
+        image.color = CEmpty;
+        image.raycastTarget = true;
+        _storageImg[index] = image;
+
+        Button button = slot.GetComponent<Button>();
+        if (button == null)
+            button = slot.AddComponent<Button>();
+        button.targetGraphic = image;
+        _storageBtn[index] = button;
+
+        InventoryStorageDragSource dragSource = slot.GetComponent<InventoryStorageDragSource>();
+        if (dragSource == null)
+            dragSource = slot.AddComponent<InventoryStorageDragSource>();
+        dragSource.SetStorageIndex(index);
+
+        InventoryStorageDropTarget dropTarget = slot.GetComponent<InventoryStorageDropTarget>();
+        if (dropTarget == null)
+            dropTarget = slot.AddComponent<InventoryStorageDropTarget>();
+        dropTarget.SetStorageIndex(index);
+
+        EnsureStorageSlotLabel(slot.transform, "SlotLabel", "슬롯 " + (index + 1), 18f, new Vector2(0f, -8f), new Vector2(slotWidth, 28f), TextAlignmentOptions.Center);
+        _storageName[index] = EnsureStorageSlotLabel(slot.transform, "SlotName", "빈 슬롯", 14f, new Vector2(0f, -38f), new Vector2(slotWidth - 12f, 28f), TextAlignmentOptions.Center);
+        _storageHp[index] = EnsureStorageSlotLabel(slot.transform, "SlotHP", "", 16f, new Vector2(0f, -66f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
+    }
+
+    TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string value, float fontSize, Vector2 position, Vector2 size, TextAlignmentOptions alignment)
+    {
+        Transform existing = parent.Find(name);
+        GameObject go = existing != null ? existing.gameObject : new GameObject(name);
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+        rect.localScale = Vector3.one;
+
+        TextMeshProUGUI label = go.GetComponent<TextMeshProUGUI>();
+        if (label == null)
+            label = go.AddComponent<TextMeshProUGUI>();
+        label.font = UIThinDungFont.Get();
+        label.text = value;
+        label.fontSize = fontSize;
+        label.alignment = alignment;
+        label.color = TextColorForStorage(name);
+        label.raycastTarget = false;
+        label.textWrappingMode = TextWrappingModes.NoWrap;
+        return label;
+    }
+
+    Color TextColorForStorage(string name)
+    {
+        if (name == "SlotHP")
+            return new Color(0.88f, 0.48f, 0.24f, 1f);
+        if (name == "SlotName")
+            return new Color(0.17f, 0.15f, 0.13f, 0.84f);
+        return new Color(0.17f, 0.15f, 0.13f, 1f);
+    }
+
     void ForceClosePanelImmediate()
     {
         EnsurePanelReference();
@@ -234,6 +415,7 @@ public class InventoryUI : MonoBehaviour
             _panel.SetActive(false);
         }
         SetToggleHotspotVisible(false);
+        RunUiPauseManager.SetPaused("Inventory", false);
     }
 
     void CapturePanelShownPosition()
@@ -411,6 +593,7 @@ public class InventoryUI : MonoBehaviour
     // ── RefreshUI ─────────────────────────────────────────────────────
     public void RefreshUI()
     {
+        EnsureStorageSlots();
         var inv = InventoryManager.Instance;
         if (inv == null) return;
 
@@ -448,6 +631,8 @@ public class InventoryUI : MonoBehaviour
                 _charImg[i].color = p != null ? Color.white : CUnequippedPart;
                 ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
             }
+
+            SetCharacterSlotLocked(i, inv.IsSlotLocked((BodySlot)i));
         }
 
         // 우측 상태
@@ -487,6 +672,68 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < _storageImg.Length; i++)
             if (_storageImg[i] != null)
                 ApplyAlphaHitTest(_storageImg[i], _storageImg[i].sprite != null ? partAlphaHitThreshold : 0f);
+    }
+
+    void SetCharacterSlotLocked(int index, bool locked)
+    {
+        if (index < 0 || index >= _charImg.Length || _charImg[index] == null)
+            return;
+
+        GameObject badge = EnsureCharacterLockBadge(index);
+        if (badge != null)
+            badge.SetActive(locked);
+    }
+
+    GameObject EnsureCharacterLockBadge(int index)
+    {
+        if (index < 0 || index >= _charLockBadge.Length)
+            return null;
+
+        if (_charLockBadge[index] != null)
+            return _charLockBadge[index];
+
+        Image parentImage = _charImg[index];
+        if (parentImage == null)
+            return null;
+
+        Transform existing = parentImage.transform.Find("SlotLockBadge");
+        if (existing != null)
+        {
+            _charLockBadge[index] = existing.gameObject;
+            return _charLockBadge[index];
+        }
+
+        GameObject badge = new GameObject("SlotLockBadge");
+        badge.transform.SetParent(parentImage.transform, false);
+        RectTransform rect = badge.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        Image background = badge.AddComponent<Image>();
+        background.color = new Color(0f, 0f, 0f, 0.46f);
+        background.raycastTarget = false;
+
+        GameObject labelGO = new GameObject("SlotLockLabel");
+        labelGO.transform.SetParent(badge.transform, false);
+        RectTransform labelRect = labelGO.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        TextMeshProUGUI label = labelGO.AddComponent<TextMeshProUGUI>();
+        label.font = UIThinDungFont.Get();
+        label.text = "LOCK";
+        label.fontSize = 28f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = Color.white;
+        label.raycastTarget = false;
+        label.textWrappingMode = TextWrappingModes.NoWrap;
+
+        _charLockBadge[index] = badge;
+        return badge;
     }
 
     public static void ApplyAlphaHitTest(Image image, float threshold)

@@ -28,6 +28,7 @@ public class PlayerDamageReceiver : MonoBehaviour
     [Header("Dropped Parts")]
     [SerializeField, Min(0f)] float dropDownDistance = 0.52f;
     [SerializeField, Min(0f)] float dropSideDistance = 0.16f;
+    [SerializeField, Range(0.1f, 2f)] float fallbackDroppedPartScaleRatio = 0.72f;
     [SerializeField] int droppedPartSortingOrder = 4;
 
     static readonly BodySlot[] DamageSlots =
@@ -49,6 +50,7 @@ public class PlayerDamageReceiver : MonoBehaviour
     Coroutine feedbackRoutine;
     float nextDamageTime;
     bool bodyDropped;
+    bool isDead;
 
     void Awake()
     {
@@ -89,7 +91,7 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     public void TryTakeHit(Collider2D enemyCollider)
     {
-        if (enemyCollider == null || Time.time < nextDamageTime)
+        if (isDead || enemyCollider == null || Time.time < nextDamageTime)
             return;
 
         if (((1 << enemyCollider.gameObject.layer) & enemyLayers.value) == 0)
@@ -108,7 +110,7 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     public bool TryTakePatternDamage(int damage, float cooldownOverride = -1f)
     {
-        if (Time.time < nextDamageTime)
+        if (isDead || Time.time < nextDamageTime)
             return false;
 
         int finalDamage = Mathf.Max(1, damage);
@@ -140,18 +142,74 @@ public class PlayerDamageReceiver : MonoBehaviour
                 SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
                 BodyPart brokenPart;
                 if (inventory.TryDamageEquippedPart(slot, damage, out brokenPart) && brokenPart != null)
-                    DropPart(dropSprite, sourceRenderer);
+                {
+                    DropPart(dropSprite, sourceRenderer, slot);
+                    if (!HasAnyEquippedPart(inventory))
+                        DieBodyOnly();
+                }
                 return;
             }
         }
 
-        bodyCurrentHp = Mathf.Clamp(bodyCurrentHp - damage, 0, bodyMaxHp);
-        PlayerManager.Instance?.TakeDamage(damage);
-        if (bodyCurrentHp <= 0 && !bodyDropped)
+        DieBodyOnly();
+    }
+
+    bool HasAnyEquippedPart(InventoryManager inventory)
+    {
+        if (inventory == null)
+            return false;
+
+        for (int i = 0; i < DamageSlots.Length; i++)
+            if (inventory.GetEquippedPart(DamageSlots[i]) != null)
+                return true;
+
+        return false;
+    }
+
+    void DieBodyOnly()
+    {
+        if (isDead)
+            return;
+
+        isDead = true;
+        bodyCurrentHp = 0;
+        PlayerManager.Instance?.SetCurrentHp(0);
+
+        if (BodyManager.Instance != null && BodyManager.Instance.State != null)
+            BodyManager.Instance.State.body = false;
+
+        if (!bodyDropped)
         {
             bodyDropped = true;
-            DropPart(bodyRenderer != null ? bodyRenderer.sprite : null, bodyRenderer);
+            DropPart(bodyRenderer != null ? bodyRenderer.sprite : null, bodyRenderer, null);
         }
+
+        DisablePlayerAfterDeath();
+    }
+
+    void DisablePlayerAfterDeath()
+    {
+        PlayerController controller = GetComponent<PlayerController>();
+        if (controller != null)
+            controller.enabled = false;
+
+        PlayerAttack attack = GetComponent<PlayerAttack>();
+        if (attack != null)
+            attack.enabled = false;
+
+        Collider2D[] colliders = GetComponentsInChildren<Collider2D>();
+        for (int i = 0; i < colliders.Length; i++)
+            if (colliders[i] != null)
+                colliders[i].enabled = false;
+
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+            rb.linearVelocity = Vector2.zero;
+
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>();
+        for (int i = 0; i < renderers.Length; i++)
+            if (renderers[i] != null)
+                renderers[i].enabled = false;
     }
 
     bool TryPickRandomDamageSlot(InventoryManager inventory, out BodySlot slot)
@@ -176,7 +234,7 @@ public class PlayerDamageReceiver : MonoBehaviour
     void ShakeCamera()
     {
         if (shakeCameraOnHit)
-            CameraShake.Shake(cameraShakeDuration, cameraShakeMagnitude);
+            CameraShake.ShakeHorizontal(cameraShakeDuration, cameraShakeMagnitude);
     }
 
     void PlayHitFeedback()
@@ -241,7 +299,7 @@ public class PlayerDamageReceiver : MonoBehaviour
         feedbackRoutine = null;
     }
 
-    void DropPart(Sprite sprite, SpriteRenderer sourceRenderer)
+    void DropPart(Sprite sprite, SpriteRenderer sourceRenderer, BodySlot? slot)
     {
         if (sprite == null)
             return;
@@ -249,7 +307,7 @@ public class PlayerDamageReceiver : MonoBehaviour
         ResolveReferences();
         SpriteRenderer sortingSource = sourceRenderer != null ? sourceRenderer : bodyRenderer;
         int sortingLayerId = sortingSource != null ? sortingSource.sortingLayerID : 0;
-        Vector3 sourceScale = sortingSource != null ? sortingSource.transform.lossyScale : transform.lossyScale;
+        Vector3 sourceScale = DroppedPartWorldScale(sprite, sourceRenderer, slot);
         Vector3 start = sortingSource != null ? sortingSource.bounds.center : transform.position;
         Vector3 end = transform.position + new Vector3(Random.Range(-dropSideDistance, dropSideDistance), -dropDownDistance, 0f);
         end.z = start.z;
@@ -257,6 +315,29 @@ public class PlayerDamageReceiver : MonoBehaviour
         GameObject dropped = new GameObject("Dropped_" + sprite.name);
         DroppedBodyPart droppedPart = dropped.AddComponent<DroppedBodyPart>();
         droppedPart.Configure(sprite, sortingLayerId, droppedPartSortingOrder, start, end, sourceScale);
+    }
+
+    Vector3 DroppedPartWorldScale(Sprite sprite, SpriteRenderer sourceRenderer, BodySlot? slot)
+    {
+        if (sourceRenderer != null && sourceRenderer.sprite != null)
+            return sourceRenderer.transform.lossyScale;
+
+        Vector3 baseScale = bodyRenderer != null ? bodyRenderer.transform.lossyScale : transform.lossyScale;
+        if (bodyRenderer == null || bodyRenderer.sprite == null || sprite == null)
+            return baseScale;
+
+        float bodyLargest = Mathf.Max(bodyRenderer.sprite.bounds.size.x, bodyRenderer.sprite.bounds.size.y);
+        float partLargest = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
+        if (bodyLargest <= 0f || partLargest <= 0f)
+            return baseScale;
+
+        float ratio = partLargest / bodyLargest;
+        if (!slot.HasValue)
+            ratio = 1f;
+        else
+            ratio = Mathf.Clamp(ratio, 0.35f, fallbackDroppedPartScaleRatio);
+
+        return new Vector3(baseScale.x * ratio, baseScale.y * ratio, 1f);
     }
 
     Sprite SpriteForSlot(BodySlot slot)

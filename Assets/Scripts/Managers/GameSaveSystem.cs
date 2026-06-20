@@ -32,6 +32,7 @@ public static class GameSaveSystem
     {
         public BodyPartSaveData[] equipped;
         public BodyPartSaveData[] storage;
+        public bool[] lockedSlots;
     }
 
     [Serializable]
@@ -94,10 +95,21 @@ public static class GameSaveSystem
         if (!TryRead(slotIndex, out data))
             return false;
 
+        Time.timeScale = 1f;
         Apply(data);
         string sceneName = string.IsNullOrEmpty(data.sceneName) ? "RoomScene" : data.sceneName;
         SceneManager.LoadScene(sceneName);
         return true;
+    }
+
+    public static void StartNewRun()
+    {
+        Time.timeScale = 1f;
+        MapRunState.ResetRun();
+
+        InventoryManager inventory = InventoryManager.Instance;
+        if (inventory != null)
+            inventory.ResetToDefault();
     }
 
     static void Apply(SaveData data)
@@ -109,8 +121,13 @@ public static class GameSaveSystem
 
         InventoryManager inventory = InventoryManager.Instance;
         if (inventory != null)
-            inventory.ReplaceState(RestoreParts(data.inventory != null ? data.inventory.equipped : null, 6),
-                RestoreParts(data.inventory != null ? data.inventory.storage : null, 2));
+        {
+            InventorySaveData inventoryData = data.inventory;
+            inventory.ReplaceState(
+                RestoreParts(inventoryData != null ? inventoryData.equipped : null, 6),
+                RestoreParts(inventoryData != null ? inventoryData.storage : null, InventoryManager.StorageSlotCount),
+                inventoryData != null ? inventoryData.lockedSlots : null);
+        }
     }
 
     static InventorySaveData CaptureInventory()
@@ -122,7 +139,8 @@ public static class GameSaveSystem
         return new InventorySaveData
         {
             equipped = CaptureParts(inventory.equipped),
-            storage = CaptureParts(inventory.storage)
+            storage = CaptureParts(inventory.storage),
+            lockedSlots = inventory.GetLockedSlotsSnapshot()
         };
     }
 

@@ -17,7 +17,9 @@ public class TutorialSceneController : MonoBehaviour
         Move,
         Workbench,
         Paper,
+        Map,
         Inventory,
+        Menu,
         EnemyIntro,
         Attack,
         Door,
@@ -42,7 +44,9 @@ public class TutorialSceneController : MonoBehaviour
     Canvas tutorialCanvas;
     CanvasGroup movePrompt;
     CanvasGroup interactPrompt;
+    CanvasGroup mapPrompt;
     CanvasGroup inventoryPrompt;
+    CanvasGroup menuPrompt;
     CanvasGroup attackPrompt;
     CanvasGroup doorPrompt;
     CanvasGroup paperGroup;
@@ -53,11 +57,16 @@ public class TutorialSceneController : MonoBehaviour
     Transform doorRoot;
     TutorialEnemy activeEnemy;
     InventoryUI inventoryUI;
+    RunPauseMenuUI pauseMenuUI;
+    GameObject mapButtonObject;
     GameObject inventoryButtonObject;
+    GameObject menuButtonObject;
     RunHudUI runHud;
     TutorialStep step;
     bool paperReadyForClick;
+    bool mapOpened;
     bool inventoryOpened;
+    bool menuOpened;
     bool attackPromptDismissed;
     bool doorPromptVisible;
     float promptPulseTime;
@@ -105,7 +114,9 @@ public class TutorialSceneController : MonoBehaviour
         promptPulseTime += Time.unscaledDeltaTime;
         PulsePrompt(movePrompt);
         PulsePrompt(interactPrompt);
+        PulsePrompt(mapPrompt);
         PulsePrompt(inventoryPrompt);
+        PulsePrompt(menuPrompt);
         PulsePrompt(attackPrompt);
         PulsePrompt(doorPrompt);
 
@@ -120,8 +131,14 @@ public class TutorialSceneController : MonoBehaviour
             case TutorialStep.Paper:
                 UpdatePaperStep();
                 break;
+            case TutorialStep.Map:
+                UpdateMapStep();
+                break;
             case TutorialStep.Inventory:
                 UpdateInventoryStep();
+                break;
+            case TutorialStep.Menu:
+                UpdateMenuStep();
                 break;
             case TutorialStep.Attack:
                 UpdateAttackStep();
@@ -169,11 +186,26 @@ public class TutorialSceneController : MonoBehaviour
 
     void UpdatePaperStep()
     {
-        if (!paperReadyForClick || Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame)
+        bool clicked = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+        bool pressedE = Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
+        if (!paperReadyForClick || (!clicked && !pressedE))
             return;
 
         paperReadyForClick = false;
         StartCoroutine(ClosePaperRoutine());
+    }
+
+    void UpdateMapStep()
+    {
+        if (IsMapOpen())
+        {
+            mapOpened = true;
+            SetPromptVisible(mapPrompt, false);
+            return;
+        }
+
+        if (mapOpened)
+            ShowInventoryPrompt();
     }
 
     void UpdateInventoryStep()
@@ -189,6 +221,22 @@ public class TutorialSceneController : MonoBehaviour
         }
 
         if (inventoryOpened)
+            ShowMenuPrompt();
+    }
+
+    void UpdateMenuStep()
+    {
+        if (pauseMenuUI == null && runHud != null)
+            pauseMenuUI = runHud.GetComponent<RunPauseMenuUI>();
+
+        if (pauseMenuUI != null && pauseMenuUI.IsAnyOpen)
+        {
+            menuOpened = true;
+            SetPromptVisible(menuPrompt, false);
+            return;
+        }
+
+        if (menuOpened)
             StartCoroutine(EnemyIntroRoutine());
     }
 
@@ -244,7 +292,17 @@ public class TutorialSceneController : MonoBehaviour
         yield return AnimateRect(paperRect, shown, bump, 0.10f, EaseOutCubic);
         yield return AnimateRect(paperRect, bump, hidden, 0.34f, EaseInCubic);
         SetCanvasGroup(paperGroup, false, 0f);
-        ShowInventoryPrompt();
+        ShowMapPrompt();
+    }
+
+    void ShowMapPrompt()
+    {
+        if (mapButtonObject != null)
+            mapButtonObject.SetActive(true);
+
+        mapOpened = false;
+        ShowOnly(mapPrompt);
+        step = TutorialStep.Map;
     }
 
     void ShowInventoryPrompt()
@@ -257,10 +315,22 @@ public class TutorialSceneController : MonoBehaviour
         step = TutorialStep.Inventory;
     }
 
+    void ShowMenuPrompt()
+    {
+        if (menuButtonObject != null)
+            menuButtonObject.SetActive(true);
+
+        menuOpened = false;
+        ShowOnly(menuPrompt);
+        step = TutorialStep.Menu;
+    }
+
     IEnumerator EnemyIntroRoutine()
     {
         step = TutorialStep.EnemyIntro;
+        SetPromptVisible(mapPrompt, false);
         SetPromptVisible(inventoryPrompt, false);
+        SetPromptVisible(menuPrompt, false);
         SetCanvasGroup(pauseOverlay, true, 1f);
         Time.timeScale = 0f;
 
@@ -283,6 +353,9 @@ public class TutorialSceneController : MonoBehaviour
         }
 
         Time.timeScale = 1f;
+        if (activeEnemy != null)
+            activeEnemy.BeginApproachPlayer();
+
         SetCanvasGroup(pauseOverlay, false, 0f);
         ShowOnly(attackPrompt);
         attackPromptDismissed = false;
@@ -323,7 +396,7 @@ public class TutorialSceneController : MonoBehaviour
         if (runHud != null)
             Destroy(runHud.gameObject);
 
-        RunHudUI.ShowControlHintsOnNextRoom = true;
+        RunHudUI.ShowControlHintsOnNextRoom = false;
 
         fadeImage.transform.SetAsLastSibling();
         float elapsed = 0f;
@@ -401,9 +474,17 @@ public class TutorialSceneController : MonoBehaviour
     {
         runHud = FindFirstObjectByType<RunHudUI>(FindObjectsInactive.Include);
         if (runHud == null)
+        {
+            GameObject hud = new GameObject("RunHudCanvas");
+            hud.AddComponent<RectTransform>();
+            runHud = hud.AddComponent<RunHudUI>();
+        }
+
+        if (runHud == null)
             return;
 
         inventoryUI = runHud.GetComponentInChildren<InventoryUI>(true);
+        pauseMenuUI = runHud.GetComponent<RunPauseMenuUI>();
     }
 
     void BuildUi()
@@ -414,7 +495,9 @@ public class TutorialSceneController : MonoBehaviour
 
         movePrompt = CreatePrompt("MovePrompt", "[WASD]로 움직이기", new Vector2(-560f, 250f), new Vector2(430f, 142f));
         interactPrompt = CreatePrompt("InteractPrompt", "[E] 키를 눌러 상호작용", new Vector2(530f, -305f), new Vector2(520f, 132f));
+        mapPrompt = CreatePrompt("MapPrompt", "[M] 키를 눌러 지도 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
         inventoryPrompt = CreatePrompt("InventoryPrompt", "[Tab] 키를 눌러 인벤토리 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
+        menuPrompt = CreatePrompt("MenuPrompt", "[ESC] 키를 눌러 메뉴 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
         attackPrompt = CreatePrompt("AttackPrompt", "방향키로 공격", new Vector2(530f, 260f), new Vector2(420f, 132f));
         doorPrompt = CreatePrompt("DoorPrompt", "[Enter]를 눌러 들어가기", new Vector2(0f, -335f), new Vector2(560f, 132f));
         BuildPaper();
@@ -538,7 +621,7 @@ public class TutorialSceneController : MonoBehaviour
         cloud.type = Image.Type.Sliced;
 
         AddPaperText(paper.transform, "언제든 준비가 되면\n떠나자.\n단추가 너의 여정을\n도와줄거야.", new Vector2(40f, 24f), new Vector2(650f, 300f), 43f, TextAlignmentOptions.Center);
-        AddPaperText(paper.transform, "화면 아무 곳이나 클릭", new Vector2(240f, -202f), new Vector2(360f, 54f), 28f, TextAlignmentOptions.Center);
+        AddPaperText(paper.transform, "화면 클릭 또는 [E]", new Vector2(240f, -202f), new Vector2(360f, 54f), 28f, TextAlignmentOptions.Center);
         SetCanvasGroup(paperGroup, false, 0f);
     }
 
@@ -581,8 +664,8 @@ public class TutorialSceneController : MonoBehaviour
         arrowRoot = root.transform;
 
         AddArrowPart(root.transform, "Shaft", new Vector2(-0.10f, 0f), new Vector2(1.15f, 0.18f), 0f);
-        AddArrowPart(root.transform, "HeadA", new Vector2(0.54f, 0.17f), new Vector2(0.48f, 0.18f), 38f);
-        AddArrowPart(root.transform, "HeadB", new Vector2(0.54f, -0.17f), new Vector2(0.48f, 0.18f), -38f);
+        AddArrowPart(root.transform, "HeadA", new Vector2(0.54f, 0.17f), new Vector2(0.48f, 0.18f), -38f);
+        AddArrowPart(root.transform, "HeadB", new Vector2(0.54f, -0.17f), new Vector2(0.48f, 0.18f), 38f);
         SetArrowVisible(false);
     }
 
@@ -595,7 +678,7 @@ public class TutorialSceneController : MonoBehaviour
         go.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
         SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
         renderer.sprite = SquareSprite();
-        renderer.color = new Color(0.03f, 0.025f, 0.02f, 0.58f);
+        renderer.color = new Color(0.18f, 0.09f, 0.035f, 0.66f);
         renderer.sortingOrder = 220;
     }
 
@@ -666,17 +749,17 @@ public class TutorialSceneController : MonoBehaviour
 
     void PrepareHudForTutorial()
     {
+        mapButtonObject = FindHudChild("MapIconButton");
+        if (mapButtonObject != null)
+            mapButtonObject.SetActive(false);
+
         inventoryButtonObject = FindHudChild("InventoryIconButton");
         if (inventoryButtonObject != null)
             inventoryButtonObject.SetActive(false);
 
-        GameObject mapButton = FindHudChild("MapIconButton");
-        if (mapButton != null)
-            mapButton.SetActive(false);
-
-        GameObject menuButton = FindHudChild("MenuIconButton");
-        if (menuButton != null)
-            menuButton.SetActive(false);
+        menuButtonObject = FindHudChild("MenuIconButton");
+        if (menuButtonObject != null)
+            menuButtonObject.SetActive(false);
     }
 
     GameObject FindHudChild(string childName)
@@ -720,7 +803,7 @@ public class TutorialSceneController : MonoBehaviour
 
         Vector2 direction = toTarget.normalized;
         float bob = Mathf.Sin(Time.unscaledTime * 3.2f) * 0.16f;
-        arrowRoot.position = playerPosition + direction * 1.05f + Vector2.up * (0.72f + bob);
+        arrowRoot.position = playerPosition + direction * 1.16f + Vector2.up * (0.66f + bob);
         arrowRoot.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
     }
 
@@ -740,9 +823,17 @@ public class TutorialSceneController : MonoBehaviour
     {
         SetPromptVisible(movePrompt, false);
         SetPromptVisible(interactPrompt, false);
+        SetPromptVisible(mapPrompt, false);
         SetPromptVisible(inventoryPrompt, false);
+        SetPromptVisible(menuPrompt, false);
         SetPromptVisible(attackPrompt, false);
         SetPromptVisible(doorPrompt, false);
+    }
+
+    bool IsMapOpen()
+    {
+        GameObject mapOverlay = FindHudChild("MapOverlay");
+        return mapOverlay != null && mapOverlay.activeSelf;
     }
 
     void SetPromptVisible(CanvasGroup group, bool visible)
@@ -760,8 +851,8 @@ public class TutorialSceneController : MonoBehaviour
         if (group == null || !group.gameObject.activeSelf)
             return;
 
-        float t = Mathf.Sin(promptPulseTime * 2.2f) * 0.5f + 0.5f;
-        group.alpha = Mathf.Lerp(0.88f, 1f, t);
+        float pulse = Mathf.Sin(promptPulseTime * 4.4f) * 0.5f + 0.5f;
+        group.alpha = Mathf.Lerp(0.42f, 1f, pulse);
     }
 
     void SetCanvasGroup(CanvasGroup group, bool visible, float alpha)

@@ -7,8 +7,8 @@ public class DroppedBodyPart : MonoBehaviour
     [SerializeField, Range(0.05f, 1f)] float fallDuration = 0.42f;
     [SerializeField, Min(0f)] float bounceHeight = 0.18f;
     [SerializeField] float spinDegrees = 90f;
-    [SerializeField, Min(0.05f)] float minVisibleWorldSize = 0.22f;
-    [SerializeField, Min(0.05f)] float maxVisibleWorldSize = 0.72f;
+    [SerializeField, Min(0.05f)] float minVisibleWorldSize = 0.38f;
+    [SerializeField, Min(0.05f)] float maxVisibleWorldSize = 1.65f;
 
     SpriteRenderer spriteRenderer;
 

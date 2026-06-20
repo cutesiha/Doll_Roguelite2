@@ -78,6 +78,7 @@ public class DoorTrigger : MonoBehaviour
             return;
         }
 
+        BodyConditionUtility.LockRequiredMissingSlot(targetNode);
         SceneManager.LoadScene(SceneNameFor(targetNode));
     }
 

@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 public static class InventoryPanelSceneBuilder
 {
-    const int StorageSlotCount = 2;
+    const int StorageSlotCount = 9;
     static TMP_FontAsset font;
 
     [MenuItem("Game/Inventory/Rebuild Scene Inventory Panel")]
@@ -217,9 +217,11 @@ public static class InventoryPanelSceneBuilder
 
         for (int i = 0; i < StorageSlotCount; i++)
         {
-            float x = i % 2 == 0 ? -112f : 112f;
-            float y = -122f;
-            GameObject slot = Rect(parent, "StorageSlot_" + (i + 1), V2(0.5f, 1f), V2(0.5f, 1f), V2(0.5f, 1f), V2(x, y), V2(194f, 126f));
+            int col = i % 3;
+            int row = i / 3;
+            float x = (col - 1) * 164f;
+            float y = -96f - row * 106f;
+            GameObject slot = Rect(parent, "StorageSlot_" + (i + 1), V2(0.5f, 1f), V2(0.5f, 1f), V2(0.5f, 1f), V2(x, y), V2(148f, 92f));
             storageImgs[i] = Image(slot, emptyColor);
             storageBtns[i] = AddButton(slot, storageImgs[i], new Color(0.42f, 0.38f, 0.48f, 1f));
             AddStorageDragSource(slot, i);
