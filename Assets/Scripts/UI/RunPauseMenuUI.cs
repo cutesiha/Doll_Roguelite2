@@ -36,6 +36,7 @@ public class RunPauseMenuUI : MonoBehaviour
     Image[] bgmVolumeFills;
     Image[] sfxVolumeFills;
     System.Action confirmYesAction;
+    Coroutine menuPanelAnimationRoutine;
 
     static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
     static readonly Color TextColor = new Color(0.17f, 0.11f, 0.06f, 1f);
@@ -43,6 +44,19 @@ public class RunPauseMenuUI : MonoBehaviour
     static readonly Color ButtonPressed = new Color(0.48f, 0.31f, 0.18f, 1f);
     static readonly Vector2 MenuPanelSize = new Vector2(720f, 360f);
     static readonly Vector2 PanelSpriteSize = new Vector2(400f, 250f);
+    const float MenuPanelHiddenOffsetY = 980f;
+    const float MenuPanelOvershootY = 42f;
+
+    public bool IsAnyOpen
+    {
+        get
+        {
+            return (menuPanel != null && menuPanel.activeSelf)
+                || (settingsPanel != null && settingsPanel.activeSelf)
+                || (savePanel != null && savePanel.activeSelf)
+                || (confirmPanel != null && confirmPanel.activeSelf);
+        }
+    }
 
     void Awake()
     {
@@ -73,19 +87,36 @@ public class RunPauseMenuUI : MonoBehaviour
 
     public void ToggleMenu()
     {
-        bool wasVisible = menuPanel != null && menuPanel.activeSelf;
-        Build();
-        HidePanels();
-        if (menuPanel != null && !wasVisible)
+        EnsureMenuPanelReady();
+
+        if (IsAnyOpen)
         {
-            menuPanel.SetActive(true);
-            menuPanel.transform.SetAsLastSibling();
+            CloseAll();
+            return;
         }
+
+        ShowMenuPanel();
     }
 
     public void CloseAll()
     {
+        bool onlyMenuOpen = menuPanel != null && menuPanel.activeSelf
+            && (settingsPanel == null || !settingsPanel.activeSelf)
+            && (savePanel == null || !savePanel.activeSelf)
+            && (confirmPanel == null || !confirmPanel.activeSelf);
+
+        if (onlyMenuOpen)
+        {
+            PlayMenuPanelAnimation(false);
+            return;
+        }
+
         HidePanels();
+    }
+
+    void OnDestroy()
+    {
+        RunUiPauseManager.SetPaused("Menu", false);
     }
 
 void Build()
@@ -99,6 +130,17 @@ void Build()
             ConfigureMenuPanel();
 
         HidePanels();
+    }
+
+    void EnsureMenuPanelReady()
+    {
+        EnsureAssets();
+        FindExistingPanels();
+
+        if (menuPanel == null)
+            BuildMenuPanel();
+        else
+            ConfigureMenuPanel();
     }
 
     void FindExistingPanels()
@@ -125,10 +167,26 @@ void Build()
         return child != null ? child.gameObject : null;
     }
 
-void BuildMenuPanel()
+    void BuildMenuPanel()
     {
         menuPanel = CreateImagePanel("RunMenuPanel", MenuPanelSize, optionBackgroundSprite);
         ConfigureMenuPanel();
+        menuPanel.SetActive(false);
+    }
+
+    void ShowMenuPanel()
+    {
+        HidePanels();
+        if (menuPanel == null)
+            BuildMenuPanel();
+
+        if (menuPanel == null)
+            return;
+
+        menuPanel.SetActive(true);
+        menuPanel.transform.SetAsLastSibling();
+        RefreshPauseLock();
+        PlayMenuPanelAnimation(true);
     }
 
     void ConfigureMenuPanel()
@@ -433,6 +491,7 @@ void BuildMenuPanel()
         UpdateVolumeCells();
         settingsPanel.SetActive(true);
         settingsPanel.transform.SetAsLastSibling();
+        RefreshPauseLock();
     }
 
     void ShowSavePanel()
@@ -443,6 +502,7 @@ void BuildMenuPanel()
         RefreshSavePanel();
         savePanel.SetActive(true);
         savePanel.transform.SetAsLastSibling();
+        RefreshPauseLock();
     }
 
     void AskSave(int slot)
@@ -482,12 +542,14 @@ void BuildMenuPanel()
         confirmYesAction = yesAction;
         SetConfirmVisible(true);
         confirmPanel.transform.SetAsLastSibling();
+        RefreshPauseLock();
     }
 
     void CloseConfirm()
     {
         confirmYesAction = null;
         SetConfirmVisible(false);
+        RefreshPauseLock();
     }
 
     void SetConfirmVisible(bool visible)
@@ -549,6 +611,7 @@ void BuildMenuPanel()
         }
 
         StartIntroSequence.SkipNextIntro = true;
+        RunUiPauseManager.ClearAll();
         SceneManager.LoadScene(startSceneName);
         Destroy(gameObject);
     }
@@ -564,10 +627,88 @@ void BuildMenuPanel()
 
     void HidePanels()
     {
+        StopMenuPanelAnimation();
         if (menuPanel != null) menuPanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (savePanel != null) savePanel.SetActive(false);
         SetConfirmVisible(false);
+        RefreshPauseLock();
+    }
+
+    void RefreshPauseLock()
+    {
+        RunUiPauseManager.SetPaused("Menu", IsAnyOpen);
+    }
+
+    void PlayMenuPanelAnimation(bool show)
+    {
+        if (menuPanel == null)
+            return;
+
+        RectTransform rect = menuPanel.transform as RectTransform;
+        if (rect == null)
+            rect = menuPanel.AddComponent<RectTransform>();
+
+        if (menuPanelAnimationRoutine != null)
+            StopCoroutine(menuPanelAnimationRoutine);
+
+        SoundManager.PlayPanel();
+        menuPanelAnimationRoutine = StartCoroutine(MenuPanelAnimationRoutine(rect, show));
+    }
+
+    IEnumerator MenuPanelAnimationRoutine(RectTransform rect, bool show)
+    {
+        Vector2 shown = Vector2.zero;
+        Vector2 hidden = shown + Vector2.down * MenuPanelHiddenOffsetY;
+        Vector2 overshoot = shown + Vector2.up * MenuPanelOvershootY;
+
+        if (show)
+        {
+            rect.anchoredPosition = hidden;
+            yield return StartCoroutine(AnimateMenuPanelSegment(rect, hidden, overshoot, 0.24f));
+            yield return StartCoroutine(AnimateMenuPanelSegment(rect, overshoot, shown, 0.11f));
+            rect.anchoredPosition = shown;
+        }
+        else
+        {
+            Vector2 from = rect.anchoredPosition;
+            yield return StartCoroutine(AnimateMenuPanelSegment(rect, from, overshoot, 0.09f));
+            yield return StartCoroutine(AnimateMenuPanelSegment(rect, overshoot, hidden, 0.24f));
+            rect.anchoredPosition = shown;
+            if (menuPanel != null)
+                menuPanel.SetActive(false);
+            RefreshPauseLock();
+        }
+
+        menuPanelAnimationRoutine = null;
+    }
+
+    IEnumerator AnimateMenuPanelSegment(RectTransform rect, Vector2 from, Vector2 to, float duration)
+    {
+        float elapsed = 0f;
+        float safeDuration = Mathf.Max(0.01f, duration);
+        while (elapsed < safeDuration)
+        {
+            float t = Mathf.Clamp01(elapsed / safeDuration);
+            t = 1f - Mathf.Pow(1f - t, 3f);
+            rect.anchoredPosition = Vector2.LerpUnclamped(from, to, t);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        rect.anchoredPosition = to;
+    }
+
+    void StopMenuPanelAnimation()
+    {
+        if (menuPanelAnimationRoutine == null)
+            return;
+
+        StopCoroutine(menuPanelAnimationRoutine);
+        menuPanelAnimationRoutine = null;
+        RectTransform rect = menuPanel != null ? menuPanel.transform as RectTransform : null;
+        if (rect != null)
+            rect.anchoredPosition = Vector2.zero;
     }
 
     GameObject InstantiateStartPanel(GameObject prefab, string instanceName, string resourcesName)

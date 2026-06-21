@@ -597,6 +597,7 @@ public class Room : MonoBehaviour
 
     void CompleteCurrentRoom()
     {
+        BodyConditionUtility.UnlockRequiredMissingSlot(MapRunState.PendingNode);
         if (MapRunState.PendingNode != null)
             MapRunState.CompletePendingRoom();
     }

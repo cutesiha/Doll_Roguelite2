@@ -57,6 +57,44 @@ public static class BodyConditionUtility
         }
     }
 
+    public static bool TryGetRequiredMissingSlot(NodeConditionType conditionType, out BodySlot slot)
+    {
+        switch (conditionType)
+        {
+            case NodeConditionType.NoLeftArm:
+                slot = BodySlot.ArmLeft;
+                return true;
+            case NodeConditionType.NoRightEye:
+                slot = BodySlot.EyeRight;
+                return true;
+            case NodeConditionType.NoLeftLeg:
+                slot = BodySlot.LegLeft;
+                return true;
+            case NodeConditionType.NoRightLeg:
+                slot = BodySlot.LegRight;
+                return true;
+            default:
+                slot = BodySlot.EyeLeft;
+                return false;
+        }
+    }
+
+    public static void LockRequiredMissingSlot(MapNode node)
+    {
+        if (node == null || node.roomType != RoomType.ConditionCombat)
+            return;
+
+        InventoryManager.Instance?.LockConditionSlot(node.conditionType);
+    }
+
+    public static void UnlockRequiredMissingSlot(MapNode node)
+    {
+        if (node == null || node.roomType != RoomType.ConditionCombat)
+            return;
+
+        InventoryManager.Instance?.UnlockConditionSlot(node.conditionType);
+    }
+
     public static void ApplyToBodyManager()
     {
         InventoryManager inventory = InventoryManager.Instance;

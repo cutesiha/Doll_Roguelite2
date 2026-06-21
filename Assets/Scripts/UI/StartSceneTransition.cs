@@ -81,6 +81,7 @@ public class StartSceneTransition : MonoBehaviour
         }
 
         SetFadeAlpha(1f);
+        GameSaveSystem.StartNewRun();
         SceneManager.LoadScene(targetSceneName);
     }
 

@@ -11,6 +11,7 @@ public class CameraShake : MonoBehaviour
     float totalDuration;
     float magnitude;
     Vector3 lastOffset;
+    bool horizontalOnly;
 
     public static void Shake(float duration, float magnitude)
     {
@@ -25,6 +26,19 @@ public class CameraShake : MonoBehaviour
         shaker.Play(duration, magnitude);
     }
 
+    public static void ShakeHorizontal(float duration, float magnitude)
+    {
+        Camera camera = Camera.main;
+        if (camera == null)
+            return;
+
+        CameraShake shaker = camera.GetComponent<CameraShake>();
+        if (shaker == null)
+            shaker = camera.gameObject.AddComponent<CameraShake>();
+
+        shaker.Play(duration, magnitude, true);
+    }
+
     public void PlayDefault()
     {
         Play(defaultDuration, defaultMagnitude);
@@ -32,9 +46,15 @@ public class CameraShake : MonoBehaviour
 
     public void Play(float duration, float newMagnitude)
     {
+        Play(duration, newMagnitude, false);
+    }
+
+    void Play(float duration, float newMagnitude, bool useHorizontalOnly)
+    {
         totalDuration = Mathf.Max(0.01f, duration);
         remainingDuration = Mathf.Max(remainingDuration, totalDuration);
         magnitude = Mathf.Max(magnitude, newMagnitude);
+        horizontalOnly = useHorizontalOnly;
     }
 
     void Update()
@@ -54,7 +74,16 @@ public class CameraShake : MonoBehaviour
         remainingDuration -= Time.deltaTime;
         float t = totalDuration > 0f ? Mathf.Clamp01(remainingDuration / totalDuration) : 0f;
         float strength = magnitude * t;
-        lastOffset = (Vector3)(Random.insideUnitCircle * strength);
+        if (horizontalOnly)
+        {
+            float progress = 1f - t;
+            float wave = Mathf.Sin(progress * Mathf.PI * 10f);
+            lastOffset = Vector3.right * wave * strength;
+        }
+        else
+        {
+            lastOffset = (Vector3)(Random.insideUnitCircle * strength);
+        }
         transform.position += lastOffset;
 
         if (remainingDuration <= 0f)
@@ -71,5 +100,6 @@ public class CameraShake : MonoBehaviour
 
         remainingDuration = 0f;
         magnitude = 0f;
+        horizontalOnly = false;
     }
 }

@@ -312,6 +312,7 @@ public class MapUI : MonoBehaviour
 
         if (MapManager.Instance != null && MapManager.Instance.TryBeginRoom(node))
         {
+            BodyConditionUtility.LockRequiredMissingSlot(node);
             string scene = node.roomType == RoomType.Boss   ? bossSceneName
                          : node.roomType == RoomType.Treasure ? treasureSceneName
                          : node.roomType == RoomType.Shop ? shopSceneName
