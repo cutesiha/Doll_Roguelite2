@@ -1,14 +1,3 @@
 {
-  "mcpServers": {
-    "unity": {
-      "command": "C:\\Program Files\\nodejs\\node.exe",
-      "args": [
-        "C:\\Users\\USER\\Documents\\GitHub\\Doll_Roguelite2\\Library\\PackageCache\\com.gamelovers.mcp-unity@aade29c7dd84\\Server~\\build\\index.js"
-      ]
-    },
-    "unity-coplay": {
-      "type": "sse",
-      "url": "http://localhost:8080/mcp"
-    }
-  }
+  "mcpServers": {}
 }

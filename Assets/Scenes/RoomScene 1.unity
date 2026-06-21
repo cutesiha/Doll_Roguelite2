@@ -353,6 +353,7 @@ MonoBehaviour:
   attackCooldown: 0.3
   attackDistance: 1
   attackDistanceBonus: 0.4
+  verticalAttackDistanceBonus: 0.12
   attackSize: {x: 1, y: 1}
   attackDuration: 0.12
   fistScale: {x: 1.65, y: 1.65}
@@ -496,6 +497,7 @@ MonoBehaviour:
   fistScale: {x: 1.65, y: 1.65}
   attackStartOffset: 0.22
   attackDistanceBonus: 0.4
+  verticalAttackDistanceBonus: 0.12
   trailSpawnInterval: 0.025
   trailLifetime: 0.12
   trailStartAlpha: 0.32
@@ -535,6 +537,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 211311193}
   leftArmRenderer: {fileID: 0}
   rightArmRenderer: {fileID: 0}
+  playerSortingOrder: 120
   upSprite: {fileID: 21300000, guid: dc4f87adf8a30f2408fdf9fc5652f7e5, type: 3}
   downSprite: {fileID: 21300000, guid: 490ca93b79508d0448588d1ae069cff7, type: 3}
   leftSprite: {fileID: 21300000, guid: 5ecf4f84ff71725468866bba5d71272c, type: 3}
@@ -643,7 +646,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 275919120}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &211311193
@@ -705,6 +709,120 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
+--- !u!1001 &275919119
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 211311192}
+    m_Modifications:
+    - target: {fileID: 708916344383475794, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_Name
+      value: RunHudCanvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+--- !u!224 &275919120 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 6394819164242001409, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+  m_PrefabInstance: {fileID: 275919119}
+  m_PrefabAsset: {fileID: 0}
 --- !u!21 &379873859
 Material:
   serializedVersion: 8
@@ -869,6 +987,8 @@ MonoBehaviour:
   bossSceneName: BossScene
   supplySceneName: PresentScene
   eventSceneName: EventScene
+  treasureSceneName: TreasureRoomScene
+  shopSceneName: ShopScene
   lockedColor: {r: 0.25, g: 0.25, b: 0.25, a: 1}
   openColor: {r: 0.85, g: 0.62, b: 0.25, a: 1}
   blockedColor: {r: 0.65, g: 0.15, b: 0.15, a: 1}
@@ -1334,7 +1454,34 @@ MonoBehaviour:
   maxHp: 2
   bodyColor: {r: 0.93333334, g: 0.28573322, b: 0, a: 1}
   framesPerSecond: 8
+  hitCollider: {fileID: 0}
+  fitColliderToCurrentSprite: 1
+  colliderPadding: 0
+  hitFeedbackDuration: 0.12
+  hitShakeDistance: 0.045
+  hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
+  shakeCameraOnHit: 1
+  cameraShakeDuration: 0.1
+  cameraShakeMagnitude: 0.08
   moveSpeed: 1
+  useButtonSlam: 1
+  slamCooldownRange: {x: 3, y: 5}
+  slamTelegraphDuration: 1.35
+  slamRadius: 0.75
+  slamDamage: 28
+  slamEdgeDamage: 40
+  slamEdgeInnerRatio: 0.68
+  slamJumpDuration: 0.78
+  slamJumpArcHeight: 1.15
+  slamJumpScaleBoost: 0.26
+  slamSquashDuration: 0.32
+  slamTelegraphColor: {r: 1, g: 0.12, b: 0.08, a: 0.28}
+  splitOnDeath: 1
+  smallButtonCount: 4
+  smallButtonSpread: 1.1
+  splitShakeDuration: 0.9
+  splitPopDuration: 0.28
+  splitPopDistance: 1.35
 --- !u!58 &1009779783
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -1960,7 +2107,34 @@ MonoBehaviour:
   maxHp: 2
   bodyColor: {r: 0.93333334, g: 0.28573322, b: 0, a: 1}
   framesPerSecond: 8
+  hitCollider: {fileID: 0}
+  fitColliderToCurrentSprite: 1
+  colliderPadding: 0
+  hitFeedbackDuration: 0.12
+  hitShakeDistance: 0.045
+  hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
+  shakeCameraOnHit: 1
+  cameraShakeDuration: 0.1
+  cameraShakeMagnitude: 0.08
   moveSpeed: 1
+  useButtonSlam: 1
+  slamCooldownRange: {x: 3, y: 5}
+  slamTelegraphDuration: 1.35
+  slamRadius: 0.75
+  slamDamage: 28
+  slamEdgeDamage: 40
+  slamEdgeInnerRatio: 0.68
+  slamJumpDuration: 0.78
+  slamJumpArcHeight: 1.15
+  slamJumpScaleBoost: 0.26
+  slamSquashDuration: 0.32
+  slamTelegraphColor: {r: 1, g: 0.12, b: 0.08, a: 0.28}
+  splitOnDeath: 1
+  smallButtonCount: 4
+  smallButtonSpread: 1.1
+  splitShakeDuration: 0.9
+  splitPopDuration: 0.28
+  splitPopDistance: 1.35
 --- !u!58 &1730252288
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -2345,8 +2519,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThresholdManager
   overlayColor: {r: 0, g: 0, b: 0, a: 1}
+  overlayAlpha: 0.72
   roomSceneName: RoomScene
   bossSceneName: BossScene
+  overlaySortingOrder: 60
   overlayCanvas: {fileID: 0}
   leftOverlay: {fileID: 0}
   rightOverlay: {fileID: 0}
@@ -2404,6 +2580,12 @@ MonoBehaviour:
   spawnRange: {x: 4, y: 3}
   randomizeEnemyPositions: 1
   spawnPositionAttempts: 30
+  minSpawnDistanceFromPlayer: 4.2
+  spawnApproachDuration: 1.75
+  spawnApproachSpeed: 0.45
+  firstRoomButtonWeight: 5
+  firstRoomGuaranteedButtonMin: 1
+  firstRoomGuaranteedButtonMax: 2
   doors:
   - {fileID: 517243970}
   doorLine: {x: 8, y: 4}

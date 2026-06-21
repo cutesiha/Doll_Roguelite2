@@ -1,0 +1,955 @@
+[2026-06-19T23:15:05.507Z] [INFO] [Tools] Registering tool: execute_menu_item
+[2026-06-19T23:15:05.511Z] [INFO] [Tools] Registering tool: select_gameobject
+[2026-06-19T23:15:05.513Z] [INFO] [Tools] Registering tool: add_package
+[2026-06-19T23:15:05.513Z] [INFO] [Tools] Registering tool: run_tests
+[2026-06-19T23:15:05.514Z] [INFO] [Tools] Registering tool: send_console_log
+[2026-06-19T23:15:05.515Z] [INFO] [Tools] Registering tool: get_console_logs
+[2026-06-19T23:15:05.550Z] [INFO] [Tools] Registering tool: update_component
+[2026-06-19T23:15:05.551Z] [INFO] [Tools] Registering tool: add_asset_to_scene
+[2026-06-19T23:15:05.552Z] [INFO] [Tools] Registering tool: update_gameobject
+[2026-06-19T23:15:05.553Z] [INFO] [Tools] Registering tool: create_prefab
+[2026-06-19T23:15:05.554Z] [INFO] [Tools] Registering tool: create_scene
+[2026-06-19T23:15:05.555Z] [INFO] [Tools] Registering tool: delete_scene
+[2026-06-19T23:15:05.556Z] [INFO] [Tools] Registering tool: load_scene
+[2026-06-19T23:15:05.557Z] [INFO] [Tools] Registering tool: save_scene
+[2026-06-19T23:15:05.557Z] [INFO] [Tools] Registering tool: get_scene_info
+[2026-06-19T23:15:05.558Z] [INFO] [Tools] Registering tool: unload_scene
+[2026-06-19T23:15:05.559Z] [INFO] [Tools] Registering tool: recompile_scripts
+[2026-06-19T23:15:05.559Z] [INFO] [Tools] Registering tool: get_gameobject
+[2026-06-19T23:15:05.560Z] [INFO] [Tools] Registering tool: move_gameobject
+[2026-06-19T23:15:05.561Z] [INFO] [Tools] Registering tool: rotate_gameobject
+[2026-06-19T23:15:05.561Z] [INFO] [Tools] Registering tool: scale_gameobject
+[2026-06-19T23:15:05.562Z] [INFO] [Tools] Registering tool: set_transform
+[2026-06-19T23:15:05.562Z] [INFO] [Tools] Registering tool: duplicate_gameobject
+[2026-06-19T23:15:05.563Z] [INFO] [Tools] Registering tool: delete_gameobject
+[2026-06-19T23:15:05.564Z] [INFO] [Tools] Registering tool: reparent_gameobject
+[2026-06-19T23:15:05.567Z] [INFO] [Tools] Registering tool: create_material
+[2026-06-19T23:15:05.567Z] [INFO] [Tools] Registering tool: assign_material
+[2026-06-19T23:15:05.568Z] [INFO] [Tools] Registering tool: modify_material
+[2026-06-19T23:15:05.569Z] [INFO] [Tools] Registering tool: get_material_info
+[2026-06-19T23:15:05.569Z] [INFO] [Tools] Registering tool: batch_execute
+[2026-06-19T23:15:05.570Z] [INFO] [Resources] Registering resource: get_tests
+[2026-06-19T23:15:05.571Z] [INFO] [Resources] Registering resource: get_gameobject
+[2026-06-19T23:15:05.572Z] [INFO] [Resources] Registering resource: get_menu_items
+[2026-06-19T23:15:05.573Z] [INFO] [Resources] Registering resource: get_console_logs
+[2026-06-19T23:15:05.573Z] [INFO] [Resources] Registering resource: get_scenes_hierarchy
+[2026-06-19T23:15:05.574Z] [INFO] [Resources] Registering resource: get_packages
+[2026-06-19T23:15:05.574Z] [INFO] [Resources] Registering resource: get_assets
+[2026-06-19T23:15:05.576Z] [INFO] [Server] MCP Server started
+[2026-06-19T23:15:05.577Z] [INFO] [Server] Connected MCP client: Unknown MCP Client
+[2026-06-19T23:15:05.579Z] [INFO] [Unity] Attempting to read startup parameters...
+[2026-06-19T23:15:05.603Z] [INFO] [Tools] Registering tool: execute_menu_item
+[2026-06-19T23:15:05.604Z] [INFO] [Unity] Using port: 8090 for Unity WebSocket connection
+[2026-06-19T23:15:05.605Z] [INFO] [Unity] Using request timeout: 10 seconds
+[2026-06-19T23:15:05.606Z] [INFO] [Tools] Registering tool: select_gameobject
+[2026-06-19T23:15:05.605Z] [INFO] [Unity] Attempting to connect to Unity WebSocket...
+[2026-06-19T23:15:05.607Z] [INFO] [Tools] Registering tool: add_package
+[2026-06-19T23:15:05.608Z] [INFO] [Tools] Registering tool: run_tests
+[2026-06-19T23:15:05.613Z] [INFO] [Tools] Registering tool: send_console_log
+[2026-06-19T23:15:05.614Z] [INFO] [Tools] Registering tool: get_console_logs
+[2026-06-19T23:15:05.615Z] [INFO] [Tools] Registering tool: update_component
+[2026-06-19T23:15:05.616Z] [INFO] [Tools] Registering tool: add_asset_to_scene
+[2026-06-19T23:15:05.617Z] [INFO] [Tools] Registering tool: update_gameobject
+[2026-06-19T23:15:05.618Z] [INFO] [Tools] Registering tool: create_prefab
+[2026-06-19T23:15:05.618Z] [INFO] [Tools] Registering tool: create_scene
+[2026-06-19T23:15:05.619Z] [INFO] [Tools] Registering tool: delete_scene
+[2026-06-19T23:15:05.619Z] [INFO] [Tools] Registering tool: load_scene
+[2026-06-19T23:15:05.620Z] [INFO] [Tools] Registering tool: save_scene
+[2026-06-19T23:15:05.620Z] [INFO] [Tools] Registering tool: get_scene_info
+[2026-06-19T23:15:05.621Z] [INFO] [Tools] Registering tool: unload_scene
+[2026-06-19T23:15:05.622Z] [INFO] [Tools] Registering tool: recompile_scripts
+[2026-06-19T23:15:05.622Z] [INFO] [Tools] Registering tool: get_gameobject
+[2026-06-19T23:15:05.623Z] [INFO] [Tools] Registering tool: move_gameobject
+[2026-06-19T23:15:05.623Z] [INFO] [Tools] Registering tool: rotate_gameobject
+[2026-06-19T23:15:05.624Z] [INFO] [Tools] Registering tool: scale_gameobject
+[2026-06-19T23:15:05.625Z] [INFO] [Tools] Registering tool: set_transform
+[2026-06-19T23:15:05.625Z] [INFO] [Tools] Registering tool: duplicate_gameobject
+[2026-06-19T23:15:05.626Z] [INFO] [Tools] Registering tool: delete_gameobject
+[2026-06-19T23:15:05.626Z] [INFO] [Tools] Registering tool: reparent_gameobject
+[2026-06-19T23:15:05.627Z] [INFO] [Tools] Registering tool: create_material
+[2026-06-19T23:15:05.628Z] [INFO] [Tools] Registering tool: assign_material
+[2026-06-19T23:15:05.628Z] [INFO] [Tools] Registering tool: modify_material
+[2026-06-19T23:15:05.629Z] [INFO] [Tools] Registering tool: get_material_info
+[2026-06-19T23:15:05.629Z] [INFO] [Tools] Registering tool: batch_execute
+[2026-06-19T23:15:05.630Z] [INFO] [Resources] Registering resource: get_tests
+[2026-06-19T23:15:05.631Z] [INFO] [Resources] Registering resource: get_gameobject
+[2026-06-19T23:15:05.631Z] [INFO] [Resources] Registering resource: get_menu_items
+[2026-06-19T23:15:05.631Z] [INFO] [Resources] Registering resource: get_console_logs
+[2026-06-19T23:15:05.632Z] [INFO] [Resources] Registering resource: get_scenes_hierarchy
+[2026-06-19T23:15:05.632Z] [INFO] [Resources] Registering resource: get_packages
+[2026-06-19T23:15:05.633Z] [INFO] [Resources] Registering resource: get_assets
+[2026-06-19T23:15:05.634Z] [INFO] [Server] MCP Server started
+[2026-06-19T23:15:05.635Z] [INFO] [Server] Connected MCP client: Unknown MCP Client
+[2026-06-19T23:15:05.636Z] [INFO] [Unity] Attempting to read startup parameters...
+[2026-06-19T23:15:05.652Z] [INFO] [Unity] Using port: 8090 for Unity WebSocket connection
+[2026-06-19T23:15:05.652Z] [INFO] [Unity] Using request timeout: 10 seconds
+[2026-06-19T23:15:05.651Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-19T23:15:05.653Z] [INFO] [Unity] Attempting to connect to Unity WebSocket...
+[2026-06-19T23:15:05.654Z] [INFO] [Unity] Successfully connected to Unity WebSocket
+[2026-06-19T23:15:05.655Z] [INFO] [Unity] Client identified to Unity as: Unknown MCP Client
+[2026-06-19T23:15:05.748Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-19T23:15:05.749Z] [INFO] [Unity] Successfully connected to Unity WebSocket
+[2026-06-19T23:15:05.749Z] [INFO] [Unity] Client identified to Unity as: Unknown MCP Client
+[2026-06-19T23:15:05.961Z] [INFO] [Server] Shutting down...
+[2026-06-19T23:15:05.968Z] [INFO] [Unity] Unity WebSocket client stopped
+[2026-06-19T23:15:20.195Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:15:30.198Z] [ERROR] [Unity] Request 1ea420c3-0dcd-46b5-8064-dafb4eff767b timed out after 10000ms
+[2026-06-19T23:15:30.199Z] [ERROR] [Tools] Tool execution failed: get_scene_info
+{
+  "type": "timeout_error",
+  "message": "Request timed out"
+}
+[2026-06-19T23:18:30.463Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:18:40.467Z] [ERROR] [Unity] Request 898c198d-4c0a-4380-87dd-af5a061e82ee timed out after 10000ms
+[2026-06-19T23:18:40.467Z] [ERROR] [Tools] Tool execution failed: get_scene_info
+{
+  "type": "timeout_error",
+  "message": "Request timed out"
+}
+[2026-06-19T23:20:12.538Z] [INFO] [Unity] Scheduling reconnection attempt 1 in 1049.749380230413ms
+[2026-06-19T23:20:13.590Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-19T23:20:15.446Z] [INFO] [Unity] Scheduling reconnection attempt 1 in 1130.950562160492ms
+[2026-06-19T23:20:16.592Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-19T23:30:50.681Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:31:00.685Z] [ERROR] [Unity] Request 8202b3a1-290f-406f-9b8d-ee87d51296a8 timed out after 10000ms
+[2026-06-19T23:31:00.686Z] [ERROR] [Tools] Tool execution failed: get_scene_info
+{
+  "type": "timeout_error",
+  "message": "Request timed out"
+}
+[2026-06-19T23:39:39.833Z] [INFO] [Tools] Registering tool: execute_menu_item
+[2026-06-19T23:39:39.835Z] [INFO] [Tools] Registering tool: select_gameobject
+[2026-06-19T23:39:39.836Z] [INFO] [Tools] Registering tool: add_package
+[2026-06-19T23:39:39.837Z] [INFO] [Tools] Registering tool: run_tests
+[2026-06-19T23:39:39.837Z] [INFO] [Tools] Registering tool: send_console_log
+[2026-06-19T23:39:39.838Z] [INFO] [Tools] Registering tool: get_console_logs
+[2026-06-19T23:39:39.839Z] [INFO] [Tools] Registering tool: update_component
+[2026-06-19T23:39:39.839Z] [INFO] [Tools] Registering tool: add_asset_to_scene
+[2026-06-19T23:39:39.840Z] [INFO] [Tools] Registering tool: update_gameobject
+[2026-06-19T23:39:39.840Z] [INFO] [Tools] Registering tool: create_prefab
+[2026-06-19T23:39:39.841Z] [INFO] [Tools] Registering tool: create_scene
+[2026-06-19T23:39:39.841Z] [INFO] [Tools] Registering tool: delete_scene
+[2026-06-19T23:39:39.841Z] [INFO] [Tools] Registering tool: load_scene
+[2026-06-19T23:39:39.842Z] [INFO] [Tools] Registering tool: save_scene
+[2026-06-19T23:39:39.843Z] [INFO] [Tools] Registering tool: get_scene_info
+[2026-06-19T23:39:39.843Z] [INFO] [Tools] Registering tool: unload_scene
+[2026-06-19T23:39:39.843Z] [INFO] [Tools] Registering tool: recompile_scripts
+[2026-06-19T23:39:39.844Z] [INFO] [Tools] Registering tool: get_gameobject
+[2026-06-19T23:39:39.844Z] [INFO] [Tools] Registering tool: move_gameobject
+[2026-06-19T23:39:39.845Z] [INFO] [Tools] Registering tool: rotate_gameobject
+[2026-06-19T23:39:39.845Z] [INFO] [Tools] Registering tool: scale_gameobject
+[2026-06-19T23:39:39.846Z] [INFO] [Tools] Registering tool: set_transform
+[2026-06-19T23:39:39.846Z] [INFO] [Tools] Registering tool: duplicate_gameobject
+[2026-06-19T23:39:39.847Z] [INFO] [Tools] Registering tool: delete_gameobject
+[2026-06-19T23:39:39.847Z] [INFO] [Tools] Registering tool: reparent_gameobject
+[2026-06-19T23:39:39.847Z] [INFO] [Tools] Registering tool: create_material
+[2026-06-19T23:39:39.848Z] [INFO] [Tools] Registering tool: assign_material
+[2026-06-19T23:39:39.848Z] [INFO] [Tools] Registering tool: modify_material
+[2026-06-19T23:39:39.849Z] [INFO] [Tools] Registering tool: get_material_info
+[2026-06-19T23:39:39.849Z] [INFO] [Tools] Registering tool: batch_execute
+[2026-06-19T23:39:39.850Z] [INFO] [Resources] Registering resource: get_tests
+[2026-06-19T23:39:39.850Z] [INFO] [Resources] Registering resource: get_gameobject
+[2026-06-19T23:39:39.851Z] [INFO] [Resources] Registering resource: get_menu_items
+[2026-06-19T23:39:39.851Z] [INFO] [Resources] Registering resource: get_console_logs
+[2026-06-19T23:39:39.852Z] [INFO] [Resources] Registering resource: get_scenes_hierarchy
+[2026-06-19T23:39:39.852Z] [INFO] [Resources] Registering resource: get_packages
+[2026-06-19T23:39:39.853Z] [INFO] [Resources] Registering resource: get_assets
+[2026-06-19T23:39:39.854Z] [INFO] [Server] MCP Server started
+[2026-06-19T23:39:39.854Z] [INFO] [Server] Connected MCP client: Unknown MCP Client
+[2026-06-19T23:39:39.855Z] [INFO] [Unity] Attempting to read startup parameters...
+[2026-06-19T23:39:39.861Z] [INFO] [Unity] Using port: 8090 for Unity WebSocket connection
+[2026-06-19T23:39:39.861Z] [INFO] [Unity] Using request timeout: 250 seconds
+[2026-06-19T23:39:39.862Z] [INFO] [Unity] Attempting to connect to Unity WebSocket...
+[2026-06-19T23:39:39.887Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-19T23:39:39.888Z] [INFO] [Unity] Successfully connected to Unity WebSocket
+[2026-06-19T23:39:39.888Z] [INFO] [Unity] Client identified to Unity as: Unknown MCP Client
+[2026-06-19T23:40:06.923Z] [INFO] [Tools] Registering tool: execute_menu_item
+[2026-06-19T23:40:06.925Z] [INFO] [Tools] Registering tool: select_gameobject
+[2026-06-19T23:40:06.925Z] [INFO] [Tools] Registering tool: add_package
+[2026-06-19T23:40:06.926Z] [INFO] [Tools] Registering tool: run_tests
+[2026-06-19T23:40:06.926Z] [INFO] [Tools] Registering tool: send_console_log
+[2026-06-19T23:40:06.927Z] [INFO] [Tools] Registering tool: get_console_logs
+[2026-06-19T23:40:06.927Z] [INFO] [Tools] Registering tool: update_component
+[2026-06-19T23:40:06.928Z] [INFO] [Tools] Registering tool: add_asset_to_scene
+[2026-06-19T23:40:06.928Z] [INFO] [Tools] Registering tool: update_gameobject
+[2026-06-19T23:40:06.928Z] [INFO] [Tools] Registering tool: create_prefab
+[2026-06-19T23:40:06.929Z] [INFO] [Tools] Registering tool: create_scene
+[2026-06-19T23:40:06.929Z] [INFO] [Tools] Registering tool: delete_scene
+[2026-06-19T23:40:06.930Z] [INFO] [Tools] Registering tool: load_scene
+[2026-06-19T23:40:06.930Z] [INFO] [Tools] Registering tool: save_scene
+[2026-06-19T23:40:06.930Z] [INFO] [Tools] Registering tool: get_scene_info
+[2026-06-19T23:40:06.931Z] [INFO] [Tools] Registering tool: unload_scene
+[2026-06-19T23:40:06.931Z] [INFO] [Tools] Registering tool: recompile_scripts
+[2026-06-19T23:40:06.932Z] [INFO] [Tools] Registering tool: get_gameobject
+[2026-06-19T23:40:06.932Z] [INFO] [Tools] Registering tool: move_gameobject
+[2026-06-19T23:40:06.932Z] [INFO] [Tools] Registering tool: rotate_gameobject
+[2026-06-19T23:40:06.933Z] [INFO] [Tools] Registering tool: scale_gameobject
+[2026-06-19T23:40:06.933Z] [INFO] [Tools] Registering tool: set_transform
+[2026-06-19T23:40:06.934Z] [INFO] [Tools] Registering tool: duplicate_gameobject
+[2026-06-19T23:40:06.934Z] [INFO] [Tools] Registering tool: delete_gameobject
+[2026-06-19T23:40:06.935Z] [INFO] [Tools] Registering tool: reparent_gameobject
+[2026-06-19T23:40:06.935Z] [INFO] [Tools] Registering tool: create_material
+[2026-06-19T23:40:06.935Z] [INFO] [Tools] Registering tool: assign_material
+[2026-06-19T23:40:06.936Z] [INFO] [Tools] Registering tool: modify_material
+[2026-06-19T23:40:06.936Z] [INFO] [Tools] Registering tool: get_material_info
+[2026-06-19T23:40:06.936Z] [INFO] [Tools] Registering tool: batch_execute
+[2026-06-19T23:40:06.937Z] [INFO] [Resources] Registering resource: get_tests
+[2026-06-19T23:40:06.937Z] [INFO] [Resources] Registering resource: get_gameobject
+[2026-06-19T23:40:06.938Z] [INFO] [Resources] Registering resource: get_menu_items
+[2026-06-19T23:40:06.938Z] [INFO] [Resources] Registering resource: get_console_logs
+[2026-06-19T23:40:06.938Z] [INFO] [Resources] Registering resource: get_scenes_hierarchy
+[2026-06-19T23:40:06.939Z] [INFO] [Resources] Registering resource: get_packages
+[2026-06-19T23:40:06.939Z] [INFO] [Resources] Registering resource: get_assets
+[2026-06-19T23:40:06.940Z] [INFO] [Server] MCP Server started
+[2026-06-19T23:40:06.940Z] [INFO] [Server] Connected MCP client: Unknown MCP Client
+[2026-06-19T23:40:06.941Z] [INFO] [Unity] Attempting to read startup parameters...
+[2026-06-19T23:40:06.945Z] [INFO] [Unity] Using port: 8090 for Unity WebSocket connection
+[2026-06-19T23:40:06.945Z] [INFO] [Unity] Using request timeout: 250 seconds
+[2026-06-19T23:40:06.946Z] [INFO] [Unity] Attempting to connect to Unity WebSocket...
+[2026-06-19T23:40:06.961Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:40:06.962Z] [INFO] [Unity] Command dfe3b7f8-1437-4daa-93ff-da6d5109290c queued at position 1
+[2026-06-19T23:40:06.968Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-19T23:40:06.968Z] [INFO] [Unity] Draining 1 commands from queue for replay
+[2026-06-19T23:40:06.969Z] [INFO] [Unity] Replaying 1 queued commands
+[2026-06-19T23:40:06.970Z] [INFO] [Unity] Successfully connected to Unity WebSocket
+[2026-06-19T23:40:06.971Z] [INFO] [Unity] Client identified to Unity as: Unknown MCP Client
+[2026-06-19T23:41:06.982Z] [ERROR] [Unity] Request dfe3b7f8-1437-4daa-93ff-da6d5109290c timed out after 60000ms
+[2026-06-19T23:41:06.984Z] [INFO] [Unity] Finished replaying queued commands (0 successful)
+[2026-06-19T23:41:06.984Z] [ERROR] [Tools] Tool execution failed: get_scene_info
+{
+  "type": "timeout_error",
+  "message": "Request timed out"
+}
+[2026-06-19T23:43:09.828Z] [INFO] [Unity] Unity entering Play mode - using fast polling for reconnection
+[2026-06-19T23:43:09.829Z] [INFO] [Unity] Scheduling reconnection attempt 1 in 3000ms (Play mode polling)
+[2026-06-19T23:43:09.829Z] [INFO] [Unity] Unity entering Play mode - using fast polling for reconnection
+[2026-06-19T23:43:09.830Z] [INFO] [Unity] Scheduling reconnection attempt 1 in 3000ms (Play mode polling)
+[2026-06-19T23:43:12.837Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-19T23:43:12.837Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-19T23:43:12.837Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-19T23:43:12.838Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-19T23:43:12.838Z] [INFO] [Unity] Scheduling reconnection attempt 2 in 3000ms (Play mode polling)
+[2026-06-19T23:43:12.838Z] [INFO] [Unity] Scheduling reconnection attempt 2 in 3000ms (Play mode polling)
+[2026-06-19T23:43:15.871Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-19T23:43:15.872Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-19T23:43:29.795Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:43:50.237Z] [INFO] [Tools] Tool execution successful: get_scene_info
+[2026-06-19T23:44:10.162Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:45:08.834Z] [INFO] [Tools] Tool execution successful: get_scene_info
+[2026-06-19T23:45:10.806Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:45:10.943Z] [INFO] [Tools] Tool execution successful: get_scene_info
+[2026-06-19T23:45:13.236Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:45:13.327Z] [INFO] [Tools] Tool execution successful: get_scene_info
+[2026-06-19T23:48:14.034Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:51:55.071Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:52:01.079Z] [INFO] [Tools] Tool execution successful: get_scene_info
+[2026-06-19T23:52:01.080Z] [INFO] [Tools] Tool execution successful: get_scene_info
+[2026-06-19T23:53:58.799Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-19T23:53:58.945Z] [INFO] [Tools] Tool execution successful: get_scene_info
+[2026-06-19T23:54:03.168Z] [INFO] [Tools] Executing tool: get_gameobject
+{
+  "idOrName": "RoomScene",
+  "maxDepth": 3,
+  "includeComponents": true,
+  "includeComponentProperties": false
+}
+[2026-06-19T23:54:03.277Z] [ERROR] [Tools] Tool execution failed: get_gameobject
+{
+  "type": "tool_execution_error",
+  "message": "GameObject with 'RoomScene' reference not found. Make sure the GameObject exists and is loaded in the current scene(s)."
+}
+[2026-06-19T23:54:11.179Z] [INFO] [Tools] Executing tool: get_gameobject
+{
+  "idOrName": "Canvas",
+  "maxDepth": 3,
+  "includeComponents": true,
+  "includeComponentProperties": false
+}
+[2026-06-19T23:54:11.234Z] [ERROR] [Tools] Tool execution failed: get_gameobject
+{
+  "type": "tool_execution_error",
+  "message": "GameObject with 'Canvas' reference not found. Make sure the GameObject exists and is loaded in the current scene(s)."
+}
+[2026-06-19T23:55:33.561Z] [INFO] [Tools] Executing tool: batch_execute
+{
+  "operationCount": 5,
+  "stopOnError": false,
+  "atomic": false
+}
+[2026-06-19T23:55:33.562Z] [INFO] [Tools] Sending batch with 5 operations to Unity
+[2026-06-19T23:56:42.591Z] [INFO] [Tools] Tool execution completed: batch_execute
+[2026-06-19T23:56:49.263Z] [INFO] [Tools] Executing tool: get_gameobject
+{
+  "idOrName": "Managers",
+  "maxDepth": 2,
+  "includeComponents": true,
+  "includeComponentProperties": false
+}
+[2026-06-19T23:56:49.609Z] [INFO] [Server] Shutting down...
+[2026-06-19T23:56:49.610Z] [INFO] [Unity] Unity WebSocket client stopped
+[2026-06-19T23:56:49.679Z] [INFO] [Tools] Tool execution successful: get_gameobject
+[2026-06-19T23:56:54.111Z] [INFO] [Tools] Executing tool: get_gameobject
+{
+  "idOrName": "Player",
+  "maxDepth": 3,
+  "includeComponents": true,
+  "includeComponentProperties": false
+}
+[2026-06-19T23:57:51.195Z] [INFO] [Tools] Tool execution successful: get_gameobject
+[2026-06-19T23:57:55.839Z] [INFO] [Tools] Executing tool: get_gameobject
+{
+  "idOrName": "RibbonEnemy_Template",
+  "maxDepth": 3,
+  "includeComponents": true,
+  "includeComponentProperties": false
+}
+[2026-06-19T23:57:55.938Z] [ERROR] [Tools] Tool execution failed: get_gameobject
+{
+  "type": "tool_execution_error",
+  "message": "GameObject with 'RibbonEnemy_Template' reference not found. Make sure the GameObject exists and is loaded in the current scene(s)."
+}
+[2026-06-19T23:58:00.278Z] [INFO] [Tools] Executing tool: get_gameobject
+{
+  "idOrName": "MenuB",
+  "maxDepth": 3,
+  "includeComponents": true,
+  "includeComponentProperties": false
+}
+[2026-06-19T23:58:01.489Z] [ERROR] [Tools] Tool execution failed: get_gameobject
+{
+  "type": "tool_execution_error",
+  "message": "GameObject with 'MenuB' reference not found. Make sure the GameObject exists and is loaded in the current scene(s)."
+}
+[2026-06-19T23:58:05.482Z] [INFO] [Tools] Executing tool: get_gameobject
+{
+  "idOrName": "Main Camera",
+  "maxDepth": 2,
+  "includeComponents": true,
+  "includeComponentProperties": false
+}
+[2026-06-19T23:59:20.010Z] [INFO] [Tools] Tool execution successful: get_gameobject
+[2026-06-20T01:16:11.812Z] [INFO] [Server] Shutting down...
+[2026-06-20T01:16:11.816Z] [INFO] [Unity] Unity WebSocket client stopped
+[2026-06-20T01:16:21.368Z] [INFO] [Tools] Registering tool: execute_menu_item
+[2026-06-20T01:16:21.370Z] [INFO] [Tools] Registering tool: select_gameobject
+[2026-06-20T01:16:21.371Z] [INFO] [Tools] Registering tool: add_package
+[2026-06-20T01:16:21.372Z] [INFO] [Tools] Registering tool: run_tests
+[2026-06-20T01:16:21.372Z] [INFO] [Tools] Registering tool: send_console_log
+[2026-06-20T01:16:21.373Z] [INFO] [Tools] Registering tool: get_console_logs
+[2026-06-20T01:16:21.374Z] [INFO] [Tools] Registering tool: update_component
+[2026-06-20T01:16:21.374Z] [INFO] [Tools] Registering tool: add_asset_to_scene
+[2026-06-20T01:16:21.375Z] [INFO] [Tools] Registering tool: update_gameobject
+[2026-06-20T01:16:21.376Z] [INFO] [Tools] Registering tool: create_prefab
+[2026-06-20T01:16:21.377Z] [INFO] [Tools] Registering tool: create_scene
+[2026-06-20T01:16:21.377Z] [INFO] [Tools] Registering tool: delete_scene
+[2026-06-20T01:16:21.377Z] [INFO] [Tools] Registering tool: load_scene
+[2026-06-20T01:16:21.378Z] [INFO] [Tools] Registering tool: save_scene
+[2026-06-20T01:16:21.378Z] [INFO] [Tools] Registering tool: get_scene_info
+[2026-06-20T01:16:21.379Z] [INFO] [Tools] Registering tool: unload_scene
+[2026-06-20T01:16:21.380Z] [INFO] [Tools] Registering tool: recompile_scripts
+[2026-06-20T01:16:21.380Z] [INFO] [Tools] Registering tool: get_gameobject
+[2026-06-20T01:16:21.381Z] [INFO] [Tools] Registering tool: move_gameobject
+[2026-06-20T01:16:21.381Z] [INFO] [Tools] Registering tool: rotate_gameobject
+[2026-06-20T01:16:21.382Z] [INFO] [Tools] Registering tool: scale_gameobject
+[2026-06-20T01:16:21.383Z] [INFO] [Tools] Registering tool: set_transform
+[2026-06-20T01:16:21.383Z] [INFO] [Tools] Registering tool: duplicate_gameobject
+[2026-06-20T01:16:21.384Z] [INFO] [Tools] Registering tool: delete_gameobject
+[2026-06-20T01:16:21.384Z] [INFO] [Tools] Registering tool: reparent_gameobject
+[2026-06-20T01:16:21.385Z] [INFO] [Tools] Registering tool: create_material
+[2026-06-20T01:16:21.385Z] [INFO] [Tools] Registering tool: assign_material
+[2026-06-20T01:16:21.386Z] [INFO] [Tools] Registering tool: modify_material
+[2026-06-20T01:16:21.386Z] [INFO] [Tools] Registering tool: get_material_info
+[2026-06-20T01:16:21.386Z] [INFO] [Tools] Registering tool: batch_execute
+[2026-06-20T01:16:21.387Z] [INFO] [Resources] Registering resource: get_tests
+[2026-06-20T01:16:21.388Z] [INFO] [Resources] Registering resource: get_gameobject
+[2026-06-20T01:16:21.389Z] [INFO] [Resources] Registering resource: get_menu_items
+[2026-06-20T01:16:21.389Z] [INFO] [Resources] Registering resource: get_console_logs
+[2026-06-20T01:16:21.389Z] [INFO] [Resources] Registering resource: get_scenes_hierarchy
+[2026-06-20T01:16:21.390Z] [INFO] [Resources] Registering resource: get_packages
+[2026-06-20T01:16:21.390Z] [INFO] [Resources] Registering resource: get_assets
+[2026-06-20T01:16:21.391Z] [INFO] [Server] MCP Server started
+[2026-06-20T01:16:21.392Z] [INFO] [Server] Connected MCP client: Unknown MCP Client
+[2026-06-20T01:16:21.392Z] [INFO] [Unity] Attempting to read startup parameters...
+[2026-06-20T01:16:21.399Z] [INFO] [Unity] Using port: 8090 for Unity WebSocket connection
+[2026-06-20T01:16:21.399Z] [INFO] [Unity] Using request timeout: 250 seconds
+[2026-06-20T01:16:21.400Z] [INFO] [Unity] Attempting to connect to Unity WebSocket...
+[2026-06-20T01:16:21.432Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-20T01:16:21.433Z] [INFO] [Unity] Successfully connected to Unity WebSocket
+[2026-06-20T01:16:21.433Z] [INFO] [Unity] Client identified to Unity as: Unknown MCP Client
+[2026-06-20T01:41:41.567Z] [INFO] [Server] Shutting down...
+[2026-06-20T01:41:41.569Z] [INFO] [Unity] Unity WebSocket client stopped
+[2026-06-20T01:41:48.273Z] [INFO] [Tools] Registering tool: execute_menu_item
+[2026-06-20T01:41:48.275Z] [INFO] [Tools] Registering tool: select_gameobject
+[2026-06-20T01:41:48.275Z] [INFO] [Tools] Registering tool: add_package
+[2026-06-20T01:41:48.275Z] [INFO] [Tools] Registering tool: run_tests
+[2026-06-20T01:41:48.276Z] [INFO] [Tools] Registering tool: send_console_log
+[2026-06-20T01:41:48.277Z] [INFO] [Tools] Registering tool: get_console_logs
+[2026-06-20T01:41:48.277Z] [INFO] [Tools] Registering tool: update_component
+[2026-06-20T01:41:48.278Z] [INFO] [Tools] Registering tool: add_asset_to_scene
+[2026-06-20T01:41:48.279Z] [INFO] [Tools] Registering tool: update_gameobject
+[2026-06-20T01:41:48.279Z] [INFO] [Tools] Registering tool: create_prefab
+[2026-06-20T01:41:48.280Z] [INFO] [Tools] Registering tool: create_scene
+[2026-06-20T01:41:48.280Z] [INFO] [Tools] Registering tool: delete_scene
+[2026-06-20T01:41:48.281Z] [INFO] [Tools] Registering tool: load_scene
+[2026-06-20T01:41:48.282Z] [INFO] [Tools] Registering tool: save_scene
+[2026-06-20T01:41:48.283Z] [INFO] [Tools] Registering tool: get_scene_info
+[2026-06-20T01:41:48.283Z] [INFO] [Tools] Registering tool: unload_scene
+[2026-06-20T01:41:48.284Z] [INFO] [Tools] Registering tool: recompile_scripts
+[2026-06-20T01:41:48.284Z] [INFO] [Tools] Registering tool: get_gameobject
+[2026-06-20T01:41:48.285Z] [INFO] [Tools] Registering tool: move_gameobject
+[2026-06-20T01:41:48.285Z] [INFO] [Tools] Registering tool: rotate_gameobject
+[2026-06-20T01:41:48.286Z] [INFO] [Tools] Registering tool: scale_gameobject
+[2026-06-20T01:41:48.286Z] [INFO] [Tools] Registering tool: set_transform
+[2026-06-20T01:41:48.287Z] [INFO] [Tools] Registering tool: duplicate_gameobject
+[2026-06-20T01:41:48.287Z] [INFO] [Tools] Registering tool: delete_gameobject
+[2026-06-20T01:41:48.287Z] [INFO] [Tools] Registering tool: reparent_gameobject
+[2026-06-20T01:41:48.288Z] [INFO] [Tools] Registering tool: create_material
+[2026-06-20T01:41:48.288Z] [INFO] [Tools] Registering tool: assign_material
+[2026-06-20T01:41:48.289Z] [INFO] [Tools] Registering tool: modify_material
+[2026-06-20T01:41:48.289Z] [INFO] [Tools] Registering tool: get_material_info
+[2026-06-20T01:41:48.290Z] [INFO] [Tools] Registering tool: batch_execute
+[2026-06-20T01:41:48.290Z] [INFO] [Resources] Registering resource: get_tests
+[2026-06-20T01:41:48.291Z] [INFO] [Resources] Registering resource: get_gameobject
+[2026-06-20T01:41:48.291Z] [INFO] [Resources] Registering resource: get_menu_items
+[2026-06-20T01:41:48.292Z] [INFO] [Resources] Registering resource: get_console_logs
+[2026-06-20T01:41:48.292Z] [INFO] [Resources] Registering resource: get_scenes_hierarchy
+[2026-06-20T01:41:48.293Z] [INFO] [Resources] Registering resource: get_packages
+[2026-06-20T01:41:48.293Z] [INFO] [Resources] Registering resource: get_assets
+[2026-06-20T01:41:48.295Z] [INFO] [Server] MCP Server started
+[2026-06-20T01:41:48.296Z] [INFO] [Server] Connected MCP client: Unknown MCP Client
+[2026-06-20T01:41:48.297Z] [INFO] [Unity] Attempting to read startup parameters...
+[2026-06-20T01:41:48.303Z] [INFO] [Unity] Using port: 8090 for Unity WebSocket connection
+[2026-06-20T01:41:48.303Z] [INFO] [Unity] Using request timeout: 250 seconds
+[2026-06-20T01:41:48.304Z] [INFO] [Unity] Attempting to connect to Unity WebSocket...
+[2026-06-20T01:41:48.332Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-20T01:41:48.333Z] [INFO] [Unity] Successfully connected to Unity WebSocket
+[2026-06-20T01:41:48.333Z] [INFO] [Unity] Client identified to Unity as: Unknown MCP Client
+[2026-06-20T01:41:52.186Z] [INFO] [Unity] Scheduling reconnection attempt 1 in 1170.0917233372468ms
+[2026-06-20T01:41:53.370Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:41:53.370Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:41:53.371Z] [INFO] [Unity] Scheduling reconnection attempt 2 in 2052.185840576883ms
+[2026-06-20T01:41:55.439Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:41:55.439Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:41:55.440Z] [INFO] [Unity] Scheduling reconnection attempt 3 in 4745.454701167713ms
+[2026-06-20T01:42:00.198Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:42:00.199Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:42:00.199Z] [INFO] [Unity] Scheduling reconnection attempt 4 in 9082.053830326344ms
+[2026-06-20T01:42:09.287Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:42:09.287Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:42:09.288Z] [INFO] [Unity] Scheduling reconnection attempt 5 in 18386.579128018842ms
+[2026-06-20T01:42:27.689Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:42:27.689Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:42:27.690Z] [INFO] [Unity] Scheduling reconnection attempt 6 in 30000ms
+[2026-06-20T01:42:57.700Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:42:57.701Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:42:57.701Z] [INFO] [Unity] Scheduling reconnection attempt 7 in 30000ms
+[2026-06-20T01:43:27.711Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:43:27.715Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:43:27.716Z] [INFO] [Unity] Scheduling reconnection attempt 8 in 30000ms
+[2026-06-20T01:43:57.734Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:43:57.734Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:43:57.734Z] [INFO] [Unity] Scheduling reconnection attempt 9 in 30000ms
+[2026-06-20T01:44:27.746Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:44:27.747Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:44:27.747Z] [INFO] [Unity] Scheduling reconnection attempt 10 in 30000ms
+[2026-06-20T01:44:57.753Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:44:57.758Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:44:57.758Z] [INFO] [Unity] Scheduling reconnection attempt 11 in 30000ms
+[2026-06-20T01:45:27.769Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:45:27.770Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:45:27.770Z] [INFO] [Unity] Scheduling reconnection attempt 12 in 30000ms
+[2026-06-20T01:45:57.787Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:45:57.788Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:45:57.788Z] [INFO] [Unity] Scheduling reconnection attempt 13 in 30000ms
+[2026-06-20T01:46:27.800Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:46:27.800Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:46:27.801Z] [INFO] [Unity] Scheduling reconnection attempt 14 in 30000ms
+[2026-06-20T01:46:57.810Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:46:57.810Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:46:57.811Z] [INFO] [Unity] Scheduling reconnection attempt 15 in 30000ms
+[2026-06-20T01:47:27.815Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:47:27.815Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:47:27.816Z] [INFO] [Unity] Scheduling reconnection attempt 16 in 30000ms
+[2026-06-20T01:47:57.828Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:47:57.829Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:47:57.829Z] [INFO] [Unity] Scheduling reconnection attempt 17 in 30000ms
+[2026-06-20T01:48:27.835Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:48:27.836Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:48:27.836Z] [INFO] [Unity] Scheduling reconnection attempt 18 in 30000ms
+[2026-06-20T01:48:57.844Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:48:57.845Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:48:57.845Z] [INFO] [Unity] Scheduling reconnection attempt 19 in 30000ms
+[2026-06-20T01:49:27.851Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:49:27.852Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:49:27.852Z] [INFO] [Unity] Scheduling reconnection attempt 20 in 30000ms
+[2026-06-20T01:49:57.861Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:49:57.862Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:49:57.862Z] [INFO] [Unity] Scheduling reconnection attempt 21 in 30000ms
+[2026-06-20T01:50:27.865Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:50:27.866Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:50:27.866Z] [INFO] [Unity] Scheduling reconnection attempt 22 in 30000ms
+[2026-06-20T01:50:57.870Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:50:57.871Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:50:57.871Z] [INFO] [Unity] Scheduling reconnection attempt 23 in 30000ms
+[2026-06-20T01:51:27.875Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:51:27.876Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:51:27.876Z] [INFO] [Unity] Scheduling reconnection attempt 24 in 30000ms
+[2026-06-20T01:51:57.891Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:51:57.891Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:51:57.892Z] [INFO] [Unity] Scheduling reconnection attempt 25 in 30000ms
+[2026-06-20T01:52:27.897Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:52:27.898Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:52:27.898Z] [INFO] [Unity] Scheduling reconnection attempt 26 in 30000ms
+[2026-06-20T01:52:57.905Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:52:57.905Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:52:57.905Z] [INFO] [Unity] Scheduling reconnection attempt 27 in 30000ms
+[2026-06-20T01:53:27.911Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:53:27.911Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:53:27.911Z] [INFO] [Unity] Scheduling reconnection attempt 28 in 30000ms
+[2026-06-20T01:53:57.918Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:53:57.918Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:53:57.918Z] [INFO] [Unity] Scheduling reconnection attempt 29 in 30000ms
+[2026-06-20T01:54:27.928Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:54:27.928Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:54:27.928Z] [INFO] [Unity] Scheduling reconnection attempt 30 in 30000ms
+[2026-06-20T01:54:57.933Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:54:57.933Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:54:57.933Z] [INFO] [Unity] Scheduling reconnection attempt 31 in 30000ms
+[2026-06-20T01:55:27.936Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:55:27.937Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:55:27.937Z] [INFO] [Unity] Scheduling reconnection attempt 32 in 30000ms
+[2026-06-20T01:55:57.953Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:55:57.954Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:55:57.954Z] [INFO] [Unity] Scheduling reconnection attempt 33 in 30000ms
+[2026-06-20T01:56:27.958Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T01:56:27.958Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T01:56:27.958Z] [INFO] [Unity] Scheduling reconnection attempt 34 in 30000ms
+[2026-06-20T01:56:50.412Z] [INFO] [Server] Shutting down...
+[2026-06-20T01:56:50.414Z] [INFO] [Unity] Unity WebSocket client stopped
+[2026-06-20T07:08:21.012Z] [INFO] [Tools] Registering tool: execute_menu_item
+[2026-06-20T07:08:21.014Z] [INFO] [Tools] Registering tool: select_gameobject
+[2026-06-20T07:08:21.015Z] [INFO] [Tools] Registering tool: add_package
+[2026-06-20T07:08:21.015Z] [INFO] [Tools] Registering tool: run_tests
+[2026-06-20T07:08:21.016Z] [INFO] [Tools] Registering tool: send_console_log
+[2026-06-20T07:08:21.016Z] [INFO] [Tools] Registering tool: get_console_logs
+[2026-06-20T07:08:21.017Z] [INFO] [Tools] Registering tool: update_component
+[2026-06-20T07:08:21.017Z] [INFO] [Tools] Registering tool: add_asset_to_scene
+[2026-06-20T07:08:21.018Z] [INFO] [Tools] Registering tool: update_gameobject
+[2026-06-20T07:08:21.018Z] [INFO] [Tools] Registering tool: create_prefab
+[2026-06-20T07:08:21.019Z] [INFO] [Tools] Registering tool: create_scene
+[2026-06-20T07:08:21.019Z] [INFO] [Tools] Registering tool: delete_scene
+[2026-06-20T07:08:21.020Z] [INFO] [Tools] Registering tool: load_scene
+[2026-06-20T07:08:21.020Z] [INFO] [Tools] Registering tool: save_scene
+[2026-06-20T07:08:21.020Z] [INFO] [Tools] Registering tool: get_scene_info
+[2026-06-20T07:08:21.021Z] [INFO] [Tools] Registering tool: unload_scene
+[2026-06-20T07:08:21.021Z] [INFO] [Tools] Registering tool: recompile_scripts
+[2026-06-20T07:08:21.022Z] [INFO] [Tools] Registering tool: get_gameobject
+[2026-06-20T07:08:21.022Z] [INFO] [Tools] Registering tool: move_gameobject
+[2026-06-20T07:08:21.022Z] [INFO] [Tools] Registering tool: rotate_gameobject
+[2026-06-20T07:08:21.023Z] [INFO] [Tools] Registering tool: scale_gameobject
+[2026-06-20T07:08:21.023Z] [INFO] [Tools] Registering tool: set_transform
+[2026-06-20T07:08:21.024Z] [INFO] [Tools] Registering tool: duplicate_gameobject
+[2026-06-20T07:08:21.024Z] [INFO] [Tools] Registering tool: delete_gameobject
+[2026-06-20T07:08:21.024Z] [INFO] [Tools] Registering tool: reparent_gameobject
+[2026-06-20T07:08:21.025Z] [INFO] [Tools] Registering tool: create_material
+[2026-06-20T07:08:21.025Z] [INFO] [Tools] Registering tool: assign_material
+[2026-06-20T07:08:21.026Z] [INFO] [Tools] Registering tool: modify_material
+[2026-06-20T07:08:21.026Z] [INFO] [Tools] Registering tool: get_material_info
+[2026-06-20T07:08:21.026Z] [INFO] [Tools] Registering tool: batch_execute
+[2026-06-20T07:08:21.027Z] [INFO] [Resources] Registering resource: get_tests
+[2026-06-20T07:08:21.027Z] [INFO] [Resources] Registering resource: get_gameobject
+[2026-06-20T07:08:21.028Z] [INFO] [Resources] Registering resource: get_menu_items
+[2026-06-20T07:08:21.028Z] [INFO] [Resources] Registering resource: get_console_logs
+[2026-06-20T07:08:21.028Z] [INFO] [Resources] Registering resource: get_scenes_hierarchy
+[2026-06-20T07:08:21.029Z] [INFO] [Resources] Registering resource: get_packages
+[2026-06-20T07:08:21.029Z] [INFO] [Resources] Registering resource: get_assets
+[2026-06-20T07:08:21.030Z] [INFO] [Server] MCP Server started
+[2026-06-20T07:08:21.030Z] [INFO] [Server] Connected MCP client: Unknown MCP Client
+[2026-06-20T07:08:21.031Z] [INFO] [Unity] Attempting to read startup parameters...
+[2026-06-20T07:08:21.035Z] [INFO] [Unity] Using port: 8090 for Unity WebSocket connection
+[2026-06-20T07:08:21.036Z] [INFO] [Unity] Using request timeout: 250 seconds
+[2026-06-20T07:08:21.036Z] [INFO] [Unity] Attempting to connect to Unity WebSocket...
+[2026-06-20T07:08:21.084Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-20T07:08:21.084Z] [INFO] [Unity] Successfully connected to Unity WebSocket
+[2026-06-20T07:08:21.085Z] [INFO] [Unity] Client identified to Unity as: Unknown MCP Client
+[2026-06-20T07:12:57.432Z] [INFO] [Tools] Registering tool: execute_menu_item
+[2026-06-20T07:12:57.434Z] [INFO] [Tools] Registering tool: select_gameobject
+[2026-06-20T07:12:57.435Z] [INFO] [Tools] Registering tool: add_package
+[2026-06-20T07:12:57.435Z] [INFO] [Tools] Registering tool: run_tests
+[2026-06-20T07:12:57.436Z] [INFO] [Tools] Registering tool: send_console_log
+[2026-06-20T07:12:57.436Z] [INFO] [Tools] Registering tool: get_console_logs
+[2026-06-20T07:12:57.437Z] [INFO] [Tools] Registering tool: update_component
+[2026-06-20T07:12:57.437Z] [INFO] [Tools] Registering tool: add_asset_to_scene
+[2026-06-20T07:12:57.438Z] [INFO] [Tools] Registering tool: update_gameobject
+[2026-06-20T07:12:57.439Z] [INFO] [Tools] Registering tool: create_prefab
+[2026-06-20T07:12:57.439Z] [INFO] [Tools] Registering tool: create_scene
+[2026-06-20T07:12:57.440Z] [INFO] [Tools] Registering tool: delete_scene
+[2026-06-20T07:12:57.440Z] [INFO] [Tools] Registering tool: load_scene
+[2026-06-20T07:12:57.441Z] [INFO] [Tools] Registering tool: save_scene
+[2026-06-20T07:12:57.441Z] [INFO] [Tools] Registering tool: get_scene_info
+[2026-06-20T07:12:57.441Z] [INFO] [Tools] Registering tool: unload_scene
+[2026-06-20T07:12:57.442Z] [INFO] [Tools] Registering tool: recompile_scripts
+[2026-06-20T07:12:57.442Z] [INFO] [Tools] Registering tool: get_gameobject
+[2026-06-20T07:12:57.442Z] [INFO] [Tools] Registering tool: move_gameobject
+[2026-06-20T07:12:57.443Z] [INFO] [Tools] Registering tool: rotate_gameobject
+[2026-06-20T07:12:57.443Z] [INFO] [Tools] Registering tool: scale_gameobject
+[2026-06-20T07:12:57.444Z] [INFO] [Tools] Registering tool: set_transform
+[2026-06-20T07:12:57.444Z] [INFO] [Tools] Registering tool: duplicate_gameobject
+[2026-06-20T07:12:57.445Z] [INFO] [Tools] Registering tool: delete_gameobject
+[2026-06-20T07:12:57.445Z] [INFO] [Tools] Registering tool: reparent_gameobject
+[2026-06-20T07:12:57.445Z] [INFO] [Tools] Registering tool: create_material
+[2026-06-20T07:12:57.446Z] [INFO] [Tools] Registering tool: assign_material
+[2026-06-20T07:12:57.446Z] [INFO] [Tools] Registering tool: modify_material
+[2026-06-20T07:12:57.447Z] [INFO] [Tools] Registering tool: get_material_info
+[2026-06-20T07:12:57.447Z] [INFO] [Tools] Registering tool: batch_execute
+[2026-06-20T07:12:57.448Z] [INFO] [Resources] Registering resource: get_tests
+[2026-06-20T07:12:57.448Z] [INFO] [Resources] Registering resource: get_gameobject
+[2026-06-20T07:12:57.449Z] [INFO] [Resources] Registering resource: get_menu_items
+[2026-06-20T07:12:57.450Z] [INFO] [Resources] Registering resource: get_console_logs
+[2026-06-20T07:12:57.450Z] [INFO] [Resources] Registering resource: get_scenes_hierarchy
+[2026-06-20T07:12:57.451Z] [INFO] [Resources] Registering resource: get_packages
+[2026-06-20T07:12:57.451Z] [INFO] [Resources] Registering resource: get_assets
+[2026-06-20T07:12:57.453Z] [INFO] [Server] MCP Server started
+[2026-06-20T07:12:57.453Z] [INFO] [Server] Connected MCP client: Unknown MCP Client
+[2026-06-20T07:12:57.453Z] [INFO] [Unity] Attempting to read startup parameters...
+[2026-06-20T07:12:57.458Z] [INFO] [Unity] Using port: 8090 for Unity WebSocket connection
+[2026-06-20T07:12:57.458Z] [INFO] [Unity] Using request timeout: 250 seconds
+[2026-06-20T07:12:57.459Z] [INFO] [Unity] Attempting to connect to Unity WebSocket...
+[2026-06-20T07:12:57.480Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-20T07:12:57.481Z] [INFO] [Unity] Successfully connected to Unity WebSocket
+[2026-06-20T07:12:57.482Z] [INFO] [Unity] Client identified to Unity as: Unknown MCP Client
+[2026-06-20T07:14:44.118Z] [INFO] [Server] Shutting down...
+[2026-06-20T07:14:44.121Z] [INFO] [Unity] Unity WebSocket client stopped
+[2026-06-20T07:22:08.558Z] [INFO] [Tools] Executing tool: update_component
+{
+  "objectPath": "Main Camera",
+  "componentName": "EyePixelationController",
+  "componentData": {}
+}
+[2026-06-20T07:26:18.571Z] [ERROR] [Unity] Request ec53b632-95f7-46cd-bbaf-b838596556d5 timed out after 250000ms
+[2026-06-20T07:26:18.572Z] [ERROR] [Tools] Tool execution failed: update_component
+{
+  "type": "timeout_error",
+  "message": "Request timed out"
+}
+[2026-06-20T07:26:23.926Z] [INFO] [Tools] Executing tool: recompile_scripts
+{
+  "returnWithLogs": true,
+  "logsLimit": 100
+}
+[2026-06-20T07:30:33.940Z] [ERROR] [Unity] Request b532a3f7-d58c-43d0-9177-aa9159d0d8b0 timed out after 250000ms
+[2026-06-20T07:30:33.941Z] [ERROR] [Tools] Tool execution failed: recompile_scripts
+{
+  "type": "timeout_error",
+  "message": "Request timed out"
+}
+[2026-06-20T07:30:40.423Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-20T07:34:50.426Z] [ERROR] [Unity] Request 8316a4c5-5d68-4fdd-93b0-8cf1371df52d timed out after 250000ms
+[2026-06-20T07:34:50.427Z] [ERROR] [Tools] Tool execution failed: get_scene_info
+{
+  "type": "timeout_error",
+  "message": "Request timed out"
+}
+[2026-06-20T07:36:16.753Z] [INFO] [Unity] Scheduling reconnection attempt 1 in 1108.6564384743576ms
+[2026-06-20T07:36:17.872Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:36:17.873Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:36:17.873Z] [INFO] [Unity] Scheduling reconnection attempt 2 in 2046.6540562341286ms
+[2026-06-20T07:36:19.924Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:36:19.924Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:36:19.925Z] [INFO] [Unity] Scheduling reconnection attempt 3 in 4003.1847565608136ms
+[2026-06-20T07:36:23.949Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-20T07:37:10.925Z] [INFO] [Tools] Executing tool: get_scene_info
+{}
+[2026-06-20T07:38:15.928Z] [INFO] [Tools] Tool execution successful: get_scene_info
+[2026-06-20T07:38:22.702Z] [INFO] [Tools] Executing tool: update_component
+{
+  "objectPath": "Main Camera",
+  "componentName": "EyePixelationController",
+  "componentData": {}
+}
+[2026-06-20T07:38:41.714Z] [INFO] [Tools] Tool execution successful: update_component
+[2026-06-20T07:38:47.923Z] [INFO] [Tools] Executing tool: save_scene
+{}
+[2026-06-20T07:42:57.924Z] [ERROR] [Unity] Request 1f24ac7a-990d-41c4-80f4-e383d92c60da timed out after 250000ms
+[2026-06-20T07:42:57.924Z] [ERROR] [Tools] Tool execution failed: save_scene
+{
+  "type": "timeout_error",
+  "message": "Request timed out"
+}
+[2026-06-20T07:46:17.905Z] [INFO] [Unity] Scheduling reconnection attempt 1 in 1106.507339006732ms
+[2026-06-20T07:46:19.016Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:46:19.016Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:46:19.016Z] [INFO] [Unity] Scheduling reconnection attempt 2 in 2067.762929584358ms
+[2026-06-20T07:46:21.094Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:46:21.094Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:46:21.095Z] [INFO] [Unity] Scheduling reconnection attempt 3 in 4650.112385680319ms
+[2026-06-20T07:46:25.748Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:46:25.749Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:46:25.749Z] [INFO] [Unity] Scheduling reconnection attempt 4 in 8788.461593865726ms
+[2026-06-20T07:46:34.545Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:46:34.546Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:46:34.546Z] [INFO] [Unity] Scheduling reconnection attempt 5 in 17506.569228557266ms
+[2026-06-20T07:46:52.063Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:46:52.064Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:46:52.065Z] [INFO] [Unity] Scheduling reconnection attempt 6 in 30000ms
+[2026-06-20T07:47:22.067Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:47:22.068Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:47:22.068Z] [INFO] [Unity] Scheduling reconnection attempt 7 in 30000ms
+[2026-06-20T07:47:52.069Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:47:52.070Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:47:52.070Z] [INFO] [Unity] Scheduling reconnection attempt 8 in 30000ms
+[2026-06-20T07:48:22.077Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:48:22.078Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:48:22.078Z] [INFO] [Unity] Scheduling reconnection attempt 9 in 30000ms
+[2026-06-20T07:48:52.086Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:48:52.087Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:48:52.087Z] [INFO] [Unity] Scheduling reconnection attempt 10 in 30000ms
+[2026-06-20T07:49:22.091Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:49:22.091Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:49:22.092Z] [INFO] [Unity] Scheduling reconnection attempt 11 in 30000ms
+[2026-06-20T07:49:52.093Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:49:52.094Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:49:52.094Z] [INFO] [Unity] Scheduling reconnection attempt 12 in 30000ms
+[2026-06-20T07:50:22.099Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:50:22.100Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:50:22.100Z] [INFO] [Unity] Scheduling reconnection attempt 13 in 30000ms
+[2026-06-20T07:50:52.115Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:50:52.116Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:50:52.116Z] [INFO] [Unity] Scheduling reconnection attempt 14 in 30000ms
+[2026-06-20T07:51:22.122Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:51:22.122Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:51:22.123Z] [INFO] [Unity] Scheduling reconnection attempt 15 in 30000ms
+[2026-06-20T07:51:52.127Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:51:52.128Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:51:52.128Z] [INFO] [Unity] Scheduling reconnection attempt 16 in 30000ms
+[2026-06-20T07:52:22.133Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:52:22.134Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:52:22.134Z] [INFO] [Unity] Scheduling reconnection attempt 17 in 30000ms
+[2026-06-20T07:52:52.137Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:52:52.138Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:52:52.138Z] [INFO] [Unity] Scheduling reconnection attempt 18 in 30000ms
+[2026-06-20T07:53:22.143Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:53:22.144Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:53:22.144Z] [INFO] [Unity] Scheduling reconnection attempt 19 in 30000ms
+[2026-06-20T07:53:52.157Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:53:52.157Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:53:52.158Z] [INFO] [Unity] Scheduling reconnection attempt 20 in 30000ms
+[2026-06-20T07:54:22.175Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:54:22.175Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:54:22.175Z] [INFO] [Unity] Scheduling reconnection attempt 21 in 30000ms
+[2026-06-20T07:54:39.932Z] [INFO] [Tools] Executing tool: get_console_logs
+{
+  "logType": "error",
+  "limit": 30,
+  "includeStackTrace": false
+}
+[2026-06-20T07:54:39.933Z] [INFO] [Unity] Command 5a343fca-879c-4866-b49b-eaaf476a2ecf queued at position 1
+[2026-06-20T07:54:52.185Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:54:52.185Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:54:52.186Z] [INFO] [Unity] Scheduling reconnection attempt 22 in 30000ms
+[2026-06-20T07:55:22.191Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:55:22.192Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:55:22.192Z] [INFO] [Unity] Scheduling reconnection attempt 23 in 30000ms
+[2026-06-20T07:55:40.079Z] [INFO] [Unity] Cleaned up 1 expired commands from queue
+[2026-06-20T07:55:40.079Z] [ERROR] [Tools] Tool execution failed: get_console_logs
+{
+  "type": "timeout_error",
+  "message": "Command expired after 60000ms in queue"
+}
+[2026-06-20T07:55:44.144Z] [INFO] [Tools] Executing tool: get_console_logs
+{
+  "logType": "error",
+  "limit": 30,
+  "includeStackTrace": false
+}
+[2026-06-20T07:55:44.145Z] [INFO] [Unity] Command 6bdcd286-dac1-498f-85d1-65eaee5a08cc queued at position 1
+[2026-06-20T07:55:52.196Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:55:52.196Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:55:52.196Z] [INFO] [Unity] Scheduling reconnection attempt 24 in 30000ms
+[2026-06-20T07:56:22.203Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:56:22.204Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:56:22.204Z] [INFO] [Unity] Scheduling reconnection attempt 25 in 30000ms
+[2026-06-20T07:56:45.170Z] [INFO] [Unity] Cleaned up 1 expired commands from queue
+[2026-06-20T07:56:45.171Z] [ERROR] [Tools] Tool execution failed: get_console_logs
+{
+  "type": "timeout_error",
+  "message": "Command expired after 60000ms in queue"
+}
+[2026-06-20T07:56:52.208Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:56:52.209Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:56:52.209Z] [INFO] [Unity] Scheduling reconnection attempt 26 in 30000ms
+[2026-06-20T07:57:22.218Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:57:22.219Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:57:22.219Z] [INFO] [Unity] Scheduling reconnection attempt 27 in 30000ms
+[2026-06-20T07:57:52.224Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:57:52.224Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:57:52.225Z] [INFO] [Unity] Scheduling reconnection attempt 28 in 30000ms
+[2026-06-20T07:58:22.237Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:58:22.238Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:58:22.238Z] [INFO] [Unity] Scheduling reconnection attempt 29 in 30000ms
+[2026-06-20T07:58:52.254Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:58:52.255Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:58:52.255Z] [INFO] [Unity] Scheduling reconnection attempt 30 in 30000ms
+[2026-06-20T07:59:22.271Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T07:59:22.271Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T07:59:22.272Z] [INFO] [Unity] Scheduling reconnection attempt 31 in 30000ms
+[2026-06-20T07:59:52.281Z] [INFO] [Unity] WebSocket connected to Unity
+[2026-06-20T08:00:24.949Z] [INFO] [Unity] Scheduling reconnection attempt 1 in 1092.1446548753252ms
+[2026-06-20T08:00:26.053Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:00:26.053Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:00:26.054Z] [INFO] [Unity] Scheduling reconnection attempt 2 in 2054.871464331516ms
+[2026-06-20T08:00:28.112Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:00:28.112Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:00:28.112Z] [INFO] [Unity] Scheduling reconnection attempt 3 in 4248.202047315571ms
+[2026-06-20T08:00:32.366Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:00:32.367Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:00:32.367Z] [INFO] [Unity] Scheduling reconnection attempt 4 in 8680.542564815938ms
+[2026-06-20T08:00:41.054Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:00:41.055Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:00:41.055Z] [INFO] [Unity] Scheduling reconnection attempt 5 in 16686.930116242496ms
+[2026-06-20T08:00:57.749Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:00:57.750Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:00:57.750Z] [INFO] [Unity] Scheduling reconnection attempt 6 in 30000ms
+[2026-06-20T08:01:27.757Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:01:27.758Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:01:27.758Z] [INFO] [Unity] Scheduling reconnection attempt 7 in 30000ms
+[2026-06-20T08:01:57.769Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:01:57.769Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:01:57.770Z] [INFO] [Unity] Scheduling reconnection attempt 8 in 30000ms
+[2026-06-20T08:02:27.781Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:02:27.782Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:02:27.782Z] [INFO] [Unity] Scheduling reconnection attempt 9 in 30000ms
+[2026-06-20T08:02:57.814Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:02:57.816Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:02:57.816Z] [INFO] [Unity] Scheduling reconnection attempt 10 in 30000ms
+[2026-06-20T08:03:27.827Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:03:27.827Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:03:27.828Z] [INFO] [Unity] Scheduling reconnection attempt 11 in 30000ms
+[2026-06-20T08:03:57.839Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:03:57.839Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:03:57.840Z] [INFO] [Unity] Scheduling reconnection attempt 12 in 30000ms
+[2026-06-20T08:04:27.851Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:04:27.851Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:04:27.852Z] [INFO] [Unity] Scheduling reconnection attempt 13 in 30000ms
+[2026-06-20T08:04:57.854Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:04:57.855Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:04:57.855Z] [INFO] [Unity] Scheduling reconnection attempt 14 in 30000ms
+[2026-06-20T08:05:27.866Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:05:27.867Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:05:27.867Z] [INFO] [Unity] Scheduling reconnection attempt 15 in 30000ms
+[2026-06-20T08:05:57.876Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:05:57.877Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:05:57.877Z] [INFO] [Unity] Scheduling reconnection attempt 16 in 30000ms
+[2026-06-20T08:06:27.893Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:06:27.893Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:06:27.894Z] [INFO] [Unity] Scheduling reconnection attempt 17 in 30000ms
+[2026-06-20T08:06:57.903Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:06:57.904Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:06:57.904Z] [INFO] [Unity] Scheduling reconnection attempt 18 in 30000ms
+[2026-06-20T08:07:27.915Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:07:27.916Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:07:27.916Z] [INFO] [Unity] Scheduling reconnection attempt 19 in 30000ms
+[2026-06-20T08:07:57.925Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:07:57.926Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:07:57.926Z] [INFO] [Unity] Scheduling reconnection attempt 20 in 30000ms
+[2026-06-20T08:08:27.936Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:08:27.936Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:08:27.937Z] [INFO] [Unity] Scheduling reconnection attempt 21 in 30000ms
+[2026-06-20T08:08:57.952Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:08:57.953Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:08:57.953Z] [INFO] [Unity] Scheduling reconnection attempt 22 in 30000ms
+[2026-06-20T08:09:27.965Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:09:27.966Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:09:27.966Z] [INFO] [Unity] Scheduling reconnection attempt 23 in 30000ms
+[2026-06-20T08:09:57.976Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:09:57.977Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:09:57.977Z] [INFO] [Unity] Scheduling reconnection attempt 24 in 30000ms
+[2026-06-20T08:10:27.983Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:10:27.983Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:10:27.983Z] [INFO] [Unity] Scheduling reconnection attempt 25 in 30000ms
+[2026-06-20T08:10:58.000Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:10:58.000Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:10:58.001Z] [INFO] [Unity] Scheduling reconnection attempt 26 in 30000ms
+[2026-06-20T08:11:28.011Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:11:28.012Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:11:28.012Z] [INFO] [Unity] Scheduling reconnection attempt 27 in 30000ms
+[2026-06-20T08:11:58.028Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:11:58.028Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:11:58.028Z] [INFO] [Unity] Scheduling reconnection attempt 28 in 30000ms
+[2026-06-20T08:12:28.041Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:12:28.041Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:12:28.042Z] [INFO] [Unity] Scheduling reconnection attempt 29 in 30000ms
+[2026-06-20T08:12:58.059Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:12:58.059Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:12:58.059Z] [INFO] [Unity] Scheduling reconnection attempt 30 in 30000ms
+[2026-06-20T08:13:28.070Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:13:28.071Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:13:28.072Z] [INFO] [Unity] Scheduling reconnection attempt 31 in 30000ms
+[2026-06-20T08:13:58.081Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:13:58.081Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:13:58.082Z] [INFO] [Unity] Scheduling reconnection attempt 32 in 30000ms
+[2026-06-20T08:14:28.098Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:14:28.099Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:14:28.099Z] [INFO] [Unity] Scheduling reconnection attempt 33 in 30000ms
+[2026-06-20T08:14:58.112Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:14:58.113Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:14:58.113Z] [INFO] [Unity] Scheduling reconnection attempt 34 in 30000ms
+[2026-06-20T08:15:28.126Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:15:28.126Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:15:28.127Z] [INFO] [Unity] Scheduling reconnection attempt 35 in 30000ms
+[2026-06-20T08:15:58.136Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:15:58.137Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:15:58.137Z] [INFO] [Unity] Scheduling reconnection attempt 36 in 30000ms
+[2026-06-20T08:16:28.141Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:16:28.142Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:16:28.142Z] [INFO] [Unity] Scheduling reconnection attempt 37 in 30000ms
+[2026-06-20T08:16:58.156Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:16:58.156Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:16:58.156Z] [INFO] [Unity] Scheduling reconnection attempt 38 in 30000ms
+[2026-06-20T08:17:28.161Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:17:28.162Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:17:28.162Z] [INFO] [Unity] Scheduling reconnection attempt 39 in 30000ms
+[2026-06-20T08:17:58.174Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:17:58.174Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:17:58.175Z] [INFO] [Unity] Scheduling reconnection attempt 40 in 30000ms
+[2026-06-20T08:18:28.177Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:18:28.178Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:18:28.178Z] [INFO] [Unity] Scheduling reconnection attempt 41 in 30000ms
+[2026-06-20T08:18:58.180Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:18:58.181Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:18:58.181Z] [INFO] [Unity] Scheduling reconnection attempt 42 in 30000ms
+[2026-06-20T08:19:28.185Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:19:28.186Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:19:28.186Z] [INFO] [Unity] Scheduling reconnection attempt 43 in 30000ms
+[2026-06-20T08:19:58.189Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:19:58.190Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:19:58.190Z] [INFO] [Unity] Scheduling reconnection attempt 44 in 30000ms
+[2026-06-20T08:20:28.196Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:20:28.197Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:20:28.197Z] [INFO] [Unity] Scheduling reconnection attempt 45 in 30000ms
+[2026-06-20T08:20:58.213Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:20:58.214Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:20:58.214Z] [INFO] [Unity] Scheduling reconnection attempt 46 in 30000ms
+[2026-06-20T08:21:28.219Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:21:28.220Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:21:28.220Z] [INFO] [Unity] Scheduling reconnection attempt 47 in 30000ms
+[2026-06-20T08:21:58.234Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:21:58.234Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:21:58.234Z] [INFO] [Unity] Scheduling reconnection attempt 48 in 30000ms
+[2026-06-20T08:22:28.242Z] [ERROR] [Unity] WebSocket error: Unknown error
+[2026-06-20T08:22:28.242Z] [ERROR] [Unity] Connection error: Connection failed: Unknown error
+[2026-06-20T08:22:28.243Z] [INFO] [Unity] Scheduling reconnection attempt 49 in 30000ms
+[2026-06-20T08:22:56.930Z] [INFO] [Server] Shutting down...
+[2026-06-20T08:22:56.931Z] [INFO] [Unity] Unity WebSocket client stopped

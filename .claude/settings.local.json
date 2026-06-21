@@ -13,7 +13,13 @@
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\USER\\\\AppData\\\\Roaming\\\\Claude\\\\logs\\\\\" | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | ForEach-Object { Write-Host $_.FullName; Get-Content $_.FullName -Tail 30 })",
       "PowerShell(node \"C:\\\\Users\\\\USER\\\\Documents\\\\GitHub\\\\Doll_Roguelite2\\\\Library\\\\PackageCache\\\\com.gamelovers.mcp-unity@aade29c7dd84\\\\Server~\\\\build\\\\index.js\" 2>&1)",
       "PowerShell(\\(Get-Command node -ErrorAction SilentlyContinue\\).Source; Get-ChildItem \"C:\\\\Program Files\\\\nodejs\\\\node.exe\" -ErrorAction SilentlyContinue | Select-Object FullName; Get-ChildItem \"$env:APPDATA\\\\npm\\\\node.exe\" -ErrorAction SilentlyContinue | Select-Object FullName)",
-      "Bash(\"/c/Program Files/nodejs/node.exe\" \"/c/Users/USER/Documents/GitHub/Doll_Roguelite2/Library/PackageCache/com.gamelovers.mcp-unity@aade29c7dd84/Server~/build/index.js\")"
+      "Bash(\"/c/Program Files/nodejs/node.exe\" \"/c/Users/USER/Documents/GitHub/Doll_Roguelite2/Library/PackageCache/com.gamelovers.mcp-unity@aade29c7dd84/Server~/build/index.js\")",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); node --version; npm --version)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"C:\\\\Users\\\\rotyr\\\\OneDrive\\\\Documents\\\\GitHub\\\\Doll_Roguelite2\\\\Library\\\\PackageCache\\\\com.gamelovers.mcp-unity@aade29c7dd84\\\\Server~\"; npm install 2>&1 | Select-Object -Last 5)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"C:\\\\Users\\\\rotyr\\\\OneDrive\\\\Documents\\\\GitHub\\\\Doll_Roguelite2\\\\Library\\\\PackageCache\\\\com.gamelovers.mcp-unity@aade29c7dd84\\\\Server~\"; npm run build 2>&1)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); \\(Get-Command node\\).Source)",
+      "PowerShell(Get-Process -Id 3332)",
+      "mcp__unity__get_scene_info"
     ]
   }
 }

@@ -1227,6 +1227,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 211311193}
   leftArmRenderer: {fileID: 1073542017}
   rightArmRenderer: {fileID: 295676451}
+  playerSortingOrder: 120
   upSprite: {fileID: 21300000, guid: 4e441c1c71ecb9542a5a3d4f45d16a13, type: 3}
   downSprite: {fileID: 21300000, guid: 333c16bc07828c841b2bb1e93d61e2b6, type: 3}
   leftSprite: {fileID: 21300000, guid: 7ee11763e41c7ba47befcc4279866d89, type: 3}
@@ -1375,6 +1376,7 @@ Transform:
   - {fileID: 1760093657}
   - {fileID: 1073542018}
   - {fileID: 295676452}
+  - {fileID: 1944084284}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &211311193
@@ -1577,6 +1579,9 @@ MonoBehaviour:
   hitShakeDistance: 0.055
   hitScaleMultiplier: 1.08
   hitTint: {r: 1, g: 0.42, b: 0.38, a: 1}
+  shakeCameraOnHit: 1
+  cameraShakeDuration: 0.12
+  cameraShakeMagnitude: 0.11
   dropDownDistance: 0.52
   dropSideDistance: 0.16
   droppedPartSortingOrder: 4
@@ -14258,7 +14263,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpecialRoomController
   roomKind: 1
-  mapSceneName: MapScene
   mapSize: {x: 28.8, y: 16.2}
   cameraOrthographicSize: 5.4
   interactRadius: 1.8
@@ -14266,6 +14270,8 @@ MonoBehaviour:
   wallColor: {r: 0.42, g: 0.3, b: 0.22, a: 1}
   treasureColor: {r: 1, g: 0.72, b: 0.16, a: 1}
   shopColor: {r: 0.36, g: 0.62, b: 0.74, a: 1}
+  nextDoorLine: {x: 8, y: -2.45}
+  nextDoorSize: {x: 2.8, y: 0.75}
   rectangleSprite: {fileID: 21300000, guid: 234e850889114554696542958b23924f, type: 3}
 --- !u!4 &1906711010
 Transform:
@@ -14599,7 +14605,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 211311192}
     m_Modifications:
     - target: {fileID: 430652816770386933, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
       propertyPath: m_fontColor32.rgba
@@ -15686,6 +15692,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThresholdManager
   overlayColor: {r: 0, g: 0, b: 0, a: 1}
+  overlayAlpha: 0.72
   roomSceneName: RoomScene
   bossSceneName: BossScene
   overlaySortingOrder: 60
@@ -16265,6 +16272,5 @@ SceneRoots:
   - {fileID: 161824398}
   - {fileID: 211311192}
   - {fileID: 2006974083}
-  - {fileID: 1944084282}
   - {fileID: 1993731298}
   - {fileID: 1906711010}
