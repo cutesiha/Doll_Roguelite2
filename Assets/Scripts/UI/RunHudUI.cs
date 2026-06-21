@@ -36,6 +36,27 @@ public class RunHudUI : MonoBehaviour
     TextMeshProUGUI waveLabel;
     TextMeshProUGUI waveClearLabel;
     TextMeshProUGUI diaryLabel;
+    RectTransform bossHpHud;
+    Image bossHpFill;
+    TextMeshProUGUI bossNameLabel;
+    TextMeshProUGUI bossHpText;
+    const float BossHpTrackWidth = 864f;
+    const float BossHpTrackHeight = 30f;
+    RectTransform bossPartsHud;
+    readonly RectTransform[] bossPartRows = new RectTransform[3];
+    readonly Image[] bossPartFills = new Image[3];
+    readonly TextMeshProUGUI[] bossPartNames = new TextMeshProUGUI[3];
+    readonly TextMeshProUGUI[] bossPartHpTexts = new TextMeshProUGUI[3];
+    RectTransform collectedWordsPanel;
+    TextMeshProUGUI collectedWordsLabel;
+    const float BossPartTrackWidth = 820f;
+    const float BossPartTrackHeight = 28f;
+    static readonly Color[] BossPartColors =
+    {
+        new Color(0.85f, 0.20f, 0.20f, 1f),
+        new Color(0.92f, 0.58f, 0.20f, 1f),
+        new Color(0.30f, 0.62f, 0.92f, 1f)
+    };
     GameObject mapControlHint;
     GameObject menuControlHint;
     readonly List<Image> waveDots = new List<Image>();
@@ -192,6 +213,20 @@ public class RunHudUI : MonoBehaviour
         waveLabel = null;
         waveClearLabel = null;
         diaryLabel = null;
+        bossHpHud = null;
+        bossHpFill = null;
+        bossNameLabel = null;
+        bossHpText = null;
+        bossPartsHud = null;
+        collectedWordsPanel = null;
+        collectedWordsLabel = null;
+        for (int i = 0; i < 3; i++)
+        {
+            bossPartRows[i] = null;
+            bossPartFills[i] = null;
+            bossPartNames[i] = null;
+            bossPartHpTexts[i] = null;
+        }
         mapControlHint = null;
         menuControlHint = null;
         waveDots.Clear();
@@ -764,6 +799,239 @@ void BuildPixelDoll(Transform parent)
         ApplyWave(1, 3);
     }
 
+    void EnsureBossHpBar()
+    {
+        if (bossHpHud != null)
+            return;
+
+        Transform existing = FindChildRecursive(transform, "BossHpHud");
+        if (existing != null)
+        {
+            bossHpHud = existing as RectTransform;
+            bossHpFill = FindChildComponent<Image>("BossHpFill");
+            bossNameLabel = FindChildComponent<TextMeshProUGUI>("BossNameLabel");
+            bossHpText = FindChildComponent<TextMeshProUGUI>("BossHpText");
+            if (bossHpHud != null && bossHpFill != null)
+                return;
+
+            DestroyUiObject(bossHpHud.gameObject);
+            bossHpHud = null;
+        }
+
+        BuildBossHpBar();
+    }
+
+    void BuildBossHpBar()
+    {
+        GameObject hud = Rect(transform, "BossHpHud", Anchor.TopCenter, new Vector2(0f, -88f), new Vector2(908f, 84f));
+        bossHpHud = hud.GetComponent<RectTransform>();
+        Image bg = hud.AddComponent<Image>();
+        SetRoundedImage(bg, roundedButtonSprite);
+        bg.color = new Color(0.08f, 0.05f, 0.06f, 0.90f);
+        bg.raycastTarget = false;
+        Outline outline = hud.AddComponent<Outline>();
+        outline.effectColor = new Color(0.75f, 0.16f, 0.16f, 0.9f);
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        bossNameLabel = Text(hud.transform, "BossNameLabel", "미노타우로스", 26f, new Color(0.96f, 0.84f, 0.62f, 1f), TextAlignmentOptions.Center);
+        bossNameLabel.fontStyle = FontStyles.Bold;
+        bossNameLabel.raycastTarget = false;
+        bossNameLabel.rectTransform.anchorMin = new Vector2(0f, 1f);
+        bossNameLabel.rectTransform.anchorMax = new Vector2(1f, 1f);
+        bossNameLabel.rectTransform.pivot = new Vector2(0.5f, 1f);
+        bossNameLabel.rectTransform.anchoredPosition = new Vector2(0f, -6f);
+        bossNameLabel.rectTransform.sizeDelta = new Vector2(-24f, 32f);
+
+        GameObject track = Rect(hud.transform, "BossHpTrack", Anchor.TopCenter, new Vector2(0f, -44f), new Vector2(BossHpTrackWidth, BossHpTrackHeight));
+        Image trackImage = track.AddComponent<Image>();
+        SetRoundedImage(trackImage, roundedButtonSprite);
+        trackImage.color = new Color(0.16f, 0.10f, 0.11f, 1f);
+        trackImage.raycastTarget = false;
+
+        GameObject fill = Rect(track.transform, "BossHpFill", Anchor.Left, Vector2.zero, new Vector2(BossHpTrackWidth, BossHpTrackHeight));
+        bossHpFill = fill.AddComponent<Image>();
+        SetRoundedImage(bossHpFill, roundedButtonSprite);
+        bossHpFill.color = new Color(0.85f, 0.18f, 0.18f, 1f);
+        bossHpFill.raycastTarget = false;
+
+        bossHpText = Text(track.transform, "BossHpText", "", 18f, Color.white, TextAlignmentOptions.Center);
+        bossHpText.fontStyle = FontStyles.Bold;
+        bossHpText.raycastTarget = false;
+        bossHpText.rectTransform.anchorMin = Vector2.zero;
+        bossHpText.rectTransform.anchorMax = Vector2.one;
+        bossHpText.rectTransform.offsetMin = Vector2.zero;
+        bossHpText.rectTransform.offsetMax = Vector2.zero;
+
+        hud.SetActive(false);
+    }
+
+    void ApplyBossHealth(string bossName, int current, int max)
+    {
+        EnsureBossHpBar();
+        if (bossHpHud == null)
+            return;
+
+        bossHpHud.gameObject.SetActive(true);
+        bossHpHud.SetAsLastSibling();
+
+        int safeMax = Mathf.Max(1, max);
+        int safeCurrent = Mathf.Clamp(current, 0, safeMax);
+        float ratio = (float)safeCurrent / safeMax;
+
+        if (bossHpFill != null)
+            bossHpFill.rectTransform.sizeDelta = new Vector2(BossHpTrackWidth * ratio, BossHpTrackHeight);
+
+        if (bossNameLabel != null && !string.IsNullOrEmpty(bossName))
+            bossNameLabel.text = bossName;
+
+        if (bossHpText != null)
+            bossHpText.text = safeCurrent + " / " + safeMax;
+    }
+
+    void HideBossHealthBar()
+    {
+        if (bossHpHud != null)
+            bossHpHud.gameObject.SetActive(false);
+    }
+
+    void EnsureBossPartsHud()
+    {
+        if (bossPartsHud != null)
+            return;
+
+        Transform existing = FindChildRecursive(transform, "BossPartsHud");
+        if (existing != null)
+            DestroyUiObject(existing.gameObject);
+
+        GameObject hud = Rect(transform, "BossPartsHud", Anchor.TopCenter, new Vector2(0f, -66f), new Vector2(860f, 150f));
+        bossPartsHud = hud.GetComponent<RectTransform>();
+
+        string[] defaultNames = { "몸통(책)", "왼팔", "오른팔" };
+        for (int i = 0; i < 3; i++)
+        {
+            GameObject row = Rect(hud.transform, "BossPartBar_" + i, Anchor.TopCenter, new Vector2(0f, -10f - i * 46f), new Vector2(BossPartTrackWidth, BossPartTrackHeight + 14f));
+
+            GameObject track = Rect(row.transform, "Track", Anchor.TopCenter, new Vector2(0f, -14f), new Vector2(BossPartTrackWidth, BossPartTrackHeight));
+            Image trackImage = track.AddComponent<Image>();
+            SetRoundedImage(trackImage, roundedButtonSprite);
+            trackImage.color = new Color(0.13f, 0.10f, 0.11f, 0.95f);
+            trackImage.raycastTarget = false;
+
+            GameObject fill = Rect(track.transform, "Fill", Anchor.Left, Vector2.zero, new Vector2(BossPartTrackWidth, BossPartTrackHeight));
+            bossPartFills[i] = fill.AddComponent<Image>();
+            SetRoundedImage(bossPartFills[i], roundedButtonSprite);
+            bossPartFills[i].color = BossPartColors[i];
+            bossPartFills[i].raycastTarget = false;
+
+            bossPartNames[i] = Text(track.transform, "Name", defaultNames[i], 16f, Color.white, TextAlignmentOptions.MidlineLeft);
+            bossPartNames[i].fontStyle = FontStyles.Bold;
+            bossPartNames[i].raycastTarget = false;
+            bossPartNames[i].rectTransform.anchorMin = Vector2.zero;
+            bossPartNames[i].rectTransform.anchorMax = Vector2.one;
+            bossPartNames[i].rectTransform.offsetMin = new Vector2(14f, 0f);
+            bossPartNames[i].rectTransform.offsetMax = new Vector2(-14f, 0f);
+
+            bossPartHpTexts[i] = Text(track.transform, "Hp", "", 15f, Color.white, TextAlignmentOptions.MidlineRight);
+            bossPartHpTexts[i].raycastTarget = false;
+            bossPartHpTexts[i].rectTransform.anchorMin = Vector2.zero;
+            bossPartHpTexts[i].rectTransform.anchorMax = Vector2.one;
+            bossPartHpTexts[i].rectTransform.offsetMin = new Vector2(14f, 0f);
+            bossPartHpTexts[i].rectTransform.offsetMax = new Vector2(-14f, 0f);
+
+            bossPartRows[i] = row.GetComponent<RectTransform>();
+        }
+
+        hud.SetActive(false);
+    }
+
+    void ApplyBossParts(string[] names, int[] current, int[] max)
+    {
+        EnsureBossPartsHud();
+        if (bossPartsHud == null)
+            return;
+
+        bossPartsHud.gameObject.SetActive(true);
+        bossPartsHud.SetAsLastSibling();
+
+        int count = names != null ? Mathf.Min(3, names.Length) : 0;
+        for (int i = 0; i < 3; i++)
+        {
+            bool active = i < count;
+            if (bossPartRows[i] != null)
+                bossPartRows[i].gameObject.SetActive(active);
+            if (!active)
+                continue;
+
+            int safeMax = Mathf.Max(1, max[i]);
+            int safeCurrent = Mathf.Clamp(current[i], 0, safeMax);
+            float ratio = (float)safeCurrent / safeMax;
+
+            if (bossPartFills[i] != null)
+            {
+                bossPartFills[i].rectTransform.sizeDelta = new Vector2(BossPartTrackWidth * ratio, BossPartTrackHeight);
+                bossPartFills[i].color = safeCurrent <= 0 ? new Color(0.3f, 0.3f, 0.3f, 1f) : BossPartColors[i];
+            }
+            if (bossPartNames[i] != null)
+                bossPartNames[i].text = names[i];
+            if (bossPartHpTexts[i] != null)
+                bossPartHpTexts[i].text = safeCurrent + " / " + safeMax;
+        }
+    }
+
+    void HideBossPartsHud()
+    {
+        if (bossPartsHud != null)
+            bossPartsHud.gameObject.SetActive(false);
+    }
+
+    void EnsureCollectedWords()
+    {
+        if (collectedWordsPanel != null)
+            return;
+
+        Transform existing = FindChildRecursive(transform, "CollectedWordsPanel");
+        if (existing != null)
+            DestroyUiObject(existing.gameObject);
+
+        GameObject panel = Rect(transform, "CollectedWordsPanel", Anchor.TopLeft, new Vector2(30f, -214f), new Vector2(470f, 150f));
+        collectedWordsPanel = panel.GetComponent<RectTransform>();
+        Image bg = panel.AddComponent<Image>();
+        SetRoundedImage(bg, roundedPanelSprite);
+        bg.color = new Color(0.10f, 0.08f, 0.07f, 0.55f);
+        bg.raycastTarget = false;
+
+        TextMeshProUGUI title = Text(panel.transform, "Title", "획득한 글자", 18f, new Color(1f, 0.9f, 0.5f, 1f), TextAlignmentOptions.TopLeft);
+        title.fontStyle = FontStyles.Bold;
+        title.raycastTarget = false;
+        title.rectTransform.anchorMin = new Vector2(0f, 1f);
+        title.rectTransform.anchorMax = new Vector2(1f, 1f);
+        title.rectTransform.pivot = new Vector2(0.5f, 1f);
+        title.rectTransform.anchoredPosition = new Vector2(0f, -8f);
+        title.rectTransform.sizeDelta = new Vector2(-24f, 26f);
+
+        collectedWordsLabel = Text(panel.transform, "Words", "", 22f, new Color(1f, 0.95f, 0.72f, 1f), TextAlignmentOptions.TopLeft);
+        collectedWordsLabel.raycastTarget = false;
+        collectedWordsLabel.textWrappingMode = TextWrappingModes.Normal;
+        collectedWordsLabel.rectTransform.anchorMin = Vector2.zero;
+        collectedWordsLabel.rectTransform.anchorMax = Vector2.one;
+        collectedWordsLabel.rectTransform.offsetMin = new Vector2(14f, 12f);
+        collectedWordsLabel.rectTransform.offsetMax = new Vector2(-14f, -36f);
+
+        panel.SetActive(false);
+    }
+
+    void ApplyCollectedWords(IList<string> words)
+    {
+        EnsureCollectedWords();
+        if (collectedWordsPanel == null)
+            return;
+
+        bool any = words != null && words.Count > 0;
+        collectedWordsPanel.gameObject.SetActive(any);
+        if (any && collectedWordsLabel != null)
+            collectedWordsLabel.text = string.Join("  ", words);
+    }
+
 void BuildTopRightMapButton()
     {
         mapButton = BuildHudButton(transform, "MapIconButton", Anchor.TopRight, new Vector2(-38f, -38f), new Vector2(154f, 154f));
@@ -1113,6 +1381,41 @@ void BuildTopRightMapButton()
         RunHudUI hud = ActiveInstance();
         if (hud != null)
             hud.PlayWaveClear();
+    }
+
+    public static void SetBossHealth(string bossName, int current, int max)
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.ApplyBossHealth(bossName, current, max);
+    }
+
+    public static void HideBossHealth()
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.HideBossHealthBar();
+    }
+
+    public static void SetBossParts(string[] names, int[] current, int[] max)
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.ApplyBossParts(names, current, max);
+    }
+
+    public static void HideBossParts()
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.HideBossPartsHud();
+    }
+
+    public static void SetCollectedWords(IList<string> words)
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.ApplyCollectedWords(words);
     }
 
     static RunHudUI ActiveInstance()

@@ -31,6 +31,7 @@ public class RibbonEnemy : EnemyBase
     [SerializeField, Min(1)] int fanDamage = 22;
     [SerializeField, Min(1)] int bindDamage = 12;
     [SerializeField] Color ribbonTelegraphColor = new Color(1f, 0.08f, 0.08f, 0.34f);
+    [SerializeField] Color ribbonStrikeColor = new Color(1f, 0.11f, 0.11f, 0.72f);
 
     Rigidbody2D rb;
     SpriteRenderer ribbonRenderer;
@@ -114,14 +115,24 @@ public class RibbonEnemy : EnemyBase
         yield return StartCoroutine(WindupRoutine(direction, -28f));
         GameObject telegraph = TrackTelegraph(EnemyTelegraph.CreateFan("RibbonFanTelegraph", origin, direction, fanRadius, fanAngle, ribbonTelegraphColor, 72));
         yield return new WaitForSeconds(telegraphDuration);
-        yield return StartCoroutine(FanSwingRoutine(direction));
+
+        // Real attack: a filled fan that sweeps red across the telegraphed arc, then fades.
+        if (telegraph != null)
+        {
+            DestroyOwnedTelegraph(telegraph);
+            telegraph = null;
+        }
+        GameObject strike = TrackTelegraph(EnemyTelegraph.CreateFilledFan("RibbonFanStrike", origin, direction, fanRadius, fanAngle, ribbonStrikeColor, 73));
+        EnemyTelegraph.SetRevealFraction(strike, 0f);
+        yield return StartCoroutine(FanSwingRoutine(direction, strike));
 
         PlayerDamageReceiver receiver = FindFirstObjectByType<PlayerDamageReceiver>();
         if (receiver != null && EnemyTelegraph.PointInFan(receiver.transform.position, origin, direction, fanRadius, fanAngle))
             receiver.TryTakePatternDamage(fanDamage);
 
-        if (telegraph != null)
-            DestroyOwnedTelegraph(telegraph);
+        yield return StartCoroutine(FadeOutStrikeRoutine(strike, fanSwingDuration * 0.55f));
+        if (strike != null)
+            DestroyOwnedTelegraph(strike);
 
         ResetAttackTimer();
         isAttacking = false;
@@ -142,7 +153,17 @@ public class RibbonEnemy : EnemyBase
         yield return StartCoroutine(WindupRoutine(direction, 18f));
         GameObject telegraph = TrackTelegraph(EnemyTelegraph.CreateBox("RibbonBindTelegraph", center, size, angle, ribbonTelegraphColor, 72));
         yield return EnemyTelegraph.Blink(telegraph, 1, telegraphDuration * 0.5f);
-        yield return StartCoroutine(BindThrustRoutine(direction));
+
+        // Real attack: a bright ribbon that lashes out along the telegraphed line, then fades.
+        if (telegraph != null)
+        {
+            DestroyOwnedTelegraph(telegraph);
+            telegraph = null;
+        }
+        Vector2 end = start + direction * bindLength;
+        GameObject strike = TrackTelegraph(EnemyTelegraph.CreateFilledStrip("RibbonBindStrike", start, end, bindWidth, ribbonStrikeColor, 73, 14));
+        EnemyTelegraph.SetRevealFraction(strike, 0f);
+        yield return StartCoroutine(BindThrustRoutine(direction, strike));
 
         PlayerDamageReceiver receiver = FindFirstObjectByType<PlayerDamageReceiver>();
         if (receiver != null && EnemyTelegraph.PointInOrientedBox(receiver.transform.position, center, size, angle))
@@ -151,8 +172,9 @@ public class RibbonEnemy : EnemyBase
             receiver.LockMovement(bindDuration);
         }
 
-        if (telegraph != null)
-            DestroyOwnedTelegraph(telegraph);
+        yield return StartCoroutine(FadeOutStrikeRoutine(strike, bindThrustDuration * 0.55f));
+        if (strike != null)
+            DestroyOwnedTelegraph(strike);
 
         ResetAttackTimer();
         isAttacking = false;
@@ -227,7 +249,7 @@ public class RibbonEnemy : EnemyBase
         }
     }
 
-    IEnumerator FanSwingRoutine(Vector2 direction)
+    IEnumerator FanSwingRoutine(Vector2 direction, GameObject strike)
     {
         float centerAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         Quaternion startRotation = Quaternion.Euler(0f, 0f, centerAngle - 42f);
@@ -239,12 +261,15 @@ public class RibbonEnemy : EnemyBase
             float eased = Mathf.Sin(t * Mathf.PI * 0.5f);
             transform.localRotation = Quaternion.Lerp(startRotation, endRotation, eased);
             transform.localScale = new Vector3(baseScale.x * (1.05f + eased * 0.18f), baseScale.y * 0.72f, baseScale.z);
+            EnemyTelegraph.SetRevealFraction(strike, eased);
             elapsed += Time.deltaTime;
             yield return null;
         }
+
+        EnemyTelegraph.SetRevealFraction(strike, 1f);
     }
 
-    IEnumerator BindThrustRoutine(Vector2 direction)
+    IEnumerator BindThrustRoutine(Vector2 direction, GameObject strike)
     {
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         transform.localRotation = Quaternion.Euler(0f, 0f, angle);
@@ -254,6 +279,25 @@ public class RibbonEnemy : EnemyBase
             float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, bindThrustDuration));
             float thrust = Mathf.Sin(t * Mathf.PI);
             transform.localScale = new Vector3(baseScale.x * (1f + thrust * 0.45f), baseScale.y * (1f - thrust * 0.25f), baseScale.z);
+            EnemyTelegraph.SetRevealFraction(strike, Mathf.Clamp01(t * 1.4f));
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        EnemyTelegraph.SetRevealFraction(strike, 1f);
+    }
+
+    IEnumerator FadeOutStrikeRoutine(GameObject strike, float duration)
+    {
+        if (strike == null)
+            yield break;
+
+        float baseAlpha = ribbonStrikeColor.a;
+        float elapsed = 0f;
+        while (elapsed < duration && strike != null)
+        {
+            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, duration));
+            EnemyTelegraph.SetUniformAlpha(strike, baseAlpha * (1f - t));
             elapsed += Time.deltaTime;
             yield return null;
         }

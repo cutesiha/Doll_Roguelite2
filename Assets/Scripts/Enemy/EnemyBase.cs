@@ -27,6 +27,10 @@ public class EnemyBase : MonoBehaviour
     protected int currentHp;
     public bool HasManagedProfile { get; private set; }
 
+    // Raised right before this enemy is destroyed. Used by systems that track per-kill
+    // events (e.g. the Book boss reducing its body HP as summoned minions are defeated).
+    public System.Action<EnemyBase> OnDied;
+
     SpriteRenderer spriteRenderer;
     Sprite[] animationFrames;
     float animationTime;
@@ -306,7 +310,7 @@ public class EnemyBase : MonoBehaviour
             .ToArray();
     }
 
-    public void TakeDamage(int damage)
+    public virtual void TakeDamage(int damage)
     {
         currentHp -= damage;
         OnDamaged();
@@ -439,6 +443,7 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void Die()
     {
+        OnDied?.Invoke(this);
         EnemyManager.Instance?.OnEnemyDied(this);
         Destroy(gameObject);
     }

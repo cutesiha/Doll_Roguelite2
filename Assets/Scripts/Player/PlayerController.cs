@@ -45,6 +45,8 @@ public class PlayerController : MonoBehaviour
     Vector2 moveInput;
     bool forwardWalkPressed;
     float movementLockedUntil;
+    float speedMultiplier = 1f;
+    float speedMultiplierUntil;
     FacingDirection facingDirection = FacingDirection.Down;
     FacingDirection lastWalkDirection = FacingDirection.Down;
     float facingLockTimer;
@@ -180,7 +182,17 @@ public class PlayerController : MonoBehaviour
         if (state != null && (!state.legLeft || !state.legRight))
             speed *= missingLegSpeedMultiplier;
 
+        if (Time.time < speedMultiplierUntil)
+            speed *= speedMultiplier;
+
         rb.MovePosition(rb.position + moveInput * speed * Time.fixedDeltaTime);
+    }
+
+    // Temporary movement slow used by status effects such as the boss's stitch debuff.
+    public void ApplyTemporarySpeedMultiplier(float multiplier, float duration)
+    {
+        speedMultiplier = Mathf.Clamp(multiplier, 0.05f, 1f);
+        speedMultiplierUntil = Time.time + Mathf.Max(0f, duration);
     }
 
     public void FaceDirection(Vector2 direction)

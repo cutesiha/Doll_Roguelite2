@@ -1134,6 +1134,7 @@ MonoBehaviour:
   cameraShakeMagnitude: 0.11
   dropDownDistance: 0.52
   dropSideDistance: 0.16
+  fallbackDroppedPartScaleRatio: 0.72
   droppedPartSortingOrder: 4
 --- !u!1 &5243644867618735856
 GameObject:

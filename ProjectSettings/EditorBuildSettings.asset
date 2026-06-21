@@ -17,7 +17,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/RoomScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/BossScene.unity
     guid: 559fd566193883f488c1690806f69521
   - enabled: 1
@@ -32,6 +32,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/ShopScene.unity
     guid: 2db665850a2e9774893cbb9aaed4e4c6
+  - enabled: 1
+    path: Assets/Scenes/MiddleBossScene.unity
+    guid: ee7a0895b0ec60046b347f025ad461d9
+  - enabled: 1
+    path: Assets/Scenes/BookBossScene.unity
+    guid: 0d994c24747996948a2cc33875951ad1
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
