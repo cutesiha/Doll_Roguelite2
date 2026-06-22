@@ -25,16 +25,26 @@ public class MinotaurBoss : EnemyBase
     [Header("Timing")]
     [SerializeField, Min(0.1f)] float introDelay = 1.0f;
     [SerializeField, Min(0.1f)] float betweenActions = 1.6f;
-    [SerializeField, Min(0.1f)] float telegraphTime = 1.1f;
     [SerializeField, Min(0.1f)] float strikeTime = 0.35f;
-    [SerializeField, Min(0.1f)] float stunDuration = 2.6f;
     [SerializeField, Min(1f)] float solveTime = 7f;
+
+    [Header("Room-wide Sewing Lines")]
+    [SerializeField, Min(0.5f)] float sewingLineThickness = 1.65f;
+    [SerializeField, Min(1f)] float diagonalLengthMultiplier = 1.2f;
+    [SerializeField, Min(0.1f)] float largeAttackWarningTime = 1f;
+
+    [Header("Mechanic Timing")]
+    [SerializeField, Min(1f)] float firstJudgementTime = 7f;
+    [SerializeField, Min(1f)] float repeatJudgementTime = 5f;
+    [SerializeField, Min(1f)] float designMatchTime = 5f;
+    [SerializeField, Min(0.1f)] float pinClosureTime = 2f;
+    [SerializeField, Min(0.1f)] float successStunTime = 1.5f;
 
     [Header("Damage")]
     [SerializeField, Min(1)] int basicDamage = 18;
     [SerializeField, Min(1)] int judgementPartDamage = 80;
     [SerializeField, Min(1)] int matchFailDamage = 34;
-    [SerializeField, Min(1)] int pinFailDamage = 30;
+    [SerializeField, Min(1)] int pinFailDamage = 45;
     [SerializeField, Min(1)] int debuffNeedleDamage = 10;
 
     [Header("Colors")]
@@ -55,6 +65,7 @@ public class MinotaurBoss : EnemyBase
     bool stunned;
     bool bossDefeated;
     bool pinTurn;
+    int judgementUseCount;
     int lastReportedWave = -1;
 
     struct Band
@@ -206,7 +217,7 @@ public class MinotaurBoss : EnemyBase
         for (int i = 0; i < bands.Count; i++)
             telegraphs.Add(TrackTelegraph(EnemyTelegraph.CreateBox("BossBandTelegraph", bands[i].center, bands[i].size, bands[i].angle, telegraphColor, 40)));
 
-        yield return new WaitForSeconds(telegraphTime);
+        yield return new WaitForSeconds(Mathf.Max(1f, largeAttackWarningTime));
 
         for (int i = 0; i < telegraphs.Count; i++)
             if (telegraphs[i] != null)
@@ -238,11 +249,11 @@ public class MinotaurBoss : EnemyBase
     List<Band> BuildBasicBands(int shape)
     {
         List<Band> bands = new List<Band>();
-        float thickness = 2.4f;
-        // Oversize the bands so the attack visibly sweeps the entire map, edge to edge.
-        float fullW = arenaSize.x * 1.5f;
-        float fullH = arenaSize.y * 1.5f;
-        float diagonal = Mathf.Sqrt(fullW * fullW + fullH * fullH);
+        float thickness = Mathf.Clamp(sewingLineThickness, 0.5f, Mathf.Min(arenaSize.x, arenaSize.y) * 0.3f);
+        float fullW = arenaSize.x;
+        float fullH = arenaSize.y;
+        float roomDiagonal = Mathf.Sqrt(fullW * fullW + fullH * fullH);
+        float diagonal = roomDiagonal * Mathf.Max(1f, diagonalLengthMultiplier);
 
         switch (shape)
         {
@@ -254,13 +265,11 @@ public class MinotaurBoss : EnemyBase
                 bands.Add(new Band { center = arenaCenter, size = new Vector2(fullW, thickness), angle = 0f });
                 bands.Add(new Band { center = arenaCenter, size = new Vector2(thickness, fullH), angle = 0f });
                 break;
-            case 2: // horizontal (player's row, full width)
-                float row = player != null ? Mathf.Clamp(player.position.y, arenaCenter.y - arenaSize.y * 0.4f, arenaCenter.y + arenaSize.y * 0.4f) : arenaCenter.y;
-                bands.Add(new Band { center = new Vector2(arenaCenter.x, row), size = new Vector2(fullW, thickness), angle = 0f });
+            case 2: // horizontal: left wall to right wall through the room centre
+                bands.Add(new Band { center = arenaCenter, size = new Vector2(fullW, thickness), angle = 0f });
                 break;
-            default: // vertical (player's column, full height)
-                float col = player != null ? Mathf.Clamp(player.position.x, arenaCenter.x - arenaSize.x * 0.4f, arenaCenter.x + arenaSize.x * 0.4f) : arenaCenter.x;
-                bands.Add(new Band { center = new Vector2(col, arenaCenter.y), size = new Vector2(thickness, fullH), angle = 0f });
+            default: // vertical: top wall to bottom wall through the room centre
+                bands.Add(new Band { center = arenaCenter, size = new Vector2(thickness, fullH), angle = 0f });
                 break;
         }
 
@@ -300,7 +309,11 @@ public class MinotaurBoss : EnemyBase
             new Vector3(-1.4f, -1.0f, 0f), new Vector3(1.4f, -1.0f, 0f)
         };
 
-        List<BodySlot> marked = PickMarkedSlots();
+        bool firstUse = judgementUseCount == 0;
+        int maxMarked = firstUse || (float)currentHp / Mathf.Max(1, maxHp) > 0.85f ? 1 : 2;
+        List<BodySlot> marked = PickMarkedSlots(maxMarked);
+        solveTime = firstUse ? firstJudgementTime : repeatJudgementTime;
+        judgementUseCount++;
         for (int i = 0; i < slots.Length; i++)
         {
             bool isX = marked.Contains(slots[i]);
@@ -325,7 +338,7 @@ public class MinotaurBoss : EnemyBase
 
         if (stillEquipped.Count == 0)
         {
-            yield return StartCoroutine(StunRoutine(stunDuration));
+            yield return StartCoroutine(StunRoutine(successStunTime));
         }
         else
         {
@@ -334,7 +347,7 @@ public class MinotaurBoss : EnemyBase
         }
     }
 
-    List<BodySlot> PickMarkedSlots()
+    List<BodySlot> PickMarkedSlots(int maxMarked)
     {
         BodySlot[] all = { BodySlot.EyeLeft, BodySlot.EyeRight, BodySlot.ArmLeft, BodySlot.ArmRight, BodySlot.LegLeft, BodySlot.LegRight };
         List<BodySlot> equipped = new List<BodySlot>();
@@ -346,7 +359,7 @@ public class MinotaurBoss : EnemyBase
         if (equipped.Count == 0)
             equipped.AddRange(all);
 
-        int count = Mathf.Clamp(Random.Range(1, 3), 1, equipped.Count);
+        int count = Mathf.Clamp(maxMarked <= 1 ? 1 : Random.Range(1, 3), 1, equipped.Count);
         List<BodySlot> chosen = new List<BodySlot>();
         while (chosen.Count < count && equipped.Count > 0)
         {
@@ -361,23 +374,17 @@ public class MinotaurBoss : EnemyBase
     IEnumerator JudgementSlamRoutine(BodySlot slot)
     {
         Vector2 target = player != null ? (Vector2)player.position : arenaCenter;
-        GameObject warn = TrackTelegraph(EnemyTelegraph.CreateCircle("JudgementSlamWarn", target, 1.6f, telegraphColor, 45));
-        yield return new WaitForSeconds(0.5f);
-        if (warn != null) DestroyOwnedTelegraph(warn);
-
-        GameObject slam = TrackTelegraph(EnemyTelegraph.CreateCircle("JudgementSlam", target, 1.8f, strikeColor, 46));
+        GameObject mark = TrackTelegraph(BossVisuals.CreatePartIcon(null, "JudgementPart_" + slot, slot, target + Vector2.up * 1.1f, 2.2f, BossVisuals.MarkBad, 75));
+        BossVisuals.CreateXMark(mark.transform, Vector3.zero, 1.8f, 76);
+        yield return new WaitForSeconds(0.45f);
         CameraShake.Shake(0.22f, 0.28f);
 
         InventoryManager inventory = InventoryManager.Instance;
         if (inventory != null && inventory.IsEquipped(slot))
             inventory.TryDamageEquippedPart(slot, judgementPartDamage, out _);
 
-        PlayerDamageReceiver receiver = FindFirstObjectByType<PlayerDamageReceiver>();
-        if (receiver != null)
-            receiver.TryTakePatternDamage(1, 0.1f);
-
-        yield return new WaitForSeconds(0.3f);
-        if (slam != null) DestroyOwnedTelegraph(slam);
+        yield return new WaitForSeconds(0.25f);
+        if (mark != null) DestroyOwnedTelegraph(mark);
     }
 
     // ---- pattern 2: design matching (wave 2) ------------------------------
@@ -388,12 +395,14 @@ public class MinotaurBoss : EnemyBase
         string[] labels = { "온전한 도안", "왼팔 없는 도안", "왼눈 없는 도안", "왼다리 없는 도안" };
         Vector2[] spots =
         {
-            new Vector2(arenaCenter.x - 6f, arenaCenter.y - 2.4f),
-            new Vector2(arenaCenter.x - 2f, arenaCenter.y - 2.4f),
-            new Vector2(arenaCenter.x + 2f, arenaCenter.y - 2.4f),
-            new Vector2(arenaCenter.x + 6f, arenaCenter.y - 2.4f)
+            arenaCenter + new Vector2(-arenaSize.x * 0.32f, arenaSize.y * 0.25f),
+            arenaCenter + new Vector2(arenaSize.x * 0.32f, arenaSize.y * 0.25f),
+            arenaCenter + new Vector2(-arenaSize.x * 0.32f, -arenaSize.y * 0.25f),
+            arenaCenter + new Vector2(arenaSize.x * 0.32f, -arenaSize.y * 0.25f)
         };
-        Vector2 paperSize = new Vector2(3.2f, 3.8f);
+        Vector2 paperSize = new Vector2(
+            Mathf.Min(4.6f, arenaSize.x * 0.22f),
+            Mathf.Min(4.4f, arenaSize.y * 0.34f));
 
         List<GameObject> papers = new List<GameObject>();
         for (int i = 0; i < options.Length; i++)
@@ -407,6 +416,7 @@ public class MinotaurBoss : EnemyBase
         BodySlot? covered = options[correct];
         ShowCoveredPart(covered);
         SoundManager.PlayPanel();
+        solveTime = designMatchTime;
 
         yield return StartCoroutine(CountdownRoutine("보스가 가린 곳과 같은 도안 위로!", solveTime));
 
@@ -420,7 +430,7 @@ public class MinotaurBoss : EnemyBase
 
         if (success)
         {
-            yield return StartCoroutine(StunRoutine(stunDuration));
+            yield return StartCoroutine(StunRoutine(successStunTime));
         }
         else
         {
@@ -434,6 +444,7 @@ public class MinotaurBoss : EnemyBase
     }
 
     GameObject coveredPatch;
+    GameObject coveredIcon;
 
     void ShowCoveredPart(BodySlot? slot)
     {
@@ -458,6 +469,10 @@ public class MinotaurBoss : EnemyBase
         renderer.sortingOrder = 60;
         coveredPatch.transform.localScale = new Vector3(0.32f, 0.32f, 1f);
         TrackTelegraph(coveredPatch);
+
+        Vector2 iconPosition = (Vector2)transform.position + new Vector2(1.7f, 1.25f);
+        coveredIcon = TrackTelegraph(BossVisuals.CreatePartIcon(null, "CoveredPartIcon", slot.Value, iconPosition, 1.8f, BossVisuals.MarkBad, 76));
+        BossVisuals.CreateXMark(coveredIcon.transform, Vector3.zero, 1.35f, 77);
     }
 
     void ClearCoveredPart()
@@ -467,6 +482,12 @@ public class MinotaurBoss : EnemyBase
             DestroyOwnedTelegraph(coveredPatch);
             coveredPatch = null;
         }
+
+        if (coveredIcon != null)
+        {
+            DestroyOwnedTelegraph(coveredIcon);
+            coveredIcon = null;
+        }
     }
 
     // ---- pattern 3: sewing pins (wave 3) ----------------------------------
@@ -475,17 +496,11 @@ public class MinotaurBoss : EnemyBase
     {
         Vector2 zoneSize = new Vector2(Random.Range(6f, 8f), Random.Range(4f, 5f));
         Vector2 zoneCenter = new Vector2(
-            arenaCenter.x + Random.Range(-3f, 3f),
-            arenaCenter.y + Random.Range(-1.5f, 1.5f));
+            arenaCenter.x + Random.Range(-3.5f, 3.5f),
+            arenaCenter.y - arenaSize.y * 0.18f + Random.Range(-0.6f, 0.6f));
 
-        Vector2 half = zoneSize * 0.5f;
-        Vector2[] corners =
-        {
-            zoneCenter + new Vector2(-half.x, -half.y),
-            zoneCenter + new Vector2(half.x, -half.y),
-            zoneCenter + new Vector2(half.x, half.y),
-            zoneCenter + new Vector2(-half.x, half.y)
-        };
+        int pinCount = Random.Range(3, 5);
+        Vector2[] corners = BuildPinPolygon(zoneCenter, zoneSize, pinCount);
 
         List<GameObject> pins = new List<GameObject>();
         for (int i = 0; i < corners.Length; i++)
@@ -493,7 +508,7 @@ public class MinotaurBoss : EnemyBase
             pins.Add(TrackTelegraph(BossVisuals.CreatePin("SewingPin_" + i, corners[i], 50)));
             CameraShake.ShakeHorizontal(0.28f, 0.34f);
             SoundManager.PlayEnemyHit();
-            yield return new WaitForSeconds(0.45f);
+            yield return new WaitForSeconds(0.28f);
         }
 
         List<GameObject> threads = new List<GameObject>();
@@ -502,28 +517,27 @@ public class MinotaurBoss : EnemyBase
             Vector2 a = corners[i];
             Vector2 b = corners[(i + 1) % corners.Length];
             threads.Add(TrackTelegraph(BossVisuals.CreateDashedLine(null, "PinThread_" + i, a, b, 0.12f, new Color(0.85f, 0.2f, 0.2f, 0.9f), 51)));
-            yield return new WaitForSeconds(0.3f);
+            yield return new WaitForSeconds(0.18f);
         }
 
-        GameObject glow = TrackTelegraph(EnemyTelegraph.CreateBox("PinTrapGlow", zoneCenter, zoneSize, 0f, trapGlowColor, 49));
+        GameObject glow = TrackTelegraph(EnemyTelegraph.CreatePolygon("PinTrapGlow", corners, trapGlowColor, 49));
         float blinkElapsed = 0f;
-        while (blinkElapsed < 3f)
+        while (blinkElapsed < pinClosureTime)
         {
             EnemyTelegraph.SetUniformAlpha(glow, Mathf.PingPong(blinkElapsed * 2.4f, 0.45f) + 0.12f);
             blinkElapsed += Time.deltaTime;
             yield return null;
         }
 
-        // slam
-        GameObject slam = TrackTelegraph(EnemyTelegraph.CreateBox("PinSlam", zoneCenter, zoneSize, 0f, strikeColor, 52));
+        GameObject slam = TrackTelegraph(EnemyTelegraph.CreatePolygon("PinSlam", corners, strikeColor, 52));
         CameraShake.Shake(0.32f, 0.42f);
         SoundManager.PlayEnemyHit();
 
-        bool caught = player != null && EnemyTelegraph.PointInOrientedBox(player.position, zoneCenter, zoneSize, 0f);
+        bool caught = player != null && PointInPolygon(player.position, corners);
         if (caught)
         {
             if (playerController != null)
-                playerController.LockMovement(1.6f);
+                playerController.LockMovement(0.85f);
             ApplyPlayerDamage(pinFailDamage, 0.1f);
         }
 
@@ -537,12 +551,38 @@ public class MinotaurBoss : EnemyBase
             if (pins[i] != null) DestroyOwnedTelegraph(pins[i]);
     }
 
+    Vector2[] BuildPinPolygon(Vector2 center, Vector2 size, int pinCount)
+    {
+        Vector2 half = size * 0.5f;
+        if (pinCount <= 3)
+        {
+            return new[]
+            {
+                center + new Vector2(0f, half.y),
+                center + new Vector2(half.x, -half.y),
+                center + new Vector2(-half.x, -half.y)
+            };
+        }
+
+        return new[]
+        {
+            center + new Vector2(-half.x, -half.y),
+            center + new Vector2(half.x, -half.y),
+            center + new Vector2(half.x, half.y),
+            center + new Vector2(-half.x, half.y)
+        };
+    }
+
     // ---- pattern 4: stitch debuff (wave 3) --------------------------------
 
     IEnumerator DebuffRoutine()
     {
         Vector2 start = transform.position;
         Vector2 target = player != null ? (Vector2)player.position : arenaCenter;
+        GameObject warning = TrackTelegraph(EnemyTelegraph.CreateLine("DebuffNeedleWarning", start, target, 0.48f, telegraphColor, 54));
+        yield return new WaitForSeconds(1f);
+        if (warning != null) DestroyOwnedTelegraph(warning);
+
         GameObject needle = TrackTelegraph(BossVisuals.CreatePin("DebuffNeedle", start, 55, 0.7f));
 
         float flightTime = 0.45f;
@@ -558,41 +598,46 @@ public class MinotaurBoss : EnemyBase
 
         if (needle != null) DestroyOwnedTelegraph(needle);
 
-        ApplyPlayerDamage(debuffNeedleDamage, 0.1f);
-        yield return StartCoroutine(ApplyStitchDebuff(3f));
+        bool hit = player != null && Vector2.Distance(player.position, target) <= 1.1f;
+        if (hit)
+        {
+            ApplyPlayerDamage(debuffNeedleDamage, 0.1f);
+            yield return StartCoroutine(ApplyStitchDebuff(3f));
+        }
     }
 
     IEnumerator ApplyStitchDebuff(float duration)
     {
-        if (playerController != null)
-            playerController.ApplyTemporarySpeedMultiplier(0.5f, duration);
+        int effect = Random.Range(0, 3);
+        GameObject temporaryVisual = null;
 
-        GameObject eyeOverlay = TrackTelegraph(CreateEyeDarkOverlay());
+        if (effect == 0)
+        {
+            if (playerController != null)
+                playerController.ApplyTemporarySpeedMultiplier(0.5f, duration);
+        }
+        else if (effect == 1)
+        {
+            temporaryVisual = TrackTelegraph(CreateEyeDarkOverlay(Random.value < 0.5f));
+        }
+        else
+        {
+            BodySlot blockedArm = Random.value < 0.5f ? BodySlot.ArmLeft : BodySlot.ArmRight;
+            PlayerAttack attack = player != null ? player.GetComponent<PlayerAttack>() : null;
+            if (attack != null)
+                attack.ApplyTemporaryArmBlock(blockedArm, duration);
 
-        InventoryManager inventory = InventoryManager.Instance;
-        BodyPart blockedArm = inventory != null ? inventory.GetEquippedPart(BodySlot.ArmRight) : null;
-        bool armRemoved = false;
-        if (inventory != null && blockedArm != null)
-            armRemoved = inventory.TryUnequip(BodySlot.ArmRight);
-
-        List<SpriteRenderer> tinted = TintPlayer(new Color(0.7f, 0.5f, 0.85f, 1f));
+            if (player != null)
+            {
+                temporaryVisual = TrackTelegraph(BossVisuals.CreatePartIcon(player, "BlockedArmIcon", blockedArm, new Vector3(0f, 0.7f, 0f), 0.7f, BossVisuals.MarkBad, 90));
+                BossVisuals.CreateXMark(temporaryVisual.transform, Vector3.zero, 0.58f, 91);
+            }
+        }
 
         yield return new WaitForSeconds(duration);
 
-        RestorePlayerTint(tinted);
-        if (eyeOverlay != null) DestroyOwnedTelegraph(eyeOverlay);
-
-        if (armRemoved && inventory != null && blockedArm != null)
-        {
-            for (int i = 0; i < inventory.storage.Length; i++)
-            {
-                if (inventory.storage[i] == blockedArm)
-                {
-                    inventory.EquipFromStorage(i);
-                    break;
-                }
-            }
-        }
+        if (temporaryVisual != null)
+            DestroyOwnedTelegraph(temporaryVisual);
     }
 
     List<SpriteRenderer> TintPlayer(Color tint)
@@ -621,7 +666,7 @@ public class MinotaurBoss : EnemyBase
                 renderers[i].color = Color.white;
     }
 
-    GameObject CreateEyeDarkOverlay()
+    GameObject CreateEyeDarkOverlay(bool darkenLeft)
     {
         GameObject canvasGO = new GameObject("StitchEyeOverlay");
         Canvas canvas = canvasGO.AddComponent<Canvas>();
@@ -636,8 +681,8 @@ public class MinotaurBoss : EnemyBase
         GameObject panel = new GameObject("DarkHalf");
         panel.transform.SetParent(canvasGO.transform, false);
         RectTransform rect = panel.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0f, 0f);
-        rect.anchorMax = new Vector2(0.46f, 1f);
+        rect.anchorMin = darkenLeft ? new Vector2(0f, 0f) : new Vector2(0.54f, 0f);
+        rect.anchorMax = darkenLeft ? new Vector2(0.46f, 1f) : new Vector2(1f, 1f);
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
         Image image = panel.AddComponent<Image>();
@@ -708,6 +753,27 @@ public class MinotaurBoss : EnemyBase
     {
         return Mathf.Abs(point.x - center.x) <= size.x * 0.5f
             && Mathf.Abs(point.y - center.y) <= size.y * 0.5f;
+    }
+
+    bool PointInPolygon(Vector2 point, Vector2[] polygon)
+    {
+        if (polygon == null || polygon.Length < 3)
+            return false;
+
+        bool inside = false;
+        int previous = polygon.Length - 1;
+        for (int current = 0; current < polygon.Length; current++)
+        {
+            Vector2 a = polygon[current];
+            Vector2 b = polygon[previous];
+            bool crosses = (a.y > point.y) != (b.y > point.y)
+                && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x;
+            if (crosses)
+                inside = !inside;
+            previous = current;
+        }
+
+        return inside;
     }
 
     void SetupRigidbody()

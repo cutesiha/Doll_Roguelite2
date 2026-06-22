@@ -40,6 +40,52 @@ public static class EnemyTelegraph
         return CreateBox(name, center, new Vector2(delta.magnitude, width), angle, color, sortingOrder);
     }
 
+    public static GameObject CreatePolygon(string name, Vector2[] worldPoints, Color fill, int sortingOrder = 60)
+    {
+        GameObject root = new GameObject(name);
+        if (worldPoints == null || worldPoints.Length < 3)
+            return root;
+
+        Vector2 center = Vector2.zero;
+        for (int i = 0; i < worldPoints.Length; i++)
+            center += worldPoints[i];
+        center /= worldPoints.Length;
+        root.transform.position = new Vector3(center.x, center.y, 0f);
+
+        Vector3[] vertices = new Vector3[worldPoints.Length];
+        for (int i = 0; i < worldPoints.Length; i++)
+            vertices[i] = worldPoints[i] - center;
+
+        int[] triangles = new int[(worldPoints.Length - 2) * 3];
+        for (int i = 0; i < worldPoints.Length - 2; i++)
+        {
+            triangles[i * 3] = 0;
+            triangles[i * 3 + 1] = i + 1;
+            triangles[i * 3 + 2] = i + 2;
+        }
+
+        Mesh mesh = new Mesh { name = name + "_Mesh" };
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateBounds();
+
+        MeshFilter filter = root.AddComponent<MeshFilter>();
+        filter.sharedMesh = mesh;
+        MeshRenderer renderer = root.AddComponent<MeshRenderer>();
+        renderer.material = new Material(Shader.Find("Sprites/Default"));
+        renderer.material.color = fill;
+        renderer.sortingOrder = sortingOrder;
+
+        for (int i = 0; i < worldPoints.Length; i++)
+        {
+            Vector2 a = worldPoints[i] - center;
+            Vector2 b = worldPoints[(i + 1) % worldPoints.Length] - center;
+            CreateLineSegment(root.transform, "PolygonEdge_" + i, a, b, 0.12f, WithAlpha(fill, 0.95f), sortingOrder + 1);
+        }
+
+        return root;
+    }
+
     public static GameObject CreateFan(string name, Vector2 origin, Vector2 direction, float radius, float angleDegrees, Color color, int sortingOrder = 60)
     {
         GameObject root = new GameObject(name);
@@ -166,6 +212,17 @@ public static class EnemyTelegraph
             Color c = renderers[i].color;
             c.a = a;
             renderers[i].color = c;
+        }
+
+        MeshRenderer[] meshRenderers = root.GetComponentsInChildren<MeshRenderer>(true);
+        for (int i = 0; i < meshRenderers.Length; i++)
+        {
+            if (meshRenderers[i].material == null)
+                continue;
+
+            Color c = meshRenderers[i].material.color;
+            c.a = a;
+            meshRenderers[i].material.color = c;
         }
     }
 
