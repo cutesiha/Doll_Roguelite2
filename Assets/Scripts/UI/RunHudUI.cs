@@ -138,6 +138,9 @@ public class RunHudUI : MonoBehaviour
 
     void Awake()
     {
+        if (Application.isPlaying && transform.parent != null)
+            transform.SetParent(null, false);
+
         EnsureRootCanvasComponents(false);
 
         if (Application.isPlaying)

@@ -42,14 +42,18 @@ public class TutorialSceneController : MonoBehaviour
     [SerializeField] Vector2 doorPosition = new Vector2(0f, 1.1f);
     [SerializeField] Vector2 cameraBoundsPadding = new Vector2(0.55f, 0.78f);
 
-    Canvas tutorialCanvas;
-    CanvasGroup movePrompt;
-    CanvasGroup interactPrompt;
-    CanvasGroup mapPrompt;
-    CanvasGroup inventoryPrompt;
-    CanvasGroup menuPrompt;
-    CanvasGroup attackPrompt;
-    CanvasGroup doorPrompt;
+    [Header("Editable Tutorial UI")]
+    [SerializeField] Canvas tutorialCanvas;
+    [SerializeField] CanvasGroup movePrompt;
+    [SerializeField] CanvasGroup interactPrompt;
+    [SerializeField] CanvasGroup mapPrompt;
+    [SerializeField] CanvasGroup mapScrollPrompt;
+    [SerializeField] CanvasGroup inventoryPrompt;
+    [SerializeField] CanvasGroup inventoryDetachPrompt;
+    [SerializeField] CanvasGroup inventoryReattachPrompt;
+    [SerializeField] CanvasGroup menuPrompt;
+    [SerializeField] CanvasGroup attackPrompt;
+    [SerializeField] CanvasGroup doorPrompt;
     CanvasGroup paperGroup;
     CanvasGroup pauseOverlay;
     Image fadeImage;
@@ -66,7 +70,15 @@ public class TutorialSceneController : MonoBehaviour
     TutorialStep step;
     bool paperReadyForClick;
     bool mapOpened;
+    bool mapScrolled;
+    float mapScrollStartPosition;
+    ScrollRect tutorialMapScrollRect;
     bool inventoryOpened;
+    bool inventoryTaskComplete;
+    bool inventoryPartDetached;
+    BodyPart[] inventoryStartParts;
+    BodyPart detachedPart;
+    BodySlot detachedSlot;
     bool menuOpened;
     bool attackPromptDismissed;
     bool doorPromptVisible;
@@ -99,12 +111,23 @@ public class TutorialSceneController : MonoBehaviour
         PrepareHudForTutorial();
     }
 
-    void Start()
+    IEnumerator Start()
     {
         Time.timeScale = 1f;
 
         if (player != null)
             player.transform.position = new Vector3(-5.6f, -1.2f, 0f);
+
+        HideAllPrompts();
+        step = TutorialStep.Done;
+
+        TutorialOpeningCutscene openingCutscene = GetComponent<TutorialOpeningCutscene>();
+        if (openingCutscene != null && openingCutscene.HasAllPages)
+        {
+            SetGameplayInputEnabled(false);
+            yield return openingCutscene.Play(roomSceneName);
+            SetGameplayInputEnabled(true);
+        }
 
         ShowOnly(movePrompt);
         step = TutorialStep.Move;
@@ -116,7 +139,10 @@ public class TutorialSceneController : MonoBehaviour
         PulsePrompt(movePrompt);
         PulsePrompt(interactPrompt);
         PulsePrompt(mapPrompt);
+        PulsePrompt(mapScrollPrompt);
         PulsePrompt(inventoryPrompt);
+        PulsePrompt(inventoryDetachPrompt);
+        PulsePrompt(inventoryReattachPrompt);
         PulsePrompt(menuPrompt);
         PulsePrompt(attackPrompt);
         PulsePrompt(doorPrompt);
@@ -200,13 +226,43 @@ public class TutorialSceneController : MonoBehaviour
     {
         if (IsMapOpen())
         {
-            mapOpened = true;
+            if (!mapOpened)
+            {
+                mapOpened = true;
+                mapScrolled = false;
+                tutorialMapScrollRect = FindMapScrollRect();
+                mapScrollStartPosition = tutorialMapScrollRect != null
+                    ? tutorialMapScrollRect.verticalNormalizedPosition
+                    : 1f;
+                ShowOnly(mapScrollPrompt);
+            }
+
             SetPromptVisible(mapPrompt, false);
+
+            if (!mapScrolled)
+            {
+                float wheel = Mouse.current != null ? Mathf.Abs(Mouse.current.scroll.ReadValue().y) : 0f;
+                float scrollDelta = tutorialMapScrollRect != null
+                    ? Mathf.Abs(tutorialMapScrollRect.verticalNormalizedPosition - mapScrollStartPosition)
+                    : 0f;
+                if (wheel > 0.01f || scrollDelta > 0.002f)
+                {
+                    mapScrolled = true;
+                    SetPromptVisible(mapScrollPrompt, false);
+                }
+            }
+
             return;
         }
 
-        if (mapOpened)
+        SetPromptVisible(mapScrollPrompt, false);
+        if (mapOpened && mapScrolled)
             ShowInventoryPrompt();
+        else if (mapOpened)
+        {
+            mapOpened = false;
+            ShowOnly(mapPrompt);
+        }
     }
 
     void UpdateInventoryStep()
@@ -216,13 +272,23 @@ public class TutorialSceneController : MonoBehaviour
 
         if (inventoryUI != null && inventoryUI.IsOpen)
         {
-            inventoryOpened = true;
+            if (!inventoryOpened)
+            {
+                inventoryOpened = true;
+                CaptureInventoryStartState();
+            }
+
             SetPromptVisible(inventoryPrompt, false);
+            UpdateInventoryDragTask();
             return;
         }
 
-        if (inventoryOpened)
+        SetPromptVisible(inventoryDetachPrompt, false);
+        SetPromptVisible(inventoryReattachPrompt, false);
+        if (inventoryTaskComplete)
             ShowMenuPrompt();
+        else if (inventoryOpened)
+            SetPromptVisible(inventoryPrompt, true);
     }
 
     void UpdateMenuStep()
@@ -302,6 +368,8 @@ public class TutorialSceneController : MonoBehaviour
             mapButtonObject.SetActive(true);
 
         mapOpened = false;
+        mapScrolled = false;
+        tutorialMapScrollRect = null;
         ShowOnly(mapPrompt);
         step = TutorialStep.Map;
     }
@@ -312,8 +380,96 @@ public class TutorialSceneController : MonoBehaviour
             inventoryButtonObject.SetActive(true);
 
         inventoryOpened = false;
+        inventoryTaskComplete = false;
+        inventoryPartDetached = false;
+        inventoryStartParts = null;
+        detachedPart = null;
         ShowOnly(inventoryPrompt);
         step = TutorialStep.Inventory;
+    }
+
+    void CaptureInventoryStartState()
+    {
+        InventoryManager inventory = InventoryManager.Instance;
+        if (inventory == null || inventory.equipped == null)
+            return;
+
+        inventoryStartParts = new BodyPart[inventory.equipped.Length];
+        System.Array.Copy(inventory.equipped, inventoryStartParts, inventory.equipped.Length);
+        ShowOnly(inventoryDetachPrompt);
+    }
+
+    void UpdateInventoryDragTask()
+    {
+        InventoryManager inventory = InventoryManager.Instance;
+        if (inventory == null)
+            return;
+
+        if (inventoryStartParts == null)
+            CaptureInventoryStartState();
+
+        if (!inventoryPartDetached && inventoryStartParts != null)
+        {
+            int count = Mathf.Min(inventoryStartParts.Length, inventory.equipped.Length);
+            for (int i = 0; i < count; i++)
+            {
+                BodyPart originalPart = inventoryStartParts[i];
+                if (originalPart == null || inventory.equipped[i] != null || !StorageContains(inventory, originalPart))
+                    continue;
+
+                inventoryPartDetached = true;
+                detachedPart = originalPart;
+                detachedSlot = (BodySlot)i;
+                ShowOnly(inventoryReattachPrompt);
+                break;
+            }
+        }
+
+        if (!inventoryPartDetached)
+        {
+            SetPromptVisible(inventoryDetachPrompt, true);
+            SetPromptVisible(inventoryReattachPrompt, false);
+            return;
+        }
+
+        int detachedIndex = (int)detachedSlot;
+        bool reattached = detachedIndex >= 0
+            && detachedIndex < inventory.equipped.Length
+            && inventory.equipped[detachedIndex] == detachedPart;
+        if (reattached)
+        {
+            inventoryTaskComplete = true;
+            SetPromptVisible(inventoryDetachPrompt, false);
+            SetPromptVisible(inventoryReattachPrompt, false);
+        }
+        else
+        {
+            SetPromptVisible(inventoryDetachPrompt, false);
+            SetPromptVisible(inventoryReattachPrompt, true);
+        }
+    }
+
+    static bool StorageContains(InventoryManager inventory, BodyPart part)
+    {
+        if (inventory == null || inventory.storage == null || part == null)
+            return false;
+
+        for (int i = 0; i < inventory.storage.Length; i++)
+        {
+            if (inventory.storage[i] == part)
+                return true;
+        }
+
+        return false;
+    }
+
+    ScrollRect FindMapScrollRect()
+    {
+        if (runHud == null)
+            return null;
+
+        Transform mapScroll = FindChildRecursive(runHud.transform, "MapScroll");
+        return mapScroll != null ? mapScroll.GetComponent<ScrollRect>() : null;
     }
 
     void ShowMenuPrompt()
@@ -412,6 +568,20 @@ public class TutorialSceneController : MonoBehaviour
         SceneManager.LoadScene(roomSceneName);
     }
 
+    void SetGameplayInputEnabled(bool enabled)
+    {
+        if (player != null)
+        {
+            Rigidbody2D body = player.GetComponent<Rigidbody2D>();
+            if (!enabled && body != null)
+                body.linearVelocity = Vector2.zero;
+            player.enabled = enabled;
+        }
+
+        if (playerAttack != null)
+            playerAttack.enabled = enabled;
+    }
+
     void EnsureCamera()
     {
         if (sceneCamera == null)
@@ -458,17 +628,34 @@ public class TutorialSceneController : MonoBehaviour
 
     void EnsureTutorialCanvas()
     {
-        GameObject canvasObject = new GameObject("TutorialCanvas");
-        tutorialCanvas = canvasObject.AddComponent<Canvas>();
-        tutorialCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        tutorialCanvas.sortingOrder = 120;
+        if (tutorialCanvas == null)
+        {
+            GameObject existing = GameObject.Find("TutorialCanvas");
+            if (existing != null)
+                tutorialCanvas = existing.GetComponent<Canvas>();
+        }
 
-        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+        if (tutorialCanvas == null)
+        {
+            GameObject newCanvasObject = new GameObject("TutorialCanvas");
+            tutorialCanvas = newCanvasObject.AddComponent<Canvas>();
+        }
+
+        GameObject canvasObject = tutorialCanvas.gameObject;
+        canvasObject.SetActive(true);
+        tutorialCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        tutorialCanvas.overrideSorting = true;
+        tutorialCanvas.sortingOrder = 900;
+
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        if (scaler == null)
+            scaler = canvasObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
 
-        canvasObject.AddComponent<GraphicRaycaster>();
+        if (canvasObject.GetComponent<GraphicRaycaster>() == null)
+            canvasObject.AddComponent<GraphicRaycaster>();
     }
 
     void EnsureRunHud()
@@ -494,13 +681,16 @@ public class TutorialSceneController : MonoBehaviour
         fadeImage = CreateFullScreenImage("TutorialFade", Color.black);
         SetImageAlpha(fadeImage, 0f);
 
-        movePrompt = CreatePrompt("MovePrompt", "[WASD]로 움직이기", new Vector2(-560f, 250f), new Vector2(430f, 142f));
-        interactPrompt = CreatePrompt("InteractPrompt", "[E] 키를 눌러 상호작용", new Vector2(530f, -305f), new Vector2(520f, 132f));
-        mapPrompt = CreatePrompt("MapPrompt", "[M] 키를 눌러 지도 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
-        inventoryPrompt = CreatePrompt("InventoryPrompt", "[Tab] 키를 눌러 인벤토리 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
-        menuPrompt = CreatePrompt("MenuPrompt", "[ESC] 키를 눌러 메뉴 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
-        attackPrompt = CreatePrompt("AttackPrompt", "방향키로 공격", new Vector2(530f, 260f), new Vector2(420f, 132f));
-        doorPrompt = CreatePrompt("DoorPrompt", "[Enter]를 눌러 들어가기", new Vector2(0f, -335f), new Vector2(560f, 132f));
+        movePrompt = EnsurePrompt(movePrompt, "MovePrompt", "[WASD]로 움직이기", new Vector2(-560f, 250f), new Vector2(430f, 142f));
+        interactPrompt = EnsurePrompt(interactPrompt, "InteractPrompt", "[E] 키를 눌러 상호작용", new Vector2(530f, -305f), new Vector2(520f, 132f));
+        mapPrompt = EnsurePrompt(mapPrompt, "MapPrompt", "[M] 키를 눌러 지도 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
+        inventoryPrompt = EnsurePrompt(inventoryPrompt, "InventoryPrompt", "[Tab] 키를 눌러 인벤토리 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
+        menuPrompt = EnsurePrompt(menuPrompt, "MenuPrompt", "[ESC] 키를 눌러 메뉴 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
+        attackPrompt = EnsurePrompt(attackPrompt, "AttackPrompt", "방향키로 공격", new Vector2(530f, 260f), new Vector2(420f, 132f));
+        doorPrompt = EnsurePrompt(doorPrompt, "DoorPrompt", "[Enter]를 눌러 들어가기", new Vector2(0f, -335f), new Vector2(560f, 132f));
+        mapScrollPrompt = EnsurePrompt(mapScrollPrompt, "MapScrollPrompt", "스크롤하여 지도 보기", new Vector2(420f, 315f), new Vector2(520f, 116f));
+        inventoryDetachPrompt = EnsurePrompt(inventoryDetachPrompt, "InventoryDetachPrompt", "부위를 드래그 하여 슬롯에 장착", new Vector2(0f, 365f), new Vector2(760f, 116f));
+        inventoryReattachPrompt = EnsurePrompt(inventoryReattachPrompt, "InventoryReattachPrompt", "부위를 드래그 하여 다시 부착", new Vector2(0f, 365f), new Vector2(760f, 116f));
         BuildPaper();
         HideAllPrompts();
     }
@@ -528,6 +718,47 @@ public class TutorialSceneController : MonoBehaviour
         return image;
     }
 
+    CanvasGroup EnsurePrompt(CanvasGroup prompt, string objectName, string text, Vector2 position, Vector2 size)
+    {
+        if (prompt != null)
+            return prompt;
+
+        if (tutorialCanvas != null)
+        {
+            Transform existing = tutorialCanvas.transform.Find(objectName);
+            if (existing != null)
+            {
+                CanvasGroup existingGroup = existing.GetComponent<CanvasGroup>();
+                if (existingGroup == null)
+                    existingGroup = existing.gameObject.AddComponent<CanvasGroup>();
+                return existingGroup;
+            }
+        }
+
+        return CreatePrompt(objectName, text, position, size);
+    }
+
+#if UNITY_EDITOR
+    [ContextMenu("Tutorial/Create Editable Prompt Objects")]
+    void CreateEditablePromptObjects()
+    {
+        EnsureTutorialCanvas();
+        movePrompt = EnsurePrompt(movePrompt, "MovePrompt", "[WASD]로 움직이기", new Vector2(-560f, 250f), new Vector2(430f, 142f));
+        interactPrompt = EnsurePrompt(interactPrompt, "InteractPrompt", "[E] 키를 눌러 상호작용", new Vector2(530f, -305f), new Vector2(520f, 132f));
+        mapPrompt = EnsurePrompt(mapPrompt, "MapPrompt", "[M] 키를 눌러 지도 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
+        inventoryPrompt = EnsurePrompt(inventoryPrompt, "InventoryPrompt", "[Tab] 키를 눌러 인벤토리 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
+        menuPrompt = EnsurePrompt(menuPrompt, "MenuPrompt", "[ESC] 키를 눌러 메뉴 열기", new Vector2(0f, 338f), new Vector2(650f, 132f));
+        attackPrompt = EnsurePrompt(attackPrompt, "AttackPrompt", "방향키로 공격", new Vector2(530f, 260f), new Vector2(420f, 132f));
+        doorPrompt = EnsurePrompt(doorPrompt, "DoorPrompt", "[Enter]를 눌러 들어가기", new Vector2(0f, -335f), new Vector2(560f, 132f));
+        mapScrollPrompt = EnsurePrompt(mapScrollPrompt, "MapScrollPrompt", "스크롤하여 지도 보기", new Vector2(420f, 315f), new Vector2(520f, 116f));
+        inventoryDetachPrompt = EnsurePrompt(inventoryDetachPrompt, "InventoryDetachPrompt", "부위를 드래그 하여 슬롯에 장착", new Vector2(0f, 365f), new Vector2(760f, 116f));
+        inventoryReattachPrompt = EnsurePrompt(inventoryReattachPrompt, "InventoryReattachPrompt", "부위를 드래그 하여 다시 부착", new Vector2(0f, 365f), new Vector2(760f, 116f));
+        HideAllPrompts();
+        UnityEditor.EditorUtility.SetDirty(this);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+    }
+#endif
+
     CanvasGroup CreatePrompt(string objectName, string text, Vector2 position, Vector2 size)
     {
         GameObject root = new GameObject(objectName);
@@ -544,7 +775,7 @@ public class TutorialSceneController : MonoBehaviour
         background.color = new Color(0.98f, 0.94f, 0.82f, 0.94f);
         background.raycastTarget = false;
 
-        AddDashedBorder(rect, size, new Color(0.04f, 0.035f, 0.03f, 0.96f));
+        CreatePromptBorder(root.transform, new Color(0.04f, 0.035f, 0.03f, 0.96f));
 
         GameObject textObject = new GameObject("Label");
         textObject.transform.SetParent(root.transform, false);
@@ -564,6 +795,20 @@ public class TutorialSceneController : MonoBehaviour
         label.raycastTarget = false;
 
         return group;
+    }
+
+    void CreatePromptBorder(Transform parent, Color color)
+    {
+        GameObject borderObject = new GameObject("Border");
+        borderObject.transform.SetParent(parent, false);
+        RectTransform borderRect = borderObject.AddComponent<RectTransform>();
+        borderRect.anchorMin = Vector2.zero;
+        borderRect.anchorMax = Vector2.one;
+        borderRect.offsetMin = Vector2.zero;
+        borderRect.offsetMax = Vector2.zero;
+        TutorialPromptBorder border = borderObject.AddComponent<TutorialPromptBorder>();
+        border.color = color;
+        border.raycastTarget = false;
     }
 
     void AddDashedBorder(RectTransform parent, Vector2 size, Color color)
@@ -866,7 +1111,10 @@ public class TutorialSceneController : MonoBehaviour
         SetPromptVisible(movePrompt, false);
         SetPromptVisible(interactPrompt, false);
         SetPromptVisible(mapPrompt, false);
+        SetPromptVisible(mapScrollPrompt, false);
         SetPromptVisible(inventoryPrompt, false);
+        SetPromptVisible(inventoryDetachPrompt, false);
+        SetPromptVisible(inventoryReattachPrompt, false);
         SetPromptVisible(menuPrompt, false);
         SetPromptVisible(attackPrompt, false);
         SetPromptVisible(doorPrompt, false);
