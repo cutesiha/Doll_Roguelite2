@@ -399,7 +399,7 @@ MonoBehaviour:
   enemyProfiles:
   - profileName: d1
     enemyType: 0
-    maxHp: 5
+    maxHp: 2
     moveSpeed: 1
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
@@ -410,7 +410,7 @@ MonoBehaviour:
     - {fileID: -3679629864974252039, guid: 8d48d4a40e7e73341a6aec53def23ccd, type: 3}
   - profileName: d2
     enemyType: 0
-    maxHp: 5
+    maxHp: 2
     moveSpeed: 1.15
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
@@ -421,7 +421,7 @@ MonoBehaviour:
     - {fileID: 5300844473013436364, guid: ac2ad8597f44afb4f8cde87fd4eb74b0, type: 3}
   - profileName: d3
     enemyType: 0
-    maxHp: 5
+    maxHp: 3
     moveSpeed: 0.9
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
@@ -432,21 +432,21 @@ MonoBehaviour:
     - {fileID: -371533097180688288, guid: 311cda14ffc940940b276da8c8a20224, type: 3}
   - profileName: Needle
     enemyType: 1
-    maxHp: 10
+    maxHp: 2
     moveSpeed: 0.75
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames: []
   - profileName: Ribbon
     enemyType: 2
-    maxHp: 8
+    maxHp: 2
     moveSpeed: 0.85
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames: []
   - profileName: Spool
     enemyType: 3
-    maxHp: 10
+    maxHp: 2
     moveSpeed: 0
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
