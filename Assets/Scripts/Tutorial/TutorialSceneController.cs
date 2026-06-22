@@ -32,6 +32,7 @@ public class TutorialSceneController : MonoBehaviour
     [SerializeField] PlayerAttack playerAttack;
     [SerializeField] Transform workbench;
     [SerializeField] string roomSceneName = "RoomScene";
+    [SerializeField] Sprite memoSprite;
 
     [Header("Tuning")]
     [SerializeField] float workbenchPromptDistance = 2.0f;
@@ -604,25 +605,66 @@ public class TutorialSceneController : MonoBehaviour
         paperRect = paper.AddComponent<RectTransform>();
         paperRect.anchorMin = paperRect.anchorMax = new Vector2(0.5f, 0.5f);
         paperRect.pivot = new Vector2(0.5f, 0.5f);
-        paperRect.sizeDelta = new Vector2(860f, 520f);
-        paperRect.anchoredPosition = new Vector2(0f, -760f);
         paperGroup = paper.AddComponent<CanvasGroup>();
 
         Image paperImage = paper.AddComponent<Image>();
-        paperImage.color = new Color(0.98f, 0.96f, 0.90f, 1f);
 
-        AddDashedBorder(paperRect, paperRect.sizeDelta, new Color(0.04f, 0.035f, 0.03f, 0.64f));
+        LoadMemoSpriteIfMissing();
+        if (memoSprite != null)
+        {
+            Vector2 size = FitMemoSize(memoSprite, 1000f, 680f);
+            paperRect.sizeDelta = size;
+            paperImage.sprite = memoSprite;
+            paperImage.color = Color.white;
+            paperImage.type = Image.Type.Simple;
+            paperImage.preserveAspect = true;
 
-        TextMeshProUGUI number = AddPaperText(paper.transform, "#S6", new Vector2(-370f, 210f), new Vector2(180f, 70f), 48f, TextAlignmentOptions.Center);
-        number.color = Color.black;
+            AddPaperText(paper.transform, "화면 클릭 또는 [E]", new Vector2(0f, -size.y * 0.5f - 38f), new Vector2(420f, 54f), 28f, TextAlignmentOptions.Center);
+        }
+        else
+        {
+            paperRect.sizeDelta = new Vector2(860f, 520f);
+            paperImage.color = new Color(0.98f, 0.96f, 0.90f, 1f);
 
-        Image cloud = AddPaperImage(paper.transform, "PaperCloud", new Vector2(0f, 34f), new Vector2(640f, 280f), new Color(0.72f, 0.72f, 0.70f, 0.34f));
-        cloud.sprite = CircleSprite();
-        cloud.type = Image.Type.Sliced;
+            AddDashedBorder(paperRect, paperRect.sizeDelta, new Color(0.04f, 0.035f, 0.03f, 0.64f));
 
-        AddPaperText(paper.transform, "언제든 준비가 되면\n떠나자.\n단추가 너의 여정을\n도와줄거야.", new Vector2(40f, 24f), new Vector2(650f, 300f), 43f, TextAlignmentOptions.Center);
-        AddPaperText(paper.transform, "화면 클릭 또는 [E]", new Vector2(240f, -202f), new Vector2(360f, 54f), 28f, TextAlignmentOptions.Center);
+            TextMeshProUGUI number = AddPaperText(paper.transform, "#S6", new Vector2(-370f, 210f), new Vector2(180f, 70f), 48f, TextAlignmentOptions.Center);
+            number.color = Color.black;
+
+            Image cloud = AddPaperImage(paper.transform, "PaperCloud", new Vector2(0f, 34f), new Vector2(640f, 280f), new Color(0.72f, 0.72f, 0.70f, 0.34f));
+            cloud.sprite = CircleSprite();
+            cloud.type = Image.Type.Sliced;
+
+            AddPaperText(paper.transform, "언제든 준비가 되면\n떠나자.\n단추가 너의 여정을\n도와줄거야.", new Vector2(40f, 24f), new Vector2(650f, 300f), 43f, TextAlignmentOptions.Center);
+            AddPaperText(paper.transform, "화면 클릭 또는 [E]", new Vector2(240f, -202f), new Vector2(360f, 54f), 28f, TextAlignmentOptions.Center);
+        }
+
+        paperRect.anchoredPosition = new Vector2(0f, -760f);
         SetCanvasGroup(paperGroup, false, 0f);
+    }
+
+    void LoadMemoSpriteIfMissing()
+    {
+        if (memoSprite != null)
+            return;
+
+        memoSprite = Resources.Load<Sprite>("Sprites/tutorial/memo");
+
+#if UNITY_EDITOR
+        if (memoSprite == null)
+            memoSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/tutorial/memo.png");
+#endif
+    }
+
+    static Vector2 FitMemoSize(Sprite sprite, float maxWidth, float maxHeight)
+    {
+        float width = sprite.rect.width;
+        float height = sprite.rect.height;
+        if (width <= 0f || height <= 0f)
+            return new Vector2(maxWidth, maxHeight);
+
+        float scale = Mathf.Min(maxWidth / width, maxHeight / height);
+        return new Vector2(width * scale, height * scale);
     }
 
     TextMeshProUGUI AddPaperText(Transform parent, string text, Vector2 position, Vector2 size, float fontSize, TextAlignmentOptions alignment)

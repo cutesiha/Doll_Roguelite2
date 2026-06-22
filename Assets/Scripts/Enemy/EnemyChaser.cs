@@ -31,6 +31,8 @@ public class EnemyChaser : EnemyBase
     bool isSlamming;
     bool isDying;
 
+    public override EnemyKind Kind => EnemyKind.Chaser;
+
     protected override void Awake()
     {
         base.Awake();

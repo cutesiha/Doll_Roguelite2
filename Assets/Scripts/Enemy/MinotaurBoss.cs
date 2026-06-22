@@ -24,7 +24,7 @@ public class MinotaurBoss : EnemyBase
 
     [Header("Timing")]
     [SerializeField, Min(0.1f)] float introDelay = 1.0f;
-    [SerializeField, Min(0.1f)] float betweenActions = 2.8f;
+    [SerializeField, Min(0.1f)] float betweenActions = 1.6f;
     [SerializeField, Min(0.1f)] float telegraphTime = 1.1f;
     [SerializeField, Min(0.1f)] float strikeTime = 0.35f;
     [SerializeField, Min(0.1f)] float stunDuration = 2.6f;
@@ -238,8 +238,11 @@ public class MinotaurBoss : EnemyBase
     List<Band> BuildBasicBands(int shape)
     {
         List<Band> bands = new List<Band>();
-        float thickness = 2.3f;
-        float diagonal = Mathf.Sqrt(arenaSize.x * arenaSize.x + arenaSize.y * arenaSize.y);
+        float thickness = 2.4f;
+        // Oversize the bands so the attack visibly sweeps the entire map, edge to edge.
+        float fullW = arenaSize.x * 1.5f;
+        float fullH = arenaSize.y * 1.5f;
+        float diagonal = Mathf.Sqrt(fullW * fullW + fullH * fullH);
 
         switch (shape)
         {
@@ -248,16 +251,16 @@ public class MinotaurBoss : EnemyBase
                 bands.Add(new Band { center = arenaCenter, size = new Vector2(diagonal, thickness), angle = -45f });
                 break;
             case 1: // cross
-                bands.Add(new Band { center = arenaCenter, size = new Vector2(arenaSize.x, thickness), angle = 0f });
-                bands.Add(new Band { center = arenaCenter, size = new Vector2(thickness, arenaSize.y), angle = 0f });
+                bands.Add(new Band { center = arenaCenter, size = new Vector2(fullW, thickness), angle = 0f });
+                bands.Add(new Band { center = arenaCenter, size = new Vector2(thickness, fullH), angle = 0f });
                 break;
-            case 2: // horizontal (player's row + center)
+            case 2: // horizontal (player's row, full width)
                 float row = player != null ? Mathf.Clamp(player.position.y, arenaCenter.y - arenaSize.y * 0.4f, arenaCenter.y + arenaSize.y * 0.4f) : arenaCenter.y;
-                bands.Add(new Band { center = new Vector2(arenaCenter.x, row), size = new Vector2(arenaSize.x, thickness), angle = 0f });
+                bands.Add(new Band { center = new Vector2(arenaCenter.x, row), size = new Vector2(fullW, thickness), angle = 0f });
                 break;
-            default: // vertical (player's column)
+            default: // vertical (player's column, full height)
                 float col = player != null ? Mathf.Clamp(player.position.x, arenaCenter.x - arenaSize.x * 0.4f, arenaCenter.x + arenaSize.x * 0.4f) : arenaCenter.x;
-                bands.Add(new Band { center = new Vector2(col, arenaCenter.y), size = new Vector2(thickness, arenaSize.y), angle = 0f });
+                bands.Add(new Band { center = new Vector2(col, arenaCenter.y), size = new Vector2(thickness, fullH), angle = 0f });
                 break;
         }
 

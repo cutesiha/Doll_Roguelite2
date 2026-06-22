@@ -33,6 +33,8 @@ public class SpoolEnemy : EnemyBase
     float nextThreadTime;
     bool isAttacking;
 
+    public override EnemyKind Kind => EnemyKind.Spool;
+
     struct Strand
     {
         public Vector2 start;
@@ -65,6 +67,8 @@ public class SpoolEnemy : EnemyBase
 
     public override void ApplyProfile(EnemyProfile profile)
     {
+        // Spool is stationary, so only HP is profile-driven.
+        ApplyProfileStats(profile);
     }
 
     void FixedUpdate()

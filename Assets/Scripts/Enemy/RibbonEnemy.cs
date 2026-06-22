@@ -42,6 +42,8 @@ public class RibbonEnemy : EnemyBase
     float nextAttackTime;
     bool isAttacking;
 
+    public override EnemyKind Kind => EnemyKind.Ribbon;
+
     protected override void Awake()
     {
         currentHp = maxHp;
@@ -69,6 +71,9 @@ public class RibbonEnemy : EnemyBase
 
     public override void ApplyProfile(EnemyProfile profile)
     {
+        ApplyProfileStats(profile);
+        if (profile != null)
+            moveSpeed = Mathf.Max(0f, profile.moveSpeed);
     }
 
     void FixedUpdate()
