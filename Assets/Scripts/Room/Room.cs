@@ -5,9 +5,9 @@ using UnityEngine.SceneManagement;
 
 public class Room : MonoBehaviour
 {
+    const int EnemiesPerWave = 3;
+
     [SerializeField] EnemyBase enemyPrefab;
-    [SerializeField] int minEnemies = 2;
-    [SerializeField] int maxEnemies = 3;
     [SerializeField] int waveCount = 3;
     [SerializeField] int spawnBlinkCount = 6;
     [SerializeField] float spawnBlinkInterval = 0.12f;
@@ -19,8 +19,6 @@ public class Room : MonoBehaviour
     [SerializeField, Min(0f)] float spawnApproachDuration = 1.75f;
     [SerializeField, Min(0f)] float spawnApproachSpeed = 0.45f;
     [SerializeField, Min(1)] int firstRoomButtonWeight = 5;
-    [SerializeField, Min(0)] int firstRoomGuaranteedButtonMin = 1;
-    [SerializeField, Min(0)] int firstRoomGuaranteedButtonMax = 2;
 
     [SerializeField] GameObject[] doors;
     [SerializeField] Vector2 doorLine = new Vector2(8f, 4f);
@@ -286,6 +284,14 @@ public class Room : MonoBehaviour
             if (template.GetComponentInParent<Room>() != this)
                 continue;
 
+            // SmallButtonEnemy was created for the old death-split effect. It must
+            // never enter the normal room template pool as a one-frame enemy.
+            if (template.GetComponent<SmallButtonEnemy>() != null)
+            {
+                template.SetActive(false);
+                continue;
+            }
+
             if (!sceneEnemyTemplates.Contains(template))
                 sceneEnemyTemplates.Add(template);
 
@@ -353,9 +359,7 @@ public class Room : MonoBehaviour
     {
         enemies.Clear();
 
-        int minCount = Mathf.Max(1, minEnemies);
-        int maxCount = Mathf.Max(minCount, maxEnemies);
-        int count = Random.Range(minCount, maxCount + 1);
+        int count = EnemiesPerWave;
         List<GameObject> templates = BuildWaveTemplates(wave, count);
         GameObject markerTemplate = templates.Count > 0 ? templates[0] : EnemyTemplate(wave);
 
@@ -413,9 +417,7 @@ public class Room : MonoBehaviour
         if (buttonTemplateCount == 0)
             return 0;
 
-        int min = Mathf.Clamp(firstRoomGuaranteedButtonMin, 0, count);
-        int max = Mathf.Clamp(Mathf.Max(min, firstRoomGuaranteedButtonMax), min, count);
-        return Random.Range(min, max + 1);
+        return count > 0 ? 1 : 0;
     }
 
     int ButtonTemplateCount()

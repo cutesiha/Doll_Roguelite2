@@ -432,21 +432,21 @@ MonoBehaviour:
     - {fileID: -371533097180688288, guid: 311cda14ffc940940b276da8c8a20224, type: 3}
   - profileName: Needle
     enemyType: 1
-    maxHp: 10
+    maxHp: 4
     moveSpeed: 0.75
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames: []
   - profileName: Ribbon
     enemyType: 2
-    maxHp: 8
+    maxHp: 4
     moveSpeed: 0.85
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames: []
   - profileName: Spool
     enemyType: 3
-    maxHp: 10
+    maxHp: 5
     moveSpeed: 0
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
@@ -1631,7 +1631,7 @@ MonoBehaviour:
   fanDamage: 22
   bindDamage: 12
   ribbonTelegraphColor: {r: 1, g: 0.08, b: 0.08, a: 0.34}
-  ribbonStrikeColor: {r: 1, g: 0.11, b: 0.11, a: 0.72}
+  ribbonStrikeColor: {r: 0.72, g: 0.5, b: 0.95, a: 0.78}
 --- !u!61 &307822249
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3133,7 +3133,9 @@ MonoBehaviour:
   strandDuration: 2.1
   strandDamage: 20
   warningColor: {r: 1, g: 0.02, b: 0.02, a: 0.32}
-  strandColor: {r: 0.92, g: 0.06, b: 0.05, a: 0.42}
+  strandIvoryColor: {r: 0.96, g: 0.91, b: 0.82, a: 0.96}
+  strandPeachColor: {r: 0.91, g: 0.63, b: 0.48, a: 0.94}
+  strandGrayColor: {r: 0.58, g: 0.56, b: 0.54, a: 0.92}
 --- !u!61 &874001735
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3661,12 +3663,6 @@ MonoBehaviour:
   slamJumpScaleBoost: 0.2
   slamSquashDuration: 0.32
   slamTelegraphColor: {r: 1, g: 0.12, b: 0.08, a: 0.28}
-  splitOnDeath: 1
-  smallButtonCount: 4
-  smallButtonSpread: 1.1
-  splitShakeDuration: 0.9
-  splitPopDuration: 0.28
-  splitPopDistance: 1.35
 --- !u!58 &1009779783
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -4028,7 +4024,9 @@ MonoBehaviour:
   strandDuration: 2.1
   strandDamage: 20
   warningColor: {r: 1, g: 0.02, b: 0.02, a: 0.32}
-  strandColor: {r: 0.92, g: 0.06, b: 0.05, a: 0.42}
+  strandIvoryColor: {r: 0.96, g: 0.91, b: 0.82, a: 0.96}
+  strandPeachColor: {r: 0.91, g: 0.63, b: 0.48, a: 0.94}
+  strandGrayColor: {r: 0.58, g: 0.56, b: 0.54, a: 0.92}
 --- !u!61 &1037148829
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5529,12 +5527,6 @@ MonoBehaviour:
   slamJumpScaleBoost: 0.2
   slamSquashDuration: 0.32
   slamTelegraphColor: {r: 1, g: 0.12, b: 0.08, a: 0.28}
-  splitOnDeath: 1
-  smallButtonCount: 4
-  smallButtonSpread: 1.1
-  splitShakeDuration: 0.9
-  splitPopDuration: 0.28
-  splitPopDistance: 1.35
 --- !u!50 &1730252289
 Rigidbody2D:
   serializedVersion: 5
@@ -7880,8 +7872,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Room
   enemyPrefab: {fileID: 0}
-  minEnemies: 2
-  maxEnemies: 3
   waveCount: 3
   spawnBlinkCount: 6
   spawnBlinkInterval: 0.12
@@ -7893,8 +7883,6 @@ MonoBehaviour:
   spawnApproachDuration: 1.75
   spawnApproachSpeed: 0.45
   firstRoomButtonWeight: 5
-  firstRoomGuaranteedButtonMin: 1
-  firstRoomGuaranteedButtonMax: 2
   doors:
   - {fileID: 517243970}
   doorLine: {x: 8, y: 4}

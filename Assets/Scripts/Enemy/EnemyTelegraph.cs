@@ -162,6 +162,13 @@ public static class EnemyTelegraph
     // reads as a thread stretching out. Root has no renderer of its own.
     public static GameObject CreateThread(string name, Vector2 start, Vector2 end, float width, Color color, int sortingOrder = 60)
     {
+        return CreateThread(name, start, end, width, new[] { color }, sortingOrder);
+    }
+
+    // Palette variant used by thread attacks so adjacent fibers can carry subtly
+    // different cloth tones instead of reading as one flat warning-colored line.
+    public static GameObject CreateThread(string name, Vector2 start, Vector2 end, float width, Color[] palette, int sortingOrder = 60)
+    {
         GameObject root = new GameObject(name);
         root.transform.position = new Vector3(start.x, start.y, 0f);
         Vector2 delta = end - start;
@@ -177,7 +184,9 @@ public static class EnemyTelegraph
             float along = Mathf.Min(length, i * spacing);
             float wobble = Mathf.Sin(i * 1.7f) * dotSize * 0.4f;
             float jitter = 0.7f + 0.55f * Mathf.Abs(Mathf.Sin(i * 2.3f));
-            Color dotColor = color;
+            Color dotColor = palette != null && palette.Length > 0
+                ? palette[i % palette.Length]
+                : Color.white;
             dotColor.a *= (i % 2 == 0) ? 1f : 0.78f;
             AddRect(root.transform, "ThreadDot_" + i, new Vector2(along, wobble), new Vector2(dotSize * jitter, dotSize * jitter), dotColor, sortingOrder);
         }

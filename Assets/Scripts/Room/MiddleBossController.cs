@@ -18,7 +18,7 @@ public class MiddleBossController : MonoBehaviour
     [SerializeField] Color doorColor = new Color(0.85f, 0.62f, 0.25f, 1f);
 
     readonly List<DoorTrigger> nextDoors = new List<DoorTrigger>();
-    MinotaurBoss boss;
+    [SerializeField] MinotaurBoss boss;
     bool defeated;
     static Sprite squareSprite;
     static bool hooked;
@@ -107,9 +107,16 @@ public class MiddleBossController : MonoBehaviour
 
     void SpawnBoss()
     {
-        GameObject bossObject = new GameObject("MinotaurBoss");
-        bossObject.transform.position = new Vector3(arenaCenter.x, arenaCenter.y + arenaSize.y * 0.5f - 2.8f, 0f);
-        boss = bossObject.AddComponent<MinotaurBoss>();
+        if (boss == null)
+            boss = FindFirstObjectByType<MinotaurBoss>(FindObjectsInactive.Include);
+
+        if (boss == null)
+        {
+            GameObject bossObject = new GameObject("MinotaurBoss");
+            bossObject.transform.position = new Vector3(arenaCenter.x, arenaCenter.y + arenaSize.y * 0.5f - 2.8f, 0f);
+            boss = bossObject.AddComponent<MinotaurBoss>();
+        }
+
         boss.SetArena(arenaCenter, arenaSize);
         boss.Defeated += OnBossDefeated;
     }

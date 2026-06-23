@@ -24,12 +24,19 @@ public class BookBossController : MonoBehaviour
     [SerializeField] int bodyHp = 120;
     [SerializeField] int minionKillBodyDamage = 10;
 
+    [Header("Attack Damage")]
+    [SerializeField, Min(1)] int letterDamage = 14;
+    [SerializeField, Min(1)] int paperDamage = 18;
+    [SerializeField, Min(1)] int poisonTickDamage = 1;
+
+    [Header("Scene Parts")]
+    [SerializeField] BookBossPart body;
+    [SerializeField] BookBossPart leftArm;
+    [SerializeField] BookBossPart rightArm;
+
     static bool hooked;
     static Sprite squareSprite;
 
-    BookBossPart body;
-    BookBossPart leftArm;
-    BookBossPart rightArm;
     bool leftDead;
     bool rightDead;
 
@@ -121,7 +128,7 @@ public class BookBossController : MonoBehaviour
 
         EnemyBase[] enemies = FindObjectsByType<EnemyBase>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < enemies.Length; i++)
-            if (enemies[i] != null)
+            if (enemies[i] != null && enemies[i].GetComponent<BookBossPart>() == null)
                 Destroy(enemies[i].gameObject);
 
         GameObject door = GameObject.Find("Door_Exit");
@@ -159,14 +166,27 @@ public class BookBossController : MonoBehaviour
     void SpawnParts()
     {
         Vector2 bodyCenter = new Vector2(arenaCenter.x, arenaCenter.y + arenaSize.y * 0.5f - 3.2f);
-        body = CreatePart(BookPartType.Body, bodyHp, "bookboss", bodyCenter, 1.7f, 70, false);
-        leftArm = CreatePart(BookPartType.LeftArm, armHp, "bookboss_leftarm", bodyCenter + new Vector2(-3.4f, -0.4f), 1.4f, 72, true);
-        rightArm = CreatePart(BookPartType.RightArm, armHp, "bookboss_rightarm", bodyCenter + new Vector2(3.4f, -0.4f), 1.4f, 72, true);
+        body = ResolvePart(body, BookPartType.Body, bodyHp, "bookboss", bodyCenter, 1.7f, 70, false);
+        leftArm = ResolvePart(leftArm, BookPartType.LeftArm, armHp, "bookboss_leftarm", bodyCenter + new Vector2(-3.4f, -0.4f), 1.4f, 72, true);
+        rightArm = ResolvePart(rightArm, BookPartType.RightArm, armHp, "bookboss_rightarm", bodyCenter + new Vector2(3.4f, -0.4f), 1.4f, 72, true);
 
         leftArm.Destroyed += OnArmDestroyed;
         rightArm.Destroyed += OnArmDestroyed;
         leftArm.Damaged += OnArmDamaged;
         rightArm.Damaged += OnArmDamaged;
+    }
+
+    BookBossPart ResolvePart(BookBossPart placedPart, BookPartType type, int hp, string spriteName, Vector2 fallbackCenter, float fallbackScale, int sortingOrder, bool damageable)
+    {
+        Sprite sprite = LoadEnemySprite(spriteName);
+        if (placedPart != null)
+        {
+            // A hierarchy-authored part owns its own Max HP value in the Inspector.
+            placedPart.ConfigurePlaced(type, placedPart.MaxHp, sprite, sortingOrder, damageable);
+            return placedPart;
+        }
+
+        return CreatePart(type, hp, spriteName, fallbackCenter, fallbackScale, sortingOrder, damageable);
     }
 
     BookBossPart CreatePart(BookPartType type, int hp, string spriteName, Vector2 center, float scale, int sortingOrder, bool damageable)
@@ -328,7 +348,7 @@ public class BookBossController : MonoBehaviour
                 && Mathf.Abs(player.position.x - pos.x) <= halfWidth
                 && Mathf.Abs(player.position.y - pos.y) <= halfHeight)
             {
-                DamagePlayer(14, 0.5f);
+                DamagePlayer(letterDamage, 0.5f);
             }
 
             activeElapsed += Time.deltaTime;
@@ -393,7 +413,7 @@ public class BookBossController : MonoBehaviour
 
             if (player != null && Vector2.Distance(scrap.transform.position, player.position) <= 0.7f)
             {
-                DamagePlayer(18, 0.5f);
+                DamagePlayer(paperDamage, 0.5f);
                 hit = true;
                 break;
             }
@@ -516,7 +536,7 @@ public class BookBossController : MonoBehaviour
         StartCoroutine(MinionSpawnLoop());
         StartCoroutine(Wave3AttackLoop());
 
-        int threshold = Mathf.CeilToInt(bodyHp * 0.05f);
+        int threshold = Mathf.CeilToInt(body.MaxHp * 0.05f);
         while (!bossDefeated && body != null && body.CurrentHp > threshold)
             yield return null;
 
@@ -865,7 +885,7 @@ public class BookBossController : MonoBehaviour
         {
             if (Vector2.Distance(player.position, poisonZones[i].center) <= poisonZones[i].radius)
             {
-                DamagePlayer(1, 0.5f);
+                DamagePlayer(poisonTickDamage, 0.5f);
                 nextPoisonTick = Time.time + 0.5f;
                 break;
             }

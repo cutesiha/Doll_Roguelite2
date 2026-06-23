@@ -20,7 +20,7 @@ public class MinotaurBoss : EnemyBase
 
     [Header("Breathing")]
     [SerializeField, Min(0f)] float breathAmplitude = 0.05f;
-    [SerializeField, Min(0.1f)] float breathFrequency = 0.85f;
+    [SerializeField, Min(0.1f)] float breathFrequency = 0.35f;
 
     [Header("Timing")]
     [SerializeField, Min(0.1f)] float introDelay = 1.0f;
@@ -40,6 +40,10 @@ public class MinotaurBoss : EnemyBase
     [SerializeField, Min(0.1f)] float pinClosureTime = 2f;
     [SerializeField, Min(0.1f)] float successStunTime = 1.5f;
 
+    [Header("Mechanic Layout")]
+    [SerializeField] Vector2 judgementPaperOffset = new Vector2(0f, -6.4f);
+    [SerializeField] Vector2 countdownOffset = new Vector2(0f, 6f);
+
     [Header("Damage")]
     [SerializeField, Min(1)] int basicDamage = 18;
     [SerializeField, Min(1)] int judgementPartDamage = 80;
@@ -56,6 +60,13 @@ public class MinotaurBoss : EnemyBase
     public System.Action Defeated;
 
     SpriteRenderer bossRenderer;
+    MeshFilter breathingMeshFilter;
+    MeshRenderer breathingMeshRenderer;
+    Mesh breathingMesh;
+    Material breathingMaterial;
+    Vector3[] breathingBaseVertices;
+    Vector3[] breathingVertices;
+    Vector2[] breathingVertexWeights;
     Transform player;
     PlayerController playerController;
     Vector3 baseScale;
@@ -88,6 +99,7 @@ public class MinotaurBoss : EnemyBase
         SetupRigidbody();
         EnsureCharacterShadow();
         EnsureBossCollider();
+        BuildBreathingMesh();
     }
 
     protected override void Start()
@@ -117,15 +129,12 @@ public class MinotaurBoss : EnemyBase
 
     protected override void Update()
     {
+        SyncBreathingColor();
         if (bossDefeated || stunned)
             return;
 
         breathTime += Time.deltaTime;
-        float breath = Mathf.Sin(breathTime * Mathf.PI * 2f * breathFrequency);
-        transform.localScale = new Vector3(
-            baseScale.x * (1f + breath * breathAmplitude * 0.4f),
-            baseScale.y * (1f + breath * breathAmplitude),
-            baseScale.z);
+        UpdateBreathingMesh(BreathAmount(breathTime * breathFrequency));
     }
 
     protected override void OnDamaged()
@@ -146,7 +155,141 @@ public class MinotaurBoss : EnemyBase
     protected override void OnDestroy()
     {
         RunHudUI.HideBossHealth();
+        if (breathingMaterial != null)
+            Destroy(breathingMaterial);
+        if (breathingMesh != null)
+            Destroy(breathingMesh);
         base.OnDestroy();
+    }
+
+    // Builds a continuous grid over the original sprite. Regional weights let the torso,
+    // head and arms follow the breath independently without cutting visible seams into fur.
+    void BuildBreathingMesh()
+    {
+        if (bossRenderer == null || bossRenderer.sprite == null)
+            return;
+
+        const int columns = 18;
+        const int rows = 16;
+        Sprite sprite = bossRenderer.sprite;
+        Bounds bounds = sprite.bounds;
+        Rect textureRect = sprite.rect;
+        Texture texture = sprite.texture;
+
+        GameObject meshObject = new GameObject("MinotaurBreathingMesh");
+        meshObject.transform.SetParent(transform, false);
+        breathingMeshFilter = meshObject.AddComponent<MeshFilter>();
+        breathingMeshRenderer = meshObject.AddComponent<MeshRenderer>();
+
+        int vertexCount = (columns + 1) * (rows + 1);
+        breathingBaseVertices = new Vector3[vertexCount];
+        breathingVertices = new Vector3[vertexCount];
+        breathingVertexWeights = new Vector2[vertexCount];
+        Vector2[] uvs = new Vector2[vertexCount];
+        int vertex = 0;
+        for (int y = 0; y <= rows; y++)
+        {
+            float ty = y / (float)rows;
+            for (int x = 0; x <= columns; x++)
+            {
+                float tx = x / (float)columns;
+                breathingBaseVertices[vertex] = new Vector3(
+                    Mathf.Lerp(bounds.min.x, bounds.max.x, tx),
+                    Mathf.Lerp(bounds.min.y, bounds.max.y, ty),
+                    0f);
+                uvs[vertex] = new Vector2(
+                    (textureRect.x + textureRect.width * tx) / texture.width,
+                    (textureRect.y + textureRect.height * ty) / texture.height);
+
+                float torso = SmoothBand(tx, 0.22f, 0.34f, 0.66f, 0.78f)
+                    * SmoothBand(ty, 0.30f, 0.42f, 0.70f, 0.82f);
+                float head = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.62f, 0.82f, ty));
+                float arms = (1f - SmoothBand(tx, 0.27f, 0.39f, 0.61f, 0.73f))
+                    * SmoothBand(ty, 0.33f, 0.43f, 0.67f, 0.78f);
+                breathingVertexWeights[vertex] = new Vector2(torso, Mathf.Max(head, arms * 0.7f));
+                vertex++;
+            }
+        }
+
+        int[] triangles = new int[columns * rows * 6];
+        int triangle = 0;
+        for (int y = 0; y < rows; y++)
+            for (int x = 0; x < columns; x++)
+            {
+                int bottomLeft = y * (columns + 1) + x;
+                int topLeft = bottomLeft + columns + 1;
+                triangles[triangle++] = bottomLeft;
+                triangles[triangle++] = topLeft;
+                triangles[triangle++] = topLeft + 1;
+                triangles[triangle++] = bottomLeft;
+                triangles[triangle++] = topLeft + 1;
+                triangles[triangle++] = bottomLeft + 1;
+            }
+
+        breathingMesh = new Mesh { name = "MinotaurBreathingMesh" };
+        breathingMesh.vertices = breathingBaseVertices;
+        breathingMesh.uv = uvs;
+        breathingMesh.triangles = triangles;
+        breathingMesh.RecalculateBounds();
+        breathingMeshFilter.sharedMesh = breathingMesh;
+
+        Shader shader = Shader.Find("Sprites/Default");
+        if (shader == null)
+            shader = Shader.Find("Universal Render Pipeline/Unlit");
+        breathingMaterial = new Material(shader) { name = "MinotaurBreathingMaterial" };
+        breathingMaterial.mainTexture = texture;
+        breathingMeshRenderer.sharedMaterial = breathingMaterial;
+        breathingMeshRenderer.sortingLayerID = bossRenderer.sortingLayerID;
+        breathingMeshRenderer.sortingOrder = bossRenderer.sortingOrder;
+        bossRenderer.enabled = false;
+    }
+
+    void UpdateBreathingMesh(float amount)
+    {
+        if (breathingMesh == null || breathingBaseVertices == null)
+            return;
+
+        float centerX = bossRenderer != null && bossRenderer.sprite != null
+            ? bossRenderer.sprite.bounds.center.x
+            : 0f;
+        for (int i = 0; i < breathingVertices.Length; i++)
+        {
+            Vector3 source = breathingBaseVertices[i];
+            float torso = breathingVertexWeights[i].x;
+            float follower = breathingVertexWeights[i].y;
+
+            // Chest expansion is small; the head and shoulders rise even less. The lower
+            // vertices have zero weight, so both feet remain planted throughout the cycle.
+            source.x += (source.x - centerX) * amount * breathAmplitude * 0.24f * torso;
+            source.y += amount * breathAmplitude * (0.30f * torso + 0.16f * follower);
+            breathingVertices[i] = source;
+        }
+
+        breathingMesh.vertices = breathingVertices;
+        breathingMesh.RecalculateBounds();
+    }
+
+    float BreathAmount(float cycles)
+    {
+        float phase = Mathf.Repeat(cycles, 1f);
+        if (phase < 0.38f)
+            return Mathf.SmoothStep(0f, 1f, phase / 0.38f);
+        if (phase < 0.48f)
+            return 1f;
+        return Mathf.SmoothStep(1f, 0f, (phase - 0.48f) / 0.52f);
+    }
+
+    float SmoothBand(float value, float outerMin, float innerMin, float innerMax, float outerMax)
+    {
+        float enter = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(outerMin, innerMin, value));
+        float exit = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(innerMax, outerMax, value));
+        return enter * exit;
+    }
+
+    void SyncBreathingColor()
+    {
+        if (breathingMaterial != null && bossRenderer != null)
+            breathingMaterial.color = bossRenderer.color;
     }
 
     void ReportHealth()
@@ -292,7 +435,8 @@ public class MinotaurBoss : EnemyBase
 
     IEnumerator DesignJudgementRoutine()
     {
-        Vector2 paperPos = new Vector2(transform.position.x, transform.position.y - bossScale * 0.9f - 1.6f);
+        // Keep the judgement sheet below the boss so its sprite never covers the diagram.
+        Vector2 paperPos = (Vector2)transform.position + judgementPaperOffset;
         GameObject paper = TrackTelegraph(BossVisuals.CreatePaper("JudgementPaper", paperPos, new Vector2(5.4f, 3.6f), 30));
         BossVisuals.CreateRect(paper.transform, "Title", new Vector3(0f, 1.45f, 0f), new Vector2(3.2f, 0.06f), BossVisuals.PaperLineColor, 31);
 
@@ -325,7 +469,7 @@ public class MinotaurBoss : EnemyBase
         }
 
         SoundManager.PlayPanel();
-        yield return StartCoroutine(CountdownRoutine("X 표시 부위를 빼내세요!", solveTime));
+        yield return StartCoroutine(CountdownRoutine("X 표시 부위를 빼내세요!", solveTime, new Color(1f, 0.85f, 0.3f, 1f)));
 
         List<BodySlot> stillEquipped = new List<BodySlot>();
         InventoryManager inventory = InventoryManager.Instance;
@@ -418,7 +562,7 @@ public class MinotaurBoss : EnemyBase
         SoundManager.PlayPanel();
         solveTime = designMatchTime;
 
-        yield return StartCoroutine(CountdownRoutine("보스가 가린 곳과 같은 도안 위로!", solveTime));
+        yield return StartCoroutine(CountdownRoutine("보스가 가린 곳과 같은 도안 위로!", solveTime, new Color(1f, 0.08f, 0.08f, 1f)));
 
         bool success = player != null
             && PointInPaper(player.position, spots[correct], paperSize);
@@ -444,7 +588,6 @@ public class MinotaurBoss : EnemyBase
     }
 
     GameObject coveredPatch;
-    GameObject coveredIcon;
 
     void ShowCoveredPart(BodySlot? slot)
     {
@@ -460,19 +603,8 @@ public class MinotaurBoss : EnemyBase
             default: local = new Vector3(-0.2f, -0.55f, 0f); break;
         }
 
-        coveredPatch = new GameObject("BossCoveredPatch");
-        coveredPatch.transform.SetParent(transform, false);
-        coveredPatch.transform.localPosition = local;
-        SpriteRenderer renderer = coveredPatch.AddComponent<SpriteRenderer>();
-        renderer.sprite = BossVisuals.SquareSprite();
-        renderer.color = new Color(0.1f, 0.08f, 0.1f, 0.92f);
-        renderer.sortingOrder = 60;
-        coveredPatch.transform.localScale = new Vector3(0.32f, 0.32f, 1f);
-        TrackTelegraph(coveredPatch);
-
-        Vector2 iconPosition = (Vector2)transform.position + new Vector2(1.7f, 1.25f);
-        coveredIcon = TrackTelegraph(BossVisuals.CreatePartIcon(null, "CoveredPartIcon", slot.Value, iconPosition, 1.8f, BossVisuals.MarkBad, 76));
-        BossVisuals.CreateXMark(coveredIcon.transform, Vector3.zero, 1.35f, 77);
+        // Temporary readable marker: place a red X directly over the covered boss part.
+        coveredPatch = TrackTelegraph(BossVisuals.CreateXMark(transform, local, 0.72f, 77));
     }
 
     void ClearCoveredPart()
@@ -483,11 +615,6 @@ public class MinotaurBoss : EnemyBase
             coveredPatch = null;
         }
 
-        if (coveredIcon != null)
-        {
-            DestroyOwnedTelegraph(coveredIcon);
-            coveredIcon = null;
-        }
     }
 
     // ---- pattern 3: sewing pins (wave 3) ----------------------------------
@@ -716,9 +843,9 @@ public class MinotaurBoss : EnemyBase
         stunned = false;
     }
 
-    IEnumerator CountdownRoutine(string message, float duration)
+    IEnumerator CountdownRoutine(string message, float duration, Color color)
     {
-        Vector2 labelPos = new Vector2(arenaCenter.x, arenaCenter.y + arenaSize.y * 0.5f - 1.0f);
+        Vector2 labelPos = (Vector2)transform.position + countdownOffset;
         GameObject labelGO = new GameObject("BossCountdown");
         TrackTelegraph(labelGO);
         labelGO.transform.position = new Vector3(labelPos.x, labelPos.y, -1f);
@@ -727,14 +854,14 @@ public class MinotaurBoss : EnemyBase
         label.alignment = TextAlignmentOptions.Center;
         label.fontSize = 3.6f;
         label.fontStyle = FontStyles.Bold;
-        label.color = new Color(1f, 0.85f, 0.3f, 1f);
+        label.color = color;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.sortingOrder = 80;
 
         float remaining = duration;
         while (remaining > 0f && !bossDefeated)
         {
-            label.text = message + "\n" + remaining.ToString("0.0") + "초";
+            label.text = remaining.ToString("0.0") + "초\n" + message;
             remaining -= Time.deltaTime;
             yield return null;
         }

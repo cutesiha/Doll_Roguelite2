@@ -62,6 +62,28 @@ public class BookBossPart : EnemyBase
         EnsureCollider(sprite);
     }
 
+    // Scene-authored variant: preserve the hierarchy transform and collider so designers
+    // can tune each book part directly in the Inspector.
+    public void ConfigurePlaced(BookPartType type, int hp, Sprite sprite, int sortingOrder, bool isDamageable)
+    {
+        PartType = type;
+        maxHp = Mathf.Max(1, hp);
+        currentHp = maxHp;
+        Damageable = isDamageable;
+
+        if (partRenderer == null)
+            partRenderer = GetComponent<SpriteRenderer>();
+        if (partRenderer == null)
+            partRenderer = gameObject.AddComponent<SpriteRenderer>();
+
+        if (sprite != null)
+            partRenderer.sprite = sprite;
+        partRenderer.color = Color.white;
+        partRenderer.sortingOrder = sortingOrder;
+        baseLocalPosition = transform.position;
+        EnsureCollider(sprite);
+    }
+
     public Vector2 BasePosition => baseLocalPosition;
 
     public void SetBobOffset(float yOffset)

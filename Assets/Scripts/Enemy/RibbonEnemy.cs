@@ -31,7 +31,7 @@ public class RibbonEnemy : EnemyBase
     [SerializeField, Min(1)] int fanDamage = 22;
     [SerializeField, Min(1)] int bindDamage = 12;
     [SerializeField] Color ribbonTelegraphColor = new Color(1f, 0.08f, 0.08f, 0.34f);
-    [SerializeField] Color ribbonStrikeColor = new Color(1f, 0.11f, 0.11f, 0.72f);
+    [SerializeField] Color ribbonStrikeColor = new Color(0.72f, 0.5f, 0.95f, 0.78f);
 
     Rigidbody2D rb;
     SpriteRenderer ribbonRenderer;
@@ -121,7 +121,7 @@ public class RibbonEnemy : EnemyBase
         GameObject telegraph = TrackTelegraph(EnemyTelegraph.CreateFan("RibbonFanTelegraph", origin, direction, fanRadius, fanAngle, ribbonTelegraphColor, 72));
         yield return new WaitForSeconds(telegraphDuration);
 
-        // Real attack: a filled fan that sweeps red across the telegraphed arc, then fades.
+        // Real attack: a filled ribbon-colored fan, visually distinct from the red warning.
         if (telegraph != null)
         {
             DestroyOwnedTelegraph(telegraph);
