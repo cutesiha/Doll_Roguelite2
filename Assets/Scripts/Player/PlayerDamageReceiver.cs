@@ -59,6 +59,7 @@ public class PlayerDamageReceiver : MonoBehaviour
     Collider2D playerCollider;
     Coroutine feedbackRoutine;
     float nextDamageTime;
+    float invincibleUntil;
     bool bodyDropped;
     bool isDead;
 
@@ -119,9 +120,17 @@ public class PlayerDamageReceiver : MonoBehaviour
         TryTakeHit(other);
     }
 
+    // 무적 보석 등으로 일정 시간 모든 피해를 무시한다.
+    public void SetInvincible(float duration)
+    {
+        invincibleUntil = Mathf.Max(invincibleUntil, Time.time + Mathf.Max(0f, duration));
+    }
+
+    public bool IsInvincible => Time.time < invincibleUntil;
+
     public void TryTakeHit(Collider2D enemyCollider)
     {
-        if (isDead || enemyCollider == null || Time.time < nextDamageTime)
+        if (isDead || enemyCollider == null || Time.time < nextDamageTime || IsInvincible)
             return;
 
         if (((1 << enemyCollider.gameObject.layer) & enemyLayers.value) == 0)
@@ -140,7 +149,7 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     public bool TryTakePatternDamage(int damage, float cooldownOverride = -1f)
     {
-        if (isDead || Time.time < nextDamageTime)
+        if (isDead || Time.time < nextDamageTime || IsInvincible)
             return false;
 
         int finalDamage = Mathf.Max(1, damage);
