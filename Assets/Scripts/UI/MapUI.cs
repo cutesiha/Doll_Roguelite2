@@ -20,6 +20,8 @@ public class MapUI : MonoBehaviour
     [SerializeField] TMP_FontAsset mapTextFont;
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] string bossSceneName = "BossScene";
+    [SerializeField] string middleBossSceneName = "MiddleBossScene";
+    [SerializeField] string finalBossSceneName = "BookBossScene";
     [SerializeField, Min(0f)] float conditionFeedbackDelay = 0.6f;
     [SerializeField] string supplySceneName = "PresentScene";
     [SerializeField] string eventSceneName  = "EventScene";
@@ -70,11 +72,17 @@ public class MapUI : MonoBehaviour
             case RoomType.Treasure:     return "TREASURE";
             case RoomType.Shop:         return "SHOP";
             case RoomType.Boss:         return "BOSS";
+            case RoomType.MiddleBoss:   return "MIDDLE BOSS";
+            case RoomType.FinalBoss:    return "FINAL BOSS";
+            case RoomType.Start:        return "START";
+            case RoomType.Challenge:    return "CHALLENGE";
             case RoomType.ConditionCombat:
                 string cond;
                 switch (node.conditionType)
                 {
                     case NodeConditionType.NoLeftArm:  cond = "NO LEFT ARM";  break;
+                    case NodeConditionType.NoRightArm: cond = "NO RIGHT ARM"; break;
+                    case NodeConditionType.NoLeftEye:  cond = "NO LEFT EYE";  break;
                     case NodeConditionType.NoRightEye: cond = "NO RIGHT EYE"; break;
                     case NodeConditionType.NoLeftLeg:  cond = "NO LEFT LEG";  break;
                     case NodeConditionType.NoRightLeg: cond = "NO RIGHT LEG"; break;
@@ -314,6 +322,8 @@ public class MapUI : MonoBehaviour
         {
             BodyConditionUtility.LockRequiredMissingSlot(node);
             string scene = node.roomType == RoomType.Boss   ? bossSceneName
+                         : node.roomType == RoomType.MiddleBoss ? middleBossSceneName
+                         : node.roomType == RoomType.FinalBoss ? finalBossSceneName
                          : node.roomType == RoomType.Treasure ? treasureSceneName
                          : node.roomType == RoomType.Shop ? shopSceneName
                          : node.roomType == RoomType.Supply  ? supplySceneName
@@ -415,10 +425,16 @@ public class MapUI : MonoBehaviour
                 case RoomType.Treasure:     return ColTreasure;
                 case RoomType.Shop:         return ColShop;
                 case RoomType.Boss:         return ColBoss;
+                case RoomType.MiddleBoss:   return ColBoss;
+                case RoomType.FinalBoss:    return ColBoss;
+                case RoomType.Start:        return ColEvent;
+                case RoomType.Challenge:    return ColEvent;
                 case RoomType.ConditionCombat:
                     switch (n.conditionType)
                     {
                         case NodeConditionType.NoLeftArm:  return ColNoLeftArm;
+                        case NodeConditionType.NoRightArm: return ColNoLeftArm;
+                        case NodeConditionType.NoLeftEye:  return ColNoRightEye;
                         case NodeConditionType.NoRightEye: return ColNoRightEye;
                         case NodeConditionType.NoLeftLeg:  return ColNoLeftLeg;
                         case NodeConditionType.NoRightLeg: return ColNoRightLeg;

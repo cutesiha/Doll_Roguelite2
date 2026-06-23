@@ -11,6 +11,8 @@ public class ThresholdManager : MonoBehaviour
     [Header("Scene")]
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] string bossSceneName = "BossScene";
+    [SerializeField] string middleBossSceneName = "MiddleBossScene";
+    [SerializeField] string finalBossSceneName = "BookBossScene";
     [SerializeField] int overlaySortingOrder = 60;
     [SerializeField] Canvas overlayCanvas;
     [SerializeField] Image leftOverlay;
@@ -54,7 +56,10 @@ public class ThresholdManager : MonoBehaviour
     bool IsRoomOrBossScene()
     {
         string name = SceneManager.GetActiveScene().name;
-        return name == roomSceneName || name == bossSceneName;
+        return name == roomSceneName
+            || name == bossSceneName
+            || name == middleBossSceneName
+            || name == finalBossSceneName;
     }
 
     void UpdateOverlay()

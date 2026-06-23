@@ -1,8 +1,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum NodeConditionType { None, NoLeftArm, NoRightEye, NoLeftLeg, NoRightLeg }
-public enum RoomType { NormalCombat, ConditionCombat, Supply, Event, Boss, Treasure, Shop }
+public enum NodeConditionType
+{
+    None,
+    NoLeftArm,
+    NoRightEye,
+    NoLeftLeg,
+    NoRightLeg,
+    NoRightArm,
+    NoLeftEye
+}
+
+// Keep the original values first so old run-save data remains readable.
+public enum RoomType
+{
+    NormalCombat,
+    ConditionCombat,
+    Supply,
+    Event,
+    Boss,
+    Treasure,
+    Shop,
+    Start,
+    Challenge,
+    MiddleBoss,
+    FinalBoss
+}
 public enum NodeState { Hidden, RouteOnly, Visible, Current, Cleared }
 
 public class MapNode

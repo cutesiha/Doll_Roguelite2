@@ -21,6 +21,19 @@ public class RunHudUI : MonoBehaviour
     [SerializeField] Sprite roundedPipSprite;
     [SerializeField] Sprite circleSprite;
     [SerializeField] Sprite hpPipSprite;
+    [Header("Run Map Icons")]
+    [SerializeField] Sprite startRoomMapIcon;
+    [SerializeField] Sprite treasureMapIcon;
+    [SerializeField] Sprite challengeMapIcon;
+    [SerializeField] Sprite middleBossMapIcon;
+    [SerializeField] Sprite mainBossMapIcon;
+    [SerializeField] Sprite shopMapIcon;
+    [SerializeField] Sprite noLeftArmMapIcon;
+    [SerializeField] Sprite noRightArmMapIcon;
+    [SerializeField] Sprite noLeftEyeMapIcon;
+    [SerializeField] Sprite noRightEyeMapIcon;
+    [SerializeField] Sprite noLeftLegMapIcon;
+    [SerializeField] Sprite noRightLegMapIcon;
 
     Canvas canvas;
     RectTransform rootRect;
@@ -67,6 +80,8 @@ public class RunHudUI : MonoBehaviour
     bool suppressInventoryOutsideClick;
     int lastMiniMapCurrentId = -999;
     Vector2 miniMapTargetOffset;
+    Vector2 authoredMapPanelPosition;
+    bool hasAuthoredMapPanelPosition;
 
     static RunHudUI instance;
     static bool sceneHookRegistered;
@@ -81,6 +96,8 @@ public class RunHudUI : MonoBehaviour
     static readonly Color AccentColor = new Color(0.88f, 0.48f, 0.24f, 1f);
     static readonly Color EmptyPipColor = new Color(0.17f, 0.15f, 0.13f, 0.28f);
     static readonly Color BodyDangerColor = new Color(0.84f, 0.22f, 0.24f, 1f);
+    static readonly Color MapBrown = new Color(0.27f, 0.16f, 0.09f, 1f);
+    static readonly Color HiddenMapNodeColor = new Color(0.29f, 0.25f, 0.22f, 1f);
 
     static readonly Color PipYellow = new Color(1.00f, 0.85f, 0.23f, 1f);
     static readonly Color PipLightOrange = new Color(0.96f, 0.65f, 0.14f, 1f);
@@ -213,6 +230,7 @@ public class RunHudUI : MonoBehaviour
         mapViewport = null;
         mapContent = null;
         miniMapContent = null;
+        hasAuthoredMapPanelPosition = false;
         waveLabel = null;
         waveClearLabel = null;
         diaryLabel = null;
@@ -322,6 +340,30 @@ public class RunHudUI : MonoBehaviour
             circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/Sprites/ui_circle.png");
         if (hpPipSprite == null)
             hpPipSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/room/hp.png");
+        if (startRoomMapIcon == null)
+            startRoomMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/startroom.png");
+        if (treasureMapIcon == null)
+            treasureMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/treasure.png");
+        if (challengeMapIcon == null)
+            challengeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/challenge.png");
+        if (middleBossMapIcon == null)
+            middleBossMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/middleboss.png");
+        if (mainBossMapIcon == null)
+            mainBossMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/mainboss.png");
+        if (shopMapIcon == null)
+            shopMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/shop.png");
+        if (noLeftArmMapIcon == null)
+            noLeftArmMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/noleftarm.png");
+        if (noRightArmMapIcon == null)
+            noRightArmMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/norightarm.png");
+        if (noLeftEyeMapIcon == null)
+            noLeftEyeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/nolefteye.png");
+        if (noRightEyeMapIcon == null)
+            noRightEyeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/norighteye.png");
+        if (noLeftLegMapIcon == null)
+            noLeftLegMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/noleftleg.png");
+        if (noRightLegMapIcon == null)
+            noRightLegMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/norightleg.png");
 #endif
     }
 
@@ -387,6 +429,12 @@ public class RunHudUI : MonoBehaviour
         if (mapPanel == null)
             mapPanel = FindChildComponent<RectTransform>("MapPanel");
 
+        if (mapPanel != null && !hasAuthoredMapPanelPosition)
+        {
+            authoredMapPanelPosition = mapPanel.anchoredPosition;
+            hasAuthoredMapPanelPosition = true;
+        }
+
         if (mapContent == null)
             mapContent = FindChildComponent<RectTransform>("MapContent");
 
@@ -411,17 +459,78 @@ public class RunHudUI : MonoBehaviour
             EnsureMiniMapOnExistingButton();
         }
 
-        if (mapOverlay != null && mapScrollRect == null)
+        if (mapOverlay == null)
         {
-            DestroyUiObject(mapOverlay);
-            mapOverlay = null;
-            mapPanel = null;
-            mapViewport = null;
-            mapContent = null;
+            BuildMapOverlay();
+            return;
         }
 
-        if (mapOverlay == null || mapPanel == null || mapContent == null)
-            BuildMapOverlay();
+        EnsureMapScrollHierarchy();
+    }
+
+    void EnsureMapScrollHierarchy()
+    {
+        if (mapPanel == null)
+            mapPanel = FindChildComponent<RectTransform>("MapPanel");
+        if (mapPanel == null)
+            return;
+
+        Transform scrollTransform = FindChildRecursive(mapPanel, "MapScroll");
+        if (scrollTransform == null)
+        {
+            GameObject scrollObject = Rect(mapPanel, "MapScroll", Anchor.Stretch, Vector2.zero, Vector2.zero);
+            RectTransform scrollRectTransform = scrollObject.GetComponent<RectTransform>();
+            scrollRectTransform.offsetMin = new Vector2(54f, 44f);
+            scrollRectTransform.offsetMax = new Vector2(-54f, -88f);
+            scrollTransform = scrollObject.transform;
+            scrollTransform.SetAsFirstSibling();
+        }
+
+        mapScrollRect = scrollTransform.GetComponent<ScrollRect>();
+        if (mapScrollRect == null)
+            mapScrollRect = scrollTransform.gameObject.AddComponent<ScrollRect>();
+
+        Transform viewportTransform = FindChildRecursive(scrollTransform, "MapViewport");
+        if (viewportTransform == null)
+        {
+            GameObject viewportObject = Rect(scrollTransform, "MapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
+            viewportTransform = viewportObject.transform;
+        }
+
+        mapViewport = viewportTransform as RectTransform;
+        if (viewportTransform.GetComponent<RectMask2D>() == null)
+            viewportTransform.gameObject.AddComponent<RectMask2D>();
+
+        Image viewportImage = viewportTransform.GetComponent<Image>();
+        if (viewportImage == null)
+            viewportImage = viewportTransform.gameObject.AddComponent<Image>();
+        viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+        viewportImage.raycastTarget = true;
+
+        if (mapContent == null)
+            mapContent = FindChildComponent<RectTransform>("MapContent");
+        if (mapContent == null)
+        {
+            GameObject contentObject = Rect(viewportTransform, "MapContent", Anchor.TopCenter, Vector2.zero, new Vector2(1040f, 1500f));
+            mapContent = contentObject.GetComponent<RectTransform>();
+        }
+
+        if (mapContent.parent != viewportTransform)
+        {
+            Vector2 contentSize = mapContent.sizeDelta;
+            mapContent.SetParent(viewportTransform, false);
+            mapContent.anchorMin = mapContent.anchorMax = new Vector2(0.5f, 1f);
+            mapContent.pivot = new Vector2(0.5f, 1f);
+            mapContent.anchoredPosition = Vector2.zero;
+            mapContent.sizeDelta = contentSize;
+        }
+
+        mapScrollRect.horizontal = false;
+        mapScrollRect.vertical = true;
+        mapScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        mapScrollRect.scrollSensitivity = 42f;
+        mapScrollRect.viewport = mapViewport;
+        mapScrollRect.content = mapContent;
     }
 
     void EnsureMiniMapOnExistingButton()
@@ -1156,30 +1265,23 @@ void BuildTopRightMapButton()
 
     void BuildMiniMapLine(Vector2 from, Vector2 to, bool solid)
     {
-        GameObject line = Rect(miniMapContent, "MiniMapLine", Anchor.Center, Vector2.zero, Vector2.zero);
-        Image image = line.AddComponent<Image>();
         Color color = solid ? LineColor : SoftLineColor;
-        color.a = solid ? 0.72f : 0.32f;
-        image.color = color;
-        image.raycastTarget = false;
-
-        RectTransform rt = line.GetComponent<RectTransform>();
-        Vector2 delta = to - from;
-        rt.anchoredPosition = (from + to) * 0.5f;
-        rt.sizeDelta = new Vector2(delta.magnitude, solid ? 3f : 2f);
-        rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+        color.a = solid ? 1f : 0.72f;
+        BuildDashedLine(miniMapContent, "MiniMapLine", from, to, 9f, 6f, solid ? 3f : 2f, color);
     }
 
     void BuildMiniMapNode(MapNode node, Vector2 position, bool current)
     {
         GameObject nodeGO = Rect(miniMapContent, "MiniMapNode_" + node.id, Anchor.Center, position, current ? new Vector2(24f, 24f) : new Vector2(18f, 18f));
         Image image = nodeGO.AddComponent<Image>();
-        SetRoundedImage(image, circleSprite);
-        image.color = current ? ColCurrent : GetColor(node);
+        Sprite icon = MapIcon(node);
+        image.sprite = icon != null ? icon : circleSprite;
+        image.preserveAspect = true;
+        image.color = Color.white;
         image.raycastTarget = false;
 
         Outline outline = nodeGO.AddComponent<Outline>();
-        outline.effectColor = current ? Color.white : LineColor;
+        outline.effectColor = current ? MapBrown : new Color(MapBrown.r, MapBrown.g, MapBrown.b, 0.82f);
         outline.effectDistance = new Vector2(1f, -1f);
     }
 
@@ -1605,7 +1707,7 @@ void BuildTopRightMapButton()
         if (Application.isPlaying)
             PlayMapPanelAnimation(true);
         else if (mapPanel != null)
-            mapPanel.anchoredPosition = Vector2.zero;
+            mapPanel.anchoredPosition = MapPanelShownPosition();
     }
 
     void ToggleMap()
@@ -1685,9 +1787,9 @@ void BuildTopRightMapButton()
 
     System.Collections.IEnumerator MapPanelAnimationRoutine(bool show)
     {
-        Vector2 shown = Vector2.zero;
-        Vector2 hidden = new Vector2(0f, -980f);
-        Vector2 overshoot = new Vector2(0f, 36f);
+        Vector2 shown = MapPanelShownPosition();
+        Vector2 hidden = shown + new Vector2(0f, -980f);
+        Vector2 overshoot = shown + new Vector2(0f, 36f);
         if (show)
         {
             mapPanel.anchoredPosition = hidden;
@@ -1705,6 +1807,17 @@ void BuildTopRightMapButton()
         if (!show && mapOverlay != null)
             mapOverlay.SetActive(false);
         mapAnimationRoutine = null;
+    }
+
+    Vector2 MapPanelShownPosition()
+    {
+        if (!hasAuthoredMapPanelPosition && mapPanel != null)
+        {
+            authoredMapPanelPosition = mapPanel.anchoredPosition;
+            hasAuthoredMapPanelPosition = true;
+        }
+
+        return hasAuthoredMapPanelPosition ? authoredMapPanelPosition : Vector2.zero;
     }
 
     System.Collections.IEnumerator AnimateMapPanelSegment(Vector2 from, Vector2 to, float duration)
@@ -1798,6 +1911,8 @@ void BuildTopRightMapButton()
 
         GameObject panelGO = Rect(mapOverlay.transform, "MapPanel", Anchor.Center, Vector2.zero, new Vector2(1160f, 860f));
         mapPanel = panelGO.GetComponent<RectTransform>();
+        authoredMapPanelPosition = mapPanel.anchoredPosition;
+        hasAuthoredMapPanelPosition = true;
         Image panelImage = panelGO.AddComponent<Image>();
         SetRoundedImage(panelImage, roundedPanelSprite);
         panelImage.color = PanelColor;
@@ -1858,17 +1973,18 @@ void BuildTopRightMapButton()
         float width = 1040f;
         float height = Mathf.Max(1420f, 160f + Mathf.Max(0, layers.Count - 1) * 276f);
         mapContent.sizeDelta = new Vector2(width, height);
-        float yGap = layers.Count <= 1 ? 0f : (height - 120f) / (layers.Count - 1);
+        const float verticalInset = 130f;
+        float yGap = layers.Count <= 1 ? 0f : (height - verticalInset * 2f) / (layers.Count - 1);
 
         for (int layerIndex = 0; layerIndex < layers.Count; layerIndex++)
         {
             List<MapNode> layer = layers[layerIndex];
-            float y = height * 0.5f - 60f - yGap * layerIndex;
-            float xGap = layer.Count <= 1 ? 0f : (width - 160f) / (layer.Count - 1);
+            float y = height * 0.5f - verticalInset - yGap * layerIndex;
+            float xGap = layer.Count <= 1 ? 0f : (width - 340f) / (layer.Count - 1);
 
             for (int nodeIndex = 0; nodeIndex < layer.Count; nodeIndex++)
             {
-                float x = layer.Count <= 1 ? 0f : -width * 0.5f + 80f + xGap * nodeIndex;
+                float x = layer.Count <= 1 ? 0f : -width * 0.5f + 170f + xGap * nodeIndex;
                 positions[layer[nodeIndex]] = new Vector2(x, y);
             }
         }
@@ -1887,40 +2003,138 @@ void BuildTopRightMapButton()
 
     void BuildLine(Vector2 from, Vector2 to, bool visibleRoute)
     {
-        GameObject line = Rect(mapContent, "MapLine", Anchor.Center, Vector2.zero, Vector2.zero);
-        Image image = line.AddComponent<Image>();
-        Color color = LineColor;
-        color.a = visibleRoute ? 0.85f : 0.25f;
-        image.color = color;
-
-        RectTransform rt = line.GetComponent<RectTransform>();
-        Vector2 delta = to - from;
-        rt.anchoredPosition = (from + to) * 0.5f;
-        rt.sizeDelta = new Vector2(delta.magnitude, visibleRoute ? 4f : 2f);
-        rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+        Color color = MapBrown;
+        color.a = 1f;
+        BuildDashedLine(mapContent, "MapLine", from, to, 22f, 13f, visibleRoute ? 5f : 3f, color);
     }
 
     void BuildNode(MapNode node, Vector2 position)
     {
-        GameObject nodeGO = Rect(mapContent, "MapNode_" + node.id, Anchor.Center, position, new Vector2(92f, 92f));
+        bool revealRoom = ShouldRevealRoom(node);
+        Vector2 nodeSize = revealRoom ? new Vector2(104f, 104f) : new Vector2(68f, 68f);
+        GameObject nodeGO = Rect(mapContent, "MapNode_" + node.id, Anchor.Center, position, nodeSize);
         Image nodeImage = nodeGO.AddComponent<Image>();
-        nodeImage.color = GetColor(node);
+        Sprite icon = revealRoom ? MapIcon(node) : circleSprite;
+        nodeImage.sprite = icon != null ? icon : circleSprite;
+        nodeImage.preserveAspect = true;
+        nodeImage.color = revealRoom ? Color.white : HiddenMapNodeColor;
         Button button = nodeGO.AddComponent<Button>();
         button.targetGraphic = nodeImage;
         button.interactable = false;
 
-        Outline outline = nodeGO.AddComponent<Outline>();
-        outline.effectColor = IsCurrentOrPending(node) ? Color.white : new Color(0f, 0f, 0f, 0.65f);
-        outline.effectDistance = new Vector2(2f, -2f);
+        if (revealRoom)
+        {
+            GameObject labelBox = Rect(nodeGO.transform, "RoomLabelBox", Anchor.Center, new Vector2(0f, 88f), new Vector2(142f, 46f));
+            BuildDashedBorder(labelBox.GetComponent<RectTransform>(), new Vector2(142f, 46f), 16f, 9f, 3f, MapBrown);
 
-        TextMeshProUGUI label = Text(nodeGO.transform, "NodeLabel", NodeLabel(node), 16f, Color.white, TextAlignmentOptions.Center);
-        label.enableAutoSizing = true;
-        label.fontSizeMin = 9f;
-        label.fontSizeMax = 16f;
-        label.rectTransform.anchorMin = Vector2.zero;
-        label.rectTransform.anchorMax = Vector2.one;
-        label.rectTransform.offsetMin = new Vector2(5f, 5f);
-        label.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            TextMeshProUGUI label = Text(labelBox.transform, "RoomLabel", RoomTypeLabel(node), 20f, MapBrown, TextAlignmentOptions.Center);
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 13f;
+            label.fontSizeMax = 20f;
+            label.rectTransform.anchorMin = Vector2.zero;
+            label.rectTransform.anchorMax = Vector2.one;
+            label.rectTransform.offsetMin = new Vector2(8f, 4f);
+            label.rectTransform.offsetMax = new Vector2(-8f, -4f);
+        }
+
+        if (IsCurrentOrPending(node))
+        {
+            TextMeshProUGUI marker = Text(nodeGO.transform, "CurrentLocationMarker", "\u25C0 \uD604\uC7AC \uC704\uCE58", 16f, MapBrown, TextAlignmentOptions.Center);
+            marker.rectTransform.anchorMin = marker.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            marker.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            marker.rectTransform.anchoredPosition = new Vector2(106f, 0f);
+            marker.rectTransform.sizeDelta = new Vector2(112f, 40f);
+        }
+    }
+
+    static bool ShouldRevealRoom(MapNode node)
+    {
+        return node != null && (node.state != NodeState.Hidden || IsCurrentOrPending(node));
+    }
+
+    void BuildDashedLine(Transform parent, string name, Vector2 from, Vector2 to, float dashLength, float gap, float thickness, Color color)
+    {
+        Vector2 delta = to - from;
+        float length = delta.magnitude;
+        if (length <= 0.01f)
+            return;
+
+        Vector2 direction = delta / length;
+        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+        int index = 0;
+        for (float distance = 0f; distance < length; distance += dashLength + gap)
+        {
+            float segmentLength = Mathf.Min(dashLength, length - distance);
+            Vector2 center = from + direction * (distance + segmentLength * 0.5f);
+            GameObject segment = Rect(parent, name + "_Dash_" + index++, Anchor.Center, center, new Vector2(segmentLength, thickness));
+            RectTransform rect = segment.GetComponent<RectTransform>();
+            rect.localRotation = Quaternion.Euler(0f, 0f, angle);
+            Image image = segment.AddComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+        }
+    }
+
+    void BuildDashedBorder(RectTransform parent, Vector2 size, float dashLength, float gap, float thickness, Color color)
+    {
+        float halfWidth = size.x * 0.5f;
+        float halfHeight = size.y * 0.5f;
+        BuildDashedLine(parent, "BorderTop", new Vector2(-halfWidth, halfHeight), new Vector2(halfWidth, halfHeight), dashLength, gap, thickness, color);
+        BuildDashedLine(parent, "BorderBottom", new Vector2(-halfWidth, -halfHeight), new Vector2(halfWidth, -halfHeight), dashLength, gap, thickness, color);
+        BuildDashedLine(parent, "BorderLeft", new Vector2(-halfWidth, -halfHeight), new Vector2(-halfWidth, halfHeight), dashLength, gap, thickness, color);
+        BuildDashedLine(parent, "BorderRight", new Vector2(halfWidth, -halfHeight), new Vector2(halfWidth, halfHeight), dashLength, gap, thickness, color);
+    }
+
+    Sprite MapIcon(MapNode node)
+    {
+        if (node == null)
+            return circleSprite;
+
+        switch (node.roomType)
+        {
+            case RoomType.Start: return startRoomMapIcon;
+            case RoomType.Treasure: return treasureMapIcon;
+            case RoomType.Shop: return shopMapIcon;
+            case RoomType.Challenge: return challengeMapIcon;
+            case RoomType.MiddleBoss: return middleBossMapIcon;
+            case RoomType.FinalBoss:
+            case RoomType.Boss: return mainBossMapIcon;
+            case RoomType.ConditionCombat:
+                switch (node.conditionType)
+                {
+                    case NodeConditionType.NoLeftArm: return noLeftArmMapIcon;
+                    case NodeConditionType.NoRightArm: return noRightArmMapIcon;
+                    case NodeConditionType.NoLeftEye: return noLeftEyeMapIcon;
+                    case NodeConditionType.NoRightEye: return noRightEyeMapIcon;
+                    case NodeConditionType.NoLeftLeg: return noLeftLegMapIcon;
+                    case NodeConditionType.NoRightLeg: return noRightLegMapIcon;
+                }
+                break;
+        }
+
+        return circleSprite;
+    }
+
+    static string RoomTypeLabel(MapNode node)
+    {
+        if (node == null)
+            return "";
+
+        switch (node.roomType)
+        {
+            case RoomType.Start: return "\uC2DC\uC791";
+            case RoomType.ConditionCombat:
+            case RoomType.NormalCombat: return "\uC804\uD22C\uBC29";
+            case RoomType.Treasure:
+            case RoomType.Supply: return "\uC2E0\uCCB4\uBC29";
+            case RoomType.Shop: return "\uC0C1\uC810";
+            case RoomType.Challenge:
+            case RoomType.Event: return "\uB3C4\uC804\uBC29";
+            case RoomType.MiddleBoss: return "\uC911\uAC04\uBCF4\uC2A4";
+            case RoomType.FinalBoss:
+            case RoomType.Boss: return "\uCD5C\uC885\uBCF4\uC2A4";
+            default: return "";
+        }
     }
 
     Button BuildCloseButton(Transform parent)
@@ -2090,6 +2304,10 @@ void BuildTopRightMapButton()
             case RoomType.Treasure: return "TREASURE";
             case RoomType.Shop: return "SHOP";
             case RoomType.Boss: return "BOSS";
+            case RoomType.Start: return "START";
+            case RoomType.Challenge: return "CHALLENGE";
+            case RoomType.MiddleBoss: return "MIDDLE BOSS";
+            case RoomType.FinalBoss: return "FINAL BOSS";
             case RoomType.ConditionCombat: return ConditionLabel(node.conditionType);
             default: return "";
         }
@@ -2100,6 +2318,8 @@ void BuildTopRightMapButton()
         switch (condition)
         {
             case NodeConditionType.NoLeftArm: return "NO\nL ARM";
+            case NodeConditionType.NoRightArm: return "NO\nR ARM";
+            case NodeConditionType.NoLeftEye: return "NO\nL EYE";
             case NodeConditionType.NoRightEye: return "NO\nR EYE";
             case NodeConditionType.NoLeftLeg: return "NO\nL LEG";
             case NodeConditionType.NoRightLeg: return "NO\nR LEG";
@@ -2125,10 +2345,16 @@ void BuildTopRightMapButton()
                 case RoomType.Treasure: return ColTreasure;
                 case RoomType.Shop: return ColShop;
                 case RoomType.Boss: return ColBoss;
+                case RoomType.Start: return ColEvent;
+                case RoomType.Challenge: return ColEvent;
+                case RoomType.MiddleBoss: return ColBoss;
+                case RoomType.FinalBoss: return ColBoss;
                 case RoomType.ConditionCombat:
                     switch (node.conditionType)
                     {
                         case NodeConditionType.NoLeftArm: return ColNoLeftArm;
+                        case NodeConditionType.NoRightArm: return ColNoLeftArm;
+                        case NodeConditionType.NoLeftEye: return ColNoRightEye;
                         case NodeConditionType.NoRightEye: return ColNoRightEye;
                         case NodeConditionType.NoLeftLeg: return ColNoLeftLeg;
                         case NodeConditionType.NoRightLeg: return ColNoRightLeg;

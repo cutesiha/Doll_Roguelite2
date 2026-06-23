@@ -50,6 +50,8 @@ public static class BodyConditionUtility
         switch (node.conditionType)
         {
             case NodeConditionType.NoLeftArm: return !state.armLeft;
+            case NodeConditionType.NoRightArm: return !state.armRight;
+            case NodeConditionType.NoLeftEye: return !state.eyeLeft;
             case NodeConditionType.NoRightEye: return !state.eyeRight;
             case NodeConditionType.NoLeftLeg: return !state.legLeft;
             case NodeConditionType.NoRightLeg: return !state.legRight;
@@ -63,6 +65,12 @@ public static class BodyConditionUtility
         {
             case NodeConditionType.NoLeftArm:
                 slot = BodySlot.ArmLeft;
+                return true;
+            case NodeConditionType.NoRightArm:
+                slot = BodySlot.ArmRight;
+                return true;
+            case NodeConditionType.NoLeftEye:
+                slot = BodySlot.EyeLeft;
                 return true;
             case NodeConditionType.NoRightEye:
                 slot = BodySlot.EyeRight;

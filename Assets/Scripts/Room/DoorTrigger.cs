@@ -7,6 +7,8 @@ public class DoorTrigger : MonoBehaviour
 {
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] string bossSceneName = "BossScene";
+    [SerializeField] string middleBossSceneName = "MiddleBossScene";
+    [SerializeField] string finalBossSceneName = "BookBossScene";
     [SerializeField] string supplySceneName = "PresentScene";
     [SerializeField] string eventSceneName = "EventScene";
     [SerializeField] string treasureSceneName = "TreasureRoomScene";
@@ -278,6 +280,8 @@ public class DoorTrigger : MonoBehaviour
         switch (node.roomType)
         {
             case RoomType.Boss: return bossSceneName;
+            case RoomType.MiddleBoss: return middleBossSceneName;
+            case RoomType.FinalBoss: return finalBossSceneName;
             case RoomType.Treasure: return treasureSceneName;
             case RoomType.Shop: return shopSceneName;
             case RoomType.Supply: return supplySceneName;
@@ -291,8 +295,12 @@ public class DoorTrigger : MonoBehaviour
         switch (node.roomType)
         {
             case RoomType.Boss: return "\uBCF4\uC2A4 \uBC29";
+            case RoomType.MiddleBoss: return "\uC911\uAC04\uBCF4\uC2A4";
+            case RoomType.FinalBoss: return "\uCD5C\uC885\uBCF4\uC2A4";
             case RoomType.Treasure: return "\uBCF4\uBB3C \uBC29";
             case RoomType.Shop: return "\uC0C1\uC810";
+            case RoomType.Challenge: return "\uB3C4\uC804\uBC29";
+            case RoomType.Start: return "\uC2DC\uC791 \uBC29";
             case RoomType.Supply: return "\uBCF4\uAE09 \uBC29";
             case RoomType.Event: return "\uC774\uBCA4\uD2B8 \uBC29";
             case RoomType.ConditionCombat: return "\uC870\uAC74 \uC804\uD22C";
@@ -313,8 +321,11 @@ public class DoorTrigger : MonoBehaviour
         switch (node.roomType)
         {
             case RoomType.Boss: return "E: \uBCF4\uC2A4 \uBC29";
+            case RoomType.MiddleBoss: return "E: \uC911\uAC04\uBCF4\uC2A4";
+            case RoomType.FinalBoss: return "E: \uCD5C\uC885\uBCF4\uC2A4";
             case RoomType.Treasure: return "E: \uBCF4\uBB3C \uBC29";
             case RoomType.Shop: return "E: \uC0C1\uC810";
+            case RoomType.Challenge: return "E: \uB3C4\uC804\uBC29";
             case RoomType.Supply: return "E: \uBCF4\uAE09 \uBC29";
             case RoomType.Event: return "E: \uC774\uBCA4\uD2B8 \uBC29";
             case RoomType.ConditionCombat: return "E: \uC870\uAC74 \uC804\uD22C";
@@ -327,6 +338,8 @@ public class DoorTrigger : MonoBehaviour
         switch (condition)
         {
             case NodeConditionType.NoLeftArm: return "\uC67C\uD314 \uC5C6\uC74C";
+            case NodeConditionType.NoRightArm: return "\uC624\uB978\uD314 \uC5C6\uC74C";
+            case NodeConditionType.NoLeftEye: return "\uC67C\uB208 \uC5C6\uC74C";
             case NodeConditionType.NoRightEye: return "\uC624\uB978\uB208 \uC5C6\uC74C";
             case NodeConditionType.NoLeftLeg: return "\uC67C\uB2E4\uB9AC \uC5C6\uC74C";
             case NodeConditionType.NoRightLeg: return "\uC624\uB978\uB2E4\uB9AC \uC5C6\uC74C";

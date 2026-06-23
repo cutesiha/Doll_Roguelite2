@@ -58,6 +58,7 @@ public class TutorialSceneController : MonoBehaviour
     CanvasGroup pauseOverlay;
     Image fadeImage;
     RectTransform paperRect;
+    Vector2 paperShownPosition;
     Transform arrowRoot;
     Transform doorRoot;
     TutorialEnemy activeEnemy;
@@ -340,9 +341,9 @@ public class TutorialSceneController : MonoBehaviour
         step = TutorialStep.Paper;
         SoundManager.PlayTutorialPaperOpen(0f);
         SetCanvasGroup(paperGroup, true, 1f);
-        Vector2 hidden = new Vector2(0f, -720f);
-        Vector2 overshoot = new Vector2(0f, 42f);
-        Vector2 shown = Vector2.zero;
+        Vector2 shown = paperShownPosition;
+        Vector2 hidden = shown + new Vector2(0f, -720f);
+        Vector2 overshoot = shown + new Vector2(0f, 42f);
         paperRect.anchoredPosition = hidden;
 
         yield return AnimateRect(paperRect, hidden, overshoot, 0.42f, EaseOutCubic);
@@ -355,7 +356,7 @@ public class TutorialSceneController : MonoBehaviour
         SoundManager.PlayTutorialPaperClose(0f);
         Vector2 shown = paperRect.anchoredPosition;
         Vector2 bump = shown + new Vector2(0f, 32f);
-        Vector2 hidden = new Vector2(0f, -760f);
+        Vector2 hidden = paperShownPosition + new Vector2(0f, -760f);
         yield return AnimateRect(paperRect, shown, bump, 0.10f, EaseOutCubic);
         yield return AnimateRect(paperRect, bump, hidden, 0.34f, EaseInCubic);
         SetCanvasGroup(paperGroup, false, 0f);
@@ -753,6 +754,10 @@ public class TutorialSceneController : MonoBehaviour
         mapScrollPrompt = EnsurePrompt(mapScrollPrompt, "MapScrollPrompt", "스크롤하여 지도 보기", new Vector2(420f, 315f), new Vector2(520f, 116f));
         inventoryDetachPrompt = EnsurePrompt(inventoryDetachPrompt, "InventoryDetachPrompt", "부위를 드래그 하여 슬롯에 장착", new Vector2(0f, 365f), new Vector2(760f, 116f));
         inventoryReattachPrompt = EnsurePrompt(inventoryReattachPrompt, "InventoryReattachPrompt", "부위를 드래그 하여 다시 부착", new Vector2(0f, 365f), new Vector2(760f, 116f));
+        BuildPaper();
+        if (paperRect != null)
+            paperRect.anchoredPosition = paperShownPosition;
+        SetCanvasGroup(paperGroup, true, 1f);
         HideAllPrompts();
         UnityEditor.EditorUtility.SetDirty(this);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
@@ -845,6 +850,30 @@ public class TutorialSceneController : MonoBehaviour
 
     void BuildPaper()
     {
+        if (tutorialCanvas != null)
+        {
+            Transform existing = tutorialCanvas.transform.Find("S6Paper");
+            if (existing != null)
+            {
+                paperRect = existing as RectTransform;
+                if (paperRect == null)
+                    paperRect = existing.GetComponent<RectTransform>();
+
+                paperGroup = existing.GetComponent<CanvasGroup>();
+                if (paperGroup == null)
+                    paperGroup = existing.gameObject.AddComponent<CanvasGroup>();
+
+                if (paperRect != null)
+                {
+                    paperShownPosition = paperRect.anchoredPosition;
+                    paperRect.anchoredPosition = paperShownPosition + new Vector2(0f, -760f);
+                }
+
+                SetCanvasGroup(paperGroup, false, 0f);
+                return;
+            }
+        }
+
         GameObject paper = new GameObject("S6Paper");
         paper.transform.SetParent(tutorialCanvas.transform, false);
         paperRect = paper.AddComponent<RectTransform>();
@@ -884,7 +913,8 @@ public class TutorialSceneController : MonoBehaviour
             AddPaperText(paper.transform, "화면 클릭 또는 [E]", new Vector2(240f, -202f), new Vector2(360f, 54f), 28f, TextAlignmentOptions.Center);
         }
 
-        paperRect.anchoredPosition = new Vector2(0f, -760f);
+        paperShownPosition = Vector2.zero;
+        paperRect.anchoredPosition = paperShownPosition + new Vector2(0f, -760f);
         SetCanvasGroup(paperGroup, false, 0f);
     }
 

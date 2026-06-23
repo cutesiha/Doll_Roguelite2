@@ -682,6 +682,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 211311193}
   leftArmRenderer: {fileID: 1073542017}
   rightArmRenderer: {fileID: 295676451}
+  missingEyeSocketColor: {r: 0.09803922, g: 0.09019608, b: 0.09019608, a: 1}
   playerSortingOrder: 120
   upSprite: {fileID: 21300000, guid: 4e441c1c71ecb9542a5a3d4f45d16a13, type: 3}
   downSprite: {fileID: 21300000, guid: 333c16bc07828c841b2bb1e93d61e2b6, type: 3}
@@ -3055,7 +3056,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!212 &840249421
 SpriteRenderer:
   serializedVersion: 2
