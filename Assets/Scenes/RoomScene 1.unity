@@ -345,8 +345,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8a8720917cc9f74d8d23f5a37e33d1f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerManager
-  maxHp: 10
-  currentHp: 10
+  maxHp: 3
+  currentHp: 3
   moveSpeed: 5
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1

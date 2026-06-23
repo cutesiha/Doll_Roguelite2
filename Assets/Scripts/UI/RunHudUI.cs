@@ -1189,7 +1189,12 @@ void BuildTopRightMapButton()
         if (bodyPips != null)
         {
             BodyState state = BodyConditionUtility.CurrentState();
-            int remaining = state == null || state.body ? bodyPips.maxPips : 0;
+            PlayerManager pm = PlayerManager.Instance;
+            int remaining;
+            if (pm != null)
+                remaining = HpToPips(pm.CurrentHp, pm.MaxHp, bodyPips.maxPips);
+            else
+                remaining = state == null || state.body ? bodyPips.maxPips : 0;
             ApplyPipColors(bodyPips.pips, remaining, bodyPips.maxPips);
         }
 

@@ -146,8 +146,8 @@ public class PlayerAttack : MonoBehaviour
         if (cooldownTimer > 0f || isAttacking)
             return;
 
-        BodyState bodyState = BodyConditionUtility.CurrentState();
-        bool needsMultiplePress = bodyState != null && bodyState.armLeft != bodyState.armRight;
+        // 팔이 하나든 둘이든 한 번 누르면 바로 공격 (연타 불필요)
+        bool needsMultiplePress = false;
 
         for (int i = 0; i < DirKeys.Length; i++)
         {
@@ -229,10 +229,29 @@ public class PlayerAttack : MonoBehaviour
 
     void BeginAttack(Vector2 direction)
     {
-        AttackArm arm = nextAttackUsesLeftArm ? AttackArm.Left : AttackArm.Right;
-        nextAttackUsesLeftArm = !nextAttackUsesLeftArm;
-        cooldownTimer = attackCooldown;
+        BodyState bodyState = BodyConditionUtility.CurrentState();
+        bool hasLeft = bodyState == null || bodyState.armLeft;
+        bool hasRight = bodyState == null || bodyState.armRight;
 
+        // 양팔 다 떨어졌으면 공격 불가
+        if (!hasLeft && !hasRight)
+            return;
+
+        AttackArm arm;
+        if (hasLeft && hasRight)
+        {
+            // 양팔 있으면 왼팔 → 오른팔 교대
+            arm = nextAttackUsesLeftArm ? AttackArm.Left : AttackArm.Right;
+            nextAttackUsesLeftArm = !nextAttackUsesLeftArm;
+        }
+        else
+        {
+            // 한 팔만 남으면 그 팔로만 공격 (없는 팔 차례는 건너뜀 → 모션도 안 나감)
+            arm = hasLeft ? AttackArm.Left : AttackArm.Right;
+            nextAttackUsesLeftArm = !hasLeft; // 나중에 반대 팔 되찾으면 그 팔부터
+        }
+
+        cooldownTimer = attackCooldown;
         StartCoroutine(AttackRoutine(NormalizedDirection(direction), arm));
     }
 

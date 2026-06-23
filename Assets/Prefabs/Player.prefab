@@ -1118,7 +1118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dcffc95b88a0ab442b30ceb7e9bae742, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageReceiver
-  contactDamage: 25
+  contactDamage: 1
   damageCooldown: 0.65
   enemyLayers:
     serializedVersion: 2
@@ -1134,6 +1134,7 @@ MonoBehaviour:
   cameraShakeMagnitude: 0.11
   dropDownDistance: 0.52
   dropSideDistance: 0.16
+  fallbackDroppedPartScaleRatio: 0.72
   droppedPartSortingOrder: 4
 --- !u!1 &5243644867618735856
 GameObject:

@@ -12,6 +12,8 @@ public class SoundManager : MonoBehaviour
     public const string ClickSfxPath = "Sounds/click";
     public const float DefaultRepeatGuard = 0.08f;
     public const int DefaultVolumeLevel = 7;
+    // BGM 전체 볼륨 배율 (0~1). 낮출수록 배경음악만 조용해짐. 효과음엔 영향 없음.
+    const float BgmVolumeScale = 0.4f;
     const string BgmVolumeLevelKey = "StartOptionBgmVolumeLevel";
     const string SfxVolumeLevelKey = "StartOptionSfxVolumeLevel";
 
@@ -248,7 +250,7 @@ public class SoundManager : MonoBehaviour
 
     static void ApplyBgmVolumeToSceneSources()
     {
-        float volume = GetBgmVolume01();
+        float volume = GetBgmVolume01() * BgmVolumeScale;
         AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < sources.Length; i++)
             if (IsBgmSource(sources[i]))

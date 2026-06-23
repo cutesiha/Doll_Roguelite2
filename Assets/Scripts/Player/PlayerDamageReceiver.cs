@@ -6,7 +6,7 @@ using UnityEngine;
 public class PlayerDamageReceiver : MonoBehaviour
 {
     [Header("Contact Damage")]
-    [SerializeField, Min(1)] int contactDamage = 25;
+    [SerializeField, Min(1)] int contactDamage = 1;
     [SerializeField, Min(0.05f)] float damageCooldown = 0.65f;
     [SerializeField] LayerMask enemyLayers = ~0;
 
@@ -133,37 +133,78 @@ public class PlayerDamageReceiver : MonoBehaviour
     void DamageNextBodyTarget(int damage)
     {
         InventoryManager inventory = InventoryManager.Instance;
+        damageCandidates.Clear();
         if (inventory != null)
+            for (int i = 0; i < DamageSlots.Length; i++)
+                if (inventory.GetEquippedPart(DamageSlots[i]) != null)
+                    damageCandidates.Add(DamageSlots[i]);
+
+        int equippedCount = damageCandidates.Count;
+        // 부위 3개가 영구히 떨어진 뒤부터 몸도 랜덤 데미지 풀에 포함
+        bool bodyInPool = inventory == null || CountFallenParts(inventory) >= 3;
+        int total = equippedCount + (bodyInPool ? 1 : 0);
+
+        if (total == 0)
         {
-            BodySlot slot;
-            if (TryPickRandomDamageSlot(inventory, out slot))
-            {
-                Sprite dropSprite = SpriteForSlot(slot);
-                SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
-                BodyPart brokenPart;
-                if (inventory.TryDamageEquippedPart(slot, damage, out brokenPart) && brokenPart != null)
-                {
-                    DropPart(dropSprite, sourceRenderer, slot);
-                    if (!HasAnyEquippedPart(inventory))
-                        DieBodyOnly();
-                }
-                return;
-            }
+            DamageBody(damage);
+            return;
         }
 
-        DieBodyOnly();
+        int pick = Random.Range(0, total);
+        if (pick < equippedCount)
+        {
+            BodySlot slot = damageCandidates[pick];
+            Sprite dropSprite = SpriteForSlot(slot);
+            SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
+            BodyPart brokenPart;
+            if (inventory.TryDamageEquippedPart(slot, damage, out brokenPart) && brokenPart != null)
+                DropPart(dropSprite, sourceRenderer, slot);
+        }
+        else
+        {
+            DamageBody(damage);
+        }
     }
 
-    bool HasAnyEquippedPart(InventoryManager inventory)
+    // 인벤토리(장착+보관) 어디에도 없는 = 영구히 떨어진 부위 수
+    int CountFallenParts(InventoryManager inventory)
     {
-        if (inventory == null)
-            return false;
-
+        int fallen = 0;
         for (int i = 0; i < DamageSlots.Length; i++)
-            if (inventory.GetEquippedPart(DamageSlots[i]) != null)
-                return true;
+        {
+            BodySlot slot = DamageSlots[i];
+            bool present = inventory.GetEquippedPart(slot) != null;
+            if (!present && inventory.storage != null)
+            {
+                for (int s = 0; s < inventory.storage.Length; s++)
+                {
+                    BodyPart item = inventory.storage[s];
+                    if (item != null && item.IsEquippable && item.slot == slot)
+                    {
+                        present = true;
+                        break;
+                    }
+                }
+            }
+            if (!present)
+                fallen++;
+        }
+        return fallen;
+    }
 
-        return false;
+    // 몸 체력 감소 (HUD엔 PlayerManager.CurrentHp 로 표시됨). 0이면 사망.
+    void DamageBody(int damage)
+    {
+        PlayerManager pm = PlayerManager.Instance;
+        if (pm == null)
+        {
+            DieBodyOnly();
+            return;
+        }
+
+        pm.TakeDamage(Mathf.Max(1, damage));
+        if (pm.CurrentHp <= 0)
+            DieBodyOnly();
     }
 
     void DieBodyOnly()

@@ -269,8 +269,62 @@ public class Room : MonoBehaviour
         if (minY > maxY)
             minY = maxY = center.y;
 
+        // 카메라가 벽 밖까지 보일 수 있으므로 방 안쪽(벽 경계)과 교집합으로 제한
+        if (TryGetRoomInnerRect(enemySize, out Rect innerRect))
+        {
+            float clampMinX = Mathf.Max(minX, innerRect.xMin);
+            float clampMaxX = Mathf.Min(maxX, innerRect.xMax);
+            float clampMinY = Mathf.Max(minY, innerRect.yMin);
+            float clampMaxY = Mathf.Min(maxY, innerRect.yMax);
+
+            if (clampMinX <= clampMaxX && clampMinY <= clampMaxY)
+            {
+                minX = clampMinX; maxX = clampMaxX;
+                minY = clampMinY; maxY = clampMaxY;
+            }
+            else
+            {
+                // 카메라와 겹치는 방 안쪽이 없으면 방 안쪽을 그대로 사용
+                rect = innerRect;
+                return true;
+            }
+        }
+
         rect = Rect.MinMaxRect(minX, minY, maxX, maxY);
         return true;
+    }
+
+    // 4개 벽(Wall_Left/Right/Top/Bottom)의 안쪽 가장자리로 플레이 가능 영역을 계산
+    bool TryGetRoomInnerRect(Vector2 enemySize, out Rect rect)
+    {
+        rect = default;
+
+        Collider2D left = FindWallCollider("Wall_Left");
+        Collider2D right = FindWallCollider("Wall_Right");
+        Collider2D top = FindWallCollider("Wall_Top");
+        Collider2D bottom = FindWallCollider("Wall_Bottom");
+        if (left == null || right == null || top == null || bottom == null)
+            return false;
+
+        float padX = Mathf.Max(0.25f, enemySize.x * 0.5f);
+        float padY = Mathf.Max(0.25f, enemySize.y * 0.5f);
+
+        float minX = left.bounds.max.x + padX;    // 왼쪽 벽 안쪽 면
+        float maxX = right.bounds.min.x - padX;   // 오른쪽 벽 안쪽 면
+        float minY = bottom.bounds.max.y + padY;  // 아래 벽 안쪽 면
+        float maxY = top.bounds.min.y - padY;     // 위 벽 안쪽 면
+
+        if (minX > maxX || minY > maxY)
+            return false;
+
+        rect = Rect.MinMaxRect(minX, minY, maxX, maxY);
+        return true;
+    }
+
+    static Collider2D FindWallCollider(string wallName)
+    {
+        GameObject go = GameObject.Find(wallName);
+        return go != null ? go.GetComponent<Collider2D>() : null;
     }
 
     void PrepareSceneEnemyTemplate()

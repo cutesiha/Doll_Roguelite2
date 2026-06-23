@@ -6,8 +6,8 @@ public class PlayerManager : MonoBehaviour
     public static PlayerManager Instance { get; private set; }
 
     [Header("Health")]
-    [SerializeField, Min(1)] int maxHp = 10;
-    [SerializeField, Min(0)] int currentHp = 10;
+    [SerializeField, Min(1)] int maxHp = 3;     // 몸 체력 (부위 3개 떨어진 뒤 닳음)
+    [SerializeField, Min(0)] int currentHp = 3;
 
     [Header("Movement")]
     [SerializeField, Min(0f)] float moveSpeed = 5f;
