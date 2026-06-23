@@ -7,6 +7,7 @@ public class PlayerDamageReceiver : MonoBehaviour
 {
     [Header("Contact Damage")]
     [SerializeField, Min(1)] int contactDamage = 1;
+    [SerializeField, Min(1)] int maxDamagePerHit = 1;   // 한 대당 깎이는 최대 HP(칸). 공격 종류 무관 캡.
     [SerializeField, Min(0.05f)] float damageCooldown = 0.65f;
     [SerializeField] LayerMask enemyLayers = ~0;
 
@@ -161,6 +162,9 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     void DamageNextBodyTarget(int damage)
     {
+        // 어떤 공격이든 한 대당 최대 maxDamagePerHit(기본 1)칸만 깎임
+        damage = Mathf.Clamp(damage, 1, maxDamagePerHit);
+
         InventoryManager inventory = InventoryManager.Instance;
         damageCandidates.Clear();
         if (inventory != null)
