@@ -7,6 +7,7 @@ public class PlayerDamageReceiver : MonoBehaviour
 {
     [Header("Contact Damage")]
     [SerializeField, Min(1)] int contactDamage = 1;
+    [SerializeField, Min(1)] int maxDamagePerHit = 1;   // 한 대당 깎이는 최대 HP(칸). 공격 종류 무관 캡.
     [SerializeField, Min(0.05f)] float damageCooldown = 0.65f;
     [SerializeField] LayerMask enemyLayers = ~0;
 
@@ -28,8 +29,17 @@ public class PlayerDamageReceiver : MonoBehaviour
     [Header("Dropped Parts")]
     [SerializeField, Min(0f)] float dropDownDistance = 0.52f;
     [SerializeField, Min(0f)] float dropSideDistance = 0.16f;
-    [SerializeField, Range(0.1f, 2f)] float fallbackDroppedPartScaleRatio = 0.72f;
     [SerializeField] int droppedPartSortingOrder = 4;
+    [Header("Dropped Part Sizes (world units)")]
+    [Tooltip("Fallback on-screen size of a dropped part when no size anchor is assigned below. The part icons share one canvas, so each slot needs its own size to keep proportions believable (eyes small, limbs larger).")]
+    [SerializeField, Min(0.05f)] float eyeDropSize = 0.55f;
+    [SerializeField, Min(0.05f)] float armDropSize = 1.35f;
+    [SerializeField, Min(0.05f)] float legDropSize = 1.5f;
+    [Header("Dropped Part Size Anchors (optional)")]
+    [Tooltip("Scale these child objects in the Hierarchy/Scene to set drop sizes visually. The dropped part matches the anchor's on-screen size. Hidden automatically during play. If empty, the world-unit sizes above are used.")]
+    [SerializeField] Transform eyeDropSizeAnchor;
+    [SerializeField] Transform armDropSizeAnchor;
+    [SerializeField] Transform legDropSizeAnchor;
 
     static readonly BodySlot[] DamageSlots =
     {
@@ -56,7 +66,27 @@ public class PlayerDamageReceiver : MonoBehaviour
     {
         ResolveReferences();
         EnsurePlayerCollider();
+        HideDropSizeAnchors();
         bodyCurrentHp = Mathf.Clamp(bodyCurrentHp, 0, bodyMaxHp);
+    }
+
+    // Size anchors are visual tuning guides shown only in the editor; hide their
+    // renderers at runtime so they never appear in-game.
+    void HideDropSizeAnchors()
+    {
+        HideAnchorRenderer(eyeDropSizeAnchor);
+        HideAnchorRenderer(armDropSizeAnchor);
+        HideAnchorRenderer(legDropSizeAnchor);
+    }
+
+    void HideAnchorRenderer(Transform anchor)
+    {
+        if (anchor == null)
+            return;
+
+        SpriteRenderer renderer = anchor.GetComponent<SpriteRenderer>();
+        if (renderer != null)
+            renderer.enabled = false;
     }
 
     void OnValidate()
@@ -132,6 +162,9 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     void DamageNextBodyTarget(int damage)
     {
+        // 어떤 공격이든 한 대당 최대 maxDamagePerHit(기본 1)칸만 깎임
+        damage = Mathf.Clamp(damage, 1, maxDamagePerHit);
+
         InventoryManager inventory = InventoryManager.Instance;
         damageCandidates.Clear();
         if (inventory != null)
@@ -348,46 +381,124 @@ public class PlayerDamageReceiver : MonoBehaviour
         ResolveReferences();
         SpriteRenderer sortingSource = sourceRenderer != null ? sourceRenderer : bodyRenderer;
         int sortingLayerId = sortingSource != null ? sortingSource.sortingLayerID : 0;
-        Vector3 sourceScale = DroppedPartWorldScale(sprite, sourceRenderer, slot);
+        Vector3 worldScale = DroppedPartWorldScale(sprite, slot);
         Vector3 start = sortingSource != null ? sortingSource.bounds.center : transform.position;
         Vector3 end = transform.position + new Vector3(Random.Range(-dropSideDistance, dropSideDistance), -dropDownDistance, 0f);
         end.z = start.z;
 
         GameObject dropped = new GameObject("Dropped_" + sprite.name);
         DroppedBodyPart droppedPart = dropped.AddComponent<DroppedBodyPart>();
-        droppedPart.Configure(sprite, sortingLayerId, droppedPartSortingOrder, start, end, sourceScale);
+        droppedPart.Configure(sprite, sortingLayerId, droppedPartSortingOrder, start, end, worldScale);
     }
 
-    Vector3 DroppedPartWorldScale(Sprite sprite, SpriteRenderer sourceRenderer, BodySlot? slot)
+    Vector3 DroppedPartWorldScale(Sprite sprite, BodySlot? slot)
     {
-        if (sourceRenderer != null && sourceRenderer.sprite != null)
-            return sourceRenderer.transform.lossyScale;
+        // The whole body falls at its real on-screen size.
+        if (!slot.HasValue || sprite == null)
+            return bodyRenderer != null ? bodyRenderer.transform.lossyScale : transform.lossyScale;
 
-        Vector3 baseScale = bodyRenderer != null ? bodyRenderer.transform.lossyScale : transform.lossyScale;
-        if (bodyRenderer == null || bodyRenderer.sprite == null || sprite == null)
-            return baseScale;
+        // If a size anchor is assigned, match the dropped part to the anchor's
+        // current on-screen size so designers can tune sizes by scaling the anchor
+        // object directly in the Hierarchy/Scene (WYSIWYG).
+        Transform anchor = AnchorForSlot(slot.Value);
+        if (anchor != null)
+            return AnchorWorldScale(anchor, sprite);
 
-        float bodyLargest = Mathf.Max(bodyRenderer.sprite.bounds.size.x, bodyRenderer.sprite.bounds.size.y);
-        float partLargest = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
-        if (bodyLargest <= 0f || partLargest <= 0f)
-            return baseScale;
-
-        float ratio = partLargest / bodyLargest;
-        if (!slot.HasValue)
-            ratio = 1f;
-        else
-            ratio = Mathf.Clamp(ratio, 0.35f, fallbackDroppedPartScaleRatio);
-
-        return new Vector3(baseScale.x * ratio, baseScale.y * ratio, 1f);
+        // Otherwise fall back to the per-slot world size. The part icons share one
+        // 200x200 canvas where each part fills a different fraction, so normalising
+        // by sprite bounds keeps the dropped pieces proportional to one another.
+        float largest = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
+        float uniform = largest > 0.0001f ? SizeForSlot(slot.Value) / largest : 1f;
+        return new Vector3(uniform, uniform, 1f);
     }
+
+    Vector3 AnchorWorldScale(Transform anchor, Sprite sprite)
+    {
+        // Prefer matching the anchor's rendered size so the result looks exactly
+        // like the (editor-only) preview, even if the anchor uses a different sprite.
+        SpriteRenderer anchorRenderer = anchor.GetComponent<SpriteRenderer>();
+        if (anchorRenderer != null && anchorRenderer.sprite != null && sprite != null)
+        {
+            float anchorWorld = Mathf.Max(anchorRenderer.bounds.size.x, anchorRenderer.bounds.size.y);
+            float spriteLargest = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
+            float uniform = spriteLargest > 0.0001f ? anchorWorld / spriteLargest : 1f;
+            return new Vector3(uniform, uniform, 1f);
+        }
+
+        // No renderer: use the anchor's world scale directly.
+        Vector3 lossy = anchor.lossyScale;
+        float scale = Mathf.Max(0.0001f, Mathf.Max(Mathf.Abs(lossy.x), Mathf.Abs(lossy.y)));
+        return new Vector3(scale, scale, 1f);
+    }
+
+    Transform AnchorForSlot(BodySlot slot)
+    {
+        switch (slot)
+        {
+            case BodySlot.EyeLeft:
+            case BodySlot.EyeRight:
+                return eyeDropSizeAnchor;
+            case BodySlot.ArmLeft:
+            case BodySlot.ArmRight:
+                return armDropSizeAnchor;
+            default:
+                return legDropSizeAnchor;
+        }
+    }
+
+    float SizeForSlot(BodySlot slot)
+    {
+        switch (slot)
+        {
+            case BodySlot.EyeLeft:
+            case BodySlot.EyeRight:
+                return eyeDropSize;
+            case BodySlot.ArmLeft:
+            case BodySlot.ArmRight:
+                return armDropSize;
+            default:
+                return legDropSize;
+        }
+    }
+
+    // Drop visuals come from the PlayerUI art set (body-aligned part images),
+    // indexed by BodySlot order: EyeLeft, EyeRight, ArmLeft, ArmRight, LegLeft, LegRight.
+    static readonly string[] PlayerUiPartNames =
+    {
+        "eye_L",
+        "eye_R",
+        "정면_왼쪽팔",
+        "정면_오른팔",
+        "정면_왼다리",
+        "정면_오른다리"
+    };
 
     Sprite SpriteForSlot(BodySlot slot)
     {
-        SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
-        if (sourceRenderer != null && sourceRenderer.sprite != null)
-            return sourceRenderer.sprite;
+        Sprite uiSprite = LoadPlayerUiSprite(slot);
+        if (uiSprite != null)
+            return uiSprite;
 
+        // Fallback to the inventory/character art if a PlayerUI image is missing.
         return InventoryUI.FindDisplaySpriteForSlot(slot);
+    }
+
+    Sprite LoadPlayerUiSprite(BodySlot slot)
+    {
+        int index = (int)slot;
+        if (index < 0 || index >= PlayerUiPartNames.Length)
+            return null;
+
+        string spriteName = PlayerUiPartNames[index];
+        Sprite sprite = Resources.Load<Sprite>("Sprites/PlayerUI/" + spriteName);
+        if (sprite != null)
+            return sprite;
+
+#if UNITY_EDITOR
+        return UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/PlayerUI/" + spriteName + ".png");
+#else
+        return null;
+#endif
     }
 
     SpriteRenderer SourceRendererForSlot(BodySlot slot)

@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] SpriteRenderer spriteRenderer;
     [SerializeField] SpriteRenderer leftArmRenderer;
     [SerializeField] SpriteRenderer rightArmRenderer;
+    [SerializeField] Color missingEyeSocketColor = new Color(25f / 255f, 23f / 255f, 23f / 255f, 1f);
     [SerializeField] int playerSortingOrder = 120;
     [SerializeField] Sprite upSprite;
     [SerializeField] Sprite downSprite;
@@ -45,11 +46,19 @@ public class PlayerController : MonoBehaviour
     Vector2 moveInput;
     bool forwardWalkPressed;
     float movementLockedUntil;
+    float speedMultiplier = 1f;
+    float speedMultiplierUntil;
     FacingDirection facingDirection = FacingDirection.Down;
     FacingDirection lastWalkDirection = FacingDirection.Down;
     float facingLockTimer;
     float walkAnimationTime;
     int lastWalkFrame = -1;
+    SpriteRenderer leftEyeSocketRenderer;
+    SpriteRenderer rightEyeSocketRenderer;
+    static Sprite eyeSocketSprite;
+
+    const float PlayerFrameWidth = 70f;
+    const float PlayerFrameHeight = 110f;
 
     enum FacingDirection
     {
@@ -111,6 +120,7 @@ public class PlayerController : MonoBehaviour
     void LateUpdate()
     {
         ApplyPlayerSorting();
+        ApplyMissingEyeSockets();
     }
 
 #if UNITY_EDITOR
@@ -180,7 +190,17 @@ public class PlayerController : MonoBehaviour
         if (state != null && (!state.legLeft || !state.legRight))
             speed *= missingLegSpeedMultiplier;
 
+        if (Time.time < speedMultiplierUntil)
+            speed *= speedMultiplier;
+
         rb.MovePosition(rb.position + moveInput * speed * Time.fixedDeltaTime);
+    }
+
+    // Temporary movement slow used by status effects such as the boss's stitch debuff.
+    public void ApplyTemporarySpeedMultiplier(float multiplier, float duration)
+    {
+        speedMultiplier = Mathf.Clamp(multiplier, 0.05f, 1f);
+        speedMultiplierUntil = Time.time + Mathf.Max(0f, duration);
     }
 
     public void FaceDirection(Vector2 direction)
@@ -359,7 +379,11 @@ public class PlayerController : MonoBehaviour
 
         leftArmRenderer = EnsureArmRenderer(leftArmRenderer, "PlayerArm_Left");
         rightArmRenderer = EnsureArmRenderer(rightArmRenderer, "PlayerArm_Right");
+        leftEyeSocketRenderer = EnsureEyeSocketRenderer("PlayerEyeSocket_Left");
+        rightEyeSocketRenderer = EnsureEyeSocketRenderer("PlayerEyeSocket_Right");
         SetArmRenderersVisible(false, false);
+        SetRendererVisible(leftEyeSocketRenderer, false);
+        SetRendererVisible(rightEyeSocketRenderer, false);
         ApplyPlayerSorting();
     }
 
@@ -384,6 +408,56 @@ public class PlayerController : MonoBehaviour
         return renderer;
     }
 
+    SpriteRenderer EnsureEyeSocketRenderer(string objectName)
+    {
+        Transform existing = transform.Find(objectName);
+        GameObject go = existing != null ? existing.gameObject : new GameObject(objectName);
+        go.transform.SetParent(transform, false);
+        go.transform.localRotation = Quaternion.identity;
+        go.transform.localScale = Vector3.one;
+
+        SpriteRenderer renderer = go.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+            renderer = go.AddComponent<SpriteRenderer>();
+
+        renderer.sprite = EyeSocketSprite();
+        renderer.color = missingEyeSocketColor;
+        renderer.sortingLayerID = spriteRenderer.sortingLayerID;
+        renderer.sortingOrder = playerSortingOrder + 2;
+        renderer.sharedMaterial = spriteRenderer.sharedMaterial;
+        return renderer;
+    }
+
+    static Sprite EyeSocketSprite()
+    {
+        if (eyeSocketSprite != null)
+            return eyeSocketSprite;
+
+        const int width = 8;
+        const int height = 13;
+        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+        {
+            name = "PlayerMissingEyeSocket",
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        Vector2 center = new Vector2((width - 1) * 0.5f, (height - 1) * 0.5f);
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                float nx = (x - center.x) / (width * 0.5f);
+                float ny = (y - center.y) / (height * 0.5f);
+                texture.SetPixel(x, y, nx * nx + ny * ny <= 1f ? Color.white : clear);
+            }
+
+        texture.Apply();
+        eyeSocketSprite = Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), 100f);
+        eyeSocketSprite.name = "PlayerMissingEyeSocket";
+        return eyeSocketSprite;
+    }
+
     void ApplyPlayerSorting()
     {
         if (spriteRenderer == null)
@@ -402,6 +476,75 @@ public class PlayerController : MonoBehaviour
             rightArmRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
             rightArmRenderer.sortingOrder = playerSortingOrder + 1;
         }
+
+        ApplyEyeSocketSorting(leftEyeSocketRenderer);
+        ApplyEyeSocketSorting(rightEyeSocketRenderer);
+    }
+
+    void ApplyEyeSocketSorting(SpriteRenderer renderer)
+    {
+        if (renderer == null)
+            return;
+
+        renderer.sortingLayerID = spriteRenderer.sortingLayerID;
+        renderer.sortingOrder = playerSortingOrder + 2;
+    }
+
+    void ApplyMissingEyeSockets()
+    {
+        if (spriteRenderer == null || spriteRenderer.sprite == null
+            || leftEyeSocketRenderer == null || rightEyeSocketRenderer == null)
+            return;
+
+        bool missingLeft = !BodyConditionUtility.HasPart(BodySlot.EyeLeft);
+        bool missingRight = !BodyConditionUtility.HasPart(BodySlot.EyeRight);
+
+        leftEyeSocketRenderer.color = missingEyeSocketColor;
+        rightEyeSocketRenderer.color = missingEyeSocketColor;
+
+        switch (facingDirection)
+        {
+            case FacingDirection.Up:
+                SetRendererVisible(leftEyeSocketRenderer, false);
+                SetRendererVisible(rightEyeSocketRenderer, false);
+                break;
+
+            case FacingDirection.Left:
+                ConfigureEyeSocket(leftEyeSocketRenderer, missingLeft, new Vector2(24.5f, 39.5f), new Vector2(0.5f, 0.78f));
+                SetRendererVisible(rightEyeSocketRenderer, false);
+                break;
+
+            case FacingDirection.Right:
+                SetRendererVisible(leftEyeSocketRenderer, false);
+                ConfigureEyeSocket(rightEyeSocketRenderer, missingRight, new Vector2(46.5f, 38f), new Vector2(0.5f, 1f));
+                break;
+
+            default:
+                ConfigureEyeSocket(leftEyeSocketRenderer, missingLeft, new Vector2(24.5f, 38f), Vector2.one);
+                ConfigureEyeSocket(rightEyeSocketRenderer, missingRight, new Vector2(45.5f, 38f), Vector2.one);
+                break;
+        }
+    }
+
+    void ConfigureEyeSocket(SpriteRenderer renderer, bool visible, Vector2 pixelCenterFromTop, Vector2 scale)
+    {
+        if (renderer == null)
+            return;
+
+        renderer.enabled = visible;
+        if (!visible)
+            return;
+
+        Sprite bodySprite = spriteRenderer.sprite;
+        float pixelsPerUnit = Mathf.Max(1f, bodySprite.pixelsPerUnit);
+        float frameStartX = Mathf.Floor(bodySprite.rect.x / PlayerFrameWidth) * PlayerFrameWidth;
+        float textureX = frameStartX + pixelCenterFromTop.x;
+        float textureY = PlayerFrameHeight - 1f - pixelCenterFromTop.y;
+        renderer.transform.localPosition = new Vector3(
+            (textureX - bodySprite.rect.x - bodySprite.pivot.x) / pixelsPerUnit,
+            (textureY - bodySprite.rect.y - bodySprite.pivot.y) / pixelsPerUnit,
+            0f);
+        renderer.transform.localScale = new Vector3(scale.x, scale.y, 1f);
     }
 
     void UpdateWalkAnimationTime()

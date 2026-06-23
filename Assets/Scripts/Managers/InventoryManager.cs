@@ -152,6 +152,13 @@ public class InventoryManager : MonoBehaviour
         return true;
     }
 
+    // 월드 드랍 아이템 획득용. 동전/누더기/보석 등은 보관함에만 들어간다.
+    // 보관함이 가득 차 있으면 false 를 반환해 호출 측이 나중에 다시 시도할 수 있다.
+    public bool AddItem(ItemKind kind)
+    {
+        return TryAddPart(new BodyPart(kind), false);
+    }
+
     public int RepairAllParts()
     {
         int repaired = 0;

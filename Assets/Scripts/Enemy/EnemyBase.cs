@@ -27,6 +27,14 @@ public class EnemyBase : MonoBehaviour
     protected int currentHp;
     public bool HasManagedProfile { get; private set; }
 
+    // Which profile bucket in EnemyManager applies to this enemy. Defaults to None
+    // so bosses / plain EnemyBase objects are never assigned a doll profile.
+    public virtual EnemyKind Kind => EnemyKind.None;
+
+    // Raised right before this enemy is destroyed. Used by systems that track per-kill
+    // events (e.g. the Book boss reducing its body HP as summoned minions are defeated).
+    public System.Action<EnemyBase> OnDied;
+
     SpriteRenderer spriteRenderer;
     Sprite[] animationFrames;
     float animationTime;
@@ -229,6 +237,19 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
+    // Applies only the shared stats (HP) without touching sprites/colors. Used by
+    // the special enemies that keep their own art but still want HP tunable from
+    // the EnemyManager profile list.
+    protected void ApplyProfileStats(EnemyProfile profile)
+    {
+        if (profile == null)
+            return;
+
+        HasManagedProfile = true;
+        maxHp = Mathf.Max(1, profile.maxHp);
+        currentHp = maxHp;
+    }
+
     public virtual void ApplyProfile(EnemyProfile profile)
     {
         if (profile == null)
@@ -306,7 +327,7 @@ public class EnemyBase : MonoBehaviour
             .ToArray();
     }
 
-    public void TakeDamage(int damage)
+    public virtual void TakeDamage(int damage)
     {
         currentHp -= damage;
         OnDamaged();
@@ -439,6 +460,7 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void Die()
     {
+        OnDied?.Invoke(this);
         EnemyManager.Instance?.OnEnemyDied(this);
         Destroy(gameObject);
     }

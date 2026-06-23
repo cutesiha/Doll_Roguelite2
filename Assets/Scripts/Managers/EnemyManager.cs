@@ -1,10 +1,16 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+// Which enemy class a profile applies to. Default (0) is Chaser so the existing
+// d1/d2/d3 doll profiles keep working without being re-tagged. "None" is the
+// default for enemies that should ignore profiles (e.g. bosses).
+public enum EnemyKind { Chaser, Needle, Ribbon, Spool, SmallButton, None }
+
 [System.Serializable]
 public class EnemyProfile
 {
     public string profileName = "Enemy";
+    public EnemyKind enemyType = EnemyKind.Chaser;
     [Min(1)] public int maxHp = 2;
     [Min(0f)] public float moveSpeed = 1f;
     [Min(1f)] public float framesPerSecond = 8f;
@@ -22,6 +28,7 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] bool randomizeEnemyProfiles = true;
 
     List<EnemyBase> activeEnemies = new();
+    readonly List<EnemyProfile> profileMatches = new();
     System.Action onRoomCleared;
     int nextProfileIndex;
 
@@ -39,7 +46,7 @@ public class EnemyManager : MonoBehaviour
         if (!force && enemy.HasManagedProfile)
             return true;
 
-        EnemyProfile profile = SelectProfile();
+        EnemyProfile profile = SelectProfile(enemy.Kind);
         if (profile == null)
             return false;
 
@@ -73,15 +80,25 @@ public class EnemyManager : MonoBehaviour
             onRoomCleared?.Invoke();
     }
 
-    EnemyProfile SelectProfile()
+    EnemyProfile SelectProfile(EnemyKind kind)
     {
         if (enemyProfiles == null || enemyProfiles.Count == 0)
             return null;
 
-        if (randomizeEnemyProfiles)
-            return enemyProfiles[Random.Range(0, enemyProfiles.Count)];
+        // Only consider profiles tagged for this enemy type. Multiple profiles of
+        // the same type (e.g. d1/d2/d3 dolls) still give variety.
+        profileMatches.Clear();
+        for (int i = 0; i < enemyProfiles.Count; i++)
+            if (enemyProfiles[i] != null && enemyProfiles[i].enemyType == kind)
+                profileMatches.Add(enemyProfiles[i]);
 
-        EnemyProfile profile = enemyProfiles[nextProfileIndex % enemyProfiles.Count];
+        if (profileMatches.Count == 0)
+            return null;
+
+        if (randomizeEnemyProfiles)
+            return profileMatches[Random.Range(0, profileMatches.Count)];
+
+        EnemyProfile profile = profileMatches[nextProfileIndex % profileMatches.Count];
         nextProfileIndex++;
         return profile;
     }
