@@ -153,6 +153,8 @@ public class PlayerController : MonoBehaviour
         var kb = Keyboard.current;
         if (kb == null) return;
 
+        HandleJewelHotkey(kb);
+
         if (Time.time < movementLockedUntil)
         {
             moveInput = Vector2.zero;
@@ -201,6 +203,27 @@ public class PlayerController : MonoBehaviour
     {
         speedMultiplier = Mathf.Clamp(multiplier, 0.05f, 1f);
         speedMultiplierUntil = Time.time + Mathf.Max(0f, duration);
+    }
+
+    // Temporary movement boost (multiplier > 1) used by buff items such as the haste jewel.
+    public void ApplySpeedBuff(float multiplier, float duration)
+    {
+        speedMultiplier = Mathf.Clamp(multiplier, 1f, 4f);
+        speedMultiplierUntil = Time.time + Mathf.Max(0f, duration);
+    }
+
+    // Q: 장착된 보석을 발동하고 소모한다. 일시정지(인벤토리/메뉴) 중에는 무시.
+    void HandleJewelHotkey(Keyboard kb)
+    {
+        if (!kb.qKey.wasPressedThisFrame || Time.timeScale <= 0f)
+            return;
+
+        InventoryManager inventory = InventoryManager.Instance;
+        if (inventory == null || inventory.jewel == null)
+            return;
+
+        if (JewelAbility.Activate(inventory.jewel))
+            inventory.ConsumeJewel();
     }
 
     public void FaceDirection(Vector2 direction)

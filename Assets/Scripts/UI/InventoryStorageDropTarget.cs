@@ -12,13 +12,24 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
 
     public void OnDrop(PointerEventData eventData)
     {
-        var source = eventData.pointerDrag != null
-            ? eventData.pointerDrag.GetComponent<InventoryEquippedDragSource>()
-            : null;
-        if (source == null || InventoryManager.Instance == null)
+        if (InventoryManager.Instance == null || eventData.pointerDrag == null)
             return;
 
-        if (InventoryManager.Instance.TryUnequipToStorage(source.BodySlot, storageIndex))
-            SoundManager.PlayClick();
+        // 신체 부위를 보관함으로 내리기.
+        var partSource = eventData.pointerDrag.GetComponent<InventoryEquippedDragSource>();
+        if (partSource != null)
+        {
+            if (InventoryManager.Instance.TryUnequipToStorage(partSource.BodySlot, storageIndex))
+                SoundManager.PlayClick();
+            return;
+        }
+
+        // 보석 슬롯에서 보석을 보관함으로 되돌리기.
+        var jewelSource = eventData.pointerDrag.GetComponent<InventoryJewelDragSource>();
+        if (jewelSource != null)
+        {
+            if (InventoryManager.Instance.TryUnequipJewelToStorage(storageIndex))
+                SoundManager.PlayClick();
+        }
     }
 }

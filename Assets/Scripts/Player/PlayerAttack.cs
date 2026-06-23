@@ -87,6 +87,8 @@ public class PlayerAttack : MonoBehaviour
     bool nextAttackUsesLeftArm = true;
     float leftArmBlockedUntil;
     float rightArmBlockedUntil;
+    int tempDamageBonus;
+    float tempDamageBonusUntil;
     Vector2 lastFacingDirection = Vector2.down;
     SpriteRenderer fistRenderer;
     SpriteRenderer suppressedArmRenderer;
@@ -133,6 +135,18 @@ public class PlayerAttack : MonoBehaviour
             leftArmBlockedUntil = Mathf.Max(leftArmBlockedUntil, blockedUntil);
         else if (slot == BodySlot.ArmRight)
             rightArmBlockedUntil = Mathf.Max(rightArmBlockedUntil, blockedUntil);
+    }
+
+    // 광폭 보석 등으로 일정 시간 공격력을 올린다.
+    public void ApplyTemporaryDamageBonus(int bonus, float duration)
+    {
+        tempDamageBonus = Mathf.Max(0, bonus);
+        tempDamageBonusUntil = Time.time + Mathf.Max(0f, duration);
+    }
+
+    int ActiveDamageBonus()
+    {
+        return Time.time < tempDamageBonusUntil ? tempDamageBonus : 0;
     }
 
     void Update()
@@ -391,7 +405,7 @@ public class PlayerAttack : MonoBehaviour
         {
             EnemyBase enemy = hit.GetComponentInParent<EnemyBase>();
             if (enemy != null)
-                enemy.TakeDamage(attackDamage);
+                enemy.TakeDamage(attackDamage + ActiveDamageBonus());
         }
     }
 

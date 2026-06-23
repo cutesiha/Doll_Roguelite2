@@ -1,15 +1,9 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class InventoryEquipDropTarget : MonoBehaviour, IDropHandler
+// Drop target on the dedicated jewel slot. Accepts only Gem items dragged from storage.
+public class InventoryJewelDropTarget : MonoBehaviour, IDropHandler
 {
-    [SerializeField] BodySlot acceptedSlot;
-
-    public void SetAcceptedSlot(BodySlot slot)
-    {
-        acceptedSlot = slot;
-    }
-
     public void OnDrop(PointerEventData eventData)
     {
         var source = eventData.pointerDrag != null
@@ -23,10 +17,10 @@ public class InventoryEquipDropTarget : MonoBehaviour, IDropHandler
             return;
 
         BodyPart part = InventoryManager.Instance.storage[storageIndex];
-        if (part == null || !part.IsEquippable || part.slot != acceptedSlot)
+        if (part == null || !part.IsJewel)
             return;
 
-        if (InventoryManager.Instance.EquipFromStorage(storageIndex))
+        if (InventoryManager.Instance.EquipJewelFromStorage(storageIndex))
             SoundManager.PlayClick();
     }
 }

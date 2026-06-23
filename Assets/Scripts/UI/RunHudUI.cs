@@ -46,6 +46,7 @@ public class RunHudUI : MonoBehaviour
     RectTransform mapViewport;
     RectTransform mapContent;
     RectTransform miniMapContent;
+    GameObject waveHud;
     TextMeshProUGUI waveLabel;
     TextMeshProUGUI waveClearLabel;
     TextMeshProUGUI diaryLabel;
@@ -55,6 +56,12 @@ public class RunHudUI : MonoBehaviour
     TextMeshProUGUI bossHpText;
     const float BossHpTrackWidth = 864f;
     const float BossHpTrackHeight = 30f;
+    RectTransform judgementTimerHud;
+    Image judgementTimerFill;
+    TextMeshProUGUI judgementTimerSeconds;
+    Color judgementTimerBaseColor = new Color(1f, 0.85f, 0.30f, 1f);
+    static readonly Color JudgementTimerHigh = new Color(1f, 0.85f, 0.30f, 1f);
+    static readonly Color JudgementTimerLow = new Color(1f, 0.20f, 0.18f, 1f);
     RectTransform bossPartsHud;
     readonly RectTransform[] bossPartRows = new RectTransform[3];
     readonly Image[] bossPartFills = new Image[3];
@@ -584,6 +591,13 @@ public class RunHudUI : MonoBehaviour
 
     void BindExistingWaveUi()
     {
+        if (waveHud == null)
+        {
+            Transform hud = FindChildRecursive(transform, "WaveHud");
+            if (hud != null)
+                waveHud = hud.gameObject;
+        }
+
         waveDots.Clear();
         for (int i = 0; i < 3; i++)
         {
@@ -879,6 +893,7 @@ void BuildPixelDoll(Transform parent)
     void BuildWaveHud()
     {
         GameObject wave = Rect(transform, "WaveHud", Anchor.TopCenter, new Vector2(0f, -38f), new Vector2(238f, 44f));
+        waveHud = wave;
         Image bg = wave.AddComponent<Image>();
         SetRoundedImage(bg, roundedButtonSprite);
         bg.color = new Color(0.08f, 0.06f, 0.07f, 0.86f);
@@ -1009,6 +1024,114 @@ void BuildPixelDoll(Transform parent)
     {
         if (bossHpHud != null)
             bossHpHud.gameObject.SetActive(false);
+    }
+
+    // ---- judgement / design-match circular timer --------------------------
+
+    void EnsureJudgementTimer()
+    {
+        if (judgementTimerHud != null)
+            return;
+
+        Transform existing = FindChildRecursive(transform, "JudgementTimerGauge");
+        if (existing != null)
+        {
+            judgementTimerHud = existing as RectTransform;
+            judgementTimerFill = FindChildComponent<Image>("TimerFill");
+            judgementTimerSeconds = FindChildComponent<TextMeshProUGUI>("TimerSeconds");
+            if (judgementTimerHud != null && judgementTimerFill != null)
+                return;
+
+            DestroyUiObject(judgementTimerHud.gameObject);
+            judgementTimerHud = null;
+        }
+
+        BuildJudgementTimer();
+    }
+
+    void BuildJudgementTimer()
+    {
+        GameObject hud = Rect(transform, "JudgementTimerGauge", Anchor.TopCenter, new Vector2(0f, -210f), new Vector2(168f, 168f));
+        judgementTimerHud = hud.GetComponent<RectTransform>();
+
+        // Dim full-circle track behind the radial fill.
+        GameObject track = Rect(hud.transform, "TimerTrack", Anchor.TopCenter, new Vector2(0f, 0f), new Vector2(168f, 168f));
+        Image trackImage = track.AddComponent<Image>();
+        SetRoundedImage(trackImage, circleSprite);
+        trackImage.color = new Color(0.13f, 0.10f, 0.12f, 0.92f);
+        trackImage.raycastTarget = false;
+
+        // Radial fill that empties clockwise from the top as time runs out.
+        GameObject fill = Rect(track.transform, "TimerFill", Anchor.Stretch, Vector2.zero, Vector2.zero);
+        judgementTimerFill = fill.AddComponent<Image>();
+        judgementTimerFill.sprite = circleSprite;
+        judgementTimerFill.type = Image.Type.Filled;
+        judgementTimerFill.fillMethod = Image.FillMethod.Radial360;
+        judgementTimerFill.fillOrigin = (int)Image.Origin360.Top;
+        judgementTimerFill.fillClockwise = true;
+        judgementTimerFill.fillAmount = 1f;
+        judgementTimerFill.color = JudgementTimerHigh;
+        judgementTimerFill.raycastTarget = false;
+
+        // Dark hub carves the disc into a ring and hosts the seconds readout.
+        GameObject hub = Rect(track.transform, "TimerHub", Anchor.Center, Vector2.zero, new Vector2(112f, 112f));
+        Image hubImage = hub.AddComponent<Image>();
+        SetRoundedImage(hubImage, circleSprite);
+        hubImage.color = new Color(0.10f, 0.08f, 0.09f, 0.96f);
+        hubImage.raycastTarget = false;
+
+        judgementTimerSeconds = Text(hub.transform, "TimerSeconds", "0.0", 40f, Color.white, TextAlignmentOptions.Center);
+        judgementTimerSeconds.fontStyle = FontStyles.Bold;
+        judgementTimerSeconds.raycastTarget = false;
+        judgementTimerSeconds.rectTransform.anchorMin = Vector2.zero;
+        judgementTimerSeconds.rectTransform.anchorMax = Vector2.one;
+        judgementTimerSeconds.rectTransform.offsetMin = Vector2.zero;
+        judgementTimerSeconds.rectTransform.offsetMax = Vector2.zero;
+
+        hud.SetActive(false);
+    }
+
+    void ApplyShowJudgementTimer(string caption, Color color)
+    {
+        EnsureJudgementTimer();
+        if (judgementTimerHud == null)
+            return;
+
+        judgementTimerHud.gameObject.SetActive(true);
+        judgementTimerHud.SetAsLastSibling();
+        judgementTimerBaseColor = color;
+
+        if (judgementTimerFill != null)
+        {
+            judgementTimerFill.color = color;
+            judgementTimerFill.fillAmount = 1f;
+        }
+
+        if (judgementTimerSeconds != null)
+            judgementTimerSeconds.text = "0.0";
+    }
+
+    void ApplySetJudgementTimer(float remaining, float duration)
+    {
+        if (judgementTimerHud == null)
+            return;
+
+        float fraction = duration > 0f ? Mathf.Clamp01(remaining / duration) : 0f;
+        if (judgementTimerFill != null)
+        {
+            judgementTimerFill.fillAmount = fraction;
+            // Stay the base colour for most of the timer, then bleed to red near the end.
+            judgementTimerFill.color = Color.Lerp(JudgementTimerLow, judgementTimerBaseColor, Mathf.InverseLerp(0f, 0.35f, fraction));
+        }
+
+        if (judgementTimerSeconds != null)
+            judgementTimerSeconds.text = Mathf.Max(0f, remaining).ToString("0.0");
+    }
+
+    void HideJudgementTimerHud()
+    {
+        if (judgementTimerHud != null)
+            judgementTimerHud.gameObject.SetActive(false);
     }
 
     void EnsureBossPartsHud()
@@ -1491,6 +1614,47 @@ void BuildTopRightMapButton()
         RunHudUI hud = ActiveInstance();
         if (hud != null)
             hud.PlayWaveClear();
+    }
+
+    public static void SetWaveHudVisible(bool visible)
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.ApplyWaveHudVisible(visible);
+    }
+
+    void ApplyWaveHudVisible(bool visible)
+    {
+        if (waveHud == null)
+        {
+            Transform found = FindChildRecursive(transform, "WaveHud");
+            if (found != null)
+                waveHud = found.gameObject;
+        }
+
+        if (waveHud != null)
+            waveHud.SetActive(visible);
+    }
+
+    public static void ShowJudgementTimer(string caption, Color color)
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.ApplyShowJudgementTimer(caption, color);
+    }
+
+    public static void SetJudgementTimer(float remaining, float duration)
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.ApplySetJudgementTimer(remaining, duration);
+    }
+
+    public static void HideJudgementTimer()
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.HideJudgementTimerHud();
     }
 
     public static void SetBossHealth(string bossName, int current, int max)
