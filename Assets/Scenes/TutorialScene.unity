@@ -238,7 +238,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 010eb979e6195b449a3c8ac8939524c0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BodyManager
 --- !u!114 &259531826
 MonoBehaviour:
@@ -250,7 +250,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8a8720917cc9f74d8d23f5a37e33d1f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerManager
   maxHp: 3
   currentHp: 3
@@ -633,7 +633,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
@@ -1059,13 +1059,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3325f474827987b4bb532d9a76a0bdb2, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialSceneController
   sceneCamera: {fileID: 562013459}
   player: {fileID: 2064320642}
   playerAttack: {fileID: 2064320641}
   workbench: {fileID: 0}
   roomSceneName: RoomScene
+  memoSprite: {fileID: 0}
   workbenchPromptDistance: 2
   doorPromptDistance: 1.65
   enemyEntranceStart: {x: -12, y: -0.6}
@@ -1108,7 +1109,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0a560d5135adb44593a729ebe3c44cf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialOpeningCutscene
   pages:
   - {fileID: 21300000, guid: 9bad0d652b3c188428215fe37c00e2b8, type: 3}
@@ -1342,7 +1343,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e6472a6536b8c234d845ab545112d24a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SoundManager
   masterSfxVolume: 1
   sfxSource: {fileID: 1820889139}
@@ -1496,9 +1497,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dcffc95b88a0ab442b30ceb7e9bae742, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageReceiver
   contactDamage: 1
+  maxDamagePerHit: 1
   damageCooldown: 0.65
   enemyLayers:
     serializedVersion: 2
@@ -1514,8 +1516,13 @@ MonoBehaviour:
   cameraShakeMagnitude: 0.11
   dropDownDistance: 0.52
   dropSideDistance: 0.16
-  fallbackDroppedPartScaleRatio: 0.72
   droppedPartSortingOrder: 4
+  eyeDropSize: 0.55
+  armDropSize: 1.35
+  legDropSize: 1.5
+  eyeDropSizeAnchor: {fileID: 0}
+  armDropSizeAnchor: {fileID: 0}
+  legDropSizeAnchor: {fileID: 0}
 --- !u!60 &2064320638
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -1627,7 +1634,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e45cdb5744a04004187ae98c9efdeaa8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterOvalShadow
   footAnchorOffset: {x: 0, y: 0}
   shadowScale: {x: 1.08, y: 0.42}
@@ -1703,7 +1710,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5e2edcb20cf59a444be258d88c61017f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAttack
   playerController: {fileID: 2064320642}
   bodyRenderer: {fileID: 2064320640}
@@ -1754,7 +1761,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 408951dc5b56eb745a37904e90030fc8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   moveSpeed: 5
   missingLegSpeedMultiplier: 0.5
@@ -1762,6 +1769,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 2064320640}
   leftArmRenderer: {fileID: 660535627}
   rightArmRenderer: {fileID: 1480906531}
+  missingEyeSocketColor: {r: 0.09803922, g: 0.09019608, b: 0.09019608, a: 1}
   playerSortingOrder: 120
   upSprite: {fileID: 21300000, guid: 4e441c1c71ecb9542a5a3d4f45d16a13, type: 3}
   downSprite: {fileID: 21300000, guid: 333c16bc07828c841b2bb1e93d61e2b6, type: 3}

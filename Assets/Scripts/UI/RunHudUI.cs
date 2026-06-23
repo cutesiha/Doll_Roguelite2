@@ -504,8 +504,13 @@ public class RunHudUI : MonoBehaviour
         Image viewportImage = viewportTransform.GetComponent<Image>();
         if (viewportImage == null)
             viewportImage = viewportTransform.gameObject.AddComponent<Image>();
-        viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+        viewportImage.color = Color.white;
         viewportImage.raycastTarget = true;
+
+        Mask viewportMask = viewportTransform.GetComponent<Mask>();
+        if (viewportMask == null)
+            viewportMask = viewportTransform.gameObject.AddComponent<Mask>();
+        viewportMask.showMaskGraphic = false;
 
         if (mapContent == null)
             mapContent = FindChildComponent<RectTransform>("MapContent");
@@ -1695,6 +1700,7 @@ void BuildTopRightMapButton()
     {
         DismissMapControlHint();
         MapRunState.EnsureRun();
+        EnsureMapScrollHierarchy();
         BuildMapTree();
         if (mapScrollRect != null)
             mapScrollRect.verticalNormalizedPosition = 1f;
@@ -1946,8 +1952,10 @@ void BuildTopRightMapButton()
         mapViewport = viewport.GetComponent<RectTransform>();
         viewport.AddComponent<RectMask2D>();
         Image viewportImage = viewport.AddComponent<Image>();
-        viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+        viewportImage.color = Color.white;
         viewportImage.raycastTarget = true;
+        Mask viewportMask = viewport.AddComponent<Mask>();
+        viewportMask.showMaskGraphic = false;
         mapScrollRect.viewport = mapViewport;
 
         GameObject content = Rect(viewport.transform, "MapContent", Anchor.TopCenter, Vector2.zero, new Vector2(1040f, 1500f));
@@ -2018,9 +2026,7 @@ void BuildTopRightMapButton()
         nodeImage.sprite = icon != null ? icon : circleSprite;
         nodeImage.preserveAspect = true;
         nodeImage.color = revealRoom ? Color.white : HiddenMapNodeColor;
-        Button button = nodeGO.AddComponent<Button>();
-        button.targetGraphic = nodeImage;
-        button.interactable = false;
+        nodeImage.raycastTarget = false;
 
         if (revealRoom)
         {
