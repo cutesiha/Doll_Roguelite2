@@ -85,6 +85,8 @@ public class PlayerAttack : MonoBehaviour
     int pendingPressCount;
     bool isAttacking;
     bool nextAttackUsesLeftArm = true;
+    float leftArmBlockedUntil;
+    float rightArmBlockedUntil;
     Vector2 lastFacingDirection = Vector2.down;
     SpriteRenderer fistRenderer;
     SpriteRenderer suppressedArmRenderer;
@@ -122,6 +124,15 @@ public class PlayerAttack : MonoBehaviour
         attackSize = new Vector2(Mathf.Max(0f, newAttackSize.x), Mathf.Max(0f, newAttackSize.y));
         attackDuration = Mathf.Clamp(newAttackDuration, 0.05f, 0.5f);
         fistScale = new Vector2(Mathf.Max(0f, newFistScale.x), Mathf.Max(0f, newFistScale.y));
+    }
+
+    public void ApplyTemporaryArmBlock(BodySlot slot, float duration)
+    {
+        float blockedUntil = Time.time + Mathf.Max(0f, duration);
+        if (slot == BodySlot.ArmLeft)
+            leftArmBlockedUntil = Mathf.Max(leftArmBlockedUntil, blockedUntil);
+        else if (slot == BodySlot.ArmRight)
+            rightArmBlockedUntil = Mathf.Max(rightArmBlockedUntil, blockedUntil);
     }
 
     void Update()
@@ -229,6 +240,7 @@ public class PlayerAttack : MonoBehaviour
 
     void BeginAttack(Vector2 direction)
     {
+
         BodyState bodyState = BodyConditionUtility.CurrentState();
         bool hasLeft = bodyState == null || bodyState.armLeft;
         bool hasRight = bodyState == null || bodyState.armRight;
@@ -253,6 +265,13 @@ public class PlayerAttack : MonoBehaviour
 
         cooldownTimer = attackCooldown;
         StartCoroutine(AttackRoutine(NormalizedDirection(direction), arm));
+    }
+
+    bool IsArmBlocked(AttackArm arm)
+    {
+        return arm == AttackArm.Left
+            ? Time.time < leftArmBlockedUntil
+            : Time.time < rightArmBlockedUntil;
     }
 
     IEnumerator AttackRoutine(Vector2 direction, AttackArm arm)

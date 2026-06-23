@@ -40,6 +40,52 @@ public static class EnemyTelegraph
         return CreateBox(name, center, new Vector2(delta.magnitude, width), angle, color, sortingOrder);
     }
 
+    public static GameObject CreatePolygon(string name, Vector2[] worldPoints, Color fill, int sortingOrder = 60)
+    {
+        GameObject root = new GameObject(name);
+        if (worldPoints == null || worldPoints.Length < 3)
+            return root;
+
+        Vector2 center = Vector2.zero;
+        for (int i = 0; i < worldPoints.Length; i++)
+            center += worldPoints[i];
+        center /= worldPoints.Length;
+        root.transform.position = new Vector3(center.x, center.y, 0f);
+
+        Vector3[] vertices = new Vector3[worldPoints.Length];
+        for (int i = 0; i < worldPoints.Length; i++)
+            vertices[i] = worldPoints[i] - center;
+
+        int[] triangles = new int[(worldPoints.Length - 2) * 3];
+        for (int i = 0; i < worldPoints.Length - 2; i++)
+        {
+            triangles[i * 3] = 0;
+            triangles[i * 3 + 1] = i + 1;
+            triangles[i * 3 + 2] = i + 2;
+        }
+
+        Mesh mesh = new Mesh { name = name + "_Mesh" };
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateBounds();
+
+        MeshFilter filter = root.AddComponent<MeshFilter>();
+        filter.sharedMesh = mesh;
+        MeshRenderer renderer = root.AddComponent<MeshRenderer>();
+        renderer.material = new Material(Shader.Find("Sprites/Default"));
+        renderer.material.color = fill;
+        renderer.sortingOrder = sortingOrder;
+
+        for (int i = 0; i < worldPoints.Length; i++)
+        {
+            Vector2 a = worldPoints[i] - center;
+            Vector2 b = worldPoints[(i + 1) % worldPoints.Length] - center;
+            CreateLineSegment(root.transform, "PolygonEdge_" + i, a, b, 0.12f, WithAlpha(fill, 0.95f), sortingOrder + 1);
+        }
+
+        return root;
+    }
+
     public static GameObject CreateFan(string name, Vector2 origin, Vector2 direction, float radius, float angleDegrees, Color color, int sortingOrder = 60)
     {
         GameObject root = new GameObject(name);
@@ -65,6 +111,128 @@ public static class EnemyTelegraph
         Vector2 right = new Vector2(Mathf.Cos(rightAngle), Mathf.Sin(rightAngle)) * radius;
         CreateLineSegment(root.transform, "FanRight", Vector2.zero, right, 0.12f, color, sortingOrder + 1);
         return root;
+    }
+
+    // A filled fan made of radial slices ordered from one edge to the other so it can be
+    // swept in (revealed) to read as a swinging strike. Root has no renderer of its own.
+    public static GameObject CreateFilledFan(string name, Vector2 origin, Vector2 direction, float radius, float angleDegrees, Color color, int sortingOrder = 60)
+    {
+        GameObject root = new GameObject(name);
+        root.transform.position = new Vector3(origin.x, origin.y, 0f);
+        float centerAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        root.transform.rotation = Quaternion.Euler(0f, 0f, centerAngle);
+
+        int slices = Mathf.Max(8, Mathf.CeilToInt(angleDegrees / 3f));
+        float half = angleDegrees * 0.5f;
+        float step = angleDegrees / slices;
+        float sliceWidth = radius * (step * Mathf.Deg2Rad) * 1.7f;
+        for (int i = 0; i < slices; i++)
+        {
+            float localAngle = -half + step * (i + 0.5f);
+            float rad = localAngle * Mathf.Deg2Rad;
+            Vector2 dir = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
+            SpriteRenderer slice = AddRect(root.transform, "FanSlice_" + i, dir * (radius * 0.5f), new Vector2(radius, sliceWidth), color, sortingOrder);
+            slice.transform.localRotation = Quaternion.Euler(0f, 0f, localAngle);
+        }
+
+        return root;
+    }
+
+    // A filled straight strip made of segments ordered start -> end so it can be wiped out
+    // to read as a lashing thrust. Root has no renderer of its own.
+    public static GameObject CreateFilledStrip(string name, Vector2 start, Vector2 end, float width, Color color, int sortingOrder, int segments)
+    {
+        GameObject root = new GameObject(name);
+        root.transform.position = new Vector3(start.x, start.y, 0f);
+        Vector2 delta = end - start;
+        float length = delta.magnitude;
+        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+        root.transform.rotation = Quaternion.Euler(0f, 0f, angle);
+
+        int count = Mathf.Max(2, segments);
+        float segLen = length / count;
+        for (int i = 0; i < count; i++)
+            AddRect(root.transform, "Seg_" + i, new Vector2(segLen * (i + 0.5f), 0f), new Vector2(segLen * 1.04f, width), color, sortingOrder);
+
+        return root;
+    }
+
+    // A dotted, pixel-art style thread built from a chain of small squares with a slight
+    // wobble and alternating shade. Dots are ordered start -> end so revealing them in order
+    // reads as a thread stretching out. Root has no renderer of its own.
+    public static GameObject CreateThread(string name, Vector2 start, Vector2 end, float width, Color color, int sortingOrder = 60)
+    {
+        return CreateThread(name, start, end, width, new[] { color }, sortingOrder);
+    }
+
+    // Palette variant used by thread attacks so adjacent fibers can carry subtly
+    // different cloth tones instead of reading as one flat warning-colored line.
+    public static GameObject CreateThread(string name, Vector2 start, Vector2 end, float width, Color[] palette, int sortingOrder = 60)
+    {
+        GameObject root = new GameObject(name);
+        root.transform.position = new Vector3(start.x, start.y, 0f);
+        Vector2 delta = end - start;
+        float length = delta.magnitude;
+        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+        root.transform.rotation = Quaternion.Euler(0f, 0f, angle);
+
+        float dotSize = Mathf.Max(0.06f, width);
+        float spacing = dotSize * 0.85f;
+        int dotCount = Mathf.Max(2, Mathf.CeilToInt(length / spacing) + 1);
+        for (int i = 0; i < dotCount; i++)
+        {
+            float along = Mathf.Min(length, i * spacing);
+            float wobble = Mathf.Sin(i * 1.7f) * dotSize * 0.4f;
+            float jitter = 0.7f + 0.55f * Mathf.Abs(Mathf.Sin(i * 2.3f));
+            Color dotColor = palette != null && palette.Length > 0
+                ? palette[i % palette.Length]
+                : Color.white;
+            dotColor.a *= (i % 2 == 0) ? 1f : 0.78f;
+            AddRect(root.transform, "ThreadDot_" + i, new Vector2(along, wobble), new Vector2(dotSize * jitter, dotSize * jitter), dotColor, sortingOrder);
+        }
+
+        return root;
+    }
+
+    // Reveals the first `fraction` of a telegraph's child renderers (in creation order),
+    // hiding the rest. Used to sweep/wipe/extend a filled telegraph over time.
+    public static void SetRevealFraction(GameObject root, float fraction)
+    {
+        if (root == null)
+            return;
+
+        SpriteRenderer[] renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
+        int visible = Mathf.RoundToInt(Mathf.Clamp01(fraction) * renderers.Length);
+        for (int i = 0; i < renderers.Length; i++)
+            renderers[i].enabled = i < visible;
+    }
+
+    // Sets every child renderer's alpha to an absolute value, so a uniformly coloured
+    // telegraph can be faded out without compounding across frames.
+    public static void SetUniformAlpha(GameObject root, float alpha)
+    {
+        if (root == null)
+            return;
+
+        SpriteRenderer[] renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
+        float a = Mathf.Clamp01(alpha);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Color c = renderers[i].color;
+            c.a = a;
+            renderers[i].color = c;
+        }
+
+        MeshRenderer[] meshRenderers = root.GetComponentsInChildren<MeshRenderer>(true);
+        for (int i = 0; i < meshRenderers.Length; i++)
+        {
+            if (meshRenderers[i].material == null)
+                continue;
+
+            Color c = meshRenderers[i].material.color;
+            c.a = a;
+            meshRenderers[i].material.color = c;
+        }
     }
 
     public static IEnumerator Blink(GameObject target, int blinkCount, float interval)

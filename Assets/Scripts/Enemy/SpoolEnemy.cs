@@ -23,7 +23,9 @@ public class SpoolEnemy : EnemyBase
     [SerializeField, Min(0.1f)] float strandDuration = 2.1f;
     [SerializeField, Min(1)] int strandDamage = 20;
     [SerializeField] Color warningColor = new Color(1f, 0.02f, 0.02f, 0.32f);
-    [SerializeField] Color strandColor = new Color(1f, 0.02f, 0.02f, 0.55f);
+    [SerializeField] Color strandIvoryColor = new Color(0.96f, 0.91f, 0.82f, 0.96f);
+    [SerializeField] Color strandPeachColor = new Color(0.91f, 0.63f, 0.48f, 0.94f);
+    [SerializeField] Color strandGrayColor = new Color(0.58f, 0.56f, 0.54f, 0.92f);
 
     readonly List<Strand> activeStrands = new List<Strand>();
     SpriteRenderer spoolRenderer;
@@ -32,6 +34,8 @@ public class SpoolEnemy : EnemyBase
     float idleTime;
     float nextThreadTime;
     bool isAttacking;
+
+    public override EnemyKind Kind => EnemyKind.Spool;
 
     struct Strand
     {
@@ -65,6 +69,8 @@ public class SpoolEnemy : EnemyBase
 
     public override void ApplyProfile(EnemyProfile profile)
     {
+        // Spool is stationary, so only HP is profile-driven.
+        ApplyProfileStats(profile);
     }
 
     void FixedUpdate()
@@ -119,8 +125,13 @@ public class SpoolEnemy : EnemyBase
             DestroyOwnedTelegraph(warningRoot);
 
         activeStrands.Clear();
+        Color[] threadPalette = { strandIvoryColor, strandPeachColor, strandGrayColor };
         for (int i = 0; i < plannedStrands.Count; i++)
-            activeStrands.Add(new Strand { start = plannedStrands[i].start, end = plannedStrands[i].start, visual = null });
+        {
+            GameObject thread = TrackTelegraph(EnemyTelegraph.CreateThread("SpoolThread", plannedStrands[i].start, plannedStrands[i].end, strandWidth, threadPalette, 69));
+            EnemyTelegraph.SetRevealFraction(thread, 0f);
+            activeStrands.Add(new Strand { start = plannedStrands[i].start, end = plannedStrands[i].start, visual = thread });
+        }
 
         float growElapsed = 0f;
         while (growElapsed < threadGrowDuration)
@@ -201,12 +212,8 @@ public class SpoolEnemy : EnemyBase
         for (int i = 0; i < plannedStrands.Count; i++)
         {
             Strand active = activeStrands[i];
-            if (active.visual != null)
-                DestroyOwnedTelegraph(active.visual);
-
-            Vector2 end = Vector2.Lerp(plannedStrands[i].start, plannedStrands[i].end, t);
-            active.end = end;
-            active.visual = TrackTelegraph(EnemyTelegraph.CreateLine("SpoolThread", active.start, active.end, strandWidth, strandColor, 69));
+            active.end = Vector2.Lerp(plannedStrands[i].start, plannedStrands[i].end, t);
+            EnemyTelegraph.SetRevealFraction(active.visual, t);
             activeStrands[i] = active;
         }
     }

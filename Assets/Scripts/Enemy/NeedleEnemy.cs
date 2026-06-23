@@ -31,6 +31,8 @@ public class NeedleEnemy : EnemyBase
     bool isBusy;
     static readonly int[] WalkSequence = { 0, 1, 2, 1 };
 
+    public override EnemyKind Kind => EnemyKind.Needle;
+
     protected override void Awake()
     {
         currentHp = maxHp;
@@ -56,6 +58,9 @@ public class NeedleEnemy : EnemyBase
 
     public override void ApplyProfile(EnemyProfile profile)
     {
+        ApplyProfileStats(profile);
+        if (profile != null)
+            chaseSpeed = Mathf.Max(0f, profile.moveSpeed);
     }
 
     void FixedUpdate()

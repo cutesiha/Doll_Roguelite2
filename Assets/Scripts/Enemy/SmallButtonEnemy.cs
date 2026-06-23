@@ -1,9 +1,14 @@
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 [RequireComponent(typeof(Rigidbody2D))]
 public class SmallButtonEnemy : EnemyBase
 {
     [SerializeField, Min(0f)] float moveSpeed = 0.65f;
+    [SerializeField] string fallbackSpriteName = "pixil-frame-0 (22)";
 
     Rigidbody2D rb;
     Transform player;
@@ -12,6 +17,8 @@ public class SmallButtonEnemy : EnemyBase
     float popStartedAt;
     float popDuration;
     bool isPopping;
+
+    public override EnemyKind Kind => EnemyKind.SmallButton;
 
     protected override void Awake()
     {
@@ -22,7 +29,26 @@ public class SmallButtonEnemy : EnemyBase
         rb.bodyType = RigidbodyType2D.Kinematic;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         EnsureCharacterShadow();
+        EnsureSprite();
         EnsureCollider();
+    }
+
+    // SmallButtonEnemy never receives a managed profile and (when spawned as a
+    // standalone room enemy) may have no sprite assigned, which made it invisible.
+    // Load a fallback so it is always rendered.
+    void EnsureSprite()
+    {
+        SpriteRenderer renderer = GetComponent<SpriteRenderer>();
+        if (renderer == null || renderer.sprite != null)
+            return;
+
+        Sprite sprite = Resources.Load<Sprite>("Sprites/enemy/" + fallbackSpriteName);
+#if UNITY_EDITOR
+        if (sprite == null)
+            sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + fallbackSpriteName + ".png");
+#endif
+        if (sprite != null)
+            renderer.sprite = sprite;
     }
 
     protected override void Start()
@@ -34,6 +60,9 @@ public class SmallButtonEnemy : EnemyBase
 
     public override void ApplyProfile(EnemyProfile profile)
     {
+        ApplyProfileStats(profile);
+        if (profile != null)
+            moveSpeed = Mathf.Max(0f, profile.moveSpeed);
     }
 
     void EnsureCollider()
