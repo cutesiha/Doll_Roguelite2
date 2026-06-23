@@ -57,6 +57,15 @@ public class MiddleBossController : MonoBehaviour
         SetupCamera();
         SetupPlayer();
         SpawnBoss();
+
+        // 보스 씬에서는 웨이브 HUD 를 숨긴다. (보스 자체 웨이브는 보스 HP 바로 표현)
+        RunHudUI.SetWaveHudVisible(false);
+    }
+
+    void OnDestroy()
+    {
+        // HUD 는 씬 사이에서 유지되므로, 보스 씬을 떠날 때 웨이브 HUD 를 다시 켠다.
+        RunHudUI.SetWaveHudVisible(true);
     }
 
     // Disable the copied wave Room and delete the ribbon/spool templates so they never run.

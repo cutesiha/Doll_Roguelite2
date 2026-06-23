@@ -42,7 +42,6 @@ public class MinotaurBoss : EnemyBase
 
     [Header("Mechanic Layout")]
     [SerializeField] Vector2 judgementPaperOffset = new Vector2(0f, -6.4f);
-    [SerializeField] Vector2 countdownOffset = new Vector2(0f, 6f);
 
     [Header("Damage")]
     [SerializeField, Min(1)] int basicDamage = 18;
@@ -845,28 +844,20 @@ public class MinotaurBoss : EnemyBase
 
     IEnumerator CountdownRoutine(string message, float duration, Color color)
     {
-        Vector2 labelPos = (Vector2)transform.position + countdownOffset;
-        GameObject labelGO = new GameObject("BossCountdown");
-        TrackTelegraph(labelGO);
-        labelGO.transform.position = new Vector3(labelPos.x, labelPos.y, -1f);
-        TextMeshPro label = labelGO.AddComponent<TextMeshPro>();
-        label.font = UIThinDungFont.Get();
-        label.alignment = TextAlignmentOptions.Center;
-        label.fontSize = 3.6f;
-        label.fontStyle = FontStyles.Bold;
-        label.color = color;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.sortingOrder = 80;
+        // Circular time gauge on the HUD: a radial-fill ring that empties as the timer runs
+        // out, with the remaining seconds in its centre and the instruction below it.
+        RunHudUI.ShowJudgementTimer(message, color);
 
         float remaining = duration;
         while (remaining > 0f && !bossDefeated)
         {
-            label.text = remaining.ToString("0.0") + "초\n" + message;
+            RunHudUI.SetJudgementTimer(remaining, duration);
             remaining -= Time.deltaTime;
             yield return null;
         }
 
-        DestroyOwnedTelegraph(labelGO);
+        RunHudUI.SetJudgementTimer(0f, duration);
+        RunHudUI.HideJudgementTimer();
     }
 
     void ApplyPlayerDamage(int damage, float cooldown = -1f)
