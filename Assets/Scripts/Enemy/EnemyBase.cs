@@ -14,7 +14,7 @@ public class EnemyBase : MonoBehaviour
     [SerializeField, Min(1f)] float framesPerSecond = 8f;
     [Header("Hit Area")]
     [SerializeField] Collider2D hitCollider;
-    [SerializeField] bool fitColliderToCurrentSprite = true;
+    [SerializeField] bool fitColliderToCurrentSprite = false;
     [SerializeField, Min(0f)] float colliderPadding = 0f;
     [Header("Hit Feedback")]
     [SerializeField, Range(0.03f, 0.35f)] float hitFeedbackDuration = 0.18f;

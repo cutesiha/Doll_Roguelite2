@@ -1,10 +1,11 @@
+using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class DoorTrigger : MonoBehaviour
 {
+    [Header("Destination Scenes")]
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] string bossSceneName = "BossScene";
     [SerializeField] string middleBossSceneName = "MiddleBossScene";
@@ -14,266 +15,335 @@ public class DoorTrigger : MonoBehaviour
     [SerializeField] string eventSceneName = "EventScene";
     [SerializeField] string treasureSceneName = "TreasureRoomScene";
     [SerializeField] string shopSceneName = "ShopScene";
+
+    [Header("Door Feedback")]
     [SerializeField] Color lockedColor = new Color(0.25f, 0.25f, 0.25f, 1f);
-    [SerializeField] Color openColor = new Color(0.85f, 0.62f, 0.25f, 1f);
-    [SerializeField] Color blockedColor = new Color(0.65f, 0.15f, 0.15f, 1f);
-    [SerializeField] Color enterPromptColor = new Color(0.46f, 1f, 0.58f, 1f);
-    [SerializeField] Color blockedPromptColor = new Color(1f, 0.32f, 0.28f, 1f);
+    [SerializeField] Color blockedColor = new Color(0.72f, 0.20f, 0.18f, 1f);
+    [SerializeField, Min(0.1f)] float doorWorldScale = 1.8f;
+    [SerializeField, Min(0.1f)] float tooltipHeight = 2.25f;
 
     MapNode targetNode;
     bool isOpen;
     bool playerNearby;
-    Renderer cachedRenderer;
-    TMPro.TextMeshPro promptLabel;
-    TMPro.TextMeshPro doorTitleLabel;
-    Transform promptTransform;
-    Transform doorTitleTransform;
+    bool mouseHovered;
+    bool entering;
+    Renderer legacyRenderer;
+    Transform visualRoot;
+    SpriteRenderer doorRenderer;
+    SpriteRenderer iconRenderer;
+    Transform tooltipRoot;
+    TextMeshPro tooltipText;
+    Vector3 visualRestPosition;
+    Coroutine blockedRoutine;
 
-    static Canvas screenPromptCanvas;
-    static TMPro.TextMeshProUGUI screenPromptLabel;
-    static DoorTrigger screenPromptOwner;
+    static Sprite tooltipSprite;
 
     void Awake()
     {
-        cachedRenderer = GetComponent<Renderer>();
-        ApplyVisual();
+        legacyRenderer = GetComponent<Renderer>();
+        if (legacyRenderer != null)
+            legacyRenderer.enabled = false;
     }
 
     public void Configure(MapNode node, bool open)
     {
-        ResetLabelReferences();
         targetNode = node;
         isOpen = open;
+        entering = false;
         gameObject.SetActive(open && node != null);
-        ApplyVisual();
-        UpdateDoorTitle();
-        HideScreenPrompt(this);
-    }
 
-    void ResetLabelReferences()
-    {
-        promptLabel = null;
-        doorTitleLabel = null;
-        promptTransform = null;
-        doorTitleTransform = null;
+        if (!gameObject.activeSelf)
+        {
+            HideTooltip();
+            return;
+        }
+
+        EnsureDoorVisual();
+        ApplyDoorVisual();
+        EnsureInteractionCollider();
+        UpdateTooltip();
     }
 
     void Update()
     {
-        if (!playerNearby || !isOpen || targetNode == null) return;
-
-        var kb = Keyboard.current;
-        bool canPass = BodyConditionUtility.CanPass(targetNode);
-        ShowScreenPrompt(this, canPass);
-
-        if (kb == null || (!kb.enterKey.wasPressedThisFrame && !kb.numpadEnterKey.wasPressedThisFrame))
+        if (!isOpen || targetNode == null || entering)
             return;
 
-        if (!canPass)
+        bool showTooltip = playerNearby || mouseHovered;
+        if (showTooltip)
+            ShowTooltip();
+        else
+            HideTooltip();
+
+        if (!playerNearby)
+            return;
+
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null || (!keyboard.enterKey.wasPressedThisFrame && !keyboard.numpadEnterKey.wasPressedThisFrame))
+            return;
+
+        if (!BodyConditionUtility.CanPass(targetNode))
         {
-            ShowScreenPrompt(this, false);
+            PlayBlockedFeedback();
             return;
         }
 
         if (!MapRunState.BeginRoom(targetNode))
         {
-            ShowScreenPrompt(this, false);
+            PlayBlockedFeedback();
             return;
         }
 
+        entering = true;
         BodyConditionUtility.LockRequiredMissingSlot(targetNode);
-        SceneManager.LoadScene(SceneNameFor(targetNode));
+        HideTooltip();
+        StartCoroutine(OpenDoorAndEnterRoutine(SceneNameFor(targetNode)));
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.CompareTag("Player")) return;
+        if (!other.CompareTag("Player"))
+            return;
+
         playerNearby = true;
-        if (isOpen && targetNode != null)
-            ShowScreenPrompt(this, BodyConditionUtility.CanPass(targetNode));
+        ShowTooltip();
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (!other.CompareTag("Player")) return;
+        if (!other.CompareTag("Player"))
+            return;
+
         playerNearby = false;
-        HideScreenPrompt(this);
+        if (!mouseHovered)
+            HideTooltip();
+    }
+
+    void OnMouseEnter()
+    {
+        mouseHovered = true;
+        ShowTooltip();
+    }
+
+    void OnMouseExit()
+    {
+        mouseHovered = false;
+        if (!playerNearby)
+            HideTooltip();
+    }
+
+    void OnDisable()
+    {
+        playerNearby = false;
+        mouseHovered = false;
+        HideTooltip();
     }
 
     void OnDestroy()
     {
-        if (promptTransform != null)
-            Destroy(promptTransform.gameObject);
-
-        if (doorTitleTransform != null)
-            Destroy(doorTitleTransform.gameObject);
-
-        HideScreenPrompt(this);
+        if (tooltipRoot != null)
+            Destroy(tooltipRoot.gameObject);
     }
 
-    void ApplyVisual()
+    void EnsureDoorVisual()
     {
-        if (cachedRenderer == null)
-            cachedRenderer = GetComponent<Renderer>();
-        if (cachedRenderer == null) return;
+        if (legacyRenderer == null)
+            legacyRenderer = GetComponent<Renderer>();
+        if (legacyRenderer != null)
+            legacyRenderer.enabled = false;
 
-        var material = Application.isPlaying ? cachedRenderer.material : cachedRenderer.sharedMaterial;
-        if (material == null) return;
+        if (visualRoot == null)
+        {
+            Transform existing = transform.Find("_DoorVisual");
+            if (existing != null)
+                visualRoot = existing;
+        }
 
-        Color color = isOpen && targetNode != null ? openColor : lockedColor;
-        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
-        else material.color = color;
+        if (visualRoot == null)
+        {
+            GameObject visualObject = new GameObject("_DoorVisual");
+            visualRoot = visualObject.transform;
+            visualRoot.SetParent(transform, false);
+            visualRoot.localPosition = Vector3.zero;
+            visualRoot.localRotation = Quaternion.identity;
+        }
+
+        doorRenderer = visualRoot.GetComponent<SpriteRenderer>();
+        if (doorRenderer == null)
+            doorRenderer = visualRoot.gameObject.AddComponent<SpriteRenderer>();
+        doorRenderer.sortingOrder = 80;
+
+        Transform iconTransform = visualRoot.Find("RoomIcon");
+        if (iconTransform == null)
+        {
+            GameObject iconObject = new GameObject("RoomIcon");
+            iconTransform = iconObject.transform;
+            iconTransform.SetParent(visualRoot, false);
+        }
+
+        iconRenderer = iconTransform.GetComponent<SpriteRenderer>();
+        if (iconRenderer == null)
+            iconRenderer = iconTransform.gameObject.AddComponent<SpriteRenderer>();
+        iconRenderer.sortingOrder = 81;
+        iconTransform.localPosition = new Vector3(-0.02f, 0.25f, -0.02f);
+
+        float parentX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
+        float parentY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
+        visualRoot.localScale = new Vector3(doorWorldScale / parentX, doorWorldScale / parentY, 1f);
+        visualRestPosition = visualRoot.localPosition;
     }
 
-    void EnsurePrompt()
+    void ApplyDoorVisual()
     {
-        if (promptLabel != null) return;
+        DoorSpriteCatalog catalog = DoorSpriteCatalog.Load();
+        Sprite doorSprite = catalog != null ? catalog.DoorFor(targetNode) : null;
+        Sprite iconSprite = catalog != null ? catalog.IconFor(targetNode) : null;
 
-        var go = new GameObject("DoorPrompt");
-        promptTransform = go.transform;
-        PositionLabel(promptTransform, 0.8f);
+        if (doorRenderer != null)
+        {
+            doorRenderer.sprite = doorSprite;
+            doorRenderer.color = isOpen ? Color.white : lockedColor;
+            doorRenderer.enabled = doorSprite != null;
+        }
 
-        promptLabel = go.AddComponent<TMPro.TextMeshPro>();
-        promptLabel.alignment = TMPro.TextAlignmentOptions.Center;
-        promptLabel.fontSize = 2.2f;
-        promptLabel.font = UIThinDungFont.Get();
-        promptLabel.color = Color.white;
-        promptLabel.sortingOrder = 20;
-        promptLabel.text = "";
-        promptLabel.gameObject.SetActive(false);
+        if (iconRenderer != null)
+        {
+            iconRenderer.sprite = iconSprite;
+            iconRenderer.color = Color.white;
+            iconRenderer.enabled = iconSprite != null;
+            if (iconSprite != null)
+            {
+                float iconHeight = Mathf.Max(0.01f, iconSprite.bounds.size.y);
+                float scale = 0.62f / iconHeight;
+                iconRenderer.transform.localScale = new Vector3(scale, scale, 1f);
+            }
+        }
     }
 
-    void EnsureDoorTitle()
+    void EnsureInteractionCollider()
     {
-        if (doorTitleLabel != null) return;
+        BoxCollider2D interactionCollider = GetComponent<BoxCollider2D>();
+        if (interactionCollider == null)
+            interactionCollider = gameObject.AddComponent<BoxCollider2D>();
 
-        var go = new GameObject("DoorTitle");
-        doorTitleTransform = go.transform;
-        PositionLabel(doorTitleTransform, 1.55f);
-
-        doorTitleLabel = go.AddComponent<TMPro.TextMeshPro>();
-        doorTitleLabel.alignment = TMPro.TextAlignmentOptions.Center;
-        doorTitleLabel.fontSize = 4.8f;
-        doorTitleLabel.font = UIThinDungFont.Get();
-        doorTitleLabel.fontStyle = TMPro.FontStyles.Bold;
-        doorTitleLabel.color = Color.white;
-        doorTitleLabel.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
-        doorTitleLabel.sortingOrder = 35;
-        doorTitleLabel.text = "";
-        doorTitleLabel.gameObject.SetActive(false);
-    }
-
-    void PositionLabel(Transform labelTransform, float yOffset)
-    {
-        if (labelTransform == null) return;
-
-        labelTransform.SetParent(null, true);
-        labelTransform.position = transform.position + new Vector3(0f, yOffset, -0.1f);
-        labelTransform.rotation = Quaternion.identity;
-        labelTransform.localScale = Vector3.one;
-    }
-
-    void UpdateDoorTitle()
-    {
-        EnsureDoorTitle();
-        if (doorTitleLabel == null) return;
-
-        PositionLabel(doorTitleTransform, 1.55f);
-        doorTitleLabel.text = targetNode != null ? DoorTitle(targetNode) : "";
-        doorTitleLabel.gameObject.SetActive(isOpen && targetNode != null);
-    }
-
-    void UpdatePrompt(bool show)
-    {
-        EnsurePrompt();
-        if (promptLabel == null) return;
-
-        PositionLabel(promptTransform, 0.8f);
-        promptLabel.text = targetNode != null
-            ? PromptLabel(targetNode)
-            : "\uC7A0\uAE40";
-        promptLabel.gameObject.SetActive(show && isOpen && targetNode != null);
-    }
-
-    static void EnsureScreenPrompt()
-    {
-        if (screenPromptLabel != null) return;
-
-        var canvasGO = new GameObject("DoorScreenPromptCanvas");
-        if (Application.isPlaying)
-            DontDestroyOnLoad(canvasGO);
-
-        screenPromptCanvas = canvasGO.AddComponent<Canvas>();
-        screenPromptCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        screenPromptCanvas.overrideSorting = true;
-        screenPromptCanvas.sortingOrder = 900;
-
-        var scaler = canvasGO.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
-        canvasGO.AddComponent<GraphicRaycaster>();
-
-        var labelGO = new GameObject("DoorScreenPrompt");
-        labelGO.transform.SetParent(canvasGO.transform, false);
-
-        var rect = labelGO.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 1f);
-        rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = new Vector2(0f, -156f);
-        rect.sizeDelta = new Vector2(980f, 96f);
-
-        screenPromptLabel = labelGO.AddComponent<TMPro.TextMeshProUGUI>();
-        screenPromptLabel.alignment = TMPro.TextAlignmentOptions.Center;
-        screenPromptLabel.font = UIThinDungFont.Get();
-        screenPromptLabel.fontSize = 58f;
-        screenPromptLabel.fontStyle = TMPro.FontStyles.Bold;
-        screenPromptLabel.raycastTarget = false;
-        screenPromptLabel.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
-        screenPromptLabel.gameObject.SetActive(false);
-    }
-
-    static void ShowScreenPrompt(DoorTrigger owner, bool canEnter)
-    {
-        if (owner == null) return;
-
-        EnsureScreenPrompt();
-        screenPromptOwner = owner;
-        screenPromptLabel.text = canEnter
-            ? "[Enter\uB97C \uB20C\uB7EC \uC785\uC7A5\uD558\uC138\uC694]"
-            : "\uC870\uAC74\uC5D0 \uBD80\uD569\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4";
-        screenPromptLabel.color = canEnter ? owner.enterPromptColor : owner.blockedPromptColor;
-        screenPromptLabel.gameObject.SetActive(true);
-    }
-
-    static void HideScreenPrompt(DoorTrigger owner)
-    {
-        if (screenPromptOwner != owner)
+        interactionCollider.isTrigger = true;
+        if (doorRenderer == null || doorRenderer.sprite == null)
             return;
 
-        screenPromptOwner = null;
-        if (screenPromptLabel != null)
-            screenPromptLabel.gameObject.SetActive(false);
+        Vector2 spriteSize = doorRenderer.sprite.bounds.size * doorWorldScale;
+        float parentX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
+        float parentY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
+        interactionCollider.size = new Vector2(spriteSize.x / parentX, spriteSize.y / parentY);
+        interactionCollider.offset = Vector2.zero;
     }
 
-    System.Collections.IEnumerator ShowBlockedPrompt()
+    void EnsureTooltip()
     {
-        EnsurePrompt();
-        if (promptLabel == null) yield break;
+        if (tooltipRoot != null)
+            return;
 
-        var oldColor = promptLabel.color;
-        promptLabel.text = "\uC870\uAC74\uC774 \uB9DE\uC9C0 \uC54A\uC74C";
-        promptLabel.color = blockedColor;
-        promptLabel.gameObject.SetActive(true);
-        yield return new WaitForSeconds(0.7f);
-        promptLabel.color = oldColor;
-        UpdatePrompt(playerNearby);
+        GameObject rootObject = new GameObject("_DoorTooltip");
+        tooltipRoot = rootObject.transform;
+        tooltipRoot.rotation = Quaternion.identity;
+        tooltipRoot.localScale = Vector3.one;
+
+        GameObject backgroundObject = new GameObject("BalloonBackground");
+        backgroundObject.transform.SetParent(tooltipRoot, false);
+        SpriteRenderer background = backgroundObject.AddComponent<SpriteRenderer>();
+        background.sprite = TooltipSprite();
+        background.color = Color.white;
+        background.sortingOrder = 300;
+        backgroundObject.transform.localScale = new Vector3(1.82f, 1.35f, 1f);
+
+        GameObject textObject = new GameObject("BalloonText");
+        textObject.transform.SetParent(tooltipRoot, false);
+        textObject.transform.localPosition = new Vector3(0f, 0.12f, -0.05f);
+        tooltipText = textObject.AddComponent<TextMeshPro>();
+        tooltipText.font = UIThinDungFont.Get();
+        tooltipText.fontSize = 2.25f;
+        tooltipText.fontStyle = FontStyles.Bold;
+        tooltipText.alignment = TextAlignmentOptions.Center;
+        tooltipText.color = new Color(0.24f, 0.14f, 0.09f, 1f);
+        tooltipText.sortingOrder = 301;
+        tooltipText.textWrappingMode = TextWrappingModes.NoWrap;
+        tooltipText.rectTransform.sizeDelta = new Vector2(4.25f, 1.35f);
+
+        tooltipRoot.gameObject.SetActive(false);
     }
 
-    static bool CanPass(MapNode node, BodyState state)
+    void ShowTooltip()
     {
-        return BodyConditionUtility.CanPass(node, state);
+        if (!isOpen || targetNode == null || entering)
+            return;
+
+        EnsureTooltip();
+        UpdateTooltip();
+        tooltipRoot.position = transform.position + new Vector3(0f, tooltipHeight, -0.2f);
+        tooltipRoot.gameObject.SetActive(true);
+    }
+
+    void HideTooltip()
+    {
+        if (tooltipRoot != null)
+            tooltipRoot.gameObject.SetActive(false);
+    }
+
+    void UpdateTooltip()
+    {
+        if (tooltipText == null || targetNode == null)
+            return;
+
+        bool canEnter = BodyConditionUtility.CanPass(targetNode);
+        string secondLine = canEnter ? "[Enter] 키로 입장" : "조건에 부합하지 않음";
+        tooltipText.text = DoorTitle(targetNode) + "\n" + secondLine;
+        tooltipText.color = canEnter
+            ? new Color(0.24f, 0.14f, 0.09f, 1f)
+            : new Color(0.55f, 0.16f, 0.13f, 1f);
+    }
+
+    void PlayBlockedFeedback()
+    {
+        if (blockedRoutine != null)
+            StopCoroutine(blockedRoutine);
+        blockedRoutine = StartCoroutine(BlockedFeedbackRoutine());
+    }
+
+    IEnumerator OpenDoorAndEnterRoutine(string sceneName)
+    {
+        DoorSpriteCatalog catalog = DoorSpriteCatalog.Load();
+        AudioClip openClip = catalog != null ? catalog.doorOpenSfx : null;
+        if (openClip != null)
+        {
+            SoundManager.PlaySfx(openClip, 0f, 1f);
+            yield return new WaitForSecondsRealtime(openClip.length);
+        }
+
+        RoomPageTransition.LoadScene(sceneName);
+    }
+
+    IEnumerator BlockedFeedbackRoutine()
+    {
+        EnsureDoorVisual();
+        float duration = 0.38f;
+        float elapsed = 0f;
+        Color baseColor = Color.white;
+        Color rejectColor = Color.Lerp(Color.white, blockedColor, 0.48f);
+
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float damping = 1f - t;
+            float offset = Mathf.Sin(t * Mathf.PI * 8f) * 0.13f * damping;
+            visualRoot.localPosition = visualRestPosition + Vector3.right * offset;
+            doorRenderer.color = Color.Lerp(rejectColor, baseColor, t);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        visualRoot.localPosition = visualRestPosition;
+        doorRenderer.color = baseColor;
+        blockedRoutine = null;
+        ShowTooltip();
     }
 
     string SceneNameFor(MapNode node)
@@ -292,46 +362,26 @@ public class DoorTrigger : MonoBehaviour
         }
     }
 
-    static string DoorLabel(MapNode node)
-    {
-        switch (node.roomType)
-        {
-            case RoomType.Boss: return "\uBCF4\uC2A4 \uBC29";
-            case RoomType.MiddleBoss: return "\uC911\uAC04\uBCF4\uC2A4";
-            case RoomType.FinalBoss: return "\uCD5C\uC885\uBCF4\uC2A4";
-            case RoomType.Treasure: return "\uBCF4\uBB3C \uBC29";
-            case RoomType.Shop: return "\uC0C1\uC810";
-            case RoomType.Challenge: return "\uB3C4\uC804\uBC29";
-            case RoomType.Start: return "\uC2DC\uC791 \uBC29";
-            case RoomType.Supply: return "\uBCF4\uAE09 \uBC29";
-            case RoomType.Event: return "\uC774\uBCA4\uD2B8 \uBC29";
-            case RoomType.ConditionCombat: return "\uC870\uAC74 \uC804\uD22C";
-            default: return "\uC804\uD22C \uBC29";
-        }
-    }
-
     static string DoorTitle(MapNode node)
     {
+        if (node == null)
+            return "잠긴 문";
+
         if (node.roomType == RoomType.ConditionCombat)
-            return ConditionLabel(node.conditionType);
+            return ConditionLabel(node.conditionType) + " 전투방";
 
-        return DoorLabel(node);
-    }
-
-    static string PromptLabel(MapNode node)
-    {
         switch (node.roomType)
         {
-            case RoomType.Boss: return "E: \uBCF4\uC2A4 \uBC29";
-            case RoomType.MiddleBoss: return "E: \uC911\uAC04\uBCF4\uC2A4";
-            case RoomType.FinalBoss: return "E: \uCD5C\uC885\uBCF4\uC2A4";
-            case RoomType.Treasure: return "E: \uBCF4\uBB3C \uBC29";
-            case RoomType.Shop: return "E: \uC0C1\uC810";
-            case RoomType.Challenge: return "E: \uB3C4\uC804\uBC29";
-            case RoomType.Supply: return "E: \uBCF4\uAE09 \uBC29";
-            case RoomType.Event: return "E: \uC774\uBCA4\uD2B8 \uBC29";
-            case RoomType.ConditionCombat: return "E: \uC870\uAC74 \uC804\uD22C";
-            default: return "E: \uC804\uD22C \uBC29";
+            case RoomType.Boss: return "보스방";
+            case RoomType.MiddleBoss: return "중간보스";
+            case RoomType.FinalBoss: return "최종보스";
+            case RoomType.Treasure: return "신체방";
+            case RoomType.Shop: return "상점";
+            case RoomType.Challenge: return "도전방";
+            case RoomType.Supply: return "신체방";
+            case RoomType.Event: return "도전방";
+            case RoomType.Start: return "시작방";
+            default: return "전투방";
         }
     }
 
@@ -339,13 +389,59 @@ public class DoorTrigger : MonoBehaviour
     {
         switch (condition)
         {
-            case NodeConditionType.NoLeftArm: return "\uC67C\uD314 \uC5C6\uC74C";
-            case NodeConditionType.NoRightArm: return "\uC624\uB978\uD314 \uC5C6\uC74C";
-            case NodeConditionType.NoLeftEye: return "\uC67C\uB208 \uC5C6\uC74C";
-            case NodeConditionType.NoRightEye: return "\uC624\uB978\uB208 \uC5C6\uC74C";
-            case NodeConditionType.NoLeftLeg: return "\uC67C\uB2E4\uB9AC \uC5C6\uC74C";
-            case NodeConditionType.NoRightLeg: return "\uC624\uB978\uB2E4\uB9AC \uC5C6\uC74C";
-            default: return "\uC870\uAC74 \uC804\uD22C";
+            case NodeConditionType.NoLeftArm: return "왼팔 없음";
+            case NodeConditionType.NoRightArm: return "오른팔 없음";
+            case NodeConditionType.NoLeftEye: return "왼눈 없음";
+            case NodeConditionType.NoRightEye: return "오른눈 없음";
+            case NodeConditionType.NoLeftLeg: return "왼다리 없음";
+            case NodeConditionType.NoRightLeg: return "오른다리 없음";
+            default: return "조건";
         }
+    }
+
+    static Sprite TooltipSprite()
+    {
+        if (tooltipSprite != null)
+            return tooltipSprite;
+
+        const int width = 256;
+        const int height = 112;
+        const int radius = 15;
+        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        texture.name = "DoorTooltipBalloon_Runtime";
+        texture.filterMode = FilterMode.Point;
+
+        Color clear = new Color(0f, 0f, 0f, 0f);
+        Color border = new Color(0.32f, 0.19f, 0.12f, 0.96f);
+        Color fill = new Color(0.96f, 0.89f, 0.77f, 0.97f);
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                bool inTail = y < 18 && x >= 112 - y / 2 && x <= 144 + y / 2;
+                int bodyY = y - 14;
+                bool inBody = bodyY >= 0 && bodyY < height - 14 && InRoundedRect(x, bodyY, width, height - 14, radius);
+                bool inInner = bodyY >= 3 && bodyY < height - 17 && InRoundedRect(x - 3, bodyY - 3, width - 6, height - 20, radius - 3);
+                texture.SetPixel(x, y, inTail || inBody ? (inInner && !inTail ? fill : border) : clear);
+            }
+        }
+
+        texture.Apply();
+        tooltipSprite = Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.08f), 100f);
+        tooltipSprite.name = "DoorTooltipBalloon_Runtime";
+        return tooltipSprite;
+    }
+
+    static bool InRoundedRect(int x, int y, int width, int height, int radius)
+    {
+        if (x < 0 || y < 0 || x >= width || y >= height)
+            return false;
+
+        int nearestX = Mathf.Clamp(x, radius, width - radius - 1);
+        int nearestY = Mathf.Clamp(y, radius, height - radius - 1);
+        int dx = x - nearestX;
+        int dy = y - nearestY;
+        return dx * dx + dy * dy <= radius * radius;
     }
 }

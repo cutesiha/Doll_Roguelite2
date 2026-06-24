@@ -27,7 +27,10 @@ public class RoomSceneFadeIn : MonoBehaviour
 
     static void CreateForScene(Scene scene)
     {
-        if (!scene.IsValid() || scene.name != RoomSceneName || GameObject.Find(OverlayObjectName) != null)
+        if (!scene.IsValid()
+            || scene.name != RoomSceneName
+            || RoomPageTransition.IsTransitioning
+            || GameObject.Find(OverlayObjectName) != null)
             return;
 
         GameObject fadeObject = new GameObject(OverlayObjectName);

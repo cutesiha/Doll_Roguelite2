@@ -704,7 +704,7 @@ Transform:
   m_GameObject: {fileID: 211311185}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -12.0671, y: -6.3625, z: 0}
+  m_LocalPosition: {x: -11.26, y: -4.99, z: 0}
   m_LocalScale: {x: 2.1876395, y: 2.1876395, z: 2.1876395}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1346,7 +1346,7 @@ MonoBehaviour:
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 0}
-  fitColliderToCurrentSprite: 1
+  fitColliderToCurrentSprite: 0
   colliderPadding: 0
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
@@ -1499,7 +1499,7 @@ SpriteRenderer:
   m_SortingOrder: 30
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 1baa6fe0b430373439a349cea731628c, type: 3}
-  m_Color: {r: 0.9, g: 0.32, b: 0.46, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -1824,7 +1824,7 @@ Transform:
   m_GameObject: {fileID: 502327888}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -18.375, y: 0, z: 0}
+  m_LocalPosition: {x: -14.19, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1984,6 +1984,7 @@ MonoBehaviour:
   bossSceneName: BossScene
   middleBossSceneName: MiddleBossScene
   finalBossSceneName: BookBossScene
+  challengeSceneName: RoomScene
   supplySceneName: PresentScene
   eventSceneName: EventScene
   treasureSceneName: TreasureRoomScene
@@ -2146,7 +2147,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 3.5
+  orthographic size: 6.2
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -2171,7 +2172,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -2.5, z: -10}
+  m_LocalPosition: {x: -8.57, y: -4.53, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2193,7 +2194,7 @@ MonoBehaviour:
   targetTag: Player
   backgroundSize: {x: 38.4, y: 21.6}
   backgroundCenter: {x: 0, y: 0}
-  orthographicSize: 5.4
+  orthographicSize: 6.2
   followSharpness: 20
   clampToBackground: 1
 --- !u!1 &619394800
@@ -2306,7 +2307,7 @@ Transform:
   m_GameObject: {fileID: 665761341}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 9.825, z: 0}
+  m_LocalPosition: {x: 0.09, y: 8.03, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2459,7 +2460,7 @@ Transform:
   m_GameObject: {fileID: 737264531}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 18.375, y: 0, z: 0}
+  m_LocalPosition: {x: 14.22, y: 0.11, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2674,7 +2675,7 @@ MonoBehaviour:
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 0}
-  fitColliderToCurrentSprite: 1
+  fitColliderToCurrentSprite: 0
   colliderPadding: 0
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
@@ -3205,7 +3206,7 @@ MonoBehaviour:
   bodyColor: {r: 0.93333334, g: 0.28573322, b: 0, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 0}
-  fitColliderToCurrentSprite: 1
+  fitColliderToCurrentSprite: 0
   colliderPadding: 0
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
@@ -3565,7 +3566,7 @@ MonoBehaviour:
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 0}
-  fitColliderToCurrentSprite: 1
+  fitColliderToCurrentSprite: 0
   colliderPadding: 0
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
@@ -4382,7 +4383,7 @@ MonoBehaviour:
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 0}
-  fitColliderToCurrentSprite: 1
+  fitColliderToCurrentSprite: 0
   colliderPadding: 0
   hitFeedbackDuration: 0.18
   hitShakeDistance: 0.12
@@ -4869,7 +4870,7 @@ MonoBehaviour:
   bodyColor: {r: 0.93333334, g: 0.28573322, b: 0, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 0}
-  fitColliderToCurrentSprite: 1
+  fitColliderToCurrentSprite: 0
   colliderPadding: 0
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
@@ -5081,7 +5082,7 @@ Transform:
   m_GameObject: {fileID: 1740903066}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -9.975, z: 0}
+  m_LocalPosition: {x: 0.13, y: -7.87, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5186,7 +5187,7 @@ MonoBehaviour:
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 0}
-  fitColliderToCurrentSprite: 1
+  fitColliderToCurrentSprite: 0
   colliderPadding: 0
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
@@ -5474,7 +5475,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 5}
-  m_LocalScale: {x: 1.0000001, y: 1.0000001, z: 1}
+  m_LocalScale: {x: 1.3487883, y: 1.3605989, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1634282065}
@@ -5543,7 +5544,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: -100
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 5df0abe419e55c84093f28667b5426b3, type: 3}
+  m_Sprite: {fileID: 1479065316249688633, guid: b92a96d93b791a1458caba2f3df68b95, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

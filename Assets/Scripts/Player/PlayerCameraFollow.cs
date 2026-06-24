@@ -7,7 +7,7 @@ public class PlayerCameraFollow : MonoBehaviour
     [SerializeField] string targetTag = "Player";
     [SerializeField] Vector2 backgroundSize = new Vector2(38.4f, 21.6f);
     [SerializeField] Vector2 backgroundCenter = Vector2.zero;
-    [SerializeField] float orthographicSize = 5.4f;
+    [SerializeField] float orthographicSize = 6.2f;
     [SerializeField, Min(0.1f)] float followSharpness = 20f;
     [SerializeField] bool clampToBackground = true;
 

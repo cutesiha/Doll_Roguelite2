@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 public class Room : MonoBehaviour
 {
     const int EnemiesInsidePerWave = 3;
-    const int EnemiesOutsidePerWave = 2;
+    const int EnemiesOutsidePerWave = 1;
 
     [SerializeField] EnemyBase enemyPrefab;
     [SerializeField] int waveCount = 3;
@@ -465,7 +465,35 @@ public class Room : MonoBehaviour
         Vector3 center = cam.transform.position;
         const float offscreenMargin = 2.5f;
 
-        bool hasInnerRect = TryGetRoomInnerRect(Vector2.one, out Rect innerRect);
+        if (TryGetRoomInnerRect(Vector2.one, out Rect innerRect))
+        {
+            Vector2[] farCandidates =
+            {
+                new Vector2(innerRect.xMin, innerRect.yMin),
+                new Vector2(innerRect.xMin, innerRect.yMax),
+                new Vector2(innerRect.xMax, innerRect.yMin),
+                new Vector2(innerRect.xMax, innerRect.yMax)
+            };
+
+            Vector2 cameraCenter = center;
+            Vector2 farthest = farCandidates[0];
+            float farthestDistance = (farthest - cameraCenter).sqrMagnitude;
+            for (int i = 1; i < farCandidates.Length; i++)
+            {
+                float distance = (farCandidates[i] - cameraCenter).sqrMagnitude;
+                if (distance > farthestDistance)
+                {
+                    farthest = farCandidates[i];
+                    farthestDistance = distance;
+                }
+            }
+
+            // Keep a little variation without ever moving the fourth enemy back
+            // into the visible camera rectangle.
+            farthest.x = Mathf.Clamp(farthest.x + Random.Range(-0.6f, 0.6f), innerRect.xMin, innerRect.xMax);
+            farthest.y = Mathf.Clamp(farthest.y + Random.Range(-0.6f, 0.6f), innerRect.yMin, innerRect.yMax);
+            return new Vector3(farthest.x, farthest.y, 0f);
+        }
 
         float x, y;
         int edge = Random.Range(0, 4);
@@ -487,12 +515,6 @@ public class Room : MonoBehaviour
                 x = Random.Range(center.x - halfW, center.x + halfW);
                 y = center.y - halfH - offscreenMargin;
                 break;
-        }
-
-        if (hasInnerRect)
-        {
-            x = Mathf.Clamp(x, innerRect.xMin, innerRect.xMax);
-            y = Mathf.Clamp(y, innerRect.yMin, innerRect.yMax);
         }
 
         return new Vector3(x, y, 0f);

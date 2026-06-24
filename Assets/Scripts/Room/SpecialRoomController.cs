@@ -71,11 +71,18 @@ public class SpecialRoomController : MonoBehaviour
     void BuildRoomVisuals()
     {
         Transform oldArt = transform.Find("SpecialRoomArt");
+        SpriteRenderer authoredBackground = FindAuthoredBackground(oldArt);
+        if (authoredBackground != null)
+            authoredBackground.transform.SetParent(transform, true);
+
         if (oldArt != null)
             Destroy(oldArt.gameObject);
 
         GameObject art = new GameObject("SpecialRoomArt");
         art.transform.SetParent(transform, false);
+
+        if (authoredBackground != null)
+            authoredBackground.transform.SetParent(art.transform, true);
 
         backgroundColor = roomKind == SpecialRoomKind.Treasure
             ? new Color(0.22f, 0.16f, 0.10f, 1f)
@@ -99,6 +106,23 @@ public class SpecialRoomController : MonoBehaviour
 
         promptText = CreateWorldText(art.transform, "InteractionPrompt", "", new Vector2(0f, -mapSize.y * 0.5f + 1.2f), 0.62f, new Color(1f, 0.90f, 0.68f, 1f), 40);
         messageText = CreateWorldText(art.transform, "RoomMessage", "", new Vector2(0f, -mapSize.y * 0.5f + 2.0f), 0.58f, new Color(1f, 0.86f, 0.48f, 1f), 40);
+    }
+
+    SpriteRenderer FindAuthoredBackground(Transform artRoot)
+    {
+        if (artRoot == null)
+            return null;
+
+        Sprite generatedSprite = RoomSprite();
+        SpriteRenderer[] renderers = artRoot.GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            SpriteRenderer renderer = renderers[i];
+            if (renderer != null && renderer.sprite != null && renderer.sprite != generatedSprite)
+                return renderer;
+        }
+
+        return null;
     }
 
     void BuildTreasureProps(Transform parent)

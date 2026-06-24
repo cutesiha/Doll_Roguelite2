@@ -218,8 +218,15 @@ public class RibbonEnemy : EnemyBase
 
     void ApplyRibbonSprite()
     {
-        if (ribbonRenderer != null && ribbonSprite != null)
+        if (ribbonRenderer == null)
+            return;
+
+        if (ribbonSprite != null)
             ribbonRenderer.sprite = ribbonSprite;
+
+        // Ribbon art is authored with its final colors. Keep the renderer neutral
+        // so scene/profile tints never color-correct the original sprite.
+        ribbonRenderer.color = Color.white;
     }
 
     void LoadRibbonSpriteIfMissing()

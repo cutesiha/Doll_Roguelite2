@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e4b3cfb9dd847378f397457e02cd751, type: 3}
+  m_Name: DoorSpriteCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::DoorSpriteCatalog
+  enemyRoomDoor: {fileID: 21300000, guid: 44f869b426a0c7f418f2ec907edb9f6c, type: 3}
+  treasureDoor: {fileID: 21300000, guid: 3359299d6c0967f429aff4bdec02e5cd, type: 3}
+  shopDoor: {fileID: 21300000, guid: dda3c2141b166c848b390892548dca9b, type: 3}
+  challengeDoor: {fileID: 21300000, guid: 520ac277247d61546b3a0d76f2ac5a0d, type: 3}
+  bossDoor: {fileID: 21300000, guid: 63e7a5e29c7524742b7dd499699afefc, type: 3}
+  treasureIcon: {fileID: 21300000, guid: 0d127dfdcde31524e95bf78721051a56, type: 3}
+  shopIcon: {fileID: 21300000, guid: 6c9af953f4e8c404d93d9277539e1972, type: 3}
+  challengeIcon: {fileID: 21300000, guid: d4ed20bb31512bc4498560816c7b952f, type: 3}
+  middleBossIcon: {fileID: 21300000, guid: 54c7f0145d37d8047a9470601ee263c7, type: 3}
+  mainBossIcon: {fileID: 21300000, guid: 38f67e291f7c5f241afe6b58840e2eb6, type: 3}
+  startRoomIcon: {fileID: 21300000, guid: c098487d8079a5341b1679ea19b7c174, type: 3}
+  noLeftArmIcon: {fileID: 21300000, guid: d0fae91526e6047429fa40339ef1533d, type: 3}
+  noRightArmIcon: {fileID: 21300000, guid: e6d22746d257f624ab448e4cf1e19b41, type: 3}
+  noLeftEyeIcon: {fileID: 21300000, guid: 0f990448dda5bea4e835d2c50753de10, type: 3}
+  noRightEyeIcon: {fileID: 21300000, guid: 84754b4d74b4c324f8b67f244b7f59b7, type: 3}
+  noLeftLegIcon: {fileID: 21300000, guid: fa962c23cbac9bb4f950047fd6a39be0, type: 3}
+  noRightLegIcon: {fileID: 21300000, guid: c2a2253d8cc687743a159212d6946f11, type: 3}
+  doorOpenSfx: {fileID: 0}
