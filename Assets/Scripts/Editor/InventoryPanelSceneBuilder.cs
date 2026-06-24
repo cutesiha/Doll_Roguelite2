@@ -427,7 +427,7 @@ public static class InventoryPanelSceneBuilder
         tmp.fontSize = size;
         tmp.color = color;
         tmp.alignment = alignment;
-        tmp.enableWordWrapping = false;
+        tmp.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
         tmp.overflowMode = TextOverflowModes.Overflow;
         tmp.raycastTarget = false;
         if (font != null) tmp.font = font;

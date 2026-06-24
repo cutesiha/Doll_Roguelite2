@@ -18,7 +18,7 @@ public class EnemyBase : MonoBehaviour
     [SerializeField, Min(0f)] float colliderPadding = 0f;
     [Header("Hit Feedback")]
     [SerializeField, Range(0.03f, 0.35f)] float hitFeedbackDuration = 0.18f;
-    [SerializeField, Min(0f)] float hitShakeDistance = 0.12f;
+    [SerializeField, Min(0f)] float hitShakeDistance = 0.28f;
     [SerializeField] Color hitTint = new Color(1f, 0.28f, 0.24f, 1f);
     [Header("Camera Shake")]
     [SerializeField] bool shakeCameraOnHit = true;
@@ -435,15 +435,22 @@ public class EnemyBase : MonoBehaviour
     {
         float duration = Mathf.Max(0.01f, hitFeedbackDuration);
         float elapsed = 0f;
-        Vector3 appliedOffset = Vector3.zero;
         Color baseColor = spriteBaseColor;
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        float prevWave = 0f;
 
         while (elapsed < duration)
         {
             float t = elapsed / duration;
-            transform.position -= appliedOffset;
-            appliedOffset = (Vector3)(Random.insideUnitCircle * hitShakeDistance * (1f - t));
-            transform.position += appliedOffset;
+            float wave = Mathf.Sin(elapsed * 45f) * hitShakeDistance * (1f - t);
+            float delta = wave - prevWave;
+
+            if (rb != null)
+                rb.position = new Vector2(rb.position.x + delta, rb.position.y);
+            else
+                transform.position += new Vector3(delta, 0f, 0f);
+
+            prevWave = wave;
 
             if (spriteRenderer != null)
                 spriteRenderer.color = Color.Lerp(hitTint, baseColor, t);
@@ -452,7 +459,11 @@ public class EnemyBase : MonoBehaviour
             yield return null;
         }
 
-        transform.position -= appliedOffset;
+        if (rb != null)
+            rb.position = new Vector2(rb.position.x - prevWave, rb.position.y);
+        else
+            transform.position -= new Vector3(prevWave, 0f, 0f);
+
         if (spriteRenderer != null)
             spriteRenderer.color = baseColor;
         hitFeedbackRoutine = null;

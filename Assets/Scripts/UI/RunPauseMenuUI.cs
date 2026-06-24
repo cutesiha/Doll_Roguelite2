@@ -214,6 +214,104 @@ void Build()
             Button button = GetOrCreateSpriteButton(menuPanel.transform, "RunMenuButton_" + i, new Vector2(0f, 114f - i * 76f), new Vector2(560f, 68f), labels[i], 42f);
             button.onClick.AddListener(actions[i]);
         }
+
+        ConfigureMenuCloseButton();
+    }
+
+    void ConfigureMenuCloseButton()
+    {
+        Transform closeTransform = menuPanel.transform.Find("RunMenuCloseButton");
+        if (closeTransform == null)
+        {
+            GameObject closeObject = new GameObject("RunMenuCloseButton");
+            closeObject.transform.SetParent(menuPanel.transform, false);
+            closeTransform = closeObject.AddComponent<RectTransform>();
+        }
+
+        RectTransform closeRect = closeTransform as RectTransform;
+        if (closeRect == null)
+            closeRect = closeTransform.gameObject.AddComponent<RectTransform>();
+        closeRect.anchorMin = closeRect.anchorMax = new Vector2(1f, 1f);
+        closeRect.pivot = new Vector2(1f, 1f);
+        closeRect.anchoredPosition = new Vector2(-18f, -18f);
+        closeRect.sizeDelta = new Vector2(60f, 60f);
+
+        Image background = closeTransform.GetComponent<Image>();
+        if (background == null)
+            background = closeTransform.gameObject.AddComponent<Image>();
+        background.sprite = null;
+        background.color = Clear;
+        background.raycastTarget = true;
+
+        Button closeButton = closeTransform.GetComponent<Button>();
+        if (closeButton == null)
+            closeButton = closeTransform.gameObject.AddComponent<Button>();
+        closeButton.transition = Selectable.Transition.None;
+        closeButton.targetGraphic = background;
+        closeButton.onClick.RemoveAllListeners();
+        closeButton.onClick.AddListener(PlayClickSound);
+        closeButton.onClick.AddListener(CloseAll);
+
+        StartPanelHoverTint hover = closeTransform.GetComponent<StartPanelHoverTint>();
+        if (hover == null)
+            hover = closeTransform.gameObject.AddComponent<StartPanelHoverTint>();
+        hover.Configure(background, Clear, WithAlpha(panelLineColor, 0.20f), WithAlpha(panelLineColor, 0.34f));
+
+        for (int i = 0; i < 4; i++)
+        {
+            float coordinate = -18f + i * 12f;
+            ConfigureCloseDash(closeTransform, "BorderDash_Top_" + i, new Vector2(coordinate, 27f), new Vector2(8f, 3f));
+            ConfigureCloseDash(closeTransform, "BorderDash_Bottom_" + i, new Vector2(coordinate, -27f), new Vector2(8f, 3f));
+            ConfigureCloseDash(closeTransform, "BorderDash_Left_" + i, new Vector2(-27f, coordinate), new Vector2(3f, 8f));
+            ConfigureCloseDash(closeTransform, "BorderDash_Right_" + i, new Vector2(27f, coordinate), new Vector2(3f, 8f));
+        }
+
+        Transform xTransform = closeTransform.Find("CloseX");
+        if (xTransform == null)
+        {
+            GameObject xObject = new GameObject("CloseX");
+            xObject.transform.SetParent(closeTransform, false);
+            xTransform = xObject.AddComponent<RectTransform>();
+        }
+        RectTransform xRect = xTransform as RectTransform;
+        if (xRect == null)
+            xRect = xTransform.gameObject.AddComponent<RectTransform>();
+        StretchToParent(xRect);
+        TextMeshProUGUI xLabel = xTransform.GetComponent<TextMeshProUGUI>();
+        if (xLabel == null)
+            xLabel = xTransform.gameObject.AddComponent<TextMeshProUGUI>();
+        xLabel.font = UIThinDungFont.Get(uiFont);
+        xLabel.text = "X";
+        xLabel.fontSize = 34f;
+        xLabel.alignment = TextAlignmentOptions.Center;
+        xLabel.color = panelLineColor;
+        xLabel.raycastTarget = false;
+        xLabel.textWrappingMode = TextWrappingModes.NoWrap;
+
+        closeTransform.SetAsLastSibling();
+    }
+
+    void ConfigureCloseDash(Transform parent, string name, Vector2 position, Vector2 size)
+    {
+        Transform dashTransform = parent.Find(name);
+        if (dashTransform == null)
+        {
+            GameObject dashObject = new GameObject(name);
+            dashObject.transform.SetParent(parent, false);
+            dashTransform = dashObject.AddComponent<RectTransform>();
+        }
+
+        RectTransform dashRect = dashTransform as RectTransform;
+        dashRect.anchorMin = dashRect.anchorMax = new Vector2(0.5f, 0.5f);
+        dashRect.pivot = new Vector2(0.5f, 0.5f);
+        dashRect.anchoredPosition = position;
+        dashRect.sizeDelta = size;
+
+        Image dash = dashTransform.GetComponent<Image>();
+        if (dash == null)
+            dash = dashTransform.gameObject.AddComponent<Image>();
+        dash.color = panelLineColor;
+        dash.raycastTarget = false;
     }
 
     void DestroyDirectChildrenWithPrefix(Transform parent, string prefix)

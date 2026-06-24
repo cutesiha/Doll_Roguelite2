@@ -389,7 +389,7 @@ public static class InventoryUICreator
         tmp.fontSize = size;
         tmp.color = color;
         tmp.alignment = align;
-        tmp.enableWordWrapping = false;
+        tmp.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
         tmp.overflowMode = TextOverflowModes.Overflow;
         var f = Font();
         if (f != null) tmp.font = f;

@@ -325,6 +325,8 @@ public class PlayerDamageReceiver : MonoBehaviour
         if (!gameObject.activeInHierarchy)
             return;
 
+        ScreenFlash.FlashRed();
+
         if (feedbackRoutine != null)
             StopCoroutine(feedbackRoutine);
 

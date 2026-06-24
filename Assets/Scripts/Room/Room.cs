@@ -5,7 +5,8 @@ using UnityEngine.SceneManagement;
 
 public class Room : MonoBehaviour
 {
-    const int EnemiesPerWave = 3;
+    const int EnemiesInsidePerWave = 3;
+    const int EnemiesOutsidePerWave = 2;
 
     [SerializeField] EnemyBase enemyPrefab;
     [SerializeField] int waveCount = 3;
@@ -413,24 +414,32 @@ public class Room : MonoBehaviour
     {
         enemies.Clear();
 
-        int count = EnemiesPerWave;
-        List<GameObject> templates = BuildWaveTemplates(wave, count);
+        int totalCount = EnemiesInsidePerWave + EnemiesOutsidePerWave;
+        List<GameObject> templates = BuildWaveTemplates(wave, totalCount);
         GameObject markerTemplate = templates.Count > 0 ? templates[0] : EnemyTemplate(wave);
 
         Vector2 markerSize = GetEnemyMarkerSize(markerTemplate);
-        List<Vector3> positions = new List<Vector3>(count);
-        for (int i = 0; i < count; i++)
-            positions.Add(randomizeEnemyPositions ? RandomPos(markerSize) : markerTemplate.transform.position);
 
-        yield return StartCoroutine(BlinkSpawnPositions(positions, markerSize));
+        List<Vector3> insidePositions = new List<Vector3>(EnemiesInsidePerWave);
+        for (int i = 0; i < EnemiesInsidePerWave; i++)
+            insidePositions.Add(randomizeEnemyPositions ? RandomPos(markerSize) : markerTemplate.transform.position);
 
-        for (int i = 0; i < positions.Count; i++)
+        List<Vector3> outsidePositions = new List<Vector3>(EnemiesOutsidePerWave);
+        for (int i = 0; i < EnemiesOutsidePerWave; i++)
+            outsidePositions.Add(RandomPosOutsideScreen());
+
+        yield return StartCoroutine(BlinkSpawnPositions(insidePositions, markerSize));
+
+        List<Vector3> allPositions = new List<Vector3>(insidePositions);
+        allPositions.AddRange(outsidePositions);
+
+        for (int i = 0; i < allPositions.Count; i++)
         {
             GameObject template = i < templates.Count ? templates[i] : EnemyTemplate(wave);
             if (template == null)
                 continue;
 
-            GameObject enemyGO = Instantiate(template, positions[i], Quaternion.identity, transform);
+            GameObject enemyGO = Instantiate(template, allPositions[i], Quaternion.identity, transform);
             enemyGO.name = template.name + "_Wave" + wave + "_" + (i + 1);
             enemyGO.SetActive(true);
 
@@ -438,9 +447,35 @@ public class Room : MonoBehaviour
             if (enemy != null)
             {
                 EnemyManager.Instance?.ConfigureEnemy(enemy, true);
-                enemy.StartSpawnApproach(spawnApproachDuration, spawnApproachSpeed);
+                float approachDur = i >= EnemiesInsidePerWave ? spawnApproachDuration * 2.5f : spawnApproachDuration;
+                enemy.StartSpawnApproach(approachDur, spawnApproachSpeed);
                 enemies.Add(enemy);
             }
+        }
+    }
+
+    Vector3 RandomPosOutsideScreen()
+    {
+        Camera cam = Camera.main;
+        if (cam == null || !cam.orthographic)
+            return Vector3.zero;
+
+        float halfH = cam.orthographicSize;
+        float halfW = halfH * cam.aspect;
+        Vector3 center = cam.transform.position;
+        const float offscreenMargin = 3f;
+
+        int edge = Random.Range(0, 4);
+        switch (edge)
+        {
+            case 0:
+                return new Vector3(center.x - halfW - offscreenMargin, Random.Range(center.y - halfH, center.y + halfH), 0f);
+            case 1:
+                return new Vector3(center.x + halfW + offscreenMargin, Random.Range(center.y - halfH, center.y + halfH), 0f);
+            case 2:
+                return new Vector3(Random.Range(center.x - halfW, center.x + halfW), center.y + halfH + offscreenMargin, 0f);
+            default:
+                return new Vector3(Random.Range(center.x - halfW, center.x + halfW), center.y - halfH - offscreenMargin, 0f);
         }
     }
 
@@ -468,10 +503,10 @@ public class Room : MonoBehaviour
             return 0;
 
         int buttonTemplateCount = ButtonTemplateCount();
-        if (buttonTemplateCount == 0)
+        if (buttonTemplateCount == 0 || count == 0)
             return 0;
 
-        return count > 0 ? 1 : 0;
+        return Random.Range(2, 4); // 2 or 3 buttons guaranteed in first room
     }
 
     int ButtonTemplateCount()

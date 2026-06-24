@@ -91,9 +91,20 @@ public class EnemyChaser : EnemyBase
             yield return null;
         }
 
+        Collider2D[] cols = GetComponents<Collider2D>();
+        bool[] wasTrigger = new bool[cols.Length];
+        for (int i = 0; i < cols.Length; i++)
+        {
+            wasTrigger[i] = cols[i].isTrigger;
+            cols[i].isTrigger = true;
+        }
+
         yield return StartCoroutine(JumpToTarget(targetPosition, baseScale));
 
         DealSlamDamage(targetPosition, impactRadius);
+
+        for (int i = 0; i < cols.Length; i++)
+            cols[i].isTrigger = wasTrigger[i];
 
         elapsed = 0f;
         while (elapsed < slamSquashDuration)

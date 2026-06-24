@@ -45,6 +45,7 @@ public class RunHudUI : MonoBehaviour
     ScrollRect mapScrollRect;
     RectTransform mapViewport;
     RectTransform mapContent;
+    RectTransform mapTree;
     RectTransform miniMapContent;
     GameObject waveHud;
     TextMeshProUGUI waveLabel;
@@ -236,6 +237,7 @@ public class RunHudUI : MonoBehaviour
         mapScrollRect = null;
         mapViewport = null;
         mapContent = null;
+        mapTree = null;
         miniMapContent = null;
         hasAuthoredMapPanelPosition = false;
         waveLabel = null;
@@ -445,6 +447,9 @@ public class RunHudUI : MonoBehaviour
         if (mapContent == null)
             mapContent = FindChildComponent<RectTransform>("MapContent");
 
+        if (mapTree == null)
+            mapTree = FindChildComponent<RectTransform>("TreeMap");
+
         if (mapViewport == null)
             mapViewport = FindChildComponent<RectTransform>("MapViewport");
 
@@ -492,6 +497,7 @@ public class RunHudUI : MonoBehaviour
             scrollTransform = scrollObject.transform;
             scrollTransform.SetAsFirstSibling();
         }
+        scrollTransform.gameObject.SetActive(true);
 
         mapScrollRect = scrollTransform.GetComponent<ScrollRect>();
         if (mapScrollRect == null)
@@ -503,21 +509,24 @@ public class RunHudUI : MonoBehaviour
             GameObject viewportObject = Rect(scrollTransform, "MapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
             viewportTransform = viewportObject.transform;
         }
+        viewportTransform.gameObject.SetActive(true);
 
         mapViewport = viewportTransform as RectTransform;
-        if (viewportTransform.GetComponent<RectMask2D>() == null)
-            viewportTransform.gameObject.AddComponent<RectMask2D>();
+        RectMask2D viewportMask = viewportTransform.GetComponent<RectMask2D>();
+        if (viewportMask == null)
+            viewportMask = viewportTransform.gameObject.AddComponent<RectMask2D>();
+        viewportMask.padding = Vector4.zero;
+        viewportMask.softness = Vector2Int.zero;
 
         Image viewportImage = viewportTransform.GetComponent<Image>();
         if (viewportImage == null)
             viewportImage = viewportTransform.gameObject.AddComponent<Image>();
-        viewportImage.color = Color.white;
+        viewportImage.color = new Color(1f, 1f, 1f, 0f);
         viewportImage.raycastTarget = true;
 
-        Mask viewportMask = viewportTransform.GetComponent<Mask>();
-        if (viewportMask == null)
-            viewportMask = viewportTransform.gameObject.AddComponent<Mask>();
-        viewportMask.showMaskGraphic = false;
+        Mask legacyViewportMask = viewportTransform.GetComponent<Mask>();
+        if (legacyViewportMask != null)
+            DestroyUiObject(legacyViewportMask);
 
         if (mapContent == null)
             mapContent = FindChildComponent<RectTransform>("MapContent");
@@ -526,6 +535,7 @@ public class RunHudUI : MonoBehaviour
             GameObject contentObject = Rect(viewportTransform, "MapContent", Anchor.TopCenter, Vector2.zero, new Vector2(1040f, 1500f));
             mapContent = contentObject.GetComponent<RectTransform>();
         }
+        mapContent.gameObject.SetActive(true);
 
         if (mapContent.parent != viewportTransform)
         {
@@ -537,12 +547,27 @@ public class RunHudUI : MonoBehaviour
             mapContent.sizeDelta = contentSize;
         }
 
+        if (mapTree == null)
+        {
+            Transform authoredTree = mapContent.Find("TreeMap");
+            if (authoredTree != null)
+                mapTree = authoredTree as RectTransform;
+        }
+        if (mapTree == null)
+        {
+            GameObject treeObject = Rect(mapContent, "TreeMap", Anchor.Stretch, Vector2.zero, Vector2.zero);
+            mapTree = treeObject.GetComponent<RectTransform>();
+        }
+        mapTree.gameObject.SetActive(true);
+
         mapScrollRect.horizontal = false;
         mapScrollRect.vertical = true;
         mapScrollRect.movementType = ScrollRect.MovementType.Clamped;
         mapScrollRect.scrollSensitivity = 42f;
         mapScrollRect.viewport = mapViewport;
         mapScrollRect.content = mapContent;
+        mapScrollRect.onValueChanged.RemoveListener(RefreshMapViewportVisibility);
+        mapScrollRect.onValueChanged.AddListener(RefreshMapViewportVisibility);
     }
 
     void EnsureMiniMapOnExistingButton()
@@ -681,6 +706,7 @@ public class RunHudUI : MonoBehaviour
         Button closeButton = FindChildComponent<Button>("MapCloseButton_X");
         if (closeButton != null)
         {
+            ConfigureMapCloseButtonStyle(closeButton);
             closeButton.onClick.RemoveListener(PlayClickSound);
             closeButton.onClick.RemoveListener(CloseMap);
             closeButton.onClick.AddListener(PlayClickSound);
@@ -1400,7 +1426,7 @@ void BuildTopRightMapButton()
 
     void BuildMiniMapNode(MapNode node, Vector2 position, bool current)
     {
-        GameObject nodeGO = Rect(miniMapContent, "MiniMapNode_" + node.id, Anchor.Center, position, current ? new Vector2(24f, 24f) : new Vector2(18f, 18f));
+        GameObject nodeGO = Rect(miniMapContent, "MiniMapNode_" + node.id, Anchor.Center, position, current ? new Vector2(32f, 32f) : new Vector2(24f, 24f));
         Image image = nodeGO.AddComponent<Image>();
         Sprite icon = MapIcon(node);
         image.sprite = icon != null ? icon : circleSprite;
@@ -1866,18 +1892,28 @@ void BuildTopRightMapButton()
         MapRunState.EnsureRun();
         EnsureMapScrollHierarchy();
         BuildMapTree();
-        if (mapScrollRect != null)
-            mapScrollRect.verticalNormalizedPosition = 1f;
 
         if (mapOverlay == null)
             return;
 
         mapOverlay.SetActive(true);
-        RunUiPauseManager.SetPaused("Map", true);
-        if (Application.isPlaying)
-            PlayMapPanelAnimation(true);
-        else if (mapPanel != null)
+        if (mapPanel != null)
             mapPanel.anchoredPosition = MapPanelShownPosition();
+
+        Canvas.ForceUpdateCanvases();
+        if (mapScrollRect != null)
+        {
+            mapScrollRect.StopMovement();
+            mapScrollRect.verticalNormalizedPosition = 1f;
+        }
+        Canvas.ForceUpdateCanvases();
+        RectMask2D viewportMask = mapViewport != null ? mapViewport.GetComponent<RectMask2D>() : null;
+        if (viewportMask != null)
+            viewportMask.PerformClipping();
+        RefreshMapViewportVisibility(Vector2.zero);
+        Canvas.ForceUpdateCanvases();
+
+        RunUiPauseManager.SetPaused("Map", true);
     }
 
     void ToggleMap()
@@ -2116,16 +2152,17 @@ void BuildTopRightMapButton()
         mapViewport = viewport.GetComponent<RectTransform>();
         viewport.AddComponent<RectMask2D>();
         Image viewportImage = viewport.AddComponent<Image>();
-        viewportImage.color = Color.white;
+        viewportImage.color = new Color(1f, 1f, 1f, 0f);
         viewportImage.raycastTarget = true;
-        Mask viewportMask = viewport.AddComponent<Mask>();
-        viewportMask.showMaskGraphic = false;
         mapScrollRect.viewport = mapViewport;
 
         GameObject content = Rect(viewport.transform, "MapContent", Anchor.TopCenter, Vector2.zero, new Vector2(1040f, 1500f));
         mapContent = content.GetComponent<RectTransform>();
         mapContent.pivot = new Vector2(0.5f, 1f);
         mapScrollRect.content = mapContent;
+
+        GameObject tree = Rect(mapContent, "TreeMap", Anchor.Stretch, Vector2.zero, Vector2.zero);
+        mapTree = tree.GetComponent<RectTransform>();
     }
 
     void BuildMapTree()
@@ -2133,25 +2170,32 @@ void BuildTopRightMapButton()
         if (mapContent == null)
             return;
 
-        for (int i = mapContent.childCount - 1; i >= 0; i--)
-            DestroyUiObject(mapContent.GetChild(i).gameObject);
+        if (mapTree == null)
+        {
+            Transform authoredTree = mapContent.Find("TreeMap");
+            mapTree = authoredTree as RectTransform;
+        }
 
         MapNode root = MapRunState.Root;
         if (root == null)
             return;
 
+        Transform treeRoot = mapTree != null ? mapTree : mapContent;
+        for (int i = treeRoot.childCount - 1; i >= 0; i--)
+            DestroyUiObject(treeRoot.GetChild(i).gameObject);
+
         List<List<MapNode>> layers = CollectLayers(root);
         Dictionary<MapNode, Vector2> positions = new Dictionary<MapNode, Vector2>();
         float width = 1040f;
-        float height = Mathf.Max(1420f, 160f + Mathf.Max(0, layers.Count - 1) * 276f);
+        const float verticalInset = 240f;
+        const float verticalGap = 240f;
+        float height = Mathf.Max(1200f, verticalInset * 2f + Mathf.Max(0, layers.Count - 1) * verticalGap);
         mapContent.sizeDelta = new Vector2(width, height);
-        const float verticalInset = 130f;
-        float yGap = layers.Count <= 1 ? 0f : (height - verticalInset * 2f) / (layers.Count - 1);
 
         for (int layerIndex = 0; layerIndex < layers.Count; layerIndex++)
         {
             List<MapNode> layer = layers[layerIndex];
-            float y = height * 0.5f - verticalInset - yGap * layerIndex;
+            float y = height * 0.5f - verticalInset - verticalGap * layerIndex;
             float xGap = layer.Count <= 1 ? 0f : (width - 340f) / (layer.Count - 1);
 
             for (int nodeIndex = 0; nodeIndex < layer.Count; nodeIndex++)
@@ -2177,14 +2221,55 @@ void BuildTopRightMapButton()
     {
         Color color = MapBrown;
         color.a = 1f;
-        BuildDashedLine(mapContent, "MapLine", from, to, 22f, 13f, visibleRoute ? 5f : 3f, color);
+        BuildDashedLine(mapTree != null ? mapTree : mapContent, "MapLine", from, to, 22f, 13f, visibleRoute ? 5f : 3f, color);
+    }
+
+    void RefreshMapViewportVisibility(Vector2 _)
+    {
+        if (mapViewport == null || mapTree == null)
+            return;
+
+        Rect viewportRect = mapViewport.rect;
+        viewportRect.yMin += 120f;
+        Vector3[] corners = new Vector3[4];
+        for (int childIndex = 0; childIndex < mapTree.childCount; childIndex++)
+        {
+            RectTransform child = mapTree.GetChild(childIndex) as RectTransform;
+            if (child == null)
+                continue;
+
+            RectTransform[] rects = child.GetComponentsInChildren<RectTransform>(true);
+            float minX = float.PositiveInfinity;
+            float maxX = float.NegativeInfinity;
+            float minY = float.PositiveInfinity;
+            float maxY = float.NegativeInfinity;
+            foreach (RectTransform rect in rects)
+            {
+                rect.GetWorldCorners(corners);
+                for (int cornerIndex = 0; cornerIndex < corners.Length; cornerIndex++)
+                {
+                    Vector3 local = mapViewport.InverseTransformPoint(corners[cornerIndex]);
+                    minX = Mathf.Min(minX, local.x);
+                    maxX = Mathf.Max(maxX, local.x);
+                    minY = Mathf.Min(minY, local.y);
+                    maxY = Mathf.Max(maxY, local.y);
+                }
+            }
+
+            const float edgeTolerance = 0.5f;
+            bool fullyInside = minX >= viewportRect.xMin - edgeTolerance
+                && maxX <= viewportRect.xMax + edgeTolerance
+                && minY >= viewportRect.yMin - edgeTolerance
+                && maxY <= viewportRect.yMax + edgeTolerance;
+            child.gameObject.SetActive(fullyInside);
+        }
     }
 
     void BuildNode(MapNode node, Vector2 position)
     {
         bool revealRoom = ShouldRevealRoom(node);
-        Vector2 nodeSize = revealRoom ? new Vector2(104f, 104f) : new Vector2(68f, 68f);
-        GameObject nodeGO = Rect(mapContent, "MapNode_" + node.id, Anchor.Center, position, nodeSize);
+        Vector2 nodeSize = new Vector2(170f, 170f);
+        GameObject nodeGO = Rect(mapTree != null ? mapTree : mapContent, "MapNode_" + node.id, Anchor.Center, position, nodeSize);
         Image nodeImage = nodeGO.AddComponent<Image>();
         Sprite icon = revealRoom ? MapIcon(node) : circleSprite;
         nodeImage.sprite = icon != null ? icon : circleSprite;
@@ -2194,13 +2279,17 @@ void BuildTopRightMapButton()
 
         if (revealRoom)
         {
-            GameObject labelBox = Rect(nodeGO.transform, "RoomLabelBox", Anchor.Center, new Vector2(0f, 88f), new Vector2(142f, 46f));
-            BuildDashedBorder(labelBox.GetComponent<RectTransform>(), new Vector2(142f, 46f), 16f, 9f, 3f, MapBrown);
+            GameObject labelBox = Rect(nodeGO.transform, "RoomLabelBox", Anchor.Center, new Vector2(0f, 120f), new Vector2(200f, 54f));
+            Image labelBackground = labelBox.AddComponent<Image>();
+            SetRoundedImage(labelBackground, roundedButtonSprite);
+            labelBackground.color = PanelColor;
+            labelBackground.raycastTarget = false;
+            BuildDashedBorder(labelBox.GetComponent<RectTransform>(), new Vector2(200f, 54f), 16f, 9f, 3f, MapBrown);
 
-            TextMeshProUGUI label = Text(labelBox.transform, "RoomLabel", RoomTypeLabel(node), 20f, MapBrown, TextAlignmentOptions.Center);
+            TextMeshProUGUI label = Text(labelBox.transform, "RoomLabel", RoomTypeLabel(node), 26f, MapBrown, TextAlignmentOptions.Center);
             label.enableAutoSizing = true;
-            label.fontSizeMin = 13f;
-            label.fontSizeMax = 20f;
+            label.fontSizeMin = 17f;
+            label.fontSizeMax = 26f;
             label.rectTransform.anchorMin = Vector2.zero;
             label.rectTransform.anchorMax = Vector2.one;
             label.rectTransform.offsetMin = new Vector2(8f, 4f);
@@ -2209,11 +2298,11 @@ void BuildTopRightMapButton()
 
         if (IsCurrentOrPending(node))
         {
-            TextMeshProUGUI marker = Text(nodeGO.transform, "CurrentLocationMarker", "\u25C0 \uD604\uC7AC \uC704\uCE58", 16f, MapBrown, TextAlignmentOptions.Center);
+            TextMeshProUGUI marker = Text(nodeGO.transform, "CurrentLocationMarker", "\u25C0 \uD604\uC7AC \uC704\uCE58", 18f, MapBrown, TextAlignmentOptions.Center);
             marker.rectTransform.anchorMin = marker.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             marker.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            marker.rectTransform.anchoredPosition = new Vector2(106f, 0f);
-            marker.rectTransform.sizeDelta = new Vector2(112f, 40f);
+            marker.rectTransform.anchoredPosition = new Vector2(138f, 0f);
+            marker.rectTransform.sizeDelta = new Vector2(140f, 44f);
         }
     }
 
@@ -2309,19 +2398,104 @@ void BuildTopRightMapButton()
 
     Button BuildCloseButton(Transform parent)
     {
-        GameObject closeGO = Rect(parent, "MapCloseButton_X", Anchor.TopRight, new Vector2(-22f, -22f), new Vector2(72f, 72f));
+        GameObject closeGO = Rect(parent, "MapCloseButton_X", Anchor.TopRight, new Vector2(-18f, -18f), new Vector2(60f, 60f));
         Image image = closeGO.AddComponent<Image>();
-        SetRoundedImage(image, roundedButtonSprite);
-        image.color = AccentColor;
+        image.color = Color.clear;
+        image.raycastTarget = true;
         Button button = closeGO.AddComponent<Button>();
         button.targetGraphic = image;
-
-        TextMeshProUGUI text = Text(closeGO.transform, "MapCloseButton_X_Label", "X", 42f, Color.white, TextAlignmentOptions.Center);
-        text.rectTransform.anchorMin = Vector2.zero;
-        text.rectTransform.anchorMax = Vector2.one;
-        text.rectTransform.offsetMin = Vector2.zero;
-        text.rectTransform.offsetMax = Vector2.zero;
+        ConfigureMapCloseButtonStyle(button);
         return button;
+    }
+
+    void ConfigureMapCloseButtonStyle(Button button)
+    {
+        if (button == null)
+            return;
+
+        RectTransform rect = button.transform as RectTransform;
+        rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-18f, -18f);
+        rect.sizeDelta = new Vector2(60f, 60f);
+
+        Color closeBrown = new Color(0.30f, 0.18f, 0.10f, 1f);
+        Image background = button.GetComponent<Image>();
+        if (background == null)
+            background = button.gameObject.AddComponent<Image>();
+        background.sprite = null;
+        background.color = Color.clear;
+        background.raycastTarget = true;
+        button.transition = Selectable.Transition.None;
+        button.targetGraphic = background;
+
+        StartPanelHoverTint hover = button.GetComponent<StartPanelHoverTint>();
+        if (hover == null)
+            hover = button.gameObject.AddComponent<StartPanelHoverTint>();
+        hover.Configure(background, Color.clear, new Color(closeBrown.r, closeBrown.g, closeBrown.b, 0.20f), new Color(closeBrown.r, closeBrown.g, closeBrown.b, 0.34f));
+
+        Transform legacyLabel = button.transform.Find("MapCloseButton_X_Label");
+        if (legacyLabel != null)
+            DestroyUiObject(legacyLabel.gameObject);
+
+        for (int i = 0; i < 4; i++)
+        {
+            float coordinate = -18f + i * 12f;
+            ConfigureMapCloseDash(button.transform, "BorderDash_Top_" + i, new Vector2(coordinate, 27f), new Vector2(8f, 3f), closeBrown);
+            ConfigureMapCloseDash(button.transform, "BorderDash_Bottom_" + i, new Vector2(coordinate, -27f), new Vector2(8f, 3f), closeBrown);
+            ConfigureMapCloseDash(button.transform, "BorderDash_Left_" + i, new Vector2(-27f, coordinate), new Vector2(3f, 8f), closeBrown);
+            ConfigureMapCloseDash(button.transform, "BorderDash_Right_" + i, new Vector2(27f, coordinate), new Vector2(3f, 8f), closeBrown);
+        }
+
+        Transform xTransform = button.transform.Find("CloseX");
+        if (xTransform == null)
+        {
+            GameObject xObject = new GameObject("CloseX");
+            xObject.transform.SetParent(button.transform, false);
+            xTransform = xObject.AddComponent<RectTransform>();
+        }
+
+        RectTransform xRect = xTransform as RectTransform;
+        xRect.anchorMin = Vector2.zero;
+        xRect.anchorMax = Vector2.one;
+        xRect.offsetMin = Vector2.zero;
+        xRect.offsetMax = Vector2.zero;
+        xRect.pivot = new Vector2(0.5f, 0.5f);
+
+        TextMeshProUGUI xLabel = xTransform.GetComponent<TextMeshProUGUI>();
+        if (xLabel == null)
+            xLabel = xTransform.gameObject.AddComponent<TextMeshProUGUI>();
+        xLabel.font = UIThinDungFont.Get(uiFont);
+        xLabel.text = "X";
+        xLabel.fontSize = 34f;
+        xLabel.alignment = TextAlignmentOptions.Center;
+        xLabel.color = closeBrown;
+        xLabel.raycastTarget = false;
+        xLabel.textWrappingMode = TextWrappingModes.NoWrap;
+        button.transform.SetAsLastSibling();
+    }
+
+    void ConfigureMapCloseDash(Transform parent, string name, Vector2 position, Vector2 size, Color color)
+    {
+        Transform dashTransform = parent.Find(name);
+        if (dashTransform == null)
+        {
+            GameObject dashObject = new GameObject(name);
+            dashObject.transform.SetParent(parent, false);
+            dashTransform = dashObject.AddComponent<RectTransform>();
+        }
+
+        RectTransform dashRect = dashTransform as RectTransform;
+        dashRect.anchorMin = dashRect.anchorMax = new Vector2(0.5f, 0.5f);
+        dashRect.pivot = new Vector2(0.5f, 0.5f);
+        dashRect.anchoredPosition = position;
+        dashRect.sizeDelta = size;
+
+        Image dash = dashTransform.GetComponent<Image>();
+        if (dash == null)
+            dash = dashTransform.gameObject.AddComponent<Image>();
+        dash.color = color;
+        dash.raycastTarget = false;
     }
 
     GameObject Rect(Transform parent, string name, Anchor anchor, Vector2 offset, Vector2 size)

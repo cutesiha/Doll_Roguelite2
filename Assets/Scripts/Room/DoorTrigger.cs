@@ -9,6 +9,7 @@ public class DoorTrigger : MonoBehaviour
     [SerializeField] string bossSceneName = "BossScene";
     [SerializeField] string middleBossSceneName = "MiddleBossScene";
     [SerializeField] string finalBossSceneName = "BookBossScene";
+    [SerializeField] string challengeSceneName = "RoomScene";
     [SerializeField] string supplySceneName = "PresentScene";
     [SerializeField] string eventSceneName = "EventScene";
     [SerializeField] string treasureSceneName = "TreasureRoomScene";
@@ -286,6 +287,7 @@ public class DoorTrigger : MonoBehaviour
             case RoomType.Shop: return shopSceneName;
             case RoomType.Supply: return supplySceneName;
             case RoomType.Event: return eventSceneName;
+            case RoomType.Challenge: return challengeSceneName;
             default: return roomSceneName;
         }
     }

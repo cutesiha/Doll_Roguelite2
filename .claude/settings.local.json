@@ -19,7 +19,8 @@
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"C:\\\\Users\\\\rotyr\\\\OneDrive\\\\Documents\\\\GitHub\\\\Doll_Roguelite2\\\\Library\\\\PackageCache\\\\com.gamelovers.mcp-unity@aade29c7dd84\\\\Server~\"; npm run build 2>&1)",
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); \\(Get-Command node\\).Source)",
       "PowerShell(Get-Process -Id 3332)",
-      "mcp__unity__get_scene_info"
+      "mcp__unity__get_scene_info",
+      "Bash(xargs grep -l \"a97c105638bdf8b4a8650670310a4cd3\")"
     ]
   }
 }
