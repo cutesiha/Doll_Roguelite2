@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3997157333533642a0af80c934f3a01, type: 3}
+  m_Name: moving_eye
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: moving_eye
+  itemName: "\uC811\uCC29\uC2DD \uC6C0\uC9C1\uC774\uB294 \uB208"
+  description: "\uD654\uBA74\uC774 \uC800\uD574\uC0C1\uB3C4\uCC98\uB7FC \uBCF4\uC774\uACE0
+    \uC67C\uCABD \uD314 \uB370\uBBF8\uC9C0 +2.43"
+  category: 0
+  itemType: 0
+  equipLocation: 1
+  acquisitionLocations: 1
+  consumable: 0
+  value: 2.43
+  secondaryValue: 0
+  duration: 0
+  shopPrice: 20
+  effects:
+  - effectType: 8
+    value: 0
+    duration: 0
+  - effectType: 2
+    value: 2.43
+    duration: 0
+  sprite: {fileID: 0}
+  placeholderShape: 1
+  placeholderColor: {r: 0.48, g: 0.92, b: 0.55, a: 1}

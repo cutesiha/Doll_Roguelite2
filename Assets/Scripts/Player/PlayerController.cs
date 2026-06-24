@@ -48,6 +48,7 @@ public class PlayerController : MonoBehaviour
     float movementLockedUntil;
     float speedMultiplier = 1f;
     float speedMultiplierUntil;
+    float itemMoveSpeedBonus;
     FacingDirection facingDirection = FacingDirection.Down;
     FacingDirection lastWalkDirection = FacingDirection.Down;
     float facingLockTimer;
@@ -187,7 +188,7 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        float speed = moveSpeed;
+        float speed = Mathf.Max(0f, moveSpeed + itemMoveSpeedBonus);
         var state = BodyConditionUtility.CurrentState();
         if (state != null && (!state.legLeft || !state.legRight))
             speed *= missingLegSpeedMultiplier;
@@ -212,6 +213,11 @@ public class PlayerController : MonoBehaviour
         speedMultiplierUntil = Time.time + Mathf.Max(0f, duration);
     }
 
+    public void SetItemMoveSpeedBonus(float bonus)
+    {
+        itemMoveSpeedBonus = bonus;
+    }
+
     // Q: 장착된 보석을 발동하고 소모한다. 일시정지(인벤토리/메뉴) 중에는 무시.
     void HandleJewelHotkey(Keyboard kb)
     {
@@ -219,10 +225,10 @@ public class PlayerController : MonoBehaviour
             return;
 
         InventoryManager inventory = InventoryManager.Instance;
-        if (inventory == null || inventory.jewel == null)
+        if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryUseEquippedConsumable())
             return;
 
-        if (JewelAbility.Activate(inventory.jewel))
+        if (inventory != null && inventory.jewel != null && JewelAbility.Activate(inventory.jewel))
             inventory.ConsumeJewel();
     }
 

@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3997157333533642a0af80c934f3a01, type: 3}
+  m_Name: glass_eye
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: glass_eye
+  itemName: "\uC720\uB9AC\uB208"
+  description: "\uC2DC\uC57C\uAC00 \uC704\uC544\uB798\uB85C \uBC18\uC804\uB418\uACE0
+    \uC624\uB978\uCABD \uD314 \uB370\uBBF8\uC9C0 +1.00"
+  category: 0
+  itemType: 0
+  equipLocation: 1
+  acquisitionLocations: 1
+  consumable: 0
+  value: 1
+  secondaryValue: 0
+  duration: 0
+  shopPrice: 18
+  effects:
+  - effectType: 7
+    value: 0
+    duration: 0
+  - effectType: 3
+    value: 1
+    duration: 0
+  sprite: {fileID: 0}
+  placeholderShape: 1
+  placeholderColor: {r: 0.72, g: 0.92, b: 1, a: 1}

@@ -670,6 +670,7 @@ public class Room : MonoBehaviour
     {
         if (isCleared) return;
         isCleared = true;
+        ItemRoomRewardSystem.HandleCombatRoomCleared(MapRunState.PendingNode, transform.position);
         CompleteCurrentRoom();
         BuildNextDoors();
         Debug.Log("Room Cleared!");

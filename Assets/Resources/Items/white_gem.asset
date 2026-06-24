@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3997157333533642a0af80c934f3a01, type: 3}
+  m_Name: white_gem
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: white_gem
+  itemName: "\uD558\uC580 \uBCF4\uC11D"
+  description: "20\uCD08 \uB3D9\uC548 \uBB34\uC801"
+  category: 3
+  itemType: 1
+  equipLocation: 5
+  acquisitionLocations: 24
+  consumable: 1
+  value: 0
+  secondaryValue: 0
+  duration: 20
+  shopPrice: 12
+  effects:
+  - effectType: 16
+    value: 0
+    duration: 20
+  sprite: {fileID: 0}
+  placeholderShape: 2
+  placeholderColor: {r: 1, g: 1, b: 1, a: 1}

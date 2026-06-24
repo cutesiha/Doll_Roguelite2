@@ -25,6 +25,7 @@ public class EnemyBase : MonoBehaviour
     [SerializeField, Range(0.02f, 0.35f)] float cameraShakeDuration = 0.12f;
     [SerializeField, Min(0f)] float cameraShakeMagnitude = 0.10f;
     protected int currentHp;
+    float fractionalDamageRemainder;
     public bool HasManagedProfile { get; private set; }
 
     // Which profile bucket in EnemyManager applies to this enemy. Defaults to None
@@ -335,6 +336,15 @@ public class EnemyBase : MonoBehaviour
             Die();
     }
 
+    public void TakeDamage(float damage)
+    {
+        float accumulated = Mathf.Max(0f, damage) + fractionalDamageRemainder;
+        int wholeDamage = Mathf.FloorToInt(accumulated);
+        fractionalDamageRemainder = accumulated - wholeDamage;
+        if (wholeDamage > 0)
+            TakeDamage(wholeDamage);
+    }
+
     public void StartSpawnApproach(float duration, float speed)
     {
         if (duration <= 0f || speed <= 0f)
@@ -471,6 +481,7 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void Die()
     {
+        ItemInventoryManager.Instance?.NotifyEnemyKilled(transform.position);
         OnDied?.Invoke(this);
         EnemyManager.Instance?.OnEnemyDied(this);
         Destroy(gameObject);

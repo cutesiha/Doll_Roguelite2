@@ -22,8 +22,9 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] Vector2 attackSize = new Vector2(1f, 1f);
     [SerializeField, Range(0.05f, 0.5f)] float attackDuration = 0.12f;
     [SerializeField] Vector2 fistScale = new Vector2(1.65f, 1.65f);
+    int itemMaxHpModifier;
 
-    public int MaxHp => maxHp;
+    public int MaxHp => Mathf.Max(1, maxHp + itemMaxHpModifier);
     public int CurrentHp => currentHp;
     public float MoveSpeed => moveSpeed;
     public float MissingLegSpeedMultiplier => missingLegSpeedMultiplier;
@@ -40,8 +41,13 @@ public class PlayerManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
-            return;
+            if (Instance.gameObject.scene == gameObject.scene)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = null;
         }
 
         Instance = this;
@@ -123,7 +129,7 @@ public class PlayerManager : MonoBehaviour
         if (amount <= 0)
             return;
 
-        currentHp = Mathf.Min(maxHp, currentHp + amount);
+        currentHp = Mathf.Min(MaxHp, currentHp + amount);
     }
 
     public void TakeDamage(int amount)
@@ -136,6 +142,12 @@ public class PlayerManager : MonoBehaviour
 
     public void SetCurrentHp(int value)
     {
-        currentHp = Mathf.Clamp(value, 0, maxHp);
+        currentHp = Mathf.Clamp(value, 0, MaxHp);
+    }
+
+    public void SetItemMaxHpModifier(int modifier)
+    {
+        itemMaxHpModifier = modifier;
+        currentHp = Mathf.Clamp(currentHp, 0, MaxHp);
     }
 }

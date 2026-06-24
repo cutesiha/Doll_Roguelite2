@@ -5,6 +5,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class PlayerDamageReceiver : MonoBehaviour
 {
+    public System.Action Damaged;
+
     [Header("Contact Damage")]
     [SerializeField, Min(1)] int contactDamage = 1;
     [SerializeField, Min(1)] int maxDamagePerHit = 1;   // 한 대당 깎이는 최대 HP(칸). 공격 종류 무관 캡.
@@ -141,10 +143,14 @@ public class PlayerDamageReceiver : MonoBehaviour
             return;
 
         nextDamageTime = Time.time + damageCooldown;
+        if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryBlockHit())
+            return;
+
         DamageNextBodyTarget(contactDamage);
         PlayHitFeedback();
         ShakeCamera();
         SoundManager.PlayPlayerHit();
+        Damaged?.Invoke();
     }
 
     public bool TryTakePatternDamage(int damage, float cooldownOverride = -1f)
@@ -155,10 +161,14 @@ public class PlayerDamageReceiver : MonoBehaviour
         int finalDamage = Mathf.Max(1, damage);
         float cooldown = cooldownOverride >= 0f ? cooldownOverride : damageCooldown;
         nextDamageTime = Time.time + Mathf.Max(0.01f, cooldown);
+        if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryBlockHit())
+            return false;
+
         DamageNextBodyTarget(finalDamage);
         PlayHitFeedback();
         ShakeCamera();
         SoundManager.PlayPlayerHit();
+        Damaged?.Invoke();
         return true;
     }
 

@@ -93,6 +93,7 @@ public class PlayerAttack : MonoBehaviour
     SpriteRenderer fistRenderer;
     SpriteRenderer suppressedArmRenderer;
     bool suppressedArmWasEnabled;
+    PlayerItemEffects itemEffects;
 
     void Awake()
     {
@@ -307,7 +308,12 @@ public class PlayerAttack : MonoBehaviour
 
         Vector3 hitStart = AttackStartPosition(arm, direction, AttackOrigin());
         Vector3 hitEnd = hitStart + (Vector3)(direction * EffectiveAttackDistance(direction));
-        DealDamage(hitStart, hitEnd, direction);
+        if (itemEffects == null)
+            itemEffects = GetComponent<PlayerItemEffects>();
+        bool usedProjectile = itemEffects != null
+            && itemEffects.TryPerformProjectileAttack(arm == AttackArm.Left, direction, hitStart);
+        if (!usedProjectile)
+            DealDamage(hitStart, hitEnd, direction, arm);
 
         Vector2 perpendicular = new Vector2(-direction.y, direction.x);
         float armSign = arm == AttackArm.Left ? 1f : -1f;
@@ -395,17 +401,25 @@ public class PlayerAttack : MonoBehaviour
         suppressedArmWasEnabled = false;
     }
 
-    void DealDamage(Vector3 start, Vector3 end, Vector2 direction)
+    void DealDamage(Vector3 start, Vector3 end, Vector2 direction, AttackArm arm)
     {
         Vector2 origin = (start + end) * 0.5f;
         Vector2 hitSize = AttackHitSize(direction, Vector2.Distance(start, end));
+        if (itemEffects == null)
+            itemEffects = GetComponent<PlayerItemEffects>();
+        if (itemEffects != null)
+            hitSize *= itemEffects.AttackSizeMultiplier;
 
         Collider2D[] hits = Physics2D.OverlapBoxAll(origin, hitSize, 0f);
+        HashSet<EnemyBase> damaged = new HashSet<EnemyBase>();
+        float damage = attackDamage + ActiveDamageBonus();
+        if (itemEffects != null)
+            damage = itemEffects.ModifiedAttackDamage(arm == AttackArm.Left, damage);
         foreach (Collider2D hit in hits)
         {
             EnemyBase enemy = hit.GetComponentInParent<EnemyBase>();
-            if (enemy != null)
-                enemy.TakeDamage(attackDamage + ActiveDamageBonus());
+            if (enemy != null && damaged.Add(enemy))
+                enemy.TakeDamage(damage);
         }
     }
 

@@ -135,6 +135,7 @@ public class MiddleBossController : MonoBehaviour
         if (defeated)
             return;
 
+        Vector3 rewardPosition = boss != null ? boss.transform.position : new Vector3(arenaCenter.x, arenaCenter.y, 0f);
         defeated = true;
         RunHudUI.ShowWaveClear();
 
@@ -142,6 +143,7 @@ public class MiddleBossController : MonoBehaviour
         if (hud != null)
             hud.ShowDiaryText("미노타우로스를 쓰러뜨렸다.");
 
+        ItemRoomRewardSystem.SpawnMiddleBossRewards(rewardPosition);
         BuildNextDoors();
     }
 

@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3997157333533642a0af80c934f3a01, type: 3}
+  m_Name: button_eye
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: button_eye
+  itemName: "\uB2E8\uCD94 \uB208"
+  description: "\uD654\uBA74\uC774 \uB2E8\uCD94 \uAD6C\uBA4D\uC73C\uB85C \uBC14\uB77C\uBCF4\uB294
+    \uAC83\uCC98\uB7FC \uBCF4\uC784"
+  category: 1
+  itemType: 0
+  equipLocation: 1
+  acquisitionLocations: 2
+  consumable: 0
+  value: 0
+  secondaryValue: 0
+  duration: 0
+  shopPrice: 22
+  effects:
+  - effectType: 10
+    value: 0
+    duration: 0
+  sprite: {fileID: 0}
+  placeholderShape: 1
+  placeholderColor: {r: 0.32, g: 0.18, b: 0.1, a: 1}

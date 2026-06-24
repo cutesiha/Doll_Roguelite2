@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3997157333533642a0af80c934f3a01, type: 3}
+  m_Name: keyring
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: keyring
+  itemName: "\uC5F4\uC1E0 \uD0A4\uB9C1"
+  description: "\uC5F4\uC1E0 \uD0A4\uB9C1\uC744 \uB358\uC838 \uC801\uC744 \uAD00\uD1B5\uD558\uB294
+    \uD22C\uC0AC\uCCB4 \uACF5\uACA9"
+  category: 0
+  itemType: 0
+  equipLocation: 2
+  acquisitionLocations: 1
+  consumable: 0
+  value: 3
+  secondaryValue: 0
+  duration: 0
+  shopPrice: 22
+  effects:
+  - effectType: 11
+    value: 3
+    duration: 0
+  sprite: {fileID: 0}
+  placeholderShape: 2
+  placeholderColor: {r: 0.72, g: 0.72, b: 0.78, a: 1}
