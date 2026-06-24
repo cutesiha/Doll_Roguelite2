@@ -1889,6 +1889,14 @@ void BuildTopRightMapButton()
     void OpenMap()
     {
         DismissMapControlHint();
+
+        InventoryUI inv = FindInventory();
+        if (inv != null && inv.IsOpen)
+        {
+            inv.ClosePanel();
+            suppressInventoryOutsideClick = false;
+        }
+
         MapRunState.EnsureRun();
         EnsureMapScrollHierarchy();
         BuildMapTree();
@@ -2055,6 +2063,9 @@ void BuildTopRightMapButton()
         }
         else
         {
+            if (mapOverlay != null && mapOverlay.activeSelf)
+                CloseMap();
+
             inventory.OpenPanel();
             suppressInventoryOutsideClick = true;
         }

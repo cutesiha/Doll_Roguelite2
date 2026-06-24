@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [DisallowMultipleComponent]
 public class PlayerDamageReceiver : MonoBehaviour
@@ -181,7 +182,6 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     void DamageNextBodyTarget(int damage)
     {
-        // 어떤 공격이든 한 대당 최대 maxDamagePerHit(기본 1)칸만 깎임
         damage = Mathf.Clamp(damage, 1, maxDamagePerHit);
 
         InventoryManager inventory = InventoryManager.Instance;
@@ -191,93 +191,38 @@ public class PlayerDamageReceiver : MonoBehaviour
                 if (inventory.GetEquippedPart(DamageSlots[i]) != null)
                     damageCandidates.Add(DamageSlots[i]);
 
-        int equippedCount = damageCandidates.Count;
-        // 부위 3개가 영구히 떨어진 뒤부터 몸도 랜덤 데미지 풀에 포함
-        bool bodyInPool = inventory == null || CountFallenParts(inventory) >= 3;
-        int total = equippedCount + (bodyInPool ? 1 : 0);
-
-        if (total == 0)
+        if (damageCandidates.Count == 0)
         {
-            DamageBody(damage);
+            TriggerDeath();
             return;
         }
 
-        int pick = Random.Range(0, total);
-        if (pick < equippedCount)
-        {
-            BodySlot slot = damageCandidates[pick];
-            Sprite dropSprite = SpriteForSlot(slot);
-            SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
-            BodyPart brokenPart;
-            if (inventory.TryDamageEquippedPart(slot, damage, out brokenPart) && brokenPart != null)
-                DropPart(dropSprite, sourceRenderer, slot);
-        }
-        else
-        {
-            DamageBody(damage);
-        }
+        int pick = Random.Range(0, damageCandidates.Count);
+        BodySlot slot = damageCandidates[pick];
+        Sprite dropSprite = SpriteForSlot(slot);
+        SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
+        BodyPart brokenPart;
+        if (inventory.TryDamageEquippedPart(slot, damage, out brokenPart) && brokenPart != null)
+            DropPart(dropSprite, sourceRenderer, slot);
     }
 
-    // 인벤토리(장착+보관) 어디에도 없는 = 영구히 떨어진 부위 수
-    int CountFallenParts(InventoryManager inventory)
-    {
-        int fallen = 0;
-        for (int i = 0; i < DamageSlots.Length; i++)
-        {
-            BodySlot slot = DamageSlots[i];
-            bool present = inventory.GetEquippedPart(slot) != null;
-            if (!present && inventory.storage != null)
-            {
-                for (int s = 0; s < inventory.storage.Length; s++)
-                {
-                    BodyPart item = inventory.storage[s];
-                    if (item != null && item.IsEquippable && item.slot == slot)
-                    {
-                        present = true;
-                        break;
-                    }
-                }
-            }
-            if (!present)
-                fallen++;
-        }
-        return fallen;
-    }
-
-    // 몸 체력 감소 (HUD엔 PlayerManager.CurrentHp 로 표시됨). 0이면 사망.
-    void DamageBody(int damage)
-    {
-        PlayerManager pm = PlayerManager.Instance;
-        if (pm == null)
-        {
-            DieBodyOnly();
-            return;
-        }
-
-        pm.TakeDamage(Mathf.Max(1, damage));
-        if (pm.CurrentHp <= 0)
-            DieBodyOnly();
-    }
-
-    void DieBodyOnly()
+    void TriggerDeath()
     {
         if (isDead)
             return;
 
         isDead = true;
-        bodyCurrentHp = 0;
-        PlayerManager.Instance?.SetCurrentHp(0);
-
-        if (BodyManager.Instance != null && BodyManager.Instance.State != null)
-            BodyManager.Instance.State.body = false;
-
-        if (!bodyDropped)
-        {
-            bodyDropped = true;
-            DropPart(bodyRenderer != null ? bodyRenderer.sprite : null, bodyRenderer, null);
-        }
-
         DisablePlayerAfterDeath();
+        StartCoroutine(LoadStartSceneRoutine());
+    }
+
+    IEnumerator LoadStartSceneRoutine()
+    {
+        yield return new WaitForSeconds(0.8f);
+        RunHudUI hud = FindFirstObjectByType<RunHudUI>();
+        if (hud != null)
+            Destroy(hud.gameObject);
+        SceneManager.LoadScene("StartScene");
     }
 
     void DisablePlayerAfterDeath()
@@ -303,25 +248,6 @@ public class PlayerDamageReceiver : MonoBehaviour
         for (int i = 0; i < renderers.Length; i++)
             if (renderers[i] != null)
                 renderers[i].enabled = false;
-    }
-
-    bool TryPickRandomDamageSlot(InventoryManager inventory, out BodySlot slot)
-    {
-        slot = BodySlot.ArmLeft;
-        damageCandidates.Clear();
-
-        for (int i = 0; i < DamageSlots.Length; i++)
-        {
-            BodySlot candidate = DamageSlots[i];
-            if (inventory.GetEquippedPart(candidate) != null)
-                damageCandidates.Add(candidate);
-        }
-
-        if (damageCandidates.Count == 0)
-            return false;
-
-        slot = damageCandidates[Random.Range(0, damageCandidates.Count)];
-        return true;
     }
 
     void ShakeCamera()

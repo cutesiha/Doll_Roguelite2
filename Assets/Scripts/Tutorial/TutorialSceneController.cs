@@ -117,7 +117,12 @@ public class TutorialSceneController : MonoBehaviour
         Time.timeScale = 1f;
 
         if (player != null)
+        {
             player.transform.position = new Vector3(-5.6f, -1.2f, 0f);
+            PlayerDamageReceiver pdr = player.GetComponent<PlayerDamageReceiver>();
+            if (pdr != null)
+                pdr.SetInvincible(99999f);
+        }
 
         HideAllPrompts();
         step = TutorialStep.Done;

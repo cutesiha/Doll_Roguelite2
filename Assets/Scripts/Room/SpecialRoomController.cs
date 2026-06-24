@@ -31,6 +31,7 @@ public class SpecialRoomController : MonoBehaviour
     readonly List<DoorTrigger> nextDoors = new List<DoorTrigger>();
     bool treasureClaimed;
     bool shopChoiceUsed;
+    Color backgroundColor;
 
     static Sprite squareSprite;
 
@@ -76,11 +77,11 @@ public class SpecialRoomController : MonoBehaviour
         GameObject art = new GameObject("SpecialRoomArt");
         art.transform.SetParent(transform, false);
 
-        Color roomFloor = roomKind == SpecialRoomKind.Treasure
+        backgroundColor = roomKind == SpecialRoomKind.Treasure
             ? new Color(0.22f, 0.16f, 0.10f, 1f)
             : new Color(0.13f, 0.18f, 0.20f, 1f);
 
-        CreateRect(art.transform, "Floor_28_8x16_2", Vector2.zero, mapSize, roomFloor, -40);
+        CreateRect(art.transform, "Floor_28_8x16_2", Vector2.zero, mapSize, backgroundColor, -40);
         CreateRect(art.transform, "Wall_Top", new Vector2(0f, mapSize.y * 0.5f), new Vector2(mapSize.x, 0.5f), wallColor, -35);
         CreateRect(art.transform, "Wall_Bottom", new Vector2(0f, -mapSize.y * 0.5f), new Vector2(mapSize.x, 0.5f), wallColor, -35);
         CreateRect(art.transform, "Wall_Left", new Vector2(-mapSize.x * 0.5f, 0f), new Vector2(0.5f, mapSize.y), wallColor, -35);
@@ -213,6 +214,9 @@ public class SpecialRoomController : MonoBehaviour
             follow.ConfigureBounds(mapSize, Vector2.zero, cameraOrthographicSize, true);
         else
             mainCamera.transform.position = new Vector3(0f, 0f, -10f);
+
+        mainCamera.clearFlags = CameraClearFlags.SolidColor;
+        mainCamera.backgroundColor = backgroundColor;
     }
 
     void ResolvePlayer()

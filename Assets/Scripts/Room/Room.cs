@@ -463,20 +463,39 @@ public class Room : MonoBehaviour
         float halfH = cam.orthographicSize;
         float halfW = halfH * cam.aspect;
         Vector3 center = cam.transform.position;
-        const float offscreenMargin = 3f;
+        const float offscreenMargin = 2.5f;
 
+        bool hasInnerRect = TryGetRoomInnerRect(Vector2.one, out Rect innerRect);
+
+        float x, y;
         int edge = Random.Range(0, 4);
         switch (edge)
         {
             case 0:
-                return new Vector3(center.x - halfW - offscreenMargin, Random.Range(center.y - halfH, center.y + halfH), 0f);
+                x = center.x - halfW - offscreenMargin;
+                y = Random.Range(center.y - halfH, center.y + halfH);
+                break;
             case 1:
-                return new Vector3(center.x + halfW + offscreenMargin, Random.Range(center.y - halfH, center.y + halfH), 0f);
+                x = center.x + halfW + offscreenMargin;
+                y = Random.Range(center.y - halfH, center.y + halfH);
+                break;
             case 2:
-                return new Vector3(Random.Range(center.x - halfW, center.x + halfW), center.y + halfH + offscreenMargin, 0f);
+                x = Random.Range(center.x - halfW, center.x + halfW);
+                y = center.y + halfH + offscreenMargin;
+                break;
             default:
-                return new Vector3(Random.Range(center.x - halfW, center.x + halfW), center.y - halfH - offscreenMargin, 0f);
+                x = Random.Range(center.x - halfW, center.x + halfW);
+                y = center.y - halfH - offscreenMargin;
+                break;
         }
+
+        if (hasInnerRect)
+        {
+            x = Mathf.Clamp(x, innerRect.xMin, innerRect.xMax);
+            y = Mathf.Clamp(y, innerRect.yMin, innerRect.yMax);
+        }
+
+        return new Vector3(x, y, 0f);
     }
 
     List<GameObject> BuildWaveTemplates(int wave, int count)
