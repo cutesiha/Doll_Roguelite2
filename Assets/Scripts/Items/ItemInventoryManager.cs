@@ -334,6 +334,7 @@ public class ItemInventoryManager : MonoBehaviour
                     break;
                 case ItemEffectType.DamageAllEnemies:
                     DamageAllEnemies(Mathf.Max(1, Mathf.RoundToInt(effect.value)));
+                    CameraShake.Shake(0.18f, 0.14f);   // 약간의 화면 흔들림
                     applied = true;
                     break;
                 case ItemEffectType.CoinOnKill:
@@ -359,6 +360,7 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (applied)
         {
+            ShowItemPopup(item);
             Announce(item.ItemName + " 사용: " + item.Description);
             AttachEffectsToPlayer();
         }
@@ -445,5 +447,16 @@ public class ItemInventoryManager : MonoBehaviour
         if (hud != null)
             hud.ShowDiaryText(message);
         Debug.Log("[Item] " + message);
+    }
+
+    // 소모성 아이템 사용 시 아이콘 + 이름을 1.4초 동안 화면에 띄운다.
+    static void ShowItemPopup(ItemData item)
+    {
+        if (item == null)
+            return;
+
+        RunHudUI hud = FindFirstObjectByType<RunHudUI>();
+        if (hud != null)
+            hud.ShowJewelPopup(item.Sprite, item.ItemName, 1.4f);
     }
 }

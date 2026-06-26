@@ -20,8 +20,6 @@ public class InventoryManager : MonoBehaviour
     public BodyPart[] equipped  = new BodyPart[6];
     // storage slots — null means empty
     public BodyPart[] storage   = new BodyPart[StorageSlotCount];
-    // single jewel (Gem) slot — null means empty. Activated with Q, consumed on use.
-    public BodyPart jewel;
     bool[] lockedSlots = new bool[6];
 
     public event Action OnInventoryChanged;
@@ -67,7 +65,6 @@ public class InventoryManager : MonoBehaviour
     {
         equipped = new BodyPart[6];
         storage = new BodyPart[StorageSlotCount];
-        jewel = null;
         InitEquipped();
         if (BodyManager.Instance != null && BodyManager.Instance.State != null)
             BodyManager.Instance.State.body = true;
@@ -131,46 +128,20 @@ public class InventoryManager : MonoBehaviour
         return true;
     }
 
-    // ── 보석(Gem) 전용 슬롯 ────────────────────────────────────────────
-
-    // 보관함의 보석을 전용 슬롯에 장착. 슬롯에 이미 보석이 있으면 그 자리로 교체된다.
-    public bool EquipJewelFromStorage(int storageIdx)
+    // 보관함 안에서 아이템을 다른 칸으로 옮긴다. 대상 칸이 차 있으면 서로 교환한다.
+    public bool MoveStorage(int fromIdx, int toIdx)
     {
-        if (storageIdx < 0 || storageIdx >= storage.Length) return false;
+        if (fromIdx < 0 || fromIdx >= storage.Length) return false;
+        if (toIdx < 0 || toIdx >= storage.Length) return false;
+        if (fromIdx == toIdx) return false;
+        if (storage[fromIdx] == null) return false;
 
-        var part = storage[storageIdx];
-        if (part == null || !part.IsJewel) return false;
-
-        storage[storageIdx] = jewel;   // 기존 보석을 보관함으로 (없으면 null)
-        jewel = part;
+        var moved = storage[fromIdx];
+        storage[fromIdx] = storage[toIdx];   // 대상이 비어있으면 null (= 단순 이동)
+        storage[toIdx] = moved;
 
         OnInventoryChanged?.Invoke();
         return true;
-    }
-
-    // 장착된 보석을 지정한 빈 보관함 칸으로 되돌린다.
-    public bool TryUnequipJewelToStorage(int storageIdx)
-    {
-        if (jewel == null) return false;
-        if (storageIdx < 0 || storageIdx >= storage.Length) return false;
-        if (storage[storageIdx] != null) return false;
-
-        storage[storageIdx] = jewel;
-        jewel = null;
-
-        OnInventoryChanged?.Invoke();
-        return true;
-    }
-
-    // 장착된 보석을 꺼내서 비운다(소모). 없으면 null.
-    public BodyPart ConsumeJewel()
-    {
-        if (jewel == null) return null;
-
-        BodyPart used = jewel;
-        jewel = null;
-        OnInventoryChanged?.Invoke();
-        return used;
     }
 
     public bool TryAddPart(BodyPart part, bool equipIfEmpty = true)
@@ -298,7 +269,6 @@ public class InventoryManager : MonoBehaviour
     {
         equipped = NormalizeParts(newEquipped, 6);
         storage = NormalizeParts(newStorage, StorageSlotCount);
-        jewel = null;
         lockedSlots = new bool[6];
         SyncBodyState();
         OnInventoryChanged?.Invoke();
@@ -308,7 +278,6 @@ public class InventoryManager : MonoBehaviour
     {
         equipped = NormalizeParts(newEquipped, 6);
         storage = NormalizeParts(newStorage, StorageSlotCount);
-        jewel = null;
         lockedSlots = NormalizeLocks(newLockedSlots);
 
         for (int i = 0; i < equipped.Length && i < lockedSlots.Length; i++)

@@ -51,6 +51,10 @@ public class RunHudUI : MonoBehaviour
     TextMeshProUGUI waveLabel;
     TextMeshProUGUI waveClearLabel;
     TextMeshProUGUI diaryLabel;
+    RectTransform jewelPopupHud;
+    Image jewelPopupIcon;
+    TextMeshProUGUI jewelPopupName;
+    Coroutine jewelPopupRoutine;
     RectTransform bossHpHud;
     Image bossHpFill;
     TextMeshProUGUI bossNameLabel;
@@ -1884,6 +1888,82 @@ void BuildTopRightMapButton()
 
         color.a = 0f;
         diaryLabel.color = color;
+    }
+
+    // 보석 발동 시 아이콘 + 이름을 잠깐 띄운다.
+    public void ShowJewelPopup(Sprite icon, string jewelName, float duration = 1.4f)
+    {
+        EnsureJewelPopup();
+        if (jewelPopupHud == null)
+            return;
+
+        jewelPopupHud.gameObject.SetActive(true);
+        jewelPopupHud.SetAsLastSibling();
+
+        if (jewelPopupIcon != null)
+        {
+            jewelPopupIcon.sprite = icon;
+            jewelPopupIcon.enabled = icon != null;
+            jewelPopupIcon.color = icon != null ? Color.white : new Color(1f, 1f, 1f, 0f);
+        }
+
+        if (jewelPopupName != null)
+            jewelPopupName.text = jewelName;
+
+        if (jewelPopupRoutine != null)
+            StopCoroutine(jewelPopupRoutine);
+        jewelPopupRoutine = StartCoroutine(JewelPopupRoutine(duration));
+    }
+
+    System.Collections.IEnumerator JewelPopupRoutine(float duration)
+    {
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, duration));
+        if (jewelPopupHud != null)
+            jewelPopupHud.gameObject.SetActive(false);
+        jewelPopupRoutine = null;
+    }
+
+    void EnsureJewelPopup()
+    {
+        if (jewelPopupHud != null)
+            return;
+
+        Transform existing = FindChildRecursive(transform, "JewelPopup");
+        if (existing != null)
+        {
+            jewelPopupHud = existing as RectTransform;
+            jewelPopupIcon = FindChildComponent<Image>("JewelPopupIcon");
+            jewelPopupName = FindChildComponent<TextMeshProUGUI>("JewelPopupName");
+            if (jewelPopupHud != null && jewelPopupIcon != null && jewelPopupName != null)
+                return;
+
+            DestroyUiObject(jewelPopupHud != null ? jewelPopupHud.gameObject : null);
+            jewelPopupHud = null;
+        }
+
+        GameObject hud = Rect(transform, "JewelPopup", Anchor.Center, new Vector2(0f, 150f), new Vector2(280f, 230f));
+        jewelPopupHud = hud.GetComponent<RectTransform>();
+
+        Image bg = hud.AddComponent<Image>();
+        SetRoundedImage(bg, roundedPanelSprite);
+        bg.color = new Color(0.08f, 0.06f, 0.08f, 0.82f);
+        bg.raycastTarget = false;
+
+        GameObject iconGO = Rect(hud.transform, "JewelPopupIcon", Anchor.TopCenter, new Vector2(0f, -22f), new Vector2(140f, 140f));
+        jewelPopupIcon = iconGO.AddComponent<Image>();
+        jewelPopupIcon.preserveAspect = true;
+        jewelPopupIcon.raycastTarget = false;
+
+        jewelPopupName = Text(hud.transform, "JewelPopupName", "", 26f, new Color(0.96f, 0.86f, 0.62f, 1f), TextAlignmentOptions.Center);
+        jewelPopupName.fontStyle = FontStyles.Bold;
+        jewelPopupName.raycastTarget = false;
+        jewelPopupName.rectTransform.anchorMin = new Vector2(0.5f, 0f);
+        jewelPopupName.rectTransform.anchorMax = new Vector2(0.5f, 0f);
+        jewelPopupName.rectTransform.pivot = new Vector2(0.5f, 0f);
+        jewelPopupName.rectTransform.anchoredPosition = new Vector2(0f, 16f);
+        jewelPopupName.rectTransform.sizeDelta = new Vector2(260f, 40f);
+
+        hud.SetActive(false);
     }
 
     void OpenMap()

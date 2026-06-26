@@ -15,20 +15,20 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
         if (InventoryManager.Instance == null || eventData.pointerDrag == null)
             return;
 
-        // 신체 부위를 보관함으로 내리기.
-        var partSource = eventData.pointerDrag.GetComponent<InventoryEquippedDragSource>();
-        if (partSource != null)
+        // 보관함 → 보관함 이동(다른 StorageSlot 으로 옮기기 / 교환).
+        var storageSource = eventData.pointerDrag.GetComponent<InventoryStorageDragSource>();
+        if (storageSource != null)
         {
-            if (InventoryManager.Instance.TryUnequipToStorage(partSource.BodySlot, storageIndex))
+            if (InventoryManager.Instance.MoveStorage(storageSource.StorageIndex, storageIndex))
                 SoundManager.PlayClick();
             return;
         }
 
-        // 보석 슬롯에서 보석을 보관함으로 되돌리기.
-        var jewelSource = eventData.pointerDrag.GetComponent<InventoryJewelDragSource>();
-        if (jewelSource != null)
+        // 장착된 부위 → 보관함 내리기.
+        var equippedSource = eventData.pointerDrag.GetComponent<InventoryEquippedDragSource>();
+        if (equippedSource != null)
         {
-            if (InventoryManager.Instance.TryUnequipJewelToStorage(storageIndex))
+            if (InventoryManager.Instance.TryUnequipToStorage(equippedSource.BodySlot, storageIndex))
                 SoundManager.PlayClick();
         }
     }

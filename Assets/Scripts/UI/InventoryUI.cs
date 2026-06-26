@@ -48,11 +48,6 @@ public class InventoryUI : MonoBehaviour
     [Header("재봉 상태")]
     [SerializeField] TextMeshProUGUI _sewingStatus;
 
-    [Header("보석 슬롯 (Q 로 사용)")]
-    [SerializeField] Image _jewelImg;
-    [SerializeField] TextMeshProUGUI _jewelName;
-    GameObject _jewelSlot;
-
     GameObject _toggleHotspot;
     Button _toggleHotspotButton;
     RectTransform _panelRect;
@@ -89,7 +84,6 @@ public class InventoryUI : MonoBehaviour
     {
         EnsurePanelReference();
         EnsureStorageSlots();
-        EnsureJewelSlot();
         ForceClosePanelImmediate();
         NormalizeCanvasTransform();
         if (transform.parent == null)
@@ -367,57 +361,6 @@ public class InventoryUI : MonoBehaviour
         _storageHp[index] = EnsureStorageSlotLabel(slot.transform, "SlotHP", "", 16f, new Vector2(0f, -66f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
     }
 
-    // 인벤토리 슬롯(3×3) 아래에 보석 전용 슬롯 1칸을 만든다.
-    void EnsureJewelSlot()
-    {
-        EnsurePanelReference();
-        Transform parent = StorageSlotsParent();
-        if (parent == null)
-            return;
-
-        GameObject slot = _jewelSlot;
-        if (slot == null)
-        {
-            Transform existing = FindChildRecursive(parent, "JewelSlot");
-            slot = existing != null ? existing.gameObject : new GameObject("JewelSlot");
-        }
-
-        _jewelSlot = slot;
-        slot.name = "JewelSlot";
-        slot.transform.SetParent(parent, false);
-        slot.SetActive(true);
-
-        RectTransform rect = slot.GetComponent<RectTransform>();
-        if (rect == null)
-            rect = slot.AddComponent<RectTransform>();
-
-        const float slotWidth = 200f;
-        const float slotHeight = 92f;
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        // 3×3 보관함(마지막 행 y ≈ -308, 높이 92) 아래에 배치.
-        rect.anchoredPosition = new Vector2(0f, -430f);
-        rect.sizeDelta = new Vector2(slotWidth, slotHeight);
-        rect.localScale = Vector3.one;
-
-        Image image = slot.GetComponent<Image>();
-        if (image == null)
-            image = slot.AddComponent<Image>();
-        image.color = CEmpty;
-        image.raycastTarget = true;
-        image.preserveAspect = true;
-        image.type = Image.Type.Simple;
-        _jewelImg = image;
-
-        if (slot.GetComponent<InventoryJewelDropTarget>() == null)
-            slot.AddComponent<InventoryJewelDropTarget>();
-        if (slot.GetComponent<InventoryJewelDragSource>() == null)
-            slot.AddComponent<InventoryJewelDragSource>();
-
-        EnsureStorageSlotLabel(slot.transform, "JewelHeader", "보석 (Q)", 18f, new Vector2(0f, -6f), new Vector2(slotWidth, 26f), TextAlignmentOptions.Center);
-        _jewelName = EnsureStorageSlotLabel(slot.transform, "JewelName", "빈 슬롯", 14f, new Vector2(0f, -64f), new Vector2(slotWidth - 12f, 26f), TextAlignmentOptions.Center);
-    }
-
     TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string value, float fontSize, Vector2 position, Vector2 size, TextAlignmentOptions alignment)
     {
         Transform existing = parent.Find(name);
@@ -651,7 +594,6 @@ public class InventoryUI : MonoBehaviour
     public void RefreshUI()
     {
         EnsureStorageSlots();
-        EnsureJewelSlot();
         var inv = InventoryManager.Instance;
         if (inv == null) return;
 
@@ -663,7 +605,8 @@ public class InventoryUI : MonoBehaviour
             var p = inv.storage[i];
             if (_storageImg[i] != null)
             {
-                Sprite slotSprite = p == null ? null : (p.IsJewel ? GetJewelSprite(p) : DisplaySpriteForSlot(p.slot));
+                // 보석 등 아이콘이 지정된 아이템은 그 스프라이트를, 아니면 부위 기본 스프라이트를 표시.
+                Sprite slotSprite = p == null ? null : (p.icon != null ? p.icon : DisplaySpriteForSlot(p.slot));
                 SetImageSpriteSafely(_storageImg[i], slotSprite);
                 _storageImg[i].preserveAspect = true;
                 _storageImg[i].type = Image.Type.Simple;
@@ -677,22 +620,6 @@ public class InventoryUI : MonoBehaviour
             if (_storageName[i] != null) _storageName[i].text   = p != null ? p.DisplayName() : "빈 슬롯";
             if (_storageHp[i]   != null) _storageHp[i].text     = p != null && p.IsEquippable ? Dots(p) : "";
         }
-
-        // 보석 슬롯
-        var jewel = inv.jewel;
-        if (_jewelImg != null)
-        {
-            SetImageSpriteSafely(_jewelImg, jewel != null ? GetJewelSprite(jewel) : null);
-            _jewelImg.preserveAspect = true;
-            _jewelImg.type = Image.Type.Simple;
-            _jewelImg.color = jewel != null
-                ? (_jewelImg.sprite != null ? Color.white : CSlot)
-                : CEmpty;
-            // 슬롯 전체가 드롭을 받도록 알파 히트테스트는 끈다(사각 영역 유지).
-            ApplyAlphaHitTest(_jewelImg, 0f);
-        }
-        if (_jewelName != null)
-            _jewelName.text = jewel != null ? jewel.JewelName() : "빈 슬롯";
 
         // 캐릭터 부위 — sprite/color/type 은 프리팹 설정을 그대로 유지.
         // 드래그 충돌 감지(AlphaHitTest)만 적용.
@@ -911,29 +838,6 @@ public class InventoryUI : MonoBehaviour
                 return editorSprite;
 
         return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Player/" + spriteName + ".png");
-#else
-        return null;
-#endif
-    }
-
-    // Assets/Sprites/jewel 아래의 보석 스프라이트를 불러온다 (런타임 Resources → 에디터 폴백).
-    public static Sprite GetJewelSprite(BodyPart gem)
-    {
-        if (gem == null || !gem.IsJewel)
-            return null;
-
-        string spriteName = gem.JewelSpriteName();
-        Sprite sprite = LoadResourceSprite("Sprites/jewel/" + spriteName);
-        if (sprite != null)
-            return sprite;
-
-#if UNITY_EDITOR
-        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/jewel/" + spriteName + ".png");
-        for (int i = 0; i < assets.Length; i++)
-            if (assets[i] is Sprite editorSprite)
-                return editorSprite;
-
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/jewel/" + spriteName + ".png");
 #else
         return null;
 #endif

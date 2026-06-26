@@ -154,7 +154,7 @@ public class PlayerController : MonoBehaviour
         var kb = Keyboard.current;
         if (kb == null) return;
 
-        HandleJewelHotkey(kb);
+        HandleConsumableHotkey(kb);
 
         if (Time.time < movementLockedUntil)
         {
@@ -206,30 +206,19 @@ public class PlayerController : MonoBehaviour
         speedMultiplierUntil = Time.time + Mathf.Max(0f, duration);
     }
 
-    // Temporary movement boost (multiplier > 1) used by buff items such as the haste jewel.
-    public void ApplySpeedBuff(float multiplier, float duration)
-    {
-        speedMultiplier = Mathf.Clamp(multiplier, 1f, 4f);
-        speedMultiplierUntil = Time.time + Mathf.Max(0f, duration);
-    }
-
     public void SetItemMoveSpeedBonus(float bonus)
     {
         itemMoveSpeedBonus = bonus;
     }
 
-    // Q: 장착된 보석을 발동하고 소모한다. 일시정지(인벤토리/메뉴) 중에는 무시.
-    void HandleJewelHotkey(Keyboard kb)
+    // Q: 장착된 소모성 아이템(보석 등)을 발동한다. 일시정지(인벤토리/메뉴) 중에는 무시.
+    void HandleConsumableHotkey(Keyboard kb)
     {
         if (!kb.qKey.wasPressedThisFrame || Time.timeScale <= 0f)
             return;
 
-        InventoryManager inventory = InventoryManager.Instance;
-        if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryUseEquippedConsumable())
-            return;
-
-        if (inventory != null && inventory.jewel != null && JewelAbility.Activate(inventory.jewel))
-            inventory.ConsumeJewel();
+        if (ItemInventoryManager.Instance != null)
+            ItemInventoryManager.Instance.TryUseEquippedConsumable();
     }
 
     public void FaceDirection(Vector2 direction)
