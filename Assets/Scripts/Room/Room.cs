@@ -37,6 +37,12 @@ public class Room : MonoBehaviour
     IEnumerator Start()
     {
         MapRunState.EnsureRun();
+        if (ThreadMazeChallengeManager.ShouldHandleCurrentRoom())
+        {
+            SetDoorsOpen(false);
+            yield break;
+        }
+
         SetDoorsOpen(false);
         PrepareSceneEnemyTemplate();
 

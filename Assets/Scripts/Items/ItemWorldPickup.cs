@@ -13,10 +13,20 @@ public class ItemWorldPickup : MonoBehaviour
     Vector3 basePosition;
     float bobPhase;
     ItemSystemSettings settings;
-    GameObject tooltipRoot;
-    TextMeshPro tooltipText;
     Transform player;
     float nextFailureNoticeTime;
+    [Header("Tooltip Authoring")]
+    [SerializeField] Transform tooltipRoot;
+    [SerializeField] SpriteRenderer tooltipBackground;
+    [SerializeField] TextMeshPro tooltipText;
+    [SerializeField] Sprite tooltipBackgroundSprite;
+    [SerializeField] Vector3 tooltipLocalPosition = new Vector3(0f, 1.45f, -0.1f);
+    [SerializeField] Vector3 tooltipBackgroundScale = new Vector3(5.2f, 1.65f, 1f);
+    [SerializeField] Vector3 tooltipTextLocalPosition = new Vector3(0f, 0f, -0.05f);
+    [SerializeField] Vector2 tooltipTextBoxSize = new Vector2(4.85f, 1.35f);
+    [SerializeField, Min(0.1f)] float tooltipFontSize = 2.0f;
+    [SerializeField] Color tooltipBackgroundColor = new Color(0.10f, 0.07f, 0.05f, 0.92f);
+    [SerializeField] Color tooltipTextColor = Color.white;
 
     public ItemData Item => item;
     public bool IsShopItem => shopItem;
@@ -27,6 +37,21 @@ public class ItemWorldPickup : MonoBehaviour
         shopItem = isShopItem;
         price = Mathf.Max(0, shopPrice);
         name = (shopItem ? "ShopItem_" : "ItemDrop_") + (item != null ? item.ItemId : "Missing");
+    }
+
+    public void CopyPresentationFrom(ItemWorldPickup template)
+    {
+        if (template == null)
+            return;
+
+        tooltipBackgroundSprite = template.tooltipBackgroundSprite;
+        tooltipLocalPosition = template.tooltipLocalPosition;
+        tooltipBackgroundScale = template.tooltipBackgroundScale;
+        tooltipTextLocalPosition = template.tooltipTextLocalPosition;
+        tooltipTextBoxSize = template.tooltipTextBoxSize;
+        tooltipFontSize = template.tooltipFontSize;
+        tooltipBackgroundColor = template.tooltipBackgroundColor;
+        tooltipTextColor = template.tooltipTextColor;
     }
 
     void Awake()
@@ -154,36 +179,59 @@ public class ItemWorldPickup : MonoBehaviour
 
     void EnsureTooltip()
     {
-        if (tooltipRoot != null)
-            return;
+        if (tooltipRoot == null)
+        {
+            Transform existingTooltip = transform.Find("ItemTooltip");
+            if (existingTooltip != null)
+                tooltipRoot = existingTooltip;
+        }
 
-        tooltipRoot = new GameObject("ItemTooltip");
-        tooltipRoot.transform.SetParent(transform, false);
-        tooltipRoot.transform.localPosition = new Vector3(0f, 1.45f, -0.1f);
-        tooltipRoot.transform.localScale = Vector3.one / Mathf.Max(0.01f, transform.localScale.x);
+        if (tooltipRoot == null)
+        {
+            GameObject tooltipObject = new GameObject("ItemTooltip");
+            tooltipRoot = tooltipObject.transform;
+            tooltipRoot.SetParent(transform, false);
+        }
 
-        GameObject background = new GameObject("Background");
-        background.transform.SetParent(tooltipRoot.transform, false);
-        background.transform.localScale = new Vector3(5.2f, 1.65f, 1f);
-        SpriteRenderer backgroundRenderer = background.AddComponent<SpriteRenderer>();
-        backgroundRenderer.sprite = BossVisuals.SquareSprite();
-        backgroundRenderer.color = new Color(0.10f, 0.07f, 0.05f, 0.92f);
-        backgroundRenderer.sortingOrder = 79;
+        tooltipRoot.localPosition = tooltipLocalPosition;
+        tooltipRoot.localScale = Vector3.one / Mathf.Max(0.01f, transform.localScale.x);
 
-        GameObject textObject = new GameObject("Text");
-        textObject.transform.SetParent(tooltipRoot.transform, false);
-        textObject.transform.localPosition = new Vector3(0f, 0f, -0.05f);
-        tooltipText = textObject.AddComponent<TextMeshPro>();
+        if (tooltipBackground == null)
+            tooltipBackground = tooltipRoot.GetComponentInChildren<SpriteRenderer>(true);
+
+        if (tooltipBackground == null)
+        {
+            GameObject background = new GameObject("Background");
+            background.transform.SetParent(tooltipRoot, false);
+            tooltipBackground = background.AddComponent<SpriteRenderer>();
+        }
+
+        tooltipBackground.transform.localScale = tooltipBackgroundScale;
+        tooltipBackground.sprite = tooltipBackgroundSprite != null ? tooltipBackgroundSprite : BossVisuals.SquareSprite();
+        tooltipBackground.color = tooltipBackgroundColor;
+        tooltipBackground.sortingOrder = 79;
+
+        if (tooltipText == null)
+            tooltipText = tooltipRoot.GetComponentInChildren<TextMeshPro>(true);
+
+        if (tooltipText == null)
+        {
+            GameObject textObject = new GameObject("Text");
+            textObject.transform.SetParent(tooltipRoot, false);
+            tooltipText = textObject.AddComponent<TextMeshPro>();
+        }
+
+        tooltipText.transform.localPosition = tooltipTextLocalPosition;
         tooltipText.font = UIThinDungFont.Get();
-        tooltipText.fontSize = 2.0f;
+        tooltipText.fontSize = tooltipFontSize;
         tooltipText.alignment = TextAlignmentOptions.Center;
-        tooltipText.color = Color.white;
+        tooltipText.color = tooltipTextColor;
         tooltipText.sortingOrder = 80;
         tooltipText.textWrappingMode = TextWrappingModes.Normal;
-        tooltipText.rectTransform.sizeDelta = new Vector2(4.85f, 1.35f);
+        tooltipText.rectTransform.sizeDelta = tooltipTextBoxSize;
         tooltipText.text = TooltipText();
 
-        tooltipRoot.SetActive(false);
+        tooltipRoot.gameObject.SetActive(false);
     }
 
     string TooltipText()
@@ -201,7 +249,7 @@ public class ItemWorldPickup : MonoBehaviour
     {
         EnsureTooltip();
         if (tooltipRoot != null)
-            tooltipRoot.SetActive(visible);
+            tooltipRoot.gameObject.SetActive(visible);
     }
 
     static bool WasInteractPressed()

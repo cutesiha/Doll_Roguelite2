@@ -34,6 +34,9 @@ public class RunHudUI : MonoBehaviour
     [SerializeField] Sprite noRightEyeMapIcon;
     [SerializeField] Sprite noLeftLegMapIcon;
     [SerializeField] Sprite noRightLegMapIcon;
+    [Header("Run Map Scroll")]
+    [SerializeField, Min(0.01f)] float mapWheelStep = 0.14f;
+    [SerializeField, Min(1f)] float mapWheelLerpSpeed = 16f;
 
     Canvas canvas;
     RectTransform rootRect;
@@ -131,6 +134,11 @@ public class RunHudUI : MonoBehaviour
     static readonly Color ColShop = new Color(0.42f, 0.72f, 0.92f, 1f);
     static readonly Color ColRouteOnly = new Color(0.45f, 0.45f, 0.45f, 1f);
     static readonly Color ColHidden = new Color(0.22f, 0.22f, 0.22f, 1f);
+    const float MapScrollLeftRightMargin = 54f;
+    const float MapScrollBottomMargin = 58f;
+    const float MapScrollTopMargin = 124f;
+    const float MapViewportTopGuard = 80f;
+    const float MapViewportBottomGuard = 120f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void BootstrapRunHud()
@@ -186,7 +194,7 @@ public class RunHudUI : MonoBehaviour
 
         EnsureEventSystem();
         EnsureBuilt();
-        CloseMap();
+        CloseMapImmediate();
         ShowPendingControlHintsIfNeeded();
 
         // InventoryCanvas 가 비활성 상태이면 지금 활성화해서 Awake/Start 를 씬 로드 시점에 실행.
@@ -290,7 +298,7 @@ public class RunHudUI : MonoBehaviour
         BuildBottomRightButtons();
         BuildControlHints();
         BuildMapOverlay();
-        CloseMap();
+        CloseMapImmediate();
         UpdateHudState();
     }
 
@@ -496,12 +504,11 @@ public class RunHudUI : MonoBehaviour
         {
             GameObject scrollObject = Rect(mapPanel, "MapScroll", Anchor.Stretch, Vector2.zero, Vector2.zero);
             RectTransform scrollRectTransform = scrollObject.GetComponent<RectTransform>();
-            scrollRectTransform.offsetMin = new Vector2(54f, 44f);
-            scrollRectTransform.offsetMax = new Vector2(-54f, -88f);
             scrollTransform = scrollObject.transform;
             scrollTransform.SetAsFirstSibling();
         }
         scrollTransform.gameObject.SetActive(true);
+        ApplyMapScrollLayout(scrollTransform as RectTransform);
 
         mapScrollRect = scrollTransform.GetComponent<ScrollRect>();
         if (mapScrollRect == null)
@@ -566,12 +573,38 @@ public class RunHudUI : MonoBehaviour
 
         mapScrollRect.horizontal = false;
         mapScrollRect.vertical = true;
-        mapScrollRect.movementType = ScrollRect.MovementType.Clamped;
-        mapScrollRect.scrollSensitivity = 42f;
+        ConfigureMapScrollRect();
         mapScrollRect.viewport = mapViewport;
         mapScrollRect.content = mapContent;
         mapScrollRect.onValueChanged.RemoveListener(RefreshMapViewportVisibility);
         mapScrollRect.onValueChanged.AddListener(RefreshMapViewportVisibility);
+    }
+
+    void ApplyMapScrollLayout(RectTransform scrollRectTransform)
+    {
+        if (scrollRectTransform == null)
+            return;
+
+        scrollRectTransform.offsetMin = new Vector2(MapScrollLeftRightMargin, MapScrollBottomMargin);
+        scrollRectTransform.offsetMax = new Vector2(-MapScrollLeftRightMargin, -MapScrollTopMargin);
+    }
+
+    void ConfigureMapScrollRect()
+    {
+        if (mapScrollRect == null)
+            return;
+
+        mapScrollRect.horizontal = false;
+        mapScrollRect.vertical = true;
+        mapScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        mapScrollRect.inertia = true;
+        mapScrollRect.decelerationRate = 0.18f;
+        mapScrollRect.scrollSensitivity = 0f;
+
+        SmoothMapScrollRect smoothScroll = mapScrollRect.GetComponent<SmoothMapScrollRect>();
+        if (smoothScroll == null)
+            smoothScroll = mapScrollRect.gameObject.AddComponent<SmoothMapScrollRect>();
+        smoothScroll.Configure(mapScrollRect, mapWheelStep, mapWheelLerpSpeed);
     }
 
     void EnsureMiniMapOnExistingButton()
@@ -1993,6 +2026,7 @@ void BuildTopRightMapButton()
         {
             mapScrollRect.StopMovement();
             mapScrollRect.verticalNormalizedPosition = 1f;
+            ResetMapSmoothScroll();
         }
         Canvas.ForceUpdateCanvases();
         RectMask2D viewportMask = mapViewport != null ? mapViewport.GetComponent<RectMask2D>() : null;
@@ -2063,6 +2097,36 @@ void BuildTopRightMapButton()
         }
 
         mapOverlay.SetActive(false);
+    }
+
+    void CloseMapImmediate()
+    {
+        RunUiPauseManager.SetPaused("Map", false);
+
+        if (mapAnimationRoutine != null)
+        {
+            StopCoroutine(mapAnimationRoutine);
+            mapAnimationRoutine = null;
+        }
+
+        if (mapPanel != null)
+        {
+            Vector2 shown = MapPanelShownPosition();
+            mapPanel.anchoredPosition = shown + new Vector2(0f, -980f);
+        }
+
+        if (mapOverlay != null)
+            mapOverlay.SetActive(false);
+    }
+
+    void ResetMapSmoothScroll()
+    {
+        if (mapScrollRect == null)
+            return;
+
+        SmoothMapScrollRect smoothScroll = mapScrollRect.GetComponent<SmoothMapScrollRect>();
+        if (smoothScroll != null)
+            smoothScroll.Configure(mapScrollRect, mapWheelStep, mapWheelLerpSpeed);
     }
 
     void PlayMapPanelAnimation(bool show)
@@ -2231,13 +2295,9 @@ void BuildTopRightMapButton()
 
         GameObject scrollGO = Rect(panelGO.transform, "MapScroll", Anchor.Stretch, Vector2.zero, Vector2.zero);
         RectTransform scrollRectTransform = scrollGO.GetComponent<RectTransform>();
-        scrollRectTransform.offsetMin = new Vector2(54f, 44f);
-        scrollRectTransform.offsetMax = new Vector2(-54f, -88f);
+        ApplyMapScrollLayout(scrollRectTransform);
         mapScrollRect = scrollGO.AddComponent<ScrollRect>();
-        mapScrollRect.horizontal = false;
-        mapScrollRect.vertical = true;
-        mapScrollRect.movementType = ScrollRect.MovementType.Clamped;
-        mapScrollRect.scrollSensitivity = 42f;
+        ConfigureMapScrollRect();
 
         GameObject viewport = Rect(scrollGO.transform, "MapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
         mapViewport = viewport.GetComponent<RectTransform>();
@@ -2279,14 +2339,15 @@ void BuildTopRightMapButton()
         Dictionary<MapNode, Vector2> positions = new Dictionary<MapNode, Vector2>();
         float width = 1040f;
         const float verticalInset = 240f;
-        const float verticalGap = 240f;
-        float height = Mathf.Max(1200f, verticalInset * 2f + Mathf.Max(0, layers.Count - 1) * verticalGap);
+        List<float> layerYOffsets = BuildLayerYOffsets(layers);
+        float totalLayerSpan = layerYOffsets.Count > 0 ? layerYOffsets[layerYOffsets.Count - 1] : 0f;
+        float height = Mathf.Max(1200f, verticalInset * 2f + totalLayerSpan);
         mapContent.sizeDelta = new Vector2(width, height);
 
         for (int layerIndex = 0; layerIndex < layers.Count; layerIndex++)
         {
             List<MapNode> layer = layers[layerIndex];
-            float y = height * 0.5f - verticalInset - verticalGap * layerIndex;
+            float y = height * 0.5f - verticalInset - layerYOffsets[layerIndex];
             float xGap = layer.Count <= 1 ? 0f : (width - 340f) / (layer.Count - 1);
 
             for (int nodeIndex = 0; nodeIndex < layer.Count; nodeIndex++)
@@ -2308,6 +2369,28 @@ void BuildTopRightMapButton()
             BuildNode(kvp.Key, kvp.Value);
     }
 
+    List<float> BuildLayerYOffsets(List<List<MapNode>> layers)
+    {
+        const float baseGap = 270f;
+        const float wideBranchExtraGap = 110f;
+
+        List<float> offsets = new List<float>();
+        float current = 0f;
+        for (int i = 0; i < layers.Count; i++)
+        {
+            offsets.Add(current);
+            if (i >= layers.Count - 1)
+                continue;
+
+            int fromCount = layers[i] != null ? layers[i].Count : 0;
+            int toCount = layers[i + 1] != null ? layers[i + 1].Count : 0;
+            bool wideBranch = Mathf.Min(fromCount, toCount) <= 2 && Mathf.Max(fromCount, toCount) >= 4;
+            current += baseGap + (wideBranch ? wideBranchExtraGap : 0f);
+        }
+
+        return offsets;
+    }
+
     void BuildLine(Vector2 from, Vector2 to, bool visibleRoute)
     {
         Color color = MapBrown;
@@ -2321,7 +2404,8 @@ void BuildTopRightMapButton()
             return;
 
         Rect viewportRect = mapViewport.rect;
-        viewportRect.yMin += 120f;
+        viewportRect.yMin += MapViewportBottomGuard;
+        viewportRect.yMax -= MapViewportTopGuard;
         Vector3[] corners = new Vector3[4];
         for (int childIndex = 0; childIndex < mapTree.childCount; childIndex++)
         {

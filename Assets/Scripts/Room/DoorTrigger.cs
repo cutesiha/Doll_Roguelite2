@@ -21,6 +21,16 @@ public class DoorTrigger : MonoBehaviour
     [SerializeField] Color blockedColor = new Color(0.72f, 0.20f, 0.18f, 1f);
     [SerializeField, Min(0.1f)] float doorWorldScale = 1.8f;
     [SerializeField, Min(0.1f)] float tooltipHeight = 2.25f;
+    [Header("Door Authoring")]
+    [SerializeField] Sprite doorSpriteOverride;
+    [SerializeField] Sprite roomIconSpriteOverride;
+    [SerializeField] Sprite tooltipSpriteOverride;
+    [SerializeField] Vector3 iconLocalPosition = new Vector3(-0.02f, 0.25f, -0.02f);
+    [SerializeField] Vector3 tooltipOffset = new Vector3(0f, 2.25f, -0.2f);
+    [SerializeField] Vector3 tooltipTextLocalPosition = new Vector3(0f, 0.12f, -0.05f);
+    [SerializeField] Vector3 tooltipBackgroundScale = new Vector3(1.82f, 1.35f, 1f);
+    [SerializeField] Vector2 tooltipTextBoxSize = new Vector2(4.25f, 1.35f);
+    [SerializeField, Min(0.1f)] float tooltipFontSize = 2.25f;
 
     MapNode targetNode;
     bool isOpen;
@@ -28,11 +38,11 @@ public class DoorTrigger : MonoBehaviour
     bool mouseHovered;
     bool entering;
     Renderer legacyRenderer;
-    Transform visualRoot;
-    SpriteRenderer doorRenderer;
-    SpriteRenderer iconRenderer;
-    Transform tooltipRoot;
-    TextMeshPro tooltipText;
+    [SerializeField] Transform visualRoot;
+    [SerializeField] SpriteRenderer doorRenderer;
+    [SerializeField] SpriteRenderer iconRenderer;
+    [SerializeField] Transform tooltipRoot;
+    [SerializeField] TextMeshPro tooltipText;
     Vector3 visualRestPosition;
     Coroutine blockedRoutine;
 
@@ -62,6 +72,26 @@ public class DoorTrigger : MonoBehaviour
         ApplyDoorVisual();
         EnsureInteractionCollider();
         UpdateTooltip();
+    }
+
+    public void CopyPresentationFrom(DoorTrigger template)
+    {
+        if (template == null)
+            return;
+
+        lockedColor = template.lockedColor;
+        blockedColor = template.blockedColor;
+        doorWorldScale = template.doorWorldScale;
+        tooltipHeight = template.tooltipHeight;
+        doorSpriteOverride = template.doorSpriteOverride;
+        roomIconSpriteOverride = template.roomIconSpriteOverride;
+        tooltipSpriteOverride = template.tooltipSpriteOverride;
+        iconLocalPosition = template.iconLocalPosition;
+        tooltipOffset = template.tooltipOffset;
+        tooltipTextLocalPosition = template.tooltipTextLocalPosition;
+        tooltipBackgroundScale = template.tooltipBackgroundScale;
+        tooltipTextBoxSize = template.tooltipTextBoxSize;
+        tooltipFontSize = template.tooltipFontSize;
     }
 
     void Update()
@@ -185,7 +215,7 @@ public class DoorTrigger : MonoBehaviour
         if (iconRenderer == null)
             iconRenderer = iconTransform.gameObject.AddComponent<SpriteRenderer>();
         iconRenderer.sortingOrder = 81;
-        iconTransform.localPosition = new Vector3(-0.02f, 0.25f, -0.02f);
+        iconTransform.localPosition = iconLocalPosition;
 
         float parentX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
         float parentY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
@@ -196,8 +226,8 @@ public class DoorTrigger : MonoBehaviour
     void ApplyDoorVisual()
     {
         DoorSpriteCatalog catalog = DoorSpriteCatalog.Load();
-        Sprite doorSprite = catalog != null ? catalog.DoorFor(targetNode) : null;
-        Sprite iconSprite = catalog != null ? catalog.IconFor(targetNode) : null;
+        Sprite doorSprite = doorSpriteOverride != null ? doorSpriteOverride : (catalog != null ? catalog.DoorFor(targetNode) : null);
+        Sprite iconSprite = roomIconSpriteOverride != null ? roomIconSpriteOverride : (catalog != null ? catalog.IconFor(targetNode) : null);
 
         if (doorRenderer != null)
         {
@@ -239,34 +269,52 @@ public class DoorTrigger : MonoBehaviour
 
     void EnsureTooltip()
     {
-        if (tooltipRoot != null)
-            return;
+        if (tooltipRoot == null)
+        {
+            Transform existingTooltip = transform.Find("_DoorTooltip");
+            if (existingTooltip != null)
+                tooltipRoot = existingTooltip;
+        }
 
-        GameObject rootObject = new GameObject("_DoorTooltip");
-        tooltipRoot = rootObject.transform;
+        if (tooltipRoot == null)
+        {
+            GameObject rootObject = new GameObject("_DoorTooltip");
+            tooltipRoot = rootObject.transform;
+            tooltipRoot.SetParent(transform, false);
+        }
+
         tooltipRoot.rotation = Quaternion.identity;
         tooltipRoot.localScale = Vector3.one;
 
-        GameObject backgroundObject = new GameObject("BalloonBackground");
-        backgroundObject.transform.SetParent(tooltipRoot, false);
-        SpriteRenderer background = backgroundObject.AddComponent<SpriteRenderer>();
-        background.sprite = TooltipSprite();
+        SpriteRenderer background = tooltipRoot.GetComponentInChildren<SpriteRenderer>(true);
+        if (background == null)
+        {
+            GameObject backgroundObject = new GameObject("BalloonBackground");
+            backgroundObject.transform.SetParent(tooltipRoot, false);
+            background = backgroundObject.AddComponent<SpriteRenderer>();
+        }
+        background.sprite = tooltipSpriteOverride != null ? tooltipSpriteOverride : TooltipSprite();
         background.color = Color.white;
         background.sortingOrder = 300;
-        backgroundObject.transform.localScale = new Vector3(1.82f, 1.35f, 1f);
+        background.transform.localScale = tooltipBackgroundScale;
 
-        GameObject textObject = new GameObject("BalloonText");
-        textObject.transform.SetParent(tooltipRoot, false);
-        textObject.transform.localPosition = new Vector3(0f, 0.12f, -0.05f);
-        tooltipText = textObject.AddComponent<TextMeshPro>();
+        if (tooltipText == null)
+            tooltipText = tooltipRoot.GetComponentInChildren<TextMeshPro>(true);
+        if (tooltipText == null)
+        {
+            GameObject textObject = new GameObject("BalloonText");
+            textObject.transform.SetParent(tooltipRoot, false);
+            tooltipText = textObject.AddComponent<TextMeshPro>();
+        }
+        tooltipText.transform.localPosition = tooltipTextLocalPosition;
         tooltipText.font = UIThinDungFont.Get();
-        tooltipText.fontSize = 2.25f;
+        tooltipText.fontSize = tooltipFontSize;
         tooltipText.fontStyle = FontStyles.Bold;
         tooltipText.alignment = TextAlignmentOptions.Center;
         tooltipText.color = new Color(0.24f, 0.14f, 0.09f, 1f);
         tooltipText.sortingOrder = 301;
         tooltipText.textWrappingMode = TextWrappingModes.NoWrap;
-        tooltipText.rectTransform.sizeDelta = new Vector2(4.25f, 1.35f);
+        tooltipText.rectTransform.sizeDelta = tooltipTextBoxSize;
 
         tooltipRoot.gameObject.SetActive(false);
     }
@@ -278,7 +326,7 @@ public class DoorTrigger : MonoBehaviour
 
         EnsureTooltip();
         UpdateTooltip();
-        tooltipRoot.position = transform.position + new Vector3(0f, tooltipHeight, -0.2f);
+        tooltipRoot.position = transform.position + tooltipOffset;
         tooltipRoot.gameObject.SetActive(true);
     }
 

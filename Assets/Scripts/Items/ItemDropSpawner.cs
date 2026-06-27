@@ -5,15 +5,21 @@ public static class ItemDropSpawner
 {
     static readonly Dictionary<int, Sprite> placeholderSprites = new();
 
-    public static ItemWorldPickup Spawn(ItemData item, Vector3 position, bool shopItem, int price)
+    public static ItemWorldPickup Spawn(ItemData item, Vector3 position, bool shopItem, int price, ItemWorldPickup template = null)
     {
         if (item == null)
             return null;
 
-        GameObject go = new GameObject((shopItem ? "ShopItem_" : "ItemDrop_") + item.ItemId);
+        GameObject go = template != null
+            ? Object.Instantiate(template.gameObject, position, Quaternion.identity)
+            : new GameObject((shopItem ? "ShopItem_" : "ItemDrop_") + item.ItemId);
+        go.name = (shopItem ? "ShopItem_" : "ItemDrop_") + item.ItemId;
         go.transform.position = position;
+        go.SetActive(true);
 
-        SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
+        SpriteRenderer renderer = go.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+            renderer = go.AddComponent<SpriteRenderer>();
         renderer.sprite = item.Sprite != null ? item.Sprite : PlaceholderSprite(item.PlaceholderShape, item.PlaceholderColor);
         renderer.color = item.Sprite != null ? Color.white : item.PlaceholderColor;
         renderer.sortingOrder = 35;
@@ -21,11 +27,16 @@ public static class ItemDropSpawner
         float size = item.Type == ItemType.BodyPart ? 0.95f : 0.72f;
         go.transform.localScale = Vector3.one * size;
 
-        CircleCollider2D collider = go.AddComponent<CircleCollider2D>();
+        CircleCollider2D collider = go.GetComponent<CircleCollider2D>();
+        if (collider == null)
+            collider = go.AddComponent<CircleCollider2D>();
         collider.isTrigger = true;
         collider.radius = 0.62f;
 
-        ItemWorldPickup pickup = go.AddComponent<ItemWorldPickup>();
+        ItemWorldPickup pickup = go.GetComponent<ItemWorldPickup>();
+        if (pickup == null)
+            pickup = go.AddComponent<ItemWorldPickup>();
+        pickup.CopyPresentationFrom(template);
         pickup.Configure(item, shopItem, price);
         return pickup;
     }

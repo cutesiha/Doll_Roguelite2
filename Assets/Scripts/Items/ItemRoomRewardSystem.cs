@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -69,14 +69,14 @@ public static class ItemRoomRewardSystem
         Announce("중간보스 아이템 2개가 생성되었습니다.");
     }
 
-    public static void SpawnBodyRoomReward(Vector3 position)
+    public static void SpawnBodyRoomReward(Vector3 position, ItemWorldPickup template = null)
     {
         ItemData item = ItemCatalog.RandomByCategory(ItemCategory.BodyRoom, ItemType.BodyPart);
-        ItemDropSpawner.Spawn(item, position, false, 0);
+        ItemDropSpawner.Spawn(item, position, false, 0, template);
         Announce("신체방 아이템이 생성되었습니다.");
     }
 
-    public static void SpawnShop(Vector3 center)
+    public static void SpawnShop(Vector3 center, ItemWorldPickup template = null)
     {
         ItemSystemSettings settings = ItemSystemSettings.Load();
         ItemData gem = ItemCatalog.RandomByType(ItemType.GemConsumable);
@@ -88,10 +88,10 @@ public static class ItemRoomRewardSystem
             selected.Add(bodyA);
         ItemData bodyB = RandomUniqueBodyPart(selected);
 
-        ItemDropSpawner.Spawn(gem, center + new Vector3(-5.4f, 0.5f, 0f), true, settings.gemPrice);
-        ItemDropSpawner.Spawn(rag, center + new Vector3(-1.8f, 0.5f, 0f), true, settings.ragPrice);
-        ItemDropSpawner.Spawn(bodyA, center + new Vector3(1.8f, 0.5f, 0f), true, settings.bodyPartPrice);
-        ItemDropSpawner.Spawn(bodyB, center + new Vector3(5.4f, 0.5f, 0f), true, settings.bodyPartPrice);
+        ItemDropSpawner.Spawn(gem, center + new Vector3(-5.4f, 0.5f, 0f), true, settings.gemPrice, template);
+        ItemDropSpawner.Spawn(rag, center + new Vector3(-1.8f, 0.5f, 0f), true, settings.ragPrice, template);
+        ItemDropSpawner.Spawn(bodyA, center + new Vector3(1.8f, 0.5f, 0f), true, settings.bodyPartPrice, template);
+        ItemDropSpawner.Spawn(bodyB, center + new Vector3(5.4f, 0.5f, 0f), true, settings.bodyPartPrice, template);
         Announce("상점 품목: 보석 1, 누더기 1, 신체 부위 2");
     }
 
@@ -146,25 +146,26 @@ public class ItemRoomSceneBridge : MonoBehaviour
 
         if (sceneName == "TreasureRoomScene")
         {
-            DisableLegacySpecialRoomInteraction();
+            SpecialRoomController controller = DisableLegacySpecialRoomInteraction();
             HideLegacyProps("TreasureChest");
-            ItemRoomRewardSystem.SpawnBodyRoomReward(new Vector3(0f, 0.55f, 0f));
+            ItemRoomRewardSystem.SpawnBodyRoomReward(new Vector3(0f, 0.55f, 0f), controller != null ? controller.ItemPickupTemplate : null);
         }
         else if (sceneName == "ShopScene")
         {
-            DisableLegacySpecialRoomInteraction();
+            SpecialRoomController controller = DisableLegacySpecialRoomInteraction();
             HideLegacyShopProps();
-            ItemRoomRewardSystem.SpawnShop(Vector3.zero);
+            ItemRoomRewardSystem.SpawnShop(Vector3.zero, controller != null ? controller.ItemPickupTemplate : null);
         }
 
         Destroy(gameObject);
     }
 
-    void DisableLegacySpecialRoomInteraction()
+    SpecialRoomController DisableLegacySpecialRoomInteraction()
     {
         SpecialRoomController controller = FindFirstObjectByType<SpecialRoomController>();
         if (controller != null)
             controller.enabled = false;
+        return controller;
     }
 
     static void HideLegacyProps(string objectName)

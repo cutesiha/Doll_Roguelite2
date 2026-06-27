@@ -22,6 +22,9 @@ public class SpecialRoomController : MonoBehaviour
     [SerializeField] Vector2 nextDoorLine = new Vector2(8f, -2.45f);
     [SerializeField] Vector2 nextDoorSize = new Vector2(2.8f, 0.75f);
     [SerializeField] Sprite rectangleSprite;
+    [Header("Authoring Templates")]
+    [SerializeField] ItemWorldPickup itemPickupTemplate;
+    [SerializeField] DoorTrigger nextDoorTemplate;
 
     Transform player;
     TextMeshPro promptText;
@@ -35,13 +38,38 @@ public class SpecialRoomController : MonoBehaviour
 
     static Sprite squareSprite;
 
+    public ItemWorldPickup ItemPickupTemplate => itemPickupTemplate != null ? itemPickupTemplate : FindTemplate<ItemWorldPickup>("ItemPickupTemplate");
+    public DoorTrigger NextDoorTemplate => nextDoorTemplate != null ? nextDoorTemplate : FindTemplate<DoorTrigger>("NextDoorTemplate");
+
     void Start()
     {
         MapRunState.EnsureRun();
         CompletePendingRoomIfNeeded();
+        ResolveAuthoringTemplates();
         BuildRoomVisuals();
         SetupPlayerAndCamera();
         UpdatePrompt();
+    }
+
+    void ResolveAuthoringTemplates()
+    {
+        if (itemPickupTemplate == null)
+            itemPickupTemplate = FindTemplate<ItemWorldPickup>("ItemPickupTemplate");
+        if (nextDoorTemplate == null)
+            nextDoorTemplate = FindTemplate<DoorTrigger>("NextDoorTemplate");
+    }
+
+    T FindTemplate<T>(string preferredName) where T : Component
+    {
+        T[] candidates = GetComponentsInChildren<T>(true);
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            T candidate = candidates[i];
+            if (candidate != null && candidate.name == preferredName)
+                return candidate;
+        }
+
+        return null;
     }
 
     void Update()
@@ -162,21 +190,44 @@ public class SpecialRoomController : MonoBehaviour
         for (int i = 0; i < current.children.Count; i++)
         {
             MapNode child = current.children[i];
-            GameObject door = CreateRect(
-                parent,
-                "NextDoor_ToNode_" + child.id,
-                NextDoorPosition(i, current.children.Count),
-                nextDoorSize,
-                new Color(0.85f, 0.62f, 0.25f, 1f),
-                14);
+            GameObject door = CreateNextDoorObject(parent, child, i, current.children.Count);
 
-            BoxCollider2D collider = door.AddComponent<BoxCollider2D>();
+            BoxCollider2D collider = door.GetComponent<BoxCollider2D>();
+            if (collider == null)
+                collider = door.AddComponent<BoxCollider2D>();
             collider.isTrigger = true;
 
-            DoorTrigger trigger = door.AddComponent<DoorTrigger>();
+            DoorTrigger trigger = door.GetComponent<DoorTrigger>();
+            if (trigger == null)
+                trigger = door.AddComponent<DoorTrigger>();
+            trigger.CopyPresentationFrom(NextDoorTemplate);
             trigger.Configure(child, true);
             nextDoors.Add(trigger);
         }
+    }
+
+    GameObject CreateNextDoorObject(Transform parent, MapNode child, int index, int count)
+    {
+        Vector2 position = NextDoorPosition(index, count);
+        DoorTrigger template = NextDoorTemplate;
+        if (template == null)
+        {
+            return CreateRect(
+                parent,
+                "NextDoor_ToNode_" + child.id,
+                position,
+                nextDoorSize,
+                new Color(0.85f, 0.62f, 0.25f, 1f),
+                14);
+        }
+
+        GameObject door = Instantiate(template.gameObject, parent);
+        door.name = "NextDoor_ToNode_" + child.id;
+        door.transform.localPosition = new Vector3(position.x, position.y, 0f);
+        door.transform.localRotation = Quaternion.identity;
+        door.transform.localScale = Vector3.one;
+        door.SetActive(true);
+        return door;
     }
 
     Vector2 NextDoorPosition(int index, int count)
