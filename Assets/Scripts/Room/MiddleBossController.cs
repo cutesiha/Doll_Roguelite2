@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -13,6 +14,9 @@ public class MiddleBossController : MonoBehaviour
     [SerializeField] Vector2 arenaCenter = Vector2.zero;
     [SerializeField] Vector2 arenaSize = new Vector2(26f, 14f);
     [SerializeField] Vector3 playerSpawn = new Vector3(0f, -5f, 0f);
+    [SerializeField, Min(0f)] float cameraFramePadding = 2.0f;
+    [SerializeField, Min(0.1f)] float fallbackRestoreCameraSize = 6.2f;
+    [SerializeField, Min(0.1f)] float cameraZoomDuration = 1.15f;
     [SerializeField] Vector2 nextDoorLine = new Vector2(8f, 5.4f);
     [SerializeField] Vector2 nextDoorSize = new Vector2(2.8f, 0.85f);
     [SerializeField] Color doorColor = new Color(0.85f, 0.62f, 0.25f, 1f);
@@ -20,6 +24,8 @@ public class MiddleBossController : MonoBehaviour
     readonly List<DoorTrigger> nextDoors = new List<DoorTrigger>();
     [SerializeField] MinotaurBoss boss;
     bool defeated;
+    float restoreCameraSize;
+    Coroutine cameraZoomRoutine;
     static Sprite squareSprite;
     static bool hooked;
 
@@ -102,9 +108,100 @@ public class MiddleBossController : MonoBehaviour
             follow.enabled = false;
 
         cam.orthographic = true;
+        float targetSize = BossCameraSize(cam);
+        Vector3 startPosition = cam.transform.position;
+        Vector3 targetPosition = new Vector3(arenaCenter.x, arenaCenter.y, startPosition.z);
+        float startSize = cam.orthographicSize > 0.01f ? cam.orthographicSize : fallbackRestoreCameraSize;
+        restoreCameraSize = startSize;
+
+        if (cameraZoomRoutine != null)
+            StopCoroutine(cameraZoomRoutine);
+
+        cameraZoomRoutine = StartCoroutine(SmoothCameraFrame(
+            cam,
+            startPosition,
+            targetPosition,
+            startSize,
+            targetSize,
+            cameraZoomDuration,
+            null));
+    }
+
+    float BossCameraSize(Camera cam)
+    {
         float aspect = cam.aspect > 0.01f ? cam.aspect : 1.6f;
-        cam.orthographicSize = Mathf.Max(arenaSize.y * 0.5f, arenaSize.x * 0.5f / aspect) + 0.5f;
-        cam.transform.position = new Vector3(arenaCenter.x, arenaCenter.y, cam.transform.position.z);
+        float fullHdAspect = 16f / 9f;
+        float framingAspect = Mathf.Max(aspect, fullHdAspect);
+        return Mathf.Max(
+            arenaSize.y * 0.5f + cameraFramePadding,
+            arenaSize.x * 0.5f / framingAspect + cameraFramePadding);
+    }
+
+    void RestoreCameraAfterBoss()
+    {
+        Camera cam = Camera.main;
+        if (cam == null)
+            return;
+
+        Vector3 startPosition = cam.transform.position;
+        Vector3 targetPosition = startPosition;
+        float targetSize = restoreCameraSize > 0.01f ? restoreCameraSize : fallbackRestoreCameraSize;
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject != null)
+            targetPosition = new Vector3(playerObject.transform.position.x, playerObject.transform.position.y, startPosition.z);
+
+        if (cameraZoomRoutine != null)
+            StopCoroutine(cameraZoomRoutine);
+
+        cameraZoomRoutine = StartCoroutine(SmoothCameraFrame(
+            cam,
+            startPosition,
+            targetPosition,
+            cam.orthographicSize,
+            targetSize,
+            cameraZoomDuration,
+            () =>
+            {
+                PlayerCameraFollow follow = cam.GetComponent<PlayerCameraFollow>();
+                if (follow != null)
+                {
+                    follow.ConfigureBounds(arenaSize, arenaCenter, targetSize, true);
+                    follow.enabled = true;
+                }
+            }));
+    }
+
+    IEnumerator SmoothCameraFrame(
+        Camera cam,
+        Vector3 startPosition,
+        Vector3 targetPosition,
+        float startSize,
+        float targetSize,
+        float duration,
+        System.Action onComplete)
+    {
+        if (cam == null)
+            yield break;
+
+        float elapsed = 0f;
+        float safeDuration = Mathf.Max(0.01f, duration);
+        while (elapsed < safeDuration && cam != null)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / safeDuration);
+            cam.transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+            cam.orthographicSize = Mathf.Lerp(startSize, targetSize, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (cam != null)
+        {
+            cam.transform.position = targetPosition;
+            cam.orthographicSize = targetSize;
+        }
+
+        cameraZoomRoutine = null;
+        onComplete?.Invoke();
     }
 
     void SetupPlayer()
@@ -138,6 +235,7 @@ public class MiddleBossController : MonoBehaviour
         Vector3 rewardPosition = boss != null ? boss.transform.position : new Vector3(arenaCenter.x, arenaCenter.y, 0f);
         defeated = true;
         RunHudUI.ShowWaveClear();
+        RestoreCameraAfterBoss();
 
         RunHudUI hud = FindFirstObjectByType<RunHudUI>();
         if (hud != null)

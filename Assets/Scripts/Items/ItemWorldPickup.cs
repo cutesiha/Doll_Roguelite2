@@ -8,6 +8,7 @@ public class ItemWorldPickup : MonoBehaviour
 {
     ItemData item;
     bool shopItem;
+    bool storeWithoutEquip;
     int price;
     bool collected;
     bool pointerOver;
@@ -39,11 +40,13 @@ public class ItemWorldPickup : MonoBehaviour
 
     public ItemData Item => item;
     public bool IsShopItem => shopItem;
+    public bool StoreWithoutEquip => storeWithoutEquip;
 
-    public void Configure(ItemData data, bool isShopItem, int shopPrice)
+    public void Configure(ItemData data, bool isShopItem, int shopPrice, bool storeOnly = false)
     {
         item = data;
         shopItem = isShopItem;
+        storeWithoutEquip = storeOnly;
         price = Mathf.Max(0, shopPrice);
         name = (shopItem ? "ShopItem_" : "ItemDrop_") + (item != null ? item.ItemId : "Missing");
     }
@@ -145,7 +148,11 @@ public class ItemWorldPickup : MonoBehaviour
         if (inventory == null)
             return;
 
-        if (!inventory.TryAcquire(item, out string message))
+        bool acquired = storeWithoutEquip
+            ? inventory.TryStoreWithoutEquip(item, out string message)
+            : inventory.TryAcquire(item, out message);
+
+        if (!acquired)
         {
             if (Time.unscaledTime >= nextFailureNoticeTime)
             {

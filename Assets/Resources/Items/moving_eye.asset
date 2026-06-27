@@ -32,6 +32,6 @@ MonoBehaviour:
   - effectType: 2
     value: 2.43
     duration: 0
-  sprite: {fileID: 0}
+  sprite: {fileID: 21300000, guid: a518788d3595efa41b843809291950f7, type: 3}
   placeholderShape: 1
   placeholderColor: {r: 0.48, g: 0.92, b: 0.55, a: 1}

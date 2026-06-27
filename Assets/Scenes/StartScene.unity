@@ -11313,14 +11313,14 @@ MonoBehaviour:
   - 0.1
   - 0.08
   - 0.25
-  eyeFinalHoldDuration: 0.5
+  eyeFinalHoldDuration: 0.35
   startBackgroundImage: {fileID: 0}
   finalTitleImage: {fileID: 0}
   startBackdropFadeDuration: 0.42
   startSequenceInitialDelay: 0
-  startPartToOtherPartsDelay: 0.6
-  allPartsToBackdropFadeDelay: 0.7
-  backdropFadeToEyeDelay: 0.6
+  startPartToOtherPartsDelay: 0.4
+  allPartsToBackdropFadeDelay: 0.45
+  backdropFadeToEyeDelay: 0.35
   autoAttachPause: 0.05
   panelShowDelayAfterAttach: 0.12
   exitPanel: {fileID: 1469850048}

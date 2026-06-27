@@ -1864,15 +1864,29 @@ MonoBehaviour:
   bossSceneName: BossScene
   middleBossSceneName: MiddleBossScene
   finalBossSceneName: BookBossScene
+  challengeSceneName: RoomScene
   supplySceneName: PresentScene
   eventSceneName: EventScene
   treasureSceneName: TreasureRoomScene
   shopSceneName: ShopScene
   lockedColor: {r: 0.25, g: 0.25, b: 0.25, a: 1}
-  openColor: {r: 0.85, g: 0.62, b: 0.25, a: 1}
   blockedColor: {r: 0.65, g: 0.15, b: 0.15, a: 1}
-  enterPromptColor: {r: 0.46, g: 1, b: 0.58, a: 1}
-  blockedPromptColor: {r: 1, g: 0.26, b: 0.24, a: 1}
+  doorWorldScale: 1.8
+  tooltipHeight: 2.25
+  doorSpriteOverride: {fileID: 0}
+  roomIconSpriteOverride: {fileID: 0}
+  tooltipSpriteOverride: {fileID: 0}
+  iconLocalPosition: {x: -0.02, y: 0.25, z: -0.02}
+  tooltipOffset: {x: 0, y: 2.25, z: -0.2}
+  tooltipTextLocalPosition: {x: 0, y: 0.12, z: -0.05}
+  tooltipBackgroundScale: {x: 1.82, y: 1.35, z: 1}
+  tooltipTextBoxSize: {x: 4.25, y: 1.35}
+  tooltipFontSize: 2.25
+  visualRoot: {fileID: 0}
+  doorRenderer: {fileID: 0}
+  iconRenderer: {fileID: 0}
+  tooltipRoot: {fileID: 0}
+  tooltipText: {fileID: 0}
 --- !u!61 &517243976
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -6803,6 +6817,9 @@ MonoBehaviour:
   arenaCenter: {x: 0, y: 0}
   arenaSize: {x: 26, y: 14}
   playerSpawn: {x: 0, y: -5, z: 0}
+  cameraFramePadding: 2
+  fallbackRestoreCameraSize: 6.2
+  cameraZoomDuration: 1.15
   nextDoorLine: {x: 8, y: 5.4}
   nextDoorSize: {x: 2.8, y: 0.85}
   doorColor: {r: 0.85, g: 0.62, b: 0.25, a: 1}
@@ -6837,7 +6854,7 @@ Transform:
   m_GameObject: {fileID: 3100000010}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 4.2, z: 0}
+  m_LocalPosition: {x: 0, y: 2.48, z: 0}
   m_LocalScale: {x: 3, y: 3, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -7007,16 +7024,18 @@ MonoBehaviour:
   introDelay: 1
   betweenActions: 1.6
   strikeTime: 0.35
-  solveTime: 7
-  sewingLineThickness: 1.65
+  solveTime: 8
+  sewingLineThickness: 2.9
   diagonalLengthMultiplier: 1.2
   largeAttackWarningTime: 1
-  firstJudgementTime: 7
-  repeatJudgementTime: 5
-  designMatchTime: 5
+  firstJudgementTime: 8
+  repeatJudgementTime: 6
+  designMatchTime: 6
   pinClosureTime: 2
   successStunTime: 1.5
   judgementPaperOffset: {x: 0, y: -6.4}
+  judgementMapIconSize: 0.9
+  designMapIconSize: 2.5
   basicDamage: 18
   judgementPartDamage: 80
   matchFailDamage: 34

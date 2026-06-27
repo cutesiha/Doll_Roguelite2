@@ -28,6 +28,6 @@ MonoBehaviour:
   - effectType: 16
     value: 0
     duration: 20
-  sprite: {fileID: 0}
+  sprite: {fileID: 21300000, guid: 69d63dae85e0e514ab8685058e9a2f43, type: 3}
   placeholderShape: 2
   placeholderColor: {r: 1, g: 1, b: 1, a: 1}

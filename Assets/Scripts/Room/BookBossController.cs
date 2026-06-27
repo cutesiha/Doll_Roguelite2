@@ -20,6 +20,9 @@ public class BookBossController : MonoBehaviour
     [SerializeField] Vector2 arenaCenter = Vector2.zero;
     [SerializeField] Vector2 arenaSize = new Vector2(26f, 14f);
     [SerializeField] Vector3 playerSpawn = new Vector3(0f, -5f, 0f);
+    [SerializeField, Min(0f)] float cameraFramePadding = 2.0f;
+    [SerializeField, Min(0.1f)] float fallbackRestoreCameraSize = 6.2f;
+    [SerializeField, Min(0.1f)] float cameraZoomDuration = 1.15f;
     [SerializeField] int armHp = 28;
     [SerializeField] int bodyHp = 120;
     [SerializeField] int minionKillBodyDamage = 10;
@@ -28,6 +31,19 @@ public class BookBossController : MonoBehaviour
     [SerializeField, Min(1)] int letterDamage = 14;
     [SerializeField, Min(1)] int paperDamage = 18;
     [SerializeField, Min(1)] int poisonTickDamage = 1;
+
+    [Header("Floor Sentence Attack")]
+    [SerializeField, Min(1f)] float floorSentenceFontSize = 300f;
+    [SerializeField, Min(0.001f)] float floorSentenceWorldScale = 0.01f;
+    [SerializeField, Min(1)] int floorSentenceMinCount = 5;
+    [SerializeField, Min(1)] int floorSentenceMaxCount = 8;
+    [SerializeField, Min(0f)] float floorSentenceSpawnDelay = 0.14f;
+    [SerializeField, Min(0.1f)] float floorSentenceWarningTime = 0.55f;
+    [SerializeField, Min(0.1f)] float floorSentenceActiveTime = 2.4f;
+
+    [Header("Paper Scrap Attack")]
+    [SerializeField, Min(0.1f)] float paperScrapSpeed = 6.0f;
+    [SerializeField, Min(0.1f)] float paperScrapMaxTime = 2.8f;
 
     [Header("Scene Parts")]
     [SerializeField] BookBossPart body;
@@ -60,6 +76,8 @@ public class BookBossController : MonoBehaviour
     TextMeshPro floorEndingText;
     GameObject darkenOverlay;
     Coroutine letterFallLoop;
+    float restoreCameraSize;
+    Coroutine cameraZoomRoutine;
 
     class PoisonZone
     {
@@ -107,7 +125,13 @@ public class BookBossController : MonoBehaviour
             player.position = playerSpawn;
 
         SpawnParts();
+        RunHudUI.SetWaveHudVisible(false);
         StartCoroutine(BossRoutine());
+    }
+
+    void OnDestroy()
+    {
+        RunHudUI.SetWaveHudVisible(true);
     }
 
     void Update()
@@ -147,9 +171,99 @@ public class BookBossController : MonoBehaviour
             follow.enabled = false;
 
         cam.orthographic = true;
+        float targetSize = BossCameraSize(cam);
+        Vector3 startPosition = cam.transform.position;
+        Vector3 targetPosition = new Vector3(arenaCenter.x, arenaCenter.y, startPosition.z);
+        float startSize = cam.orthographicSize > 0.01f ? cam.orthographicSize : fallbackRestoreCameraSize;
+        restoreCameraSize = startSize;
+
+        if (cameraZoomRoutine != null)
+            StopCoroutine(cameraZoomRoutine);
+
+        cameraZoomRoutine = StartCoroutine(SmoothCameraFrame(
+            cam,
+            startPosition,
+            targetPosition,
+            startSize,
+            targetSize,
+            cameraZoomDuration,
+            null));
+    }
+
+    float BossCameraSize(Camera cam)
+    {
         float aspect = cam.aspect > 0.01f ? cam.aspect : 1.6f;
-        cam.orthographicSize = Mathf.Max(arenaSize.y * 0.5f, arenaSize.x * 0.5f / aspect) + 0.5f;
-        cam.transform.position = new Vector3(arenaCenter.x, arenaCenter.y, cam.transform.position.z);
+        float fullHdAspect = 16f / 9f;
+        float framingAspect = Mathf.Max(aspect, fullHdAspect);
+        return Mathf.Max(
+            arenaSize.y * 0.5f + cameraFramePadding,
+            arenaSize.x * 0.5f / framingAspect + cameraFramePadding);
+    }
+
+    void RestoreCameraAfterBoss()
+    {
+        Camera cam = Camera.main;
+        if (cam == null)
+            return;
+
+        Vector3 startPosition = cam.transform.position;
+        Vector3 targetPosition = startPosition;
+        float targetSize = restoreCameraSize > 0.01f ? restoreCameraSize : fallbackRestoreCameraSize;
+        if (player != null)
+            targetPosition = new Vector3(player.position.x, player.position.y, startPosition.z);
+
+        if (cameraZoomRoutine != null)
+            StopCoroutine(cameraZoomRoutine);
+
+        cameraZoomRoutine = StartCoroutine(SmoothCameraFrame(
+            cam,
+            startPosition,
+            targetPosition,
+            cam.orthographicSize,
+            targetSize,
+            cameraZoomDuration,
+            () =>
+            {
+                PlayerCameraFollow follow = cam.GetComponent<PlayerCameraFollow>();
+                if (follow != null)
+                {
+                    follow.ConfigureBounds(arenaSize, arenaCenter, targetSize, true);
+                    follow.enabled = true;
+                }
+            }));
+    }
+
+    IEnumerator SmoothCameraFrame(
+        Camera cam,
+        Vector3 startPosition,
+        Vector3 targetPosition,
+        float startSize,
+        float targetSize,
+        float duration,
+        System.Action onComplete)
+    {
+        if (cam == null)
+            yield break;
+
+        float elapsed = 0f;
+        float safeDuration = Mathf.Max(0.01f, duration);
+        while (elapsed < safeDuration && cam != null)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / safeDuration);
+            cam.transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+            cam.orthographicSize = Mathf.Lerp(startSize, targetSize, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (cam != null)
+        {
+            cam.transform.position = targetPosition;
+            cam.orthographicSize = targetSize;
+        }
+
+        cameraZoomRoutine = null;
+        onComplete?.Invoke();
     }
 
     void ResolvePlayer()
@@ -271,7 +385,7 @@ public class BookBossController : MonoBehaviour
             if (CurrentWave() == 1)
                 yield return StartCoroutine(PaperAttack());
 
-            yield return new WaitForSeconds(1.1f);
+            yield return new WaitForSeconds(0.65f);
         }
     }
 
@@ -302,29 +416,35 @@ public class BookBossController : MonoBehaviour
     {
         armsTyping = true;
 
-        int sentenceCount = Random.Range(1, 3);
+        int minCount = Mathf.Max(1, floorSentenceMinCount);
+        int maxCount = Mathf.Max(minCount, floorSentenceMaxCount);
+        int sentenceCount = Random.Range(minCount, maxCount + 1);
         List<Coroutine> running = new List<Coroutine>();
         for (int i = 0; i < sentenceCount; i++)
         {
             string sentence = BookLetters.AttackSentences[Random.Range(0, BookLetters.AttackSentences.Length)];
-            float y = arenaCenter.y + Random.Range(-arenaSize.y * 0.32f, arenaSize.y * 0.18f);
-            Vector2 pos = new Vector2(arenaCenter.x + Random.Range(-1.5f, 1.5f), y);
+            float x = arenaCenter.x + Random.Range(-arenaSize.x * 0.42f, arenaSize.x * 0.42f);
+            float y = arenaCenter.y + Random.Range(-arenaSize.y * 0.36f, arenaSize.y * 0.28f);
+            Vector2 pos = new Vector2(x, y);
             running.Add(StartCoroutine(FloorSentenceRoutine(sentence, pos)));
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(floorSentenceSpawnDelay);
         }
 
-        yield return new WaitForSeconds(2.4f);
+        yield return new WaitForSeconds(1.2f);
         armsTyping = false;
     }
 
     IEnumerator FloorSentenceRoutine(string sentence, Vector2 pos)
     {
-        float fontSize = 1.1f;
+        float fontSize = Mathf.Max(1f, floorSentenceFontSize);
+        float worldScale = Mathf.Max(0.001f, floorSentenceWorldScale);
+        float visualFontSize = fontSize * worldScale;
         TextMeshPro text = CreateWorldText(sentence, pos, fontSize, new Color(0.85f, 0.18f, 0.18f, 0.45f), 55);
+        text.transform.localScale = Vector3.one * worldScale;
         text.maxVisibleCharacters = 0;
 
         int total = sentence.Length;
-        float typeDuration = 0.7f;
+        float typeDuration = 0.45f;
         float elapsed = 0f;
         while (elapsed < typeDuration)
         {
@@ -334,13 +454,13 @@ public class BookBossController : MonoBehaviour
         }
         text.maxVisibleCharacters = total;
 
-        yield return new WaitForSeconds(0.8f);
+        yield return new WaitForSeconds(floorSentenceWarningTime);
 
         text.color = new Color(0.08f, 0.06f, 0.06f, 1f);
 
-        float halfWidth = total * fontSize * 0.32f;
-        float halfHeight = fontSize * 0.6f;
-        float activeTime = 1.6f;
+        float halfWidth = total * visualFontSize * 0.32f;
+        float halfHeight = visualFontSize * 0.6f;
+        float activeTime = floorSentenceActiveTime;
         float activeElapsed = 0f;
         while (activeElapsed < activeTime)
         {
@@ -402,8 +522,8 @@ public class BookBossController : MonoBehaviour
         renderer.sortingOrder = 58;
 
         Vector2 direction = (target - start).normalized;
-        float speed = 7.5f;
-        float maxTime = 2.2f;
+        float speed = paperScrapSpeed;
+        float maxTime = paperScrapMaxTime;
         float elapsed = 0f;
         bool hit = false;
         while (elapsed < maxTime)
@@ -807,6 +927,8 @@ public class BookBossController : MonoBehaviour
 
     void FinishRun()
     {
+        RestoreCameraAfterBoss();
+
         RunHudUI hud = FindFirstObjectByType<RunHudUI>();
         if (hud != null)
             hud.ShowDiaryText("인형은 공방을 떠나 바깥세상을 보았다.", 5f);

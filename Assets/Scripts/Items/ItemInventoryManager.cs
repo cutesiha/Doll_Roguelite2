@@ -163,6 +163,31 @@ public class ItemInventoryManager : MonoBehaviour
         return true;
     }
 
+    public bool TryStoreWithoutEquip(ItemData item, out string message)
+    {
+        message = "";
+        if (item == null)
+            return false;
+
+        if (item.Type == ItemType.Currency)
+        {
+            AddCoins(Mathf.Max(1, Mathf.RoundToInt(item.Value)));
+            message = item.ItemName + " 획득";
+            return true;
+        }
+
+        if (storage.Count >= Capacity)
+        {
+            message = "인벤토리가 가득 찼습니다.";
+            return false;
+        }
+
+        storage.Add(item);
+        message = item.ItemName + "을(를) 보관함에 넣었습니다.";
+        NotifyChanged();
+        return true;
+    }
+
     public bool TryPurchase(ItemData item, int price, out string message)
     {
         price = Mathf.Max(0, price);

@@ -26,22 +26,24 @@ public class MinotaurBoss : EnemyBase
     [SerializeField, Min(0.1f)] float introDelay = 1.0f;
     [SerializeField, Min(0.1f)] float betweenActions = 1.6f;
     [SerializeField, Min(0.1f)] float strikeTime = 0.35f;
-    [SerializeField, Min(1f)] float solveTime = 7f;
+    [SerializeField, Min(1f)] float solveTime = 8f;
 
     [Header("Room-wide Sewing Lines")]
-    [SerializeField, Min(0.5f)] float sewingLineThickness = 1.65f;
+    [SerializeField, Min(0.5f)] float sewingLineThickness = 2.9f;
     [SerializeField, Min(1f)] float diagonalLengthMultiplier = 1.2f;
     [SerializeField, Min(0.1f)] float largeAttackWarningTime = 1f;
 
     [Header("Mechanic Timing")]
-    [SerializeField, Min(1f)] float firstJudgementTime = 7f;
-    [SerializeField, Min(1f)] float repeatJudgementTime = 5f;
-    [SerializeField, Min(1f)] float designMatchTime = 5f;
+    [SerializeField, Min(1f)] float firstJudgementTime = 8f;
+    [SerializeField, Min(1f)] float repeatJudgementTime = 6f;
+    [SerializeField, Min(1f)] float designMatchTime = 6f;
     [SerializeField, Min(0.1f)] float pinClosureTime = 2f;
     [SerializeField, Min(0.1f)] float successStunTime = 1.5f;
 
     [Header("Mechanic Layout")]
     [SerializeField] Vector2 judgementPaperOffset = new Vector2(0f, -6.4f);
+    [SerializeField, Min(0.1f)] float judgementMapIconSize = 0.9f;
+    [SerializeField, Min(0.1f)] float designMapIconSize = 2.5f;
 
     [Header("Damage")]
     [SerializeField, Min(1)] int basicDamage = 18;
@@ -77,6 +79,7 @@ public class MinotaurBoss : EnemyBase
     bool pinTurn;
     int judgementUseCount;
     int lastReportedWave = -1;
+    static readonly Dictionary<string, Sprite> mapIconCache = new Dictionary<string, Sprite>();
 
     struct Band
     {
@@ -460,7 +463,7 @@ public class MinotaurBoss : EnemyBase
         for (int i = 0; i < slots.Length; i++)
         {
             bool isX = marked.Contains(slots[i]);
-            BossVisuals.CreatePartIcon(paper.transform, "Icon_" + slots[i], slots[i], layout[i] + new Vector3(-0.55f, 0f, 0f), 1.1f, BossVisuals.InkColor, 32);
+            CreateJudgementMapIcon(paper.transform, slots[i], layout[i] + new Vector3(-0.55f, 0f, 0f), 32);
             if (isX)
                 BossVisuals.CreateXMark(paper.transform, layout[i] + new Vector3(0.55f, 0f, 0f), 1.0f, 33);
             else
@@ -551,7 +554,7 @@ public class MinotaurBoss : EnemyBase
         for (int i = 0; i < options.Length; i++)
         {
             GameObject paper = TrackTelegraph(BossVisuals.CreatePaper("MatchPaper_" + i, spots[i], paperSize, 12));
-            BossVisuals.CreateDollSilhouette(paper.transform, "Doll", new Vector3(0f, 0.1f, 0f), 0.95f, options[i], 14);
+            CreateDesignMapIcon(paper.transform, options[i], new Vector3(0f, 0.08f, 0f), 14);
             papers.Add(paper);
         }
 
@@ -587,6 +590,69 @@ public class MinotaurBoss : EnemyBase
     }
 
     GameObject coveredPatch;
+
+    void CreateJudgementMapIcon(Transform parent, BodySlot slot, Vector3 localPos, int order)
+    {
+        Sprite sprite = LoadMapIconSprite(MapIconName(slot));
+        if (sprite != null)
+        {
+            BossVisuals.CreateSpriteIcon(parent, "MapIcon_" + slot, sprite, localPos, judgementMapIconSize, Color.white, order);
+            return;
+        }
+
+        BossVisuals.CreatePartIcon(parent, "Icon_" + slot, slot, localPos, 1.1f, BossVisuals.InkColor, order);
+    }
+
+    void CreateDesignMapIcon(Transform parent, BodySlot? missingSlot, Vector3 localPos, int order)
+    {
+        Sprite sprite = LoadMapIconSprite(MapIconName(missingSlot));
+        if (sprite != null)
+        {
+            BossVisuals.CreateSpriteIcon(parent, "DesignMapIcon_" + (missingSlot.HasValue ? missingSlot.Value.ToString() : "Whole"), sprite, localPos, designMapIconSize, Color.white, order);
+            return;
+        }
+
+        BossVisuals.CreateDollSilhouette(parent, "Doll", localPos, 0.95f, missingSlot, order);
+    }
+
+    static string MapIconName(BodySlot? slot)
+    {
+        if (!slot.HasValue)
+            return "startroom";
+
+        return MapIconName(slot.Value);
+    }
+
+    static string MapIconName(BodySlot slot)
+    {
+        switch (slot)
+        {
+            case BodySlot.EyeLeft: return "nolefteye";
+            case BodySlot.EyeRight: return "norighteye";
+            case BodySlot.ArmLeft: return "noleftarm";
+            case BodySlot.ArmRight: return "norightarm";
+            case BodySlot.LegLeft: return "noleftleg";
+            case BodySlot.LegRight: return "norightleg";
+            default: return "startroom";
+        }
+    }
+
+    static Sprite LoadMapIconSprite(string iconName)
+    {
+        if (string.IsNullOrWhiteSpace(iconName))
+            return null;
+
+        if (mapIconCache.TryGetValue(iconName, out Sprite cached))
+            return cached;
+
+        Sprite sprite = Resources.Load<Sprite>("Sprites/mapicon/" + iconName);
+#if UNITY_EDITOR
+        if (sprite == null)
+            sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/" + iconName + ".png");
+#endif
+        mapIconCache[iconName] = sprite;
+        return sprite;
+    }
 
     void ShowCoveredPart(BodySlot? slot)
     {
@@ -844,8 +910,6 @@ public class MinotaurBoss : EnemyBase
 
     IEnumerator CountdownRoutine(string message, float duration, Color color)
     {
-        // Circular time gauge on the HUD: a radial-fill ring that empties as the timer runs
-        // out, with the remaining seconds in its centre and the instruction below it.
         RunHudUI.ShowJudgementTimer(message, color);
 
         float remaining = duration;

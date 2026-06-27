@@ -84,8 +84,25 @@ public static class ItemRoomRewardSystem
     public static void SpawnBodyRoomReward(Vector3 position, ItemWorldPickup template = null)
     {
         ItemData item = ItemCatalog.RandomByCategory(ItemCategory.BodyRoom, ItemType.BodyPart);
-        ItemDropSpawner.Spawn(item, position, false, 0, template);
+        ItemDropSpawner.Spawn(item, TreasureRewardPosition(position), false, 0, template, true);
         Announce("신체방 아이템이 생성되었습니다.");
+    }
+
+    static Vector3 TreasureRewardPosition(Vector3 fallback)
+    {
+        GameObject anchor = GameObject.Find("TreasureRewardAnchor");
+        if (anchor != null)
+            return anchor.transform.position;
+
+        GameObject layout = GameObject.Find("TreasureLayout");
+        if (layout != null)
+        {
+            Transform child = layout.transform.Find("TreasureRewardAnchor");
+            if (child != null)
+                return child.position;
+        }
+
+        return fallback;
     }
 
     public static void SpawnShop(Vector3 center, ItemWorldPickup template = null)

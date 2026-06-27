@@ -121,6 +121,35 @@ public static class BossVisuals
         return renderer;
     }
 
+    public static GameObject CreateSpriteIcon(Transform parent, string name, Sprite sprite, Vector3 localPos, float maxSize, Color color, int order)
+    {
+        GameObject root = new GameObject(name);
+        if (parent != null)
+        {
+            root.transform.SetParent(parent, false);
+            root.transform.localPosition = localPos;
+        }
+        else
+        {
+            root.transform.position = localPos;
+        }
+
+        SpriteRenderer renderer = root.AddComponent<SpriteRenderer>();
+        renderer.sprite = sprite;
+        renderer.color = color;
+        renderer.sortingOrder = order;
+
+        if (sprite != null)
+        {
+            Vector2 size = sprite.bounds.size;
+            float largest = Mathf.Max(0.01f, Mathf.Max(size.x, size.y));
+            float scale = Mathf.Max(0.01f, maxSize) / largest;
+            root.transform.localScale = new Vector3(scale, scale, 1f);
+        }
+
+        return root;
+    }
+
     public static GameObject CreateDashedLine(Transform parent, string name, Vector2 start, Vector2 end, float width, Color color, int order, float dash = 0.34f, float gap = 0.2f)
     {
         GameObject root = new GameObject(name);

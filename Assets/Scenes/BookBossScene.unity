@@ -1864,15 +1864,29 @@ MonoBehaviour:
   bossSceneName: BossScene
   middleBossSceneName: MiddleBossScene
   finalBossSceneName: BookBossScene
+  challengeSceneName: RoomScene
   supplySceneName: PresentScene
   eventSceneName: EventScene
   treasureSceneName: TreasureRoomScene
   shopSceneName: ShopScene
   lockedColor: {r: 0.25, g: 0.25, b: 0.25, a: 1}
-  openColor: {r: 0.85, g: 0.62, b: 0.25, a: 1}
   blockedColor: {r: 0.65, g: 0.15, b: 0.15, a: 1}
-  enterPromptColor: {r: 0.46, g: 1, b: 0.58, a: 1}
-  blockedPromptColor: {r: 1, g: 0.26, b: 0.24, a: 1}
+  doorWorldScale: 1.8
+  tooltipHeight: 2.25
+  doorSpriteOverride: {fileID: 0}
+  roomIconSpriteOverride: {fileID: 0}
+  tooltipSpriteOverride: {fileID: 0}
+  iconLocalPosition: {x: -0.02, y: 0.25, z: -0.02}
+  tooltipOffset: {x: 0, y: 2.25, z: -0.2}
+  tooltipTextLocalPosition: {x: 0, y: 0.12, z: -0.05}
+  tooltipBackgroundScale: {x: 1.82, y: 1.35, z: 1}
+  tooltipTextBoxSize: {x: 4.25, y: 1.35}
+  tooltipFontSize: 2.25
+  visualRoot: {fileID: 0}
+  doorRenderer: {fileID: 0}
+  iconRenderer: {fileID: 0}
+  tooltipRoot: {fileID: 0}
+  tooltipText: {fileID: 0}
 --- !u!61 &517243976
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -6781,7 +6795,7 @@ Transform:
   m_GameObject: {fileID: 3200000000}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -1.89, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6805,12 +6819,24 @@ MonoBehaviour:
   arenaCenter: {x: 0, y: 0}
   arenaSize: {x: 26, y: 14}
   playerSpawn: {x: 0, y: -5, z: 0}
+  cameraFramePadding: 2
+  fallbackRestoreCameraSize: 6.2
+  cameraZoomDuration: 1.15
   armHp: 28
   bodyHp: 120
   minionKillBodyDamage: 10
   letterDamage: 14
   paperDamage: 18
   poisonTickDamage: 1
+  floorSentenceFontSize: 300
+  floorSentenceWorldScale: 0.01
+  floorSentenceMinCount: 5
+  floorSentenceMaxCount: 8
+  floorSentenceSpawnDelay: 0.14
+  floorSentenceWarningTime: 0.55
+  floorSentenceActiveTime: 2.4
+  paperScrapSpeed: 6
+  paperScrapMaxTime: 2.8
   body: {fileID: 3200000014}
   leftArm: {fileID: 3200000024}
   rightArm: {fileID: 3200000034}
@@ -6842,8 +6868,8 @@ Transform:
   m_GameObject: {fileID: 3200000010}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 3.8, z: 0}
-  m_LocalScale: {x: 1.7, y: 1.7, z: 1}
+  m_LocalPosition: {x: -0.02, y: 3.79, z: 0}
+  m_LocalScale: {x: 2.2458694, y: 2.2458694, z: 1.3210996}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 3200000001}
@@ -7058,8 +7084,8 @@ Transform:
   m_GameObject: {fileID: 3200000020}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.4, y: 3.4, z: 0}
-  m_LocalScale: {x: 1.4, y: 1.4, z: 1}
+  m_LocalPosition: {x: -4.5118, y: 3.2616, z: 0}
+  m_LocalScale: {x: 1.8495394, y: 1.8495394, z: 1.3210996}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 3200000001}
@@ -7583,8 +7609,8 @@ Transform:
   m_GameObject: {fileID: 3200000030}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.4, y: 3.4, z: 0}
-  m_LocalScale: {x: 1.4, y: 1.4, z: 1}
+  m_LocalPosition: {x: 4.4717, y: 3.2616, z: 0}
+  m_LocalScale: {x: 1.8495394, y: 1.8495394, z: 1.3210996}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 3200000001}

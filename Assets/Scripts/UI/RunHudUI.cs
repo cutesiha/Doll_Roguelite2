@@ -67,9 +67,10 @@ public class RunHudUI : MonoBehaviour
     RectTransform judgementTimerHud;
     Image judgementTimerFill;
     TextMeshProUGUI judgementTimerSeconds;
-    Color judgementTimerBaseColor = new Color(1f, 0.85f, 0.30f, 1f);
-    static readonly Color JudgementTimerHigh = new Color(1f, 0.85f, 0.30f, 1f);
-    static readonly Color JudgementTimerLow = new Color(1f, 0.20f, 0.18f, 1f);
+    TextMeshProUGUI judgementTimerCaption;
+    Color judgementTimerBaseColor = new Color(1f, 0.36f, 0.12f, 1f);
+    static readonly Color JudgementTimerHigh = new Color(1f, 0.36f, 0.12f, 1f);
+    static readonly Color JudgementTimerLow = new Color(0.88f, 0.08f, 0.06f, 1f);
     RectTransform bossPartsHud;
     readonly RectTransform[] bossPartRows = new RectTransform[3];
     readonly Image[] bossPartFills = new Image[3];
@@ -189,7 +190,7 @@ public class RunHudUI : MonoBehaviour
 
     static bool IsRunHudExcludedScene(string sceneName)
     {
-        return sceneName == "StartScene" || sceneName == "TutorialScene";
+        return sceneName == "StartScene";
     }
 
     void Awake()
@@ -487,8 +488,7 @@ public class RunHudUI : MonoBehaviour
         if (mapScrollRect == null && mapPanel != null)
             mapScrollRect = mapPanel.GetComponentInChildren<ScrollRect>(true);
 
-        if (miniMapContent == null)
-            miniMapContent = FindChildComponent<RectTransform>("MiniMapContent");
+        miniMapContent = null;
     }
 
     void EnsureMapUiPieces()
@@ -499,7 +499,7 @@ public class RunHudUI : MonoBehaviour
         }
         else
         {
-            EnsureMiniMapOnExistingButton();
+            ConfigureMapButtonForMapIcon();
         }
 
         if (mapOverlay == null)
@@ -746,8 +746,7 @@ public class RunHudUI : MonoBehaviour
             mapButton.onClick.RemoveListener(ToggleMap);
             mapButton.onClick.AddListener(PlayClickSound);
             mapButton.onClick.AddListener(ToggleMap);
-            ConfigureMiniMapButtonHover(mapButton);
-            ConfigureMapButtonForMiniMap();
+            ConfigureMapButtonForMapIcon();
             AttachHudTooltip(mapButton, "지도");
         }
 
@@ -1054,7 +1053,7 @@ void BuildPixelDoll(Transform parent)
 
     void BuildBossHpBar()
     {
-        GameObject hud = Rect(transform, "BossHpHud", Anchor.TopCenter, new Vector2(0f, -88f), new Vector2(908f, 84f));
+        GameObject hud = Rect(transform, "BossHpHud", Anchor.TopCenter, new Vector2(0f, -54f), new Vector2(908f, 84f));
         bossHpHud = hud.GetComponent<RectTransform>();
         Image bg = hud.AddComponent<Image>();
         SetRoundedImage(bg, roundedButtonSprite);
@@ -1103,6 +1102,7 @@ void BuildPixelDoll(Transform parent)
             return;
 
         bossHpHud.gameObject.SetActive(true);
+        bossHpHud.anchoredPosition = new Vector2(0f, -54f);
         bossHpHud.SetAsLastSibling();
 
         int safeMax = Mathf.Max(1, max);
@@ -1138,7 +1138,11 @@ void BuildPixelDoll(Transform parent)
             judgementTimerHud = existing as RectTransform;
             judgementTimerFill = FindChildComponent<Image>("TimerFill");
             judgementTimerSeconds = FindChildComponent<TextMeshProUGUI>("TimerSeconds");
-            if (judgementTimerHud != null && judgementTimerFill != null)
+            judgementTimerCaption = FindChildComponent<TextMeshProUGUI>("TimerCaption");
+            if (judgementTimerHud != null
+                && judgementTimerFill != null
+                && judgementTimerFill.fillMethod == Image.FillMethod.Horizontal
+                && judgementTimerHud.sizeDelta.x > judgementTimerHud.sizeDelta.y)
                 return;
 
             DestroyUiObject(judgementTimerHud.gameObject);
@@ -1150,36 +1154,43 @@ void BuildPixelDoll(Transform parent)
 
     void BuildJudgementTimer()
     {
-        GameObject hud = Rect(transform, "JudgementTimerGauge", Anchor.TopCenter, new Vector2(0f, -210f), new Vector2(168f, 168f));
+        GameObject hud = Rect(transform, "JudgementTimerGauge", Anchor.TopCenter, new Vector2(0f, -202f), new Vector2(680f, 106f));
         judgementTimerHud = hud.GetComponent<RectTransform>();
 
-        // Dim full-circle track behind the radial fill.
-        GameObject track = Rect(hud.transform, "TimerTrack", Anchor.TopCenter, new Vector2(0f, 0f), new Vector2(168f, 168f));
+        Image background = hud.AddComponent<Image>();
+        SetRoundedImage(background, roundedButtonSprite);
+        background.color = new Color(0.08f, 0.05f, 0.055f, 0.88f);
+        background.raycastTarget = false;
+
+        Outline outline = hud.AddComponent<Outline>();
+        outline.effectColor = new Color(1f, 0.34f, 0.12f, 0.74f);
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        judgementTimerCaption = Text(hud.transform, "TimerCaption", "", 22f, new Color(1f, 0.86f, 0.66f, 1f), TextAlignmentOptions.Center);
+        judgementTimerCaption.raycastTarget = false;
+        judgementTimerCaption.rectTransform.anchorMin = new Vector2(0f, 1f);
+        judgementTimerCaption.rectTransform.anchorMax = new Vector2(1f, 1f);
+        judgementTimerCaption.rectTransform.pivot = new Vector2(0.5f, 1f);
+        judgementTimerCaption.rectTransform.anchoredPosition = new Vector2(0f, -8f);
+        judgementTimerCaption.rectTransform.sizeDelta = new Vector2(-28f, 28f);
+
+        GameObject track = Rect(hud.transform, "TimerTrack", Anchor.TopCenter, new Vector2(0f, -58f), new Vector2(584f, 26f));
         Image trackImage = track.AddComponent<Image>();
-        SetRoundedImage(trackImage, circleSprite);
-        trackImage.color = new Color(0.13f, 0.10f, 0.12f, 0.92f);
+        SetRoundedImage(trackImage, roundedButtonSprite);
+        trackImage.color = new Color(0.16f, 0.08f, 0.07f, 0.96f);
         trackImage.raycastTarget = false;
 
-        // Radial fill that empties clockwise from the top as time runs out.
         GameObject fill = Rect(track.transform, "TimerFill", Anchor.Stretch, Vector2.zero, Vector2.zero);
         judgementTimerFill = fill.AddComponent<Image>();
-        judgementTimerFill.sprite = circleSprite;
+        SetRoundedImage(judgementTimerFill, roundedButtonSprite);
         judgementTimerFill.type = Image.Type.Filled;
-        judgementTimerFill.fillMethod = Image.FillMethod.Radial360;
-        judgementTimerFill.fillOrigin = (int)Image.Origin360.Top;
-        judgementTimerFill.fillClockwise = true;
+        judgementTimerFill.fillMethod = Image.FillMethod.Horizontal;
+        judgementTimerFill.fillOrigin = (int)Image.OriginHorizontal.Left;
         judgementTimerFill.fillAmount = 1f;
         judgementTimerFill.color = JudgementTimerHigh;
         judgementTimerFill.raycastTarget = false;
 
-        // Dark hub carves the disc into a ring and hosts the seconds readout.
-        GameObject hub = Rect(track.transform, "TimerHub", Anchor.Center, Vector2.zero, new Vector2(112f, 112f));
-        Image hubImage = hub.AddComponent<Image>();
-        SetRoundedImage(hubImage, circleSprite);
-        hubImage.color = new Color(0.10f, 0.08f, 0.09f, 0.96f);
-        hubImage.raycastTarget = false;
-
-        judgementTimerSeconds = Text(hub.transform, "TimerSeconds", "0.0", 40f, Color.white, TextAlignmentOptions.Center);
+        judgementTimerSeconds = Text(track.transform, "TimerSeconds", "0.0", 24f, Color.white, TextAlignmentOptions.Center);
         judgementTimerSeconds.fontStyle = FontStyles.Bold;
         judgementTimerSeconds.raycastTarget = false;
         judgementTimerSeconds.rectTransform.anchorMin = Vector2.zero;
@@ -1198,16 +1209,19 @@ void BuildPixelDoll(Transform parent)
 
         judgementTimerHud.gameObject.SetActive(true);
         judgementTimerHud.SetAsLastSibling();
-        judgementTimerBaseColor = color;
+        judgementTimerBaseColor = JudgementTimerHigh;
 
         if (judgementTimerFill != null)
         {
-            judgementTimerFill.color = color;
+            judgementTimerFill.color = judgementTimerBaseColor;
             judgementTimerFill.fillAmount = 1f;
         }
 
         if (judgementTimerSeconds != null)
             judgementTimerSeconds.text = "0.0";
+
+        if (judgementTimerCaption != null)
+            judgementTimerCaption.text = caption;
     }
 
     void ApplySetJudgementTimer(float remaining, float duration)
@@ -1242,7 +1256,7 @@ void BuildPixelDoll(Transform parent)
         if (existing != null)
             DestroyUiObject(existing.gameObject);
 
-        GameObject hud = Rect(transform, "BossPartsHud", Anchor.TopCenter, new Vector2(0f, -66f), new Vector2(860f, 150f));
+        GameObject hud = Rect(transform, "BossPartsHud", Anchor.TopCenter, new Vector2(0f, -38f), new Vector2(860f, 150f));
         bossPartsHud = hud.GetComponent<RectTransform>();
 
         string[] defaultNames = { "몸통(책)", "왼팔", "오른팔" };
@@ -1290,6 +1304,7 @@ void BuildPixelDoll(Transform parent)
             return;
 
         bossPartsHud.gameObject.SetActive(true);
+        bossPartsHud.anchoredPosition = new Vector2(0f, -38f);
         bossPartsHud.SetAsLastSibling();
 
         int count = names != null ? Mathf.Min(3, names.Length) : 0;
@@ -1371,24 +1386,56 @@ void BuildPixelDoll(Transform parent)
             collectedWordsLabel.text = string.Join("  ", words);
     }
 
-void BuildTopRightMapButton()
+    void BuildTopRightMapButton()
     {
         mapButton = BuildHudButton(transform, "MapIconButton", Anchor.TopRight, new Vector2(-38f, -38f), new Vector2(154f, 154f));
         mapButton.onClick.AddListener(PlayClickSound);
         mapButton.onClick.AddListener(ToggleMap);
-        ConfigureMiniMapButtonHover(mapButton);
-        ConfigureMapButtonForMiniMap();
+        ConfigureMapButtonForMapIcon();
         AttachHudTooltip(mapButton, "지도");
+    }
 
-        GameObject viewport = Rect(mapButton.transform, "MiniMapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
-        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
-        viewportRect.offsetMin = new Vector2(10f, 10f);
-        viewportRect.offsetMax = new Vector2(-10f, -10f);
-        viewport.AddComponent<RectMask2D>();
+    void ConfigureMapButtonForMapIcon()
+    {
+        if (mapButton == null)
+            return;
 
-        GameObject content = Rect(viewport.transform, "MiniMapContent", Anchor.Center, Vector2.zero, new Vector2(440f, 440f));
-        miniMapContent = content.GetComponent<RectTransform>();
-        BuildMiniMap();
+        Image image = mapButton.GetComponent<Image>();
+        if (image != null)
+        {
+            SetRoundedImage(image, roundedButtonSprite);
+            image.color = HudPanelColor;
+            image.raycastTarget = true;
+        }
+
+        DestroyDirectChild(mapButton.transform, "MiniMapViewport");
+        DestroyDirectChild(mapButton.transform, "MiniMapContent");
+        miniMapContent = null;
+        lastMiniMapCurrentId = -999;
+
+        Transform icon = mapButton.transform.Find("TreeMapLineIcon");
+        if (icon == null)
+            BuildMapButtonIcon(mapButton.transform);
+        else
+            icon.gameObject.SetActive(true);
+    }
+
+    void BuildMapButtonIcon(Transform parent)
+    {
+        GameObject icon = Rect(parent, "TreeMapLineIcon", Anchor.Center, Vector2.zero, new Vector2(106f, 96f));
+        Color line = TextColor;
+        Color node = AccentColor;
+
+        AddLine(icon.transform, "BranchA", new Vector2(51f, -27f), new Vector2(4f, 48f), line);
+        AddLine(icon.transform, "BranchB", new Vector2(27f, -48f), new Vector2(52f, 4f), line);
+        AddLine(icon.transform, "BranchC", new Vector2(27f, -48f), new Vector2(4f, 24f), line);
+        AddLine(icon.transform, "BranchD", new Vector2(75f, -48f), new Vector2(4f, 24f), line);
+        AddLine(icon.transform, "BranchE", new Vector2(51f, -72f), new Vector2(4f, 16f), line);
+
+        AddPixel(icon.transform, "NodeTop", new Vector2(43f, -15f), new Vector2(20f, 20f), node);
+        AddPixel(icon.transform, "NodeLeft", new Vector2(19f, -62f), new Vector2(20f, 20f), PanelColor);
+        AddPixel(icon.transform, "NodeRight", new Vector2(67f, -62f), new Vector2(20f, 20f), PanelColor);
+        AddPixel(icon.transform, "NodeBottom", new Vector2(43f, -75f), new Vector2(20f, 20f), PanelColor);
     }
 
     void ConfigureMiniMapButtonHover(Button button)
@@ -1875,7 +1922,6 @@ void BuildTopRightMapButton()
             ApplyPipColors(bodyPips.pips, remaining, bodyPips.maxPips);
         }
 
-        UpdateMiniMap();
     }
 
     void UpdatePipGroup(HudPipGroup group)

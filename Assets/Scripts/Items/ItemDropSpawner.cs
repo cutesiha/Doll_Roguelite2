@@ -5,7 +5,7 @@ public static class ItemDropSpawner
 {
     static readonly Dictionary<int, Sprite> placeholderSprites = new();
 
-    public static ItemWorldPickup Spawn(ItemData item, Vector3 position, bool shopItem, int price, ItemWorldPickup template = null)
+    public static ItemWorldPickup Spawn(ItemData item, Vector3 position, bool shopItem, int price, ItemWorldPickup template = null, bool storeWithoutEquip = false)
     {
         if (item == null)
             return null;
@@ -37,7 +37,7 @@ public static class ItemDropSpawner
         if (pickup == null)
             pickup = go.AddComponent<ItemWorldPickup>();
         pickup.CopyPresentationFrom(template);
-        pickup.Configure(item, shopItem, price);
+        pickup.Configure(item, shopItem, price, storeWithoutEquip);
         return pickup;
     }
 

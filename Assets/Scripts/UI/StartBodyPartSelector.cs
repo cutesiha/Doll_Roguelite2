@@ -22,14 +22,14 @@ public class StartBodyPartSelector : MonoBehaviour
     [SerializeField] Image eyeAnimationImage;
     [SerializeField] Sprite[] eyeOpenFrames;
     [SerializeField] float[] eyeFrameDurations = { 0.12f, 0.10f, 0.08f, 0.25f };
-    [SerializeField] float eyeFinalHoldDuration = 0.5f;
+    [SerializeField] float eyeFinalHoldDuration = 0.35f;
     [SerializeField] Image startBackgroundImage;
     [SerializeField] Image finalTitleImage;
     [SerializeField, Min(0f)] float startBackdropFadeDuration = 0.42f;
     [SerializeField, Min(0f)] float startSequenceInitialDelay = 0f;
-    [SerializeField, Min(0f)] float startPartToOtherPartsDelay = 0.6f;
-    [SerializeField, Min(0f)] float allPartsToBackdropFadeDelay = 0.7f;
-    [SerializeField, Min(0f)] float backdropFadeToEyeDelay = 0.6f;
+    [SerializeField, Min(0f)] float startPartToOtherPartsDelay = 0.4f;
+    [SerializeField, Min(0f)] float allPartsToBackdropFadeDelay = 0.45f;
+    [SerializeField, Min(0f)] float backdropFadeToEyeDelay = 0.35f;
     [SerializeField] float autoAttachPause = 0.05f;
     [SerializeField] float panelShowDelayAfterAttach = 0.12f;
     [SerializeField] GameObject exitPanel;
