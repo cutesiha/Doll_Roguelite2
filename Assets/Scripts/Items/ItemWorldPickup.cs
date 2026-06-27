@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -15,6 +16,9 @@ public class ItemWorldPickup : MonoBehaviour
     ItemSystemSettings settings;
     Transform player;
     float nextFailureNoticeTime;
+    Vector3 shakeOffset;
+    Coroutine purchaseFailureRoutine;
+    SpriteRenderer itemRenderer;
     [Header("Tooltip Authoring")]
     [SerializeField] Transform tooltipRoot;
     [SerializeField] SpriteRenderer tooltipBackground;
@@ -27,6 +31,11 @@ public class ItemWorldPickup : MonoBehaviour
     [SerializeField, Min(0.1f)] float tooltipFontSize = 2.0f;
     [SerializeField] Color tooltipBackgroundColor = new Color(0.10f, 0.07f, 0.05f, 0.92f);
     [SerializeField] Color tooltipTextColor = Color.white;
+    [Header("Shop Feedback")]
+    [SerializeField, Min(0f)] float purchaseFailureShakeDistance = 0.22f;
+    [SerializeField, Min(0.02f)] float purchaseFailureShakeDuration = 0.34f;
+    [SerializeField, Min(2)] int purchaseFailureShakeSteps = 12;
+    [SerializeField] Color purchaseFailureColor = new Color(1f, 0.12f, 0.12f, 1f);
 
     public ItemData Item => item;
     public bool IsShopItem => shopItem;
@@ -59,6 +68,7 @@ public class ItemWorldPickup : MonoBehaviour
         settings = ItemSystemSettings.Load();
         basePosition = transform.position;
         bobPhase = Random.Range(0f, Mathf.PI * 2f);
+        itemRenderer = GetComponent<SpriteRenderer>();
         Collider2D collider = GetComponent<Collider2D>();
         if (collider != null)
             collider.isTrigger = true;
@@ -77,7 +87,7 @@ public class ItemWorldPickup : MonoBehaviour
             return;
 
         float bob = Mathf.Sin(Time.unscaledTime * settings.floatSpeed + bobPhase) * settings.floatHeight;
-        transform.position = basePosition + Vector3.up * bob;
+        transform.position = basePosition + Vector3.up * bob + shakeOffset;
 
         ResolvePlayer();
         float distance = player != null ? Vector2.Distance(player.position, transform.position) : float.PositiveInfinity;
@@ -158,13 +168,56 @@ public class ItemWorldPickup : MonoBehaviour
 
         if (!inventory.TryPurchase(item, price, out string message))
         {
+            PlayShopFeedbackSound();
+            StartPurchaseFailureFeedback();
             Announce(message);
             return;
         }
 
         collected = true;
+        PlayShopFeedbackSound();
         Announce(message);
         Destroy(gameObject);
+    }
+
+    void StartPurchaseFailureFeedback()
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        if (purchaseFailureRoutine != null)
+            StopCoroutine(purchaseFailureRoutine);
+
+        purchaseFailureRoutine = StartCoroutine(PurchaseFailureFeedbackRoutine());
+    }
+
+    IEnumerator PurchaseFailureFeedbackRoutine()
+    {
+        if (itemRenderer == null)
+            itemRenderer = GetComponent<SpriteRenderer>();
+
+        Color originalColor = itemRenderer != null ? itemRenderer.color : Color.white;
+        if (itemRenderer != null)
+            itemRenderer.color = purchaseFailureColor;
+
+        int steps = Mathf.Max(2, purchaseFailureShakeSteps);
+        float delay = Mathf.Max(0.02f, purchaseFailureShakeDuration) / steps;
+        for (int i = 0; i < steps; i++)
+        {
+            float direction = i % 2 == 0 ? 1f : -1f;
+            shakeOffset = Vector3.right * (purchaseFailureShakeDistance * direction);
+            yield return new WaitForSecondsRealtime(delay);
+        }
+
+        shakeOffset = Vector3.zero;
+        if (itemRenderer != null)
+            itemRenderer.color = originalColor;
+        purchaseFailureRoutine = null;
+    }
+
+    static void PlayShopFeedbackSound()
+    {
+        SoundManager.PlayClick(0f);
     }
 
     void ResolvePlayer()

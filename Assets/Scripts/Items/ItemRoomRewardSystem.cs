@@ -7,18 +7,30 @@ public static class ItemRoomRewardSystem
 {
     static readonly List<ItemData> selected = new();
     static readonly List<ItemData> matches = new();
+    static int lastStartedSceneHandle = -1;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Bootstrap()
     {
+        lastStartedSceneHandle = -1;
         SceneManager.sceneLoaded -= OnSceneLoaded;
         SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void BootstrapActiveScene()
+    {
+        OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
     }
 
     static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (!Application.isPlaying)
             return;
+        if (scene.handle == lastStartedSceneHandle)
+            return;
+
+        lastStartedSceneHandle = scene.handle;
 
         ItemRoomSceneBridge bridge = Object.FindFirstObjectByType<ItemRoomSceneBridge>();
         if (bridge == null)
@@ -88,11 +100,35 @@ public static class ItemRoomRewardSystem
             selected.Add(bodyA);
         ItemData bodyB = RandomUniqueBodyPart(selected);
 
-        ItemDropSpawner.Spawn(gem, center + new Vector3(-5.4f, 0.5f, 0f), true, settings.gemPrice, template);
-        ItemDropSpawner.Spawn(rag, center + new Vector3(-1.8f, 0.5f, 0f), true, settings.ragPrice, template);
-        ItemDropSpawner.Spawn(bodyA, center + new Vector3(1.8f, 0.5f, 0f), true, settings.bodyPartPrice, template);
-        ItemDropSpawner.Spawn(bodyB, center + new Vector3(5.4f, 0.5f, 0f), true, settings.bodyPartPrice, template);
+        ItemDropSpawner.Spawn(gem, ShopItemPosition(center, 0), true, settings.gemPrice, template);
+        ItemDropSpawner.Spawn(rag, ShopItemPosition(center, 1), true, settings.ragPrice, template);
+        ItemDropSpawner.Spawn(bodyA, ShopItemPosition(center, 2), true, settings.bodyPartPrice, template);
+        ItemDropSpawner.Spawn(bodyB, ShopItemPosition(center, 3), true, settings.bodyPartPrice, template);
         Announce("상점 품목: 보석 1, 누더기 1, 신체 부위 2");
+    }
+
+    static Vector3 ShopItemPosition(Vector3 center, int index)
+    {
+        Transform anchor = FindShopAnchor(index);
+        if (anchor != null)
+            return anchor.position;
+
+        float x = -5.4f + index * 3.6f;
+        return center + new Vector3(x, 0.5f, 0f);
+    }
+
+    static Transform FindShopAnchor(int index)
+    {
+        GameObject exact = GameObject.Find("ShopItemAnchor_" + index);
+        if (exact != null)
+            return exact.transform;
+
+        GameObject layout = GameObject.Find("ShopLayout");
+        if (layout == null)
+            return null;
+
+        Transform child = layout.transform.Find("ShopItemAnchor_" + index);
+        return child;
     }
 
     static ItemData RandomUniqueByCategory(ItemCategory category, ICollection<ItemData> excluded)

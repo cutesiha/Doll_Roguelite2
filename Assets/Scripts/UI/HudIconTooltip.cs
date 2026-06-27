@@ -51,6 +51,9 @@ public class HudIconTooltip : MonoBehaviour, IPointerEnterHandler, IPointerExitH
             Destroy(tooltipRoot);
 
         ownerCanvas = canvas;
+        if (TryBindAuthoredTooltip(canvas))
+            return;
+
         tooltipRoot = new GameObject("HudIconTooltip");
         tooltipRoot.transform.SetParent(canvas.transform, false);
         tooltipRoot.transform.SetAsLastSibling();
@@ -86,6 +89,69 @@ public class HudIconTooltip : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         tooltipLabel.textWrappingMode = TextWrappingModes.NoWrap;
 
         tooltipRoot.SetActive(false);
+    }
+
+    static bool TryBindAuthoredTooltip(Canvas canvas)
+    {
+        Transform existing = FindChildRecursive(canvas.transform, "HudIconTooltip");
+        if (existing == null)
+            return false;
+
+        tooltipRoot = existing.gameObject;
+        tooltipRoot.transform.SetAsLastSibling();
+
+        tooltipRect = tooltipRoot.GetComponent<RectTransform>();
+        if (tooltipRect == null)
+            tooltipRect = tooltipRoot.AddComponent<RectTransform>();
+
+        Image background = tooltipRoot.GetComponent<Image>();
+        if (background == null)
+            background = tooltipRoot.AddComponent<Image>();
+        background.raycastTarget = false;
+
+        Transform labelTransform = FindChildRecursive(tooltipRoot.transform, "Label");
+        if (labelTransform == null)
+        {
+            GameObject labelGO = new GameObject("Label");
+            labelGO.transform.SetParent(tooltipRoot.transform, false);
+            labelTransform = labelGO.transform;
+        }
+
+        RectTransform labelRect = labelTransform.GetComponent<RectTransform>();
+        if (labelRect == null)
+            labelRect = labelTransform.gameObject.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(12f, 5f);
+        labelRect.offsetMax = new Vector2(-12f, -5f);
+
+        tooltipLabel = labelTransform.GetComponent<TextMeshProUGUI>();
+        if (tooltipLabel == null)
+            tooltipLabel = labelTransform.gameObject.AddComponent<TextMeshProUGUI>();
+        tooltipLabel.font = UIThinDungFont.Get();
+        tooltipLabel.raycastTarget = false;
+
+        tooltipRoot.SetActive(false);
+        return true;
+    }
+
+    static Transform FindChildRecursive(Transform root, string childName)
+    {
+        if (root == null)
+            return null;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child.name == childName)
+                return child;
+
+            Transform nested = FindChildRecursive(child, childName);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
     }
 
     void PositionTooltip(PointerEventData eventData)

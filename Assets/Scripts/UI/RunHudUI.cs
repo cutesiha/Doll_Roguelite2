@@ -150,13 +150,19 @@ public class RunHudUI : MonoBehaviour
         sceneHookRegistered = true;
     }
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void BootstrapActiveSceneRunHud()
+    {
+        EnsureRunHudForScene(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+    }
+
     static void EnsureRunHudForScene(Scene scene, LoadSceneMode mode)
     {
         if (!Application.isPlaying)
             return;
 
         RunHudUI[] existing = FindObjectsByType<RunHudUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        if (scene.name == "StartScene")
+        if (IsRunHudExcludedScene(scene.name))
         {
             for (int i = 0; i < existing.Length; i++)
                 if (existing[i] != null)
@@ -168,9 +174,22 @@ public class RunHudUI : MonoBehaviour
         if (existing.Length > 0)
             return;
 
+        RunHudUI prefab = Resources.Load<RunHudUI>("RunHudCanvas");
+        if (prefab != null)
+        {
+            GameObject hudInstance = Instantiate(prefab.gameObject);
+            hudInstance.name = "RunHudCanvas";
+            return;
+        }
+
         GameObject hud = new GameObject("RunHudCanvas");
         hud.AddComponent<RectTransform>();
         hud.AddComponent<RunHudUI>();
+    }
+
+    static bool IsRunHudExcludedScene(string sceneName)
+    {
+        return sceneName == "StartScene" || sceneName == "TutorialScene";
     }
 
     void Awake()
@@ -616,12 +635,14 @@ public class RunHudUI : MonoBehaviour
         if (existingContent != null)
         {
             miniMapContent = existingContent as RectTransform;
+            ConfigureMapButtonForMiniMap();
             BuildMiniMap();
             return;
         }
 
         DestroyDirectChild(mapButton.transform, "TreeMapLineIcon");
         DestroyDirectChild(mapButton.transform, "MapButtonLabel");
+        ConfigureMapButtonForMiniMap();
 
         GameObject viewport = Rect(mapButton.transform, "MiniMapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
         RectTransform viewportRect = viewport.GetComponent<RectTransform>();
@@ -632,6 +653,20 @@ public class RunHudUI : MonoBehaviour
         GameObject content = Rect(viewport.transform, "MiniMapContent", Anchor.Center, Vector2.zero, new Vector2(440f, 440f));
         miniMapContent = content.GetComponent<RectTransform>();
         BuildMiniMap();
+    }
+
+    void ConfigureMapButtonForMiniMap()
+    {
+        if (mapButton == null)
+            return;
+
+        Image image = mapButton.GetComponent<Image>();
+        if (image == null)
+            return;
+
+        image.sprite = null;
+        image.color = new Color(1f, 1f, 1f, 0f);
+        image.raycastTarget = true;
     }
 
     void DestroyDirectChild(Transform parent, string childName)
@@ -712,6 +747,7 @@ public class RunHudUI : MonoBehaviour
             mapButton.onClick.AddListener(PlayClickSound);
             mapButton.onClick.AddListener(ToggleMap);
             ConfigureMiniMapButtonHover(mapButton);
+            ConfigureMapButtonForMiniMap();
             AttachHudTooltip(mapButton, "지도");
         }
 
@@ -1341,6 +1377,7 @@ void BuildTopRightMapButton()
         mapButton.onClick.AddListener(PlayClickSound);
         mapButton.onClick.AddListener(ToggleMap);
         ConfigureMiniMapButtonHover(mapButton);
+        ConfigureMapButtonForMiniMap();
         AttachHudTooltip(mapButton, "지도");
 
         GameObject viewport = Rect(mapButton.transform, "MiniMapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);

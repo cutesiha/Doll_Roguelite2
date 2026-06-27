@@ -17,7 +17,7 @@ MonoBehaviour:
   floatHeight: 0.18
   floatSpeed: 2.2
   conditionRewardChance: 0.18
-  startingCoins: 60
+  startingCoins: 0
   gemPrice: 12
   ragPrice: 10
   bodyPartPrice: 18

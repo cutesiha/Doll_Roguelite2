@@ -13,7 +13,7 @@ public class ItemSystemSettings : ScriptableObject
     [Range(0f, 1f)] public float conditionRewardChance = 0.18f;
 
     [Header("상점")]
-    [Min(0)] public int startingCoins = 60;
+    [Min(0)] public int startingCoins = 0;
     [Min(0)] public int gemPrice = 12;
     [Min(0)] public int ragPrice = 10;
     [Min(0)] public int bodyPartPrice = 18;
