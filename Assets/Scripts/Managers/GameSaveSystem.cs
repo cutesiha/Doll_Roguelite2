@@ -6,6 +6,18 @@ public static class GameSaveSystem
 {
     const int SlotCount = 4;
     const string KeyPrefix = "DollRoguelite.SaveSlot.";
+    const string TutorialDoneKey = "DollRoguelite.TutorialDone";
+
+    public static void MarkTutorialDone()
+    {
+        PlayerPrefs.SetInt(TutorialDoneKey, 1);
+        PlayerPrefs.Save();
+    }
+
+    public static bool HasCompletedTutorial()
+    {
+        return PlayerPrefs.GetInt(TutorialDoneKey, 0) != 0;
+    }
 
     [Serializable]
     public class SlotInfo

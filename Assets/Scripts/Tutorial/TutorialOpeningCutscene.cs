@@ -365,20 +365,14 @@ public class TutorialOpeningCutscene : MonoBehaviour
 
     void ConfirmSkip()
     {
-        if (loadingRoom)
+        if (loadingRoom || completed)
             return;
 
-        loadingRoom = true;
         Time.timeScale = 1f;
-        RunHudUI.ShowControlHintsOnNextRoom = false;
+        completed = true;
 
-        // Destroy the tutorial's RunHudUI so a fresh one is created in the room scene
-        // (mirrors ExitToRoomRoutine — without this the tutorial-modified HUD persists)
-        RunHudUI existingHud = Object.FindFirstObjectByType<RunHudUI>();
-        if (existingHud != null)
-            Object.Destroy(existingHud.gameObject);
-
-        SceneManager.LoadScene(roomSceneName);
+        if (cutsceneCanvas != null)
+            Destroy(cutsceneCanvas.gameObject);
     }
 
     void OnPageClicked()
