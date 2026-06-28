@@ -263,7 +263,7 @@ public class TutorialOpeningCutscene : MonoBehaviour
         DisableExistingLabels(question);
         DisableExistingLabels(answer1);
         DisableExistingLabels(answer2);
-        EnsureLabel(question, "QuestionLabel", "튜토리얼을 스킵하시겠습니까?", 42f);
+        EnsureLabel(question, "QuestionLabel", "스킵하시겠습니까?", 42f);
         EnsureLabel(answer1, "AnswerLabel", "예", 52f);
         EnsureLabel(answer2, "AnswerLabel", "아니오", 48f);
         ConfigureConfirmButton(answer1, ConfirmSkip);

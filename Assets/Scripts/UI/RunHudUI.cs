@@ -14,6 +14,10 @@ public class RunHudUI : MonoBehaviour
 {
     public static bool ShowControlHintsOnNextRoom { get; set; }
 
+    public System.Func<bool> mapKeyAllowed;
+    public System.Func<bool> inventoryKeyAllowed;
+    public System.Func<bool> menuKeyAllowed;
+
     [SerializeField] Vector2 referenceResolution = new Vector2(1920f, 1080f);
     [SerializeField] TMP_FontAsset uiFont;
     [SerializeField] Sprite roundedPanelSprite;
@@ -136,7 +140,7 @@ public class RunHudUI : MonoBehaviour
     static readonly Color ColRouteOnly = new Color(0.45f, 0.45f, 0.45f, 1f);
     static readonly Color ColHidden = new Color(0.22f, 0.22f, 0.22f, 1f);
     const float MapScrollLeftRightMargin = 54f;
-    const float MapScrollBottomMargin = 58f;
+    const float MapScrollBottomMargin = 90f;
     const float MapScrollTopMargin = 124f;
     const float MapViewportTopGuard = 80f;
     const float MapViewportBottomGuard = 120f;
@@ -1497,11 +1501,7 @@ void BuildPixelDoll(Transform parent)
 
         HashSet<string> lineKeys = new HashSet<string>();
         foreach (MapNode child in current.children)
-        {
             AddMiniMapLine(lineKeys, positions, current, child, true);
-            foreach (MapNode grand in child.children)
-                AddMiniMapLine(lineKeys, positions, child, grand, false);
-        }
 
         foreach (MapNode node in nodeSet)
             if (positions.ContainsKey(node))
@@ -1510,18 +1510,24 @@ void BuildPixelDoll(Transform parent)
 
     Dictionary<MapNode, Vector2> BuildMiniMapPositions(MapNode root)
     {
-        List<List<MapNode>> layers = CollectLayers(root);
         Dictionary<MapNode, Vector2> positions = new Dictionary<MapNode, Vector2>();
-        const float xSpacing = 88f;
-        const float ySpacing = 62f;
+        MapNode current = MapRunState.CurrentNode;
+        if (current == null)
+            return positions;
 
-        for (int layerIndex = 0; layerIndex < layers.Count; layerIndex++)
-        {
-            List<MapNode> layer = layers[layerIndex];
-            float startX = -(layer.Count - 1) * xSpacing * 0.5f;
-            for (int nodeIndex = 0; nodeIndex < layer.Count; nodeIndex++)
-                positions[layer[nodeIndex]] = new Vector2(startX + nodeIndex * xSpacing, -layerIndex * ySpacing);
-        }
+        positions[current] = Vector2.zero;
+
+        List<MapNode> children = new List<MapNode>(current.children);
+        if (children.Count == 0)
+            return positions;
+
+        const float ySpacing = 52f;
+        const float maxHalfWidth = 58f;
+        float xSpacing = children.Count <= 1 ? 0f : Mathf.Min(maxHalfWidth * 2f / (children.Count - 1), maxHalfWidth);
+        float startX = children.Count <= 1 ? 0f : -(children.Count - 1) * xSpacing * 0.5f;
+
+        for (int i = 0; i < children.Count; i++)
+            positions[children[i]] = new Vector2(startX + i * xSpacing, -ySpacing);
 
         return positions;
     }
@@ -1547,7 +1553,7 @@ void BuildPixelDoll(Transform parent)
 
     void BuildMiniMapNode(MapNode node, Vector2 position, bool current)
     {
-        GameObject nodeGO = Rect(miniMapContent, "MiniMapNode_" + node.id, Anchor.Center, position, current ? new Vector2(32f, 32f) : new Vector2(24f, 24f));
+        GameObject nodeGO = Rect(miniMapContent, "MiniMapNode_" + node.id, Anchor.Center, position, current ? new Vector2(48f, 48f) : new Vector2(38f, 38f));
         Image image = nodeGO.AddComponent<Image>();
         Sprite icon = MapIcon(node);
         image.sprite = icon != null ? icon : circleSprite;
@@ -2100,9 +2106,10 @@ void BuildPixelDoll(Transform parent)
         if (mapOverlay == null)
             return;
 
-        mapOverlay.SetActive(true);
         if (mapPanel != null)
-            mapPanel.anchoredPosition = MapPanelShownPosition();
+            mapPanel.anchoredPosition = MapPanelShownPosition() + new Vector2(0f, -980f);
+
+        mapOverlay.SetActive(true);
 
         Canvas.ForceUpdateCanvases();
         if (mapScrollRect != null)
@@ -2118,6 +2125,8 @@ void BuildPixelDoll(Transform parent)
         RefreshMapViewportVisibility(Vector2.zero);
         Canvas.ForceUpdateCanvases();
 
+        SoundManager.PlayTutorialPaperOpen(0f);
+        PlayMapPanelAnimation(true);
         RunUiPauseManager.SetPaused("Map", true);
     }
 
@@ -2132,11 +2141,15 @@ void BuildPixelDoll(Transform parent)
     void HandleMapHotkey()
     {
         Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && keyboard.mKey.wasPressedThisFrame)
-        {
-            DismissMapControlHint();
-            ToggleMap();
-        }
+        if (keyboard == null || !keyboard.mKey.wasPressedThisFrame)
+            return;
+
+        bool isOpen = mapOverlay != null && mapOverlay.activeSelf;
+        if (!isOpen && mapKeyAllowed != null && !mapKeyAllowed())
+            return;
+
+        DismissMapControlHint();
+        ToggleMap();
     }
 
     void HandleMenuHotkey()
@@ -2145,9 +2158,12 @@ void BuildPixelDoll(Transform parent)
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
             return;
 
-        DismissMenuControlHint();
-
         RunPauseMenuUI pauseMenu = GetComponent<RunPauseMenuUI>();
+        bool isOpen = pauseMenu != null && pauseMenu.IsAnyOpen;
+        if (!isOpen && menuKeyAllowed != null && !menuKeyAllowed())
+            return;
+
+        DismissMenuControlHint();
         if (pauseMenu != null)
             pauseMenu.ToggleMenu();
     }
@@ -2164,7 +2180,13 @@ void BuildPixelDoll(Transform parent)
             return;
 
         if (keyboard.tabKey.wasPressedThisFrame || keyboard.iKey.wasPressedThisFrame)
+        {
+            InventoryUI inv = FindInventory();
+            bool isOpen = inv != null && inv.IsOpen;
+            if (!isOpen && inventoryKeyAllowed != null && !inventoryKeyAllowed())
+                return;
             ToggleInventory();
+        }
     }
 
     public void CloseMap()
@@ -2175,6 +2197,7 @@ void BuildPixelDoll(Transform parent)
         RunUiPauseManager.SetPaused("Map", false);
         if (Application.isPlaying && mapOverlay.activeSelf)
         {
+            SoundManager.PlayTutorialPaperClose(0f);
             PlayMapPanelAnimation(false);
             return;
         }

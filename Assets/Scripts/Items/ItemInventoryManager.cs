@@ -104,6 +104,7 @@ public class ItemInventoryManager : MonoBehaviour
             Announce(shieldArmed ? "누더기 방어막이 활성화되었습니다. 다음 피격 1회를 막습니다." : "");
         }
 
+        EnsureDebugHud();
         AttachEffectsToPlayer();
         Changed?.Invoke();
     }
@@ -465,8 +466,12 @@ public class ItemInventoryManager : MonoBehaviour
 
     void EnsureDebugHud()
     {
-        if (GetComponent<ItemDebugHud>() == null)
+        bool isTestRoom = SceneManager.GetActiveScene().name == "itemtestroom";
+        ItemDebugHud hud = GetComponent<ItemDebugHud>();
+        if (isTestRoom && hud == null)
             gameObject.AddComponent<ItemDebugHud>();
+        else if (!isTestRoom && hud != null)
+            Destroy(hud);
     }
 
     void NotifyChanged()
