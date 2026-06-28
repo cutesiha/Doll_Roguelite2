@@ -5,7 +5,7 @@ public class DarkAuraEffect : MonoBehaviour
 {
     static DarkAuraEffect _active;
 
-    public static void SpawnOn(Transform player, float duration = 3f)
+    public static void SpawnOn(Transform player, float duration = 3f, Color? color = null)
     {
         if (_active != null)
         {
@@ -16,10 +16,10 @@ public class DarkAuraEffect : MonoBehaviour
         var go = new GameObject("DarkAuraEffect");
         var effect = go.AddComponent<DarkAuraEffect>();
         _active = effect;
-        effect.StartCoroutine(effect.Run(player, duration));
+        effect.StartCoroutine(effect.Run(player, duration, color ?? new Color(0.04f, 0.04f, 0.06f, 0.85f)));
     }
 
-    IEnumerator Run(Transform target, float duration)
+    IEnumerator Run(Transform target, float duration, Color baseColor)
     {
         const int count = 14;
         const float orbitRadius = 0.9f;
@@ -35,7 +35,7 @@ public class DarkAuraEffect : MonoBehaviour
             var go = new GameObject("ap");
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = dot;
-            sr.color = new Color(0.04f, 0.04f, 0.06f, 0.85f);
+            sr.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0.85f);
             sr.sortingOrder = 15;
             pts[i] = go.transform;
             srs[i] = sr;
@@ -59,7 +59,7 @@ public class DarkAuraEffect : MonoBehaviour
                     Mathf.Sin(angle * Mathf.Deg2Rad) * r * 0.6f);
 
                 float alpha = t > 0.75f ? Mathf.Lerp(0.85f, 0f, (t - 0.75f) / 0.25f) : 0.85f;
-                Color c = srs[i].color;
+                Color c = baseColor;
                 c.a = alpha;
                 srs[i].color = c;
 
