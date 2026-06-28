@@ -36,7 +36,22 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
         // 보관함 슬롯 → 버리기.
         var storageSource = eventData.pointerDrag.GetComponent<InventoryStorageDragSource>();
         if (storageSource != null)
+        {
+            // 아이템(보석 등)이 표시된 슬롯이면 ItemInventoryManager에서 제거.
+            ItemData draggedItem = storageSource.DraggedItemData;
+            if (draggedItem != null && inv.storage[storageSource.StorageIndex] == null)
+            {
+                var itemInv = ItemInventoryManager.Instance;
+                if (itemInv != null && itemInv.RemoveItemFromStorage(draggedItem))
+                {
+                    DropItemToWorld(draggedItem);
+                    SoundManager.PlayClick();
+                }
+                return;
+            }
+
             removed = inv.RemoveStorageAt(storageSource.StorageIndex);
+        }
 
         // 장착 부위 → 버리기 (잠긴 슬롯은 RemoveEquipped 에서 막힘).
         if (removed == null)
@@ -57,22 +72,23 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
     {
         GameObject player = GameObject.FindWithTag("Player");
         Vector3 origin = player != null ? player.transform.position : Vector3.zero;
-        // 플레이어와 충분히 떨어진 위치에 떨어뜨려 즉시 재획득을 막는다.
-        Vector3 offset = new Vector3(Random.Range(-0.4f, 0.4f), -1.4f, 0f);
 
         Sprite sprite = part.icon != null
             ? part.icon
             : (part.IsEquippable ? InventoryUI.FindDisplaySpriteForSlot(part.slot) : null);
 
-        BodyPartWorldDrop.Spawn(part, origin + offset, sprite);
+        BodyPartWorldDrop drop = BodyPartWorldDrop.Spawn(part, origin, sprite);
+        if (drop != null)
+            drop.Toss(origin);
     }
 
     static void DropItemToWorld(ItemData item)
     {
         GameObject player = GameObject.FindWithTag("Player");
         Vector3 origin = player != null ? player.transform.position : Vector3.zero;
-        Vector3 offset = new Vector3(Random.Range(-0.4f, 0.4f), -1.4f, 0f);
 
-        ItemDropSpawner.Spawn(item, origin + offset, false, 0);
+        ItemWorldPickup pickup = ItemDropSpawner.Spawn(item, origin, false, 0);
+        if (pickup != null)
+            pickup.Toss(origin);
     }
 }

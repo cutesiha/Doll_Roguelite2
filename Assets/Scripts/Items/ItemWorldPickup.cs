@@ -38,6 +38,8 @@ public class ItemWorldPickup : MonoBehaviour
     [SerializeField, Min(2)] int purchaseFailureShakeSteps = 12;
     [SerializeField] Color purchaseFailureColor = new Color(1f, 0.12f, 0.12f, 1f);
 
+    float pickupImmuneUntil;
+
     public ItemData Item => item;
     public bool IsShopItem => shopItem;
     public bool StoreWithoutEquip => storeWithoutEquip;
@@ -130,9 +132,38 @@ public class ItemWorldPickup : MonoBehaviour
         pointerOver = false;
     }
 
+    public void Toss(Vector3 origin, float distance = 2.5f, float duration = 0.4f)
+    {
+        pickupImmuneUntil = Time.time + duration + 0.15f;
+        Vector2 dir = Random.insideUnitCircle.normalized;
+        if (dir.sqrMagnitude < 0.01f)
+            dir = Vector2.right;
+        Vector3 target = origin + (Vector3)(dir * distance);
+        StartCoroutine(TossRoutine(origin, target, duration));
+    }
+
+    IEnumerator TossRoutine(Vector3 from, Vector3 to, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            Vector3 pos = Vector3.Lerp(from, to, t);
+            pos.y += Mathf.Sin(t * Mathf.PI) * 0.8f;
+            transform.position = pos;
+            yield return null;
+        }
+        transform.position = to;
+        basePosition = to;
+    }
+
     void TryCollect(Collider2D other)
     {
         if (collected || other == null || !other.CompareTag("Player"))
+            return;
+
+        if (Time.time < pickupImmuneUntil)
             return;
 
         player = other.transform;
@@ -142,6 +173,9 @@ public class ItemWorldPickup : MonoBehaviour
     void TryCollectPlayer()
     {
         if (collected || player == null)
+            return;
+
+        if (Time.time < pickupImmuneUntil)
             return;
 
         ItemInventoryManager inventory = ItemInventoryManager.Instance;

@@ -173,6 +173,18 @@ public class InventoryManager : MonoBehaviour
         return part;
     }
 
+    public bool TryAddPartToSlot(BodyPart part, int slotIndex)
+    {
+        if (part == null || slotIndex < 0 || slotIndex >= storage.Length)
+            return false;
+        if (storage[slotIndex] != null)
+            return false;
+
+        storage[slotIndex] = part;
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
     public bool TryAddPart(BodyPart part, bool equipIfEmpty = true)
     {
         if (part == null)

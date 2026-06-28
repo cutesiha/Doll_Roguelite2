@@ -16,6 +16,8 @@ public class BodyPart
     public ItemKind kind = ItemKind.BodyPart;
     // 보관함에서 보여줄 아이콘. null 이면 부위 슬롯 기본 스프라이트를 사용한다.
     public Sprite icon;
+    // 보석일 때 어떤 보석인지 식별하는 ID (ItemCatalog 키).
+    public string itemId;
 
     public BodyPart(BodySlot slot)
     {

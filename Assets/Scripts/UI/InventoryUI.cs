@@ -437,6 +437,8 @@ public class InventoryUI : MonoBehaviour
         _qGemBtn.onClick.AddListener(UseQGem);
         if (qgem.GetComponent<ItemConsumableDragSource>() == null)
             qgem.AddComponent<ItemConsumableDragSource>();
+        if (qgem.GetComponent<QGemDropTarget>() == null)
+            qgem.AddComponent<QGemDropTarget>();
         EnsureStorageSlotLabel(qgem.transform, "SlotLabel", "Q 보석", 18f, new Vector2(0f, -8f), new Vector2(slotWidth, 28f), TextAlignmentOptions.Center);
         _qGemName = EnsureStorageSlotLabel(qgem.transform, "SlotName", "없음", 14f, new Vector2(0f, -50f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
     }
@@ -708,6 +710,15 @@ public class InventoryUI : MonoBehaviour
         // 보관 슬롯
         int storageCount = Mathf.Min(inv.storage.Length, _storageImg.Length, _storageName.Length, _storageHp.Length);
         SetExtraStorageSlotsVisible(storageCount);
+
+        // 각 슬롯의 드래그 소스에 ItemData 정보를 초기화.
+        for (int i = 0; i < storageCount; i++)
+        {
+            InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
+            if (dragSource != null)
+                dragSource.SetItemData(null);
+        }
+
         for (int i = 0; i < storageCount; i++)
         {
             var p = inv.storage[i];
@@ -727,6 +738,35 @@ public class InventoryUI : MonoBehaviour
                 _storageBtn[i].targetGraphic = _storageImg[i];
             if (_storageName[i] != null) _storageName[i].text   = p != null ? p.DisplayName() : "빈 슬롯";
             if (_storageHp[i]   != null) _storageHp[i].text     = p != null && p.IsEquippable ? Dots(p) : "";
+        }
+
+        // 빈 보관 슬롯에 ItemInventoryManager의 아이템(보석 등) 표시.
+        var itemInv = ItemInventoryManager.Instance;
+        if (itemInv != null && itemInv.Storage.Count > 0)
+        {
+            int itemIndex = 0;
+            for (int i = 0; i < storageCount && itemIndex < itemInv.Storage.Count; i++)
+            {
+                if (inv.storage[i] != null)
+                    continue;
+
+                ItemData item = itemInv.Storage[itemIndex];
+                itemIndex++;
+
+                if (_storageImg[i] != null)
+                {
+                    SetImageSpriteSafely(_storageImg[i], item.Sprite);
+                    _storageImg[i].preserveAspect = true;
+                    _storageImg[i].type = Image.Type.Simple;
+                    _storageImg[i].color = item.Sprite != null ? Color.white : CSlot;
+                }
+                if (_storageName[i] != null) _storageName[i].text = item.ItemName;
+                if (_storageHp[i]   != null) _storageHp[i].text  = "";
+
+                InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
+                if (dragSource != null)
+                    dragSource.SetItemData(item);
+            }
         }
 
         // 캐릭터 부위 — sprite/color/type 은 프리팹 설정을 그대로 유지.

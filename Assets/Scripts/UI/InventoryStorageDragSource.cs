@@ -8,18 +8,27 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
 
     RectTransform ghost;
     Canvas rootCanvas;
+    ItemData itemData;
 
     public int StorageIndex => storageIndex;
+    public ItemData DraggedItemData => itemData;
 
     public void SetStorageIndex(int index)
     {
         storageIndex = index;
     }
 
+    public void SetItemData(ItemData item)
+    {
+        itemData = item;
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
         var inv = InventoryManager.Instance;
-        if (inv == null || storageIndex < 0 || storageIndex >= inv.storage.Length || inv.storage[storageIndex] == null)
+        bool hasBodyPart = inv != null && storageIndex >= 0 && storageIndex < inv.storage.Length && inv.storage[storageIndex] != null;
+
+        if (!hasBodyPart && itemData == null)
             return;
 
         rootCanvas = GetComponentInParent<Canvas>();
@@ -39,9 +48,17 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         image.raycastTarget = false;
         image.preserveAspect = true;
         image.color = new Color(1f, 1f, 1f, 0.94f);
-        image.sprite = sourceImage != null && sourceImage.sprite != null
-            ? sourceImage.sprite
-            : InventoryUI.FindDisplaySpriteForSlot(inv.storage[storageIndex].slot);
+
+        if (hasBodyPart)
+        {
+            image.sprite = sourceImage != null && sourceImage.sprite != null
+                ? sourceImage.sprite
+                : InventoryUI.FindDisplaySpriteForSlot(inv.storage[storageIndex].slot);
+        }
+        else
+        {
+            image.sprite = itemData != null ? itemData.Sprite : null;
+        }
 
         CanvasGroup group = go.AddComponent<CanvasGroup>();
         group.blocksRaycasts = false;

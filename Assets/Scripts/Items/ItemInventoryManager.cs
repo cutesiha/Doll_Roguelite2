@@ -134,7 +134,17 @@ public class ItemInventoryManager : MonoBehaviour
         }
 
         if (item.Type == ItemType.GemConsumable || item.EquipLocation == ItemEquipLocation.Consumable)
-            return TryEquipSpecial(item, ref consumable, ItemEquipLocation.Consumable, out message);
+        {
+            if (storage.Count >= Capacity)
+            {
+                message = "인벤토리가 가득 참";
+                return false;
+            }
+            storage.Add(item);
+            message = item.ItemName + "을(를) 인벤토리에 넣었습니다. Q 보석 칸에 끌어다 놓아 장착하세요.";
+            NotifyChanged();
+            return true;
+        }
 
         if (item.Type == ItemType.Shield || item.EquipLocation == ItemEquipLocation.Shield)
         {
@@ -224,7 +234,6 @@ public class ItemInventoryManager : MonoBehaviour
             return false;
 
         consumable = null;
-        AutoEquipNextConsumable();
         NotifyChanged();
         return true;
     }
@@ -255,13 +264,50 @@ public class ItemInventoryManager : MonoBehaviour
             AddCoins(1);
     }
 
+    public void ForceSetConsumable(ItemData item)
+    {
+        consumable = item;
+        if (item != null)
+            Announce(item.ItemName + " Q 슬롯 장착");
+        NotifyChanged();
+    }
+
+    public bool TryEquipConsumableFromStorage(ItemData item)
+    {
+        if (item == null || item.Type != ItemType.GemConsumable)
+            return false;
+
+        int index = storage.IndexOf(item);
+        if (index < 0)
+            return false;
+
+        storage.RemoveAt(index);
+
+        if (consumable != null)
+            storage.Add(consumable);
+
+        consumable = item;
+        Announce(item.ItemName + " Q 슬롯 장착");
+        NotifyChanged();
+        return true;
+    }
+
+    public bool RemoveItemFromStorage(ItemData item)
+    {
+        if (item == null)
+            return false;
+        bool removed = storage.Remove(item);
+        if (removed)
+            NotifyChanged();
+        return removed;
+    }
+
     public ItemData RemoveConsumable()
     {
         ItemData removed = consumable;
         consumable = null;
         if (removed != null)
         {
-            AutoEquipNextConsumable();
             NotifyChanged();
         }
         return removed;
@@ -281,6 +327,16 @@ public class ItemInventoryManager : MonoBehaviour
         message = "";
         if (item == null)
             return false;
+
+        if (item.Type == ItemType.GemConsumable || item.EquipLocation == ItemEquipLocation.Consumable)
+        {
+            if (storage.Count >= Capacity)
+            {
+                message = "인벤토리가 가득 참";
+                return false;
+            }
+            return true;
+        }
 
         ItemEquipLocation location = item.EquipLocation;
         ItemData current = GetEquipped(location);
@@ -398,6 +454,9 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (applied)
         {
+            if (item.ItemId == "black_gem")
+                DarkAuraEffect.SpawnOn(player.transform, 3f);
+
             ShowItemPopup(item);
             Announce(item.ItemName + " 사용: " + item.Description);
             AttachEffectsToPlayer();
@@ -411,7 +470,7 @@ public class ItemInventoryManager : MonoBehaviour
         HashSet<EnemyBase> damaged = new();
         for (int i = 0; i < enemies.Length; i++)
             if (enemies[i] != null && damaged.Add(enemies[i]))
-                enemies[i].TakeDamage(damage);
+                enemies[i].TakeDamage(99999);
     }
 
     void DamageAllPlayerParts(int damage)

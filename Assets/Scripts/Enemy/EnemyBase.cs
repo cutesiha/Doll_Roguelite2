@@ -484,6 +484,8 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void Die()
     {
+        Color effectColor = spriteRenderer != null ? spriteRenderer.color : Color.gray;
+        EnemyDeathEffect.Spawn(transform.position, effectColor);
         ItemInventoryManager.Instance?.NotifyEnemyKilled(transform.position);
         OnDied?.Invoke(this);
         EnemyManager.Instance?.OnEnemyDied(this);
