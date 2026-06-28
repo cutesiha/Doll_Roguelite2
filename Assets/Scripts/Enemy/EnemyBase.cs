@@ -28,6 +28,10 @@ public class EnemyBase : MonoBehaviour
     float fractionalDamageRemainder;
     public bool HasManagedProfile { get; private set; }
 
+    // 공중에 떠 있는 동안(예: 단추 적 점프) 접촉 데미지를 무시하게 한다.
+    // 착지 시 패턴 데미지(슬램)만 적용되도록 EnemyChaser가 점프 동안 true로 설정한다.
+    public bool SuppressContactDamage { get; set; }
+
     // Which profile bucket in EnemyManager applies to this enemy. Defaults to None
     // so bosses / plain EnemyBase objects are never assigned a doll profile.
     public virtual EnemyKind Kind => EnemyKind.None;
@@ -387,10 +391,8 @@ public class EnemyBase : MonoBehaviour
     protected virtual void PlayHitFeedback()
     {
         SoundManager.PlayEnemyHit();
-        if (shakeCameraOnHit)
-            CameraShake.ShakeHorizontal(
-                Mathf.Max(cameraShakeDuration, 0.18f),
-                Mathf.Max(cameraShakeMagnitude, 0.28f));
+        // 플레이어가 적을 때릴 때는 화면을 흔들지 않는다.
+        // (화면 흔들림은 플레이어가 피격당할 때만 — PlayerDamageReceiver.ShakeCamera)
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();

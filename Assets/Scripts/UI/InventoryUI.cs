@@ -64,6 +64,7 @@ public class InventoryUI : MonoBehaviour
     const float PanelOvershootY = 36f;
 
     // ── 색상 ───────────────────────────────────────────────────────────
+    static readonly Color ClearColor = new Color(0f, 0f, 0f, 0f);
     static readonly Color CSlot  = new Color(0.88f, 0.48f, 0.24f, 1f);
     static readonly Color CEmpty = new Color(0.17f, 0.15f, 0.13f, 0.20f);
     static readonly Color CTrash = new Color(0.55f, 0.12f, 0.10f, 0.55f);
@@ -862,28 +863,112 @@ public class InventoryUI : MonoBehaviour
         rect.offsetMax = Vector2.zero;
 
         Image background = badge.AddComponent<Image>();
-        background.color = new Color(0f, 0f, 0f, 0.46f);
+        background.color = new Color(0.04f, 0.03f, 0.02f, 0.55f);
         background.raycastTarget = false;
 
-        GameObject labelGO = new GameObject("SlotLockLabel");
-        labelGO.transform.SetParent(badge.transform, false);
-        RectTransform labelRect = labelGO.AddComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = Vector2.zero;
-        labelRect.offsetMax = Vector2.zero;
-
-        TextMeshProUGUI label = labelGO.AddComponent<TextMeshProUGUI>();
-        label.font = UIThinDungFont.Get();
-        label.text = "LOCK";
-        label.fontSize = 28f;
-        label.alignment = TextAlignmentOptions.Center;
-        label.color = Color.white;
-        label.raycastTarget = false;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
+        BuildLockChainVisual(badge.transform);
 
         _charLockBadge[index] = badge;
         return badge;
+    }
+
+    // 조건방에서 잠긴 부위를 "쇠사슬로 묶인 자물쇠" 도형으로 표현한다.
+    // 스프라이트가 없어도 동작하도록 둥근 사각형/원 스프라이트가 있으면 사용하고
+    // 없으면 단색 사각형으로 그린다. 만들어진 오브젝트는 하이어라키에 그대로 남아
+    // 에디터에서 위치/크기/색을 직접 조정할 수 있다.
+    void BuildLockChainVisual(Transform parent)
+    {
+        Sprite round = LoadUiSprite("ui_round_rect_10");
+        Sprite circle = LoadUiSprite("ui_circle");
+
+        Color chainColor = new Color(0.74f, 0.75f, 0.80f, 1f);
+        Color chainShade = new Color(0.45f, 0.46f, 0.52f, 1f);
+        Color lockBody = new Color(0.91f, 0.73f, 0.30f, 1f);
+        Color lockEdge = new Color(0.55f, 0.40f, 0.13f, 1f);
+        Color lockHole = new Color(0.30f, 0.20f, 0.06f, 1f);
+
+        GameObject chains = MakeLockPiece(parent, "Chains", Vector2.zero, new Vector2(0f, 0f), 0f, ClearColor, null);
+        RectTransform chainsRect = chains.GetComponent<RectTransform>();
+        chainsRect.anchorMin = Vector2.zero;
+        chainsRect.anchorMax = Vector2.one;
+        chainsRect.offsetMin = Vector2.zero;
+        chainsRect.offsetMax = Vector2.zero;
+
+        // 대각선으로 가로지르는 두 갈래 쇠사슬 (X 자)
+        BuildChainStrand(chains.transform, 45f, round, chainColor, chainShade);
+        BuildChainStrand(chains.transform, -45f, round, chainColor, chainShade);
+
+        // 중앙 자물쇠
+        GameObject lockRoot = MakeLockPiece(parent, "Padlock", new Vector2(0f, -4f), new Vector2(54f, 54f), 0f, ClearColor, null);
+
+        // 고리(shackle): ∩ 자 — 좌/우 세로 + 위 가로
+        MakeLockPiece(lockRoot.transform, "ShackleL", new Vector2(-13f, 17f), new Vector2(7f, 26f), 0f, lockEdge, round);
+        MakeLockPiece(lockRoot.transform, "ShackleR", new Vector2(13f, 17f), new Vector2(7f, 26f), 0f, lockEdge, round);
+        MakeLockPiece(lockRoot.transform, "ShackleTop", new Vector2(0f, 28f), new Vector2(33f, 7f), 0f, lockEdge, round);
+
+        // 자물쇠 몸통
+        MakeLockPiece(lockRoot.transform, "BodyEdge", new Vector2(0f, -8f), new Vector2(46f, 40f), 0f, lockEdge, round);
+        MakeLockPiece(lockRoot.transform, "Body", new Vector2(0f, -8f), new Vector2(38f, 32f), 0f, lockBody, round);
+
+        // 열쇠구멍
+        MakeLockPiece(lockRoot.transform, "KeyholeDot", new Vector2(0f, -4f), new Vector2(9f, 9f), 0f, lockHole, circle);
+        MakeLockPiece(lockRoot.transform, "KeyholeSlit", new Vector2(0f, -13f), new Vector2(5f, 11f), 0f, lockHole, round);
+    }
+
+    void BuildChainStrand(Transform parent, float angle, Sprite linkSprite, Color a, Color b)
+    {
+        GameObject strand = MakeLockPiece(parent, "ChainStrand", Vector2.zero, new Vector2(2f, 2f), angle, ClearColor, null);
+        const int linkCount = 7;
+        const float spacing = 13f;
+        float start = -(linkCount - 1) * spacing * 0.5f;
+        for (int i = 0; i < linkCount; i++)
+        {
+            Color c = (i % 2 == 0) ? a : b;
+            MakeLockPiece(strand.transform, "Link" + i, new Vector2(start + i * spacing, 0f), new Vector2(11f, 8f), 0f, c, linkSprite);
+        }
+    }
+
+    GameObject MakeLockPiece(Transform parent, string name, Vector2 pos, Vector2 size, float rot, Color color, Sprite sprite)
+    {
+        GameObject go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        RectTransform rt = go.AddComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+        rt.localRotation = Quaternion.Euler(0f, 0f, rot);
+
+        if (color.a > 0f)
+        {
+            Image img = go.AddComponent<Image>();
+            img.color = color;
+            img.raycastTarget = false;
+            if (sprite != null)
+            {
+                img.sprite = sprite;
+                img.type = Image.Type.Simple;
+            }
+        }
+        return go;
+    }
+
+    static Sprite LoadUiSprite(string spriteName)
+    {
+        Sprite sprite = Resources.Load<Sprite>("Sprites/UI/" + spriteName);
+        if (sprite != null)
+            return sprite;
+#if UNITY_EDITOR
+        sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/Sprites/" + spriteName + ".png");
+        if (sprite != null)
+            return sprite;
+#endif
+        // 런타임에서 못 찾으면 씬에 이미 로드된 같은 스프라이트를 재사용한다.
+        Image[] images = FindObjectsByType<Image>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < images.Length; i++)
+            if (images[i] != null && images[i].sprite != null && images[i].sprite.name == spriteName)
+                return images[i].sprite;
+        return null;
     }
 
     public static void ApplyAlphaHitTest(Image image, float threshold)

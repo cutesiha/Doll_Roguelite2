@@ -144,6 +144,10 @@ public class PlayerDamageReceiver : MonoBehaviour
         if (enemy == null)
             return;
 
+        // 점프(공중) 중인 적은 닿아도 데미지를 주지 않는다. 착지 시 슬램 데미지만 적용.
+        if (enemy.SuppressContactDamage)
+            return;
+
         nextDamageTime = Time.time + damageCooldown;
         if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryBlockHit())
             return;

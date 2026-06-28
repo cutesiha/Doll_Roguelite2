@@ -85,6 +85,10 @@ public class RunPauseMenuUI : MonoBehaviour
         ToggleMenu();
     }
 
+    // RunHudUI 가 설정한다. 다른 패널(지도/인벤토리)이 열려 있으면 false 를 반환해
+    // 메뉴가 그 위에 겹쳐 열리는 것을 막는다.
+    public System.Func<bool> CanOpenMenu;
+
     public void ToggleMenu()
     {
         EnsureMenuPanelReady();
@@ -94,6 +98,10 @@ public class RunPauseMenuUI : MonoBehaviour
             CloseAll();
             return;
         }
+
+        // 다른 패널이 열려 있으면 메뉴를 열지 않는다 (패널 겹침 방지)
+        if (CanOpenMenu != null && !CanOpenMenu())
+            return;
 
         ShowMenuPanel();
     }
