@@ -82,7 +82,10 @@ public class StartSceneTransition : MonoBehaviour
 
         SetFadeAlpha(1f);
         GameSaveSystem.StartNewRun();
-        SceneManager.LoadScene(targetSceneName);
+        string scene = targetSceneName;
+        if (scene == "TutorialScene" && GameSaveSystem.HasCompletedTutorial())
+            scene = "RoomScene";
+        SceneManager.LoadScene(scene);
     }
 
     IEnumerator FadeAndQuit()

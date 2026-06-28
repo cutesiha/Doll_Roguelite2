@@ -61,6 +61,7 @@ public class PlayerDamageReceiver : MonoBehaviour
     SpriteRenderer bodyRenderer;
     Collider2D playerCollider;
     Coroutine feedbackRoutine;
+    Coroutine invincibilityRoutine;
     float nextDamageTime;
     float invincibleUntil;
     bool bodyDropped;
@@ -148,7 +149,9 @@ public class PlayerDamageReceiver : MonoBehaviour
             return;
 
         DamageNextBodyTarget(contactDamage);
+        SetInvincible(1.5f);
         PlayHitFeedback();
+        StartInvincibilityBlink();
         ShakeCamera();
         SoundManager.PlayPlayerHit();
         Damaged?.Invoke();
@@ -166,7 +169,9 @@ public class PlayerDamageReceiver : MonoBehaviour
             return false;
 
         DamageNextBodyTarget(finalDamage);
+        SetInvincible(1.5f);
         PlayHitFeedback();
+        StartInvincibilityBlink();
         ShakeCamera();
         SoundManager.PlayPlayerHit();
         Damaged?.Invoke();
@@ -253,7 +258,68 @@ public class PlayerDamageReceiver : MonoBehaviour
     void ShakeCamera()
     {
         if (shakeCameraOnHit)
-            CameraShake.ShakeHorizontal(cameraShakeDuration, cameraShakeMagnitude);
+            CameraShake.ShakeHorizontal(
+                Mathf.Max(cameraShakeDuration, 0.20f),
+                Mathf.Max(cameraShakeMagnitude, 0.32f));
+    }
+
+    void StartInvincibilityBlink()
+    {
+        if (invincibilityRoutine != null)
+            StopCoroutine(invincibilityRoutine);
+        if (gameObject.activeInHierarchy)
+            invincibilityRoutine = StartCoroutine(InvincibilityBlinkRoutine());
+    }
+
+    IEnumerator InvincibilityBlinkRoutine()
+    {
+        const float totalDuration = 1.5f;
+        const float blinkInterval = 0.10f;
+        float elapsed = 0f;
+
+        // Wait for red hit feedback to finish before blinking white
+        while (feedbackRoutine != null)
+        {
+            elapsed += Time.deltaTime;
+            if (elapsed >= totalDuration) yield break;
+            yield return null;
+        }
+
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
+        System.Collections.Generic.Dictionary<SpriteRenderer, Color> baseColors
+            = new System.Collections.Generic.Dictionary<SpriteRenderer, Color>();
+        for (int i = 0; i < renderers.Length; i++)
+            if (renderers[i] != null)
+                baseColors[renderers[i]] = renderers[i].color;
+
+        while (elapsed < totalDuration)
+        {
+            bool bright = (Mathf.FloorToInt(elapsed / blinkInterval) % 2 == 0);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                SpriteRenderer r = renderers[i];
+                if (r == null) continue;
+                Color c;
+                if (!baseColors.TryGetValue(r, out c)) c = r.color;
+                c = bright
+                    ? new Color(1f, 1f, 1f, 1f)
+                    : new Color(c.r, c.g, c.b, 0.35f);
+                r.color = c;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            SpriteRenderer r = renderers[i];
+            if (r == null) continue;
+            Color c;
+            if (baseColors.TryGetValue(r, out c))
+                r.color = c;
+        }
+
+        invincibilityRoutine = null;
     }
 
     void PlayHitFeedback()

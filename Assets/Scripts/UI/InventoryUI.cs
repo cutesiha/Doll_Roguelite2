@@ -714,7 +714,7 @@ public class InventoryUI : MonoBehaviour
             if (_storageImg[i] != null)
             {
                 // 보석 등 아이콘이 지정된 아이템은 그 스프라이트를, 아니면 부위 기본 스프라이트를 표시.
-                Sprite slotSprite = p == null ? null : (p.icon != null ? p.icon : DisplaySpriteForSlot(p.slot));
+                Sprite slotSprite = p == null ? null : (p.icon != null ? p.icon : (p.IsEquippable ? DisplaySpriteForSlot(p.slot) : null));
                 SetImageSpriteSafely(_storageImg[i], slotSprite);
                 _storageImg[i].preserveAspect = true;
                 _storageImg[i].type = Image.Type.Simple;

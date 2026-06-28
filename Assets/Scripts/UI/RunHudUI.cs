@@ -546,7 +546,7 @@ public class RunHudUI : MonoBehaviour
         if (viewportMask == null)
             viewportMask = viewportTransform.gameObject.AddComponent<RectMask2D>();
         viewportMask.padding = Vector4.zero;
-        viewportMask.softness = Vector2Int.zero;
+        viewportMask.softness = new Vector2Int(0, 80);
 
         Image viewportImage = viewportTransform.GetComponent<Image>();
         if (viewportImage == null)
@@ -617,13 +617,13 @@ public class RunHudUI : MonoBehaviour
         mapScrollRect.vertical = true;
         mapScrollRect.movementType = ScrollRect.MovementType.Clamped;
         mapScrollRect.inertia = true;
-        mapScrollRect.decelerationRate = 0.18f;
+        mapScrollRect.decelerationRate = 0.03f;
         mapScrollRect.scrollSensitivity = 0f;
 
         SmoothMapScrollRect smoothScroll = mapScrollRect.GetComponent<SmoothMapScrollRect>();
         if (smoothScroll == null)
             smoothScroll = mapScrollRect.gameObject.AddComponent<SmoothMapScrollRect>();
-        smoothScroll.Configure(mapScrollRect, mapWheelStep, mapWheelLerpSpeed);
+        smoothScroll.Configure(mapScrollRect, Mathf.Min(mapWheelStep, 0.012f), mapWheelLerpSpeed);
     }
 
     void EnsureMiniMapOnExistingButton()
@@ -2209,7 +2209,7 @@ void BuildPixelDoll(Transform parent)
 
         SmoothMapScrollRect smoothScroll = mapScrollRect.GetComponent<SmoothMapScrollRect>();
         if (smoothScroll != null)
-            smoothScroll.Configure(mapScrollRect, mapWheelStep, mapWheelLerpSpeed);
+            smoothScroll.Configure(mapScrollRect, Mathf.Min(mapWheelStep, 0.012f), mapWheelLerpSpeed);
     }
 
     void PlayMapPanelAnimation(bool show)
@@ -2384,7 +2384,8 @@ void BuildPixelDoll(Transform parent)
 
         GameObject viewport = Rect(scrollGO.transform, "MapViewport", Anchor.Stretch, Vector2.zero, Vector2.zero);
         mapViewport = viewport.GetComponent<RectTransform>();
-        viewport.AddComponent<RectMask2D>();
+        RectMask2D mapViewportMask = viewport.AddComponent<RectMask2D>();
+        mapViewportMask.softness = new Vector2Int(0, 80);
         Image viewportImage = viewport.AddComponent<Image>();
         viewportImage.color = new Color(1f, 1f, 1f, 0f);
         viewportImage.raycastTarget = true;
@@ -2486,40 +2487,40 @@ void BuildPixelDoll(Transform parent)
         if (mapViewport == null || mapTree == null)
             return;
 
+        const float keepActiveTolerance = 160f;
         Rect viewportRect = mapViewport.rect;
-        viewportRect.yMin += MapViewportBottomGuard;
-        viewportRect.yMax -= MapViewportTopGuard;
         Vector3[] corners = new Vector3[4];
+
         for (int childIndex = 0; childIndex < mapTree.childCount; childIndex++)
         {
             RectTransform child = mapTree.GetChild(childIndex) as RectTransform;
             if (child == null)
                 continue;
 
-            RectTransform[] rects = child.GetComponentsInChildren<RectTransform>(true);
-            float minX = float.PositiveInfinity;
-            float maxX = float.NegativeInfinity;
-            float minY = float.PositiveInfinity;
-            float maxY = float.NegativeInfinity;
-            foreach (RectTransform rect in rects)
+            child.GetWorldCorners(corners);
+            float minY = float.MaxValue, maxY = float.MinValue;
+            float minX = float.MaxValue, maxX = float.MinValue;
+            for (int c = 0; c < 4; c++)
             {
-                rect.GetWorldCorners(corners);
-                for (int cornerIndex = 0; cornerIndex < corners.Length; cornerIndex++)
-                {
-                    Vector3 local = mapViewport.InverseTransformPoint(corners[cornerIndex]);
-                    minX = Mathf.Min(minX, local.x);
-                    maxX = Mathf.Max(maxX, local.x);
-                    minY = Mathf.Min(minY, local.y);
-                    maxY = Mathf.Max(maxY, local.y);
-                }
+                Vector3 local = mapViewport.InverseTransformPoint(corners[c]);
+                minY = Mathf.Min(minY, local.y);
+                maxY = Mathf.Max(maxY, local.y);
+                minX = Mathf.Min(minX, local.x);
+                maxX = Mathf.Max(maxX, local.x);
             }
 
-            const float edgeTolerance = 0.5f;
-            bool fullyInside = minX >= viewportRect.xMin - edgeTolerance
-                && maxX <= viewportRect.xMax + edgeTolerance
-                && minY >= viewportRect.yMin - edgeTolerance
-                && maxY <= viewportRect.yMax + edgeTolerance;
-            child.gameObject.SetActive(fullyInside);
+            bool active = maxY >= viewportRect.yMin - keepActiveTolerance
+                && minY <= viewportRect.yMax + keepActiveTolerance
+                && maxX >= viewportRect.xMin - keepActiveTolerance
+                && minX <= viewportRect.xMax + keepActiveTolerance;
+
+            child.gameObject.SetActive(active);
+
+            if (active)
+            {
+                CanvasGroup group = child.GetComponent<CanvasGroup>();
+                if (group != null) group.alpha = 1f;
+            }
         }
     }
 

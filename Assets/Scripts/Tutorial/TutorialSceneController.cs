@@ -33,6 +33,7 @@ public class TutorialSceneController : MonoBehaviour
     [SerializeField] Transform workbench;
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] Sprite memoSprite;
+    [SerializeField] Sprite workbenchSprite;
 
     [Header("Tuning")]
     [SerializeField] float workbenchPromptDistance = 2.0f;
@@ -69,6 +70,9 @@ public class TutorialSceneController : MonoBehaviour
     GameObject menuButtonObject;
     RunHudUI runHud;
     TutorialStep step;
+    GameObject gameplaySkipRoot;
+    GameObject gameplaySkipConfirmRoot;
+    bool gameplaySkipConfirmVisible;
     bool paperReadyForClick;
     bool mapOpened;
     bool mapScrolled;
@@ -135,6 +139,7 @@ public class TutorialSceneController : MonoBehaviour
             SetGameplayInputEnabled(true);
         }
 
+        BuildGameplaySkipUI();
         ShowOnly(movePrompt);
         step = TutorialStep.Move;
     }
@@ -554,7 +559,10 @@ public class TutorialSceneController : MonoBehaviour
         step = TutorialStep.Done;
         SetPromptVisible(doorPrompt, false);
         SetArrowVisible(false);
+        HideGameplaySkipUI();
         Time.timeScale = 1f;
+
+        GameSaveSystem.MarkTutorialDone();
 
         if (runHud != null)
             Destroy(runHud.gameObject);
@@ -982,8 +990,13 @@ public class TutorialSceneController : MonoBehaviour
 
     void BuildArrow()
     {
-        GameObject root = new GameObject("WorkbenchArrow");
-        arrowRoot = root.transform;
+        if (arrowRoot == null)
+        {
+            // 씬에 미리 배치된 오브젝트가 있으면 재사용
+            GameObject existing = GameObject.Find("WorkbenchArrow");
+            arrowRoot = existing != null ? existing.transform : new GameObject("WorkbenchArrow").transform;
+        }
+        if (arrowRoot.childCount > 0) { SetArrowVisible(false); return; }
 
         AddArrowPart(root.transform, "Shaft", new Vector2(-0.10f, 0f), new Vector2(1.15f, 0.18f), 0f);
         AddArrowPart(root.transform, "HeadA", new Vector2(0.54f, 0.17f), new Vector2(0.48f, 0.18f), -38f);
@@ -1002,6 +1015,173 @@ public class TutorialSceneController : MonoBehaviour
         renderer.sprite = SquareSprite();
         renderer.color = new Color(0.18f, 0.09f, 0.035f, 0.66f);
         renderer.sortingOrder = 220;
+    }
+
+    void BuildGameplaySkipUI()
+    {
+        if (tutorialCanvas == null)
+            return;
+
+        // Top-left skip button
+        gameplaySkipRoot = new GameObject("GameplaySkipButton");
+        gameplaySkipRoot.transform.SetParent(tutorialCanvas.transform, false);
+        RectTransform skipRect = gameplaySkipRoot.AddComponent<RectTransform>();
+        skipRect.anchorMin = skipRect.anchorMax = new Vector2(0f, 1f);
+        skipRect.pivot = new Vector2(0f, 1f);
+        skipRect.sizeDelta = new Vector2(220f, 80f);
+        skipRect.anchoredPosition = new Vector2(24f, -18f);
+
+        TextMeshProUGUI label = gameplaySkipRoot.AddComponent<TextMeshProUGUI>();
+        label.font = UIThinDungFont.Get();
+        label.text = "skip";
+        label.fontSize = 44f;
+        label.fontStyle = FontStyles.Bold;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = new Color(0.30f, 0.11f, 0.05f, 0.82f);
+        label.outlineWidth = 0.16f;
+        label.outlineColor = new Color(0.18f, 0.055f, 0.025f, 0.74f);
+        label.raycastTarget = true;
+        label.textWrappingMode = TextWrappingModes.NoWrap;
+
+        Button btn = gameplaySkipRoot.AddComponent<Button>();
+        btn.targetGraphic = label;
+        btn.transition = Selectable.Transition.ColorTint;
+        ColorBlock cb = btn.colors;
+        cb.normalColor = Color.white;
+        cb.highlightedColor = new Color(0.62f, 0.62f, 0.62f, 1f);
+        cb.selectedColor = cb.highlightedColor;
+        cb.pressedColor = new Color(0.48f, 0.48f, 0.48f, 1f);
+        cb.fadeDuration = 0.10f;
+        btn.colors = cb;
+        btn.onClick.AddListener(ShowGameplaySkipConfirm);
+
+        // Confirmation dialog
+        gameplaySkipConfirmRoot = new GameObject("GameplaySkipConfirm");
+        gameplaySkipConfirmRoot.transform.SetParent(tutorialCanvas.transform, false);
+        RectTransform confirmRect = gameplaySkipConfirmRoot.AddComponent<RectTransform>();
+        confirmRect.anchorMin = Vector2.zero;
+        confirmRect.anchorMax = Vector2.one;
+        confirmRect.offsetMin = Vector2.zero;
+        confirmRect.offsetMax = Vector2.zero;
+
+        // Dark backdrop
+        GameObject backdrop = new GameObject("Backdrop");
+        backdrop.transform.SetParent(gameplaySkipConfirmRoot.transform, false);
+        RectTransform backdropRect = backdrop.AddComponent<RectTransform>();
+        backdropRect.anchorMin = Vector2.zero;
+        backdropRect.anchorMax = Vector2.one;
+        backdropRect.offsetMin = Vector2.zero;
+        backdropRect.offsetMax = Vector2.zero;
+        Image backdropImg = backdrop.AddComponent<Image>();
+        backdropImg.color = new Color(0f, 0f, 0f, 0.44f);
+        backdropImg.raycastTarget = true;
+
+        // Panel
+        GameObject panel = new GameObject("ConfirmPanel");
+        panel.transform.SetParent(gameplaySkipConfirmRoot.transform, false);
+        RectTransform panelRect = panel.AddComponent<RectTransform>();
+        panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.pivot = new Vector2(0.5f, 0.5f);
+        panelRect.sizeDelta = new Vector2(820f, 340f);
+        panelRect.anchoredPosition = Vector2.zero;
+        Image panelImg = panel.AddComponent<Image>();
+        panelImg.color = new Color(0.97f, 0.91f, 0.80f, 1f);
+        panelImg.raycastTarget = true;
+
+        // Question text
+        GameObject questionObj = new GameObject("QuestionText");
+        questionObj.transform.SetParent(panel.transform, false);
+        RectTransform questionRect = questionObj.AddComponent<RectTransform>();
+        questionRect.anchorMin = questionRect.anchorMax = new Vector2(0.5f, 0.5f);
+        questionRect.anchoredPosition = new Vector2(0f, 68f);
+        questionRect.sizeDelta = new Vector2(740f, 100f);
+        TextMeshProUGUI questionText = questionObj.AddComponent<TextMeshProUGUI>();
+        questionText.font = UIThinDungFont.Get();
+        questionText.text = "튜토리얼을 스킵하시겠습니까?";
+        questionText.fontSize = 44f;
+        questionText.alignment = TextAlignmentOptions.Center;
+        questionText.color = Color.black;
+        questionText.raycastTarget = false;
+
+        // Yes button
+        Button yesBtn = CreateConfirmAnswerButton(panel.transform, "예", new Vector2(-170f, -72f));
+        yesBtn.onClick.AddListener(() =>
+        {
+            SoundManager.PlayClick(0f);
+            gameplaySkipConfirmRoot.SetActive(false);
+            gameplaySkipConfirmVisible = false;
+            GameSaveSystem.MarkTutorialDone();
+            StartCoroutine(ExitToRoomRoutine());
+        });
+
+        // No button
+        Button noBtn = CreateConfirmAnswerButton(panel.transform, "아니오", new Vector2(170f, -72f));
+        noBtn.onClick.AddListener(() =>
+        {
+            SoundManager.PlayClick(0f);
+            gameplaySkipConfirmRoot.SetActive(false);
+            gameplaySkipConfirmVisible = false;
+        });
+
+        gameplaySkipConfirmRoot.SetActive(false);
+    }
+
+    Button CreateConfirmAnswerButton(Transform parent, string text, Vector2 position)
+    {
+        GameObject go = new GameObject("AnswerButton_" + text);
+        go.transform.SetParent(parent, false);
+        RectTransform rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = new Vector2(240f, 80f);
+
+        Image img = go.AddComponent<Image>();
+        img.color = new Color(1f, 0.96f, 0.88f, 1f);
+        img.raycastTarget = true;
+
+        TextMeshProUGUI label = new GameObject("Label").AddComponent<TextMeshProUGUI>();
+        label.transform.SetParent(go.transform, false);
+        RectTransform labelRect = label.rectTransform;
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+        label.font = UIThinDungFont.Get();
+        label.text = text;
+        label.fontSize = 48f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = Color.black;
+        label.raycastTarget = false;
+
+        Button btn = go.AddComponent<Button>();
+        btn.targetGraphic = img;
+        ColorBlock cb = btn.colors;
+        cb.normalColor = Color.white;
+        cb.highlightedColor = new Color(0.82f, 0.82f, 0.82f, 1f);
+        cb.pressedColor = new Color(0.64f, 0.64f, 0.64f, 1f);
+        cb.fadeDuration = 0.08f;
+        btn.colors = cb;
+        return btn;
+    }
+
+    void ShowGameplaySkipConfirm()
+    {
+        if (gameplaySkipConfirmRoot == null || step == TutorialStep.Done)
+            return;
+        SoundManager.PlayClick(0f);
+        gameplaySkipConfirmRoot.SetActive(true);
+        gameplaySkipConfirmRoot.transform.SetAsLastSibling();
+        gameplaySkipConfirmVisible = true;
+    }
+
+    void HideGameplaySkipUI()
+    {
+        if (gameplaySkipRoot != null)
+            gameplaySkipRoot.SetActive(false);
+        if (gameplaySkipConfirmRoot != null)
+            gameplaySkipConfirmRoot.SetActive(false);
+        gameplaySkipConfirmVisible = false;
     }
 
     void BuildDoor()
@@ -1028,14 +1208,38 @@ public class TutorialSceneController : MonoBehaviour
     {
         GameObject root = new GameObject("TutorialWorkbench");
         root.transform.position = position;
-        AddSpriteBlock(root.transform, "Top", new Vector2(0f, 0.20f), new Vector2(2.0f, 0.34f), new Color(0.41f, 0.24f, 0.14f, 1f), 8);
-        AddSpriteBlock(root.transform, "Front", new Vector2(0f, -0.20f), new Vector2(1.75f, 0.56f), new Color(0.58f, 0.36f, 0.21f, 1f), 7);
-        AddSpriteBlock(root.transform, "LegL", new Vector2(-0.72f, -0.76f), new Vector2(0.22f, 0.74f), new Color(0.33f, 0.19f, 0.11f, 1f), 6);
-        AddSpriteBlock(root.transform, "LegR", new Vector2(0.72f, -0.76f), new Vector2(0.22f, 0.74f), new Color(0.33f, 0.19f, 0.11f, 1f), 6);
+
+        Sprite sprite = workbenchSprite;
+#if UNITY_EDITOR
+        if (sprite == null)
+        {
+            UnityEngine.Object[] assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/room/jakup.png");
+            foreach (UnityEngine.Object asset in assets)
+                if (asset is Sprite s) { sprite = s; break; }
+        }
+#endif
+
+        if (sprite != null)
+        {
+            GameObject go = new GameObject("WorkbenchSprite");
+            go.transform.SetParent(root.transform, false);
+            go.transform.localPosition = new Vector3(0f, -0.1f, 0f);
+            go.transform.localScale = new Vector3(2.5f, 2.5f, 1f);
+            SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sortingOrder = 7;
+        }
+        else
+        {
+            AddSpriteBlock(root.transform, "Top",  new Vector2(0f,     0.20f), new Vector2(2.0f, 0.34f), new Color(0.41f, 0.24f, 0.14f, 1f), 8);
+            AddSpriteBlock(root.transform, "Front",new Vector2(0f,    -0.20f), new Vector2(1.75f,0.56f), new Color(0.58f, 0.36f, 0.21f, 1f), 7);
+            AddSpriteBlock(root.transform, "LegL", new Vector2(-0.72f,-0.76f), new Vector2(0.22f,0.74f), new Color(0.33f, 0.19f, 0.11f, 1f), 6);
+            AddSpriteBlock(root.transform, "LegR", new Vector2( 0.72f,-0.76f), new Vector2(0.22f,0.74f), new Color(0.33f, 0.19f, 0.11f, 1f), 6);
+        }
 
         GameObject labelObject = new GameObject("WorkbenchLabel");
         labelObject.transform.SetParent(root.transform, false);
-        labelObject.transform.localPosition = new Vector3(0f, 0.55f, 0f);
+        labelObject.transform.localPosition = new Vector3(0f, 1.15f, 0f);
         TextMeshPro label = labelObject.AddComponent<TextMeshPro>();
         label.text = "작업대";
         label.font = UIThinDungFont.Get();

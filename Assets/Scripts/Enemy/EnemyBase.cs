@@ -388,7 +388,9 @@ public class EnemyBase : MonoBehaviour
     {
         SoundManager.PlayEnemyHit();
         if (shakeCameraOnHit)
-            CameraShake.Shake(cameraShakeDuration, cameraShakeMagnitude);
+            CameraShake.ShakeHorizontal(
+                Mathf.Max(cameraShakeDuration, 0.18f),
+                Mathf.Max(cameraShakeMagnitude, 0.28f));
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
@@ -443,16 +445,17 @@ public class EnemyBase : MonoBehaviour
 
     IEnumerator HitFeedbackRoutine()
     {
-        float duration = Mathf.Max(0.01f, hitFeedbackDuration);
+        float duration = Mathf.Max(0.01f, Mathf.Max(hitFeedbackDuration, 0.22f));
         float elapsed = 0f;
         Color baseColor = spriteBaseColor;
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         float prevWave = 0f;
+        float shakeDist = Mathf.Max(hitShakeDistance, 0.55f);
 
         while (elapsed < duration)
         {
             float t = elapsed / duration;
-            float wave = Mathf.Sin(elapsed * 45f) * hitShakeDistance * (1f - t);
+            float wave = Mathf.Sin(elapsed * 45f) * shakeDist * (1f - t);
             float delta = wave - prevWave;
 
             if (rb != null)
