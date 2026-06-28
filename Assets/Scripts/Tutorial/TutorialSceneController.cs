@@ -34,6 +34,7 @@ public class TutorialSceneController : MonoBehaviour
     [SerializeField] string roomSceneName = "RoomScene";
     [SerializeField] Sprite memoSprite;
     [SerializeField] Sprite workbenchSprite;
+    [SerializeField] Sprite doorSprite;
 
     [Header("Tuning")]
     [SerializeField] float workbenchPromptDistance = 2.0f;
@@ -87,6 +88,7 @@ public class TutorialSceneController : MonoBehaviour
     bool menuOpened;
     bool attackPromptDismissed;
     bool doorPromptVisible;
+    bool exitingToRoom;
     float promptPulseTime;
 
     static Sprite squareSprite;
@@ -104,7 +106,12 @@ public class TutorialSceneController : MonoBehaviour
             playerAttack = player.GetComponent<PlayerAttack>();
 
         if (workbench == null)
-            workbench = CreateWorkbench(new Vector2(5.4f, -0.9f)).transform;
+        {
+            // 씬에 미리 배치된 TutorialWorkbench 재사용 (중복 방지)
+            GameObject found = GameObject.Find("TutorialWorkbench");
+            workbench = found != null ? found.transform : CreateWorkbench(new Vector2(5.4f, -0.9f)).transform;
+        }
+        EnsureWorkbenchShadow(workbench);
 
         EnsureCamera();
         EnsureEventSystem();
@@ -556,6 +563,9 @@ public class TutorialSceneController : MonoBehaviour
 
     IEnumerator ExitToRoomRoutine()
     {
+        if (exitingToRoom) yield break;
+        exitingToRoom = true;
+
         step = TutorialStep.Done;
         SetPromptVisible(doorPrompt, false);
         SetArrowVisible(false);
@@ -569,13 +579,15 @@ public class TutorialSceneController : MonoBehaviour
 
         RunHudUI.ShowControlHintsOnNextRoom = false;
 
-        fadeImage.transform.SetAsLastSibling();
+        if (fadeImage != null)
+            fadeImage.transform.SetAsLastSibling();
         float elapsed = 0f;
         const float duration = 0.55f;
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
-            SetImageAlpha(fadeImage, Mathf.Clamp01(elapsed / duration));
+            if (fadeImage != null)
+                SetImageAlpha(fadeImage, Mathf.Clamp01(elapsed / duration));
             yield return null;
         }
 
@@ -998,9 +1010,9 @@ public class TutorialSceneController : MonoBehaviour
         }
         if (arrowRoot.childCount > 0) { SetArrowVisible(false); return; }
 
-        AddArrowPart(root.transform, "Shaft", new Vector2(-0.10f, 0f), new Vector2(1.15f, 0.18f), 0f);
-        AddArrowPart(root.transform, "HeadA", new Vector2(0.54f, 0.17f), new Vector2(0.48f, 0.18f), -38f);
-        AddArrowPart(root.transform, "HeadB", new Vector2(0.54f, -0.17f), new Vector2(0.48f, 0.18f), 38f);
+        AddArrowPart(arrowRoot, "Shaft", new Vector2(-0.10f, 0f), new Vector2(1.15f, 0.18f), 0f);
+        AddArrowPart(arrowRoot, "HeadA", new Vector2(0.54f, 0.17f), new Vector2(0.48f, 0.18f), -38f);
+        AddArrowPart(arrowRoot, "HeadB", new Vector2(0.54f, -0.17f), new Vector2(0.48f, 0.18f), 38f);
         SetArrowVisible(false);
     }
 
@@ -1097,7 +1109,7 @@ public class TutorialSceneController : MonoBehaviour
         questionRect.sizeDelta = new Vector2(740f, 100f);
         TextMeshProUGUI questionText = questionObj.AddComponent<TextMeshProUGUI>();
         questionText.font = UIThinDungFont.Get();
-        questionText.text = "튜토리얼을 스킵하시겠습니까?";
+        questionText.text = "스킵하시겠습니까?";
         questionText.fontSize = 44f;
         questionText.alignment = TextAlignmentOptions.Center;
         questionText.color = Color.black;
@@ -1189,9 +1201,32 @@ public class TutorialSceneController : MonoBehaviour
         GameObject door = new GameObject("TutorialExitDoor");
         doorRoot = door.transform;
         doorRoot.position = doorPosition;
-        AddSpriteBlock(doorRoot, "DoorPanel", Vector2.zero, new Vector2(1.15f, 1.75f), new Color(0.18f, 0.12f, 0.09f, 1f), 20);
-        AddSpriteBlock(doorRoot, "DoorInner", new Vector2(0f, -0.04f), new Vector2(0.82f, 1.38f), new Color(0.48f, 0.30f, 0.18f, 1f), 21);
-        AddSpriteBlock(doorRoot, "DoorKnob", new Vector2(0.28f, -0.05f), new Vector2(0.11f, 0.11f), new Color(0.94f, 0.72f, 0.28f, 1f), 22);
+
+        Sprite sprite = doorSprite;
+#if UNITY_EDITOR
+        if (sprite == null)
+        {
+            Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/door/enemyroom.png");
+            foreach (Object a in assets)
+                if (a is Sprite s) { sprite = s; break; }
+        }
+#endif
+
+        if (sprite != null)
+        {
+            GameObject spriteGO = new GameObject("DoorSprite");
+            spriteGO.transform.SetParent(door.transform, false);
+            SpriteRenderer sr = spriteGO.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sortingOrder = 20;
+        }
+        else
+        {
+            AddSpriteBlock(doorRoot, "DoorPanel", Vector2.zero, new Vector2(1.15f, 1.75f), new Color(0.18f, 0.12f, 0.09f, 1f), 20);
+            AddSpriteBlock(doorRoot, "DoorInner", new Vector2(0f, -0.04f), new Vector2(0.82f, 1.38f), new Color(0.48f, 0.30f, 0.18f, 1f), 21);
+            AddSpriteBlock(doorRoot, "DoorKnob", new Vector2(0.28f, -0.05f), new Vector2(0.11f, 0.11f), new Color(0.94f, 0.72f, 0.28f, 1f), 22);
+        }
+
         door.SetActive(false);
     }
 
@@ -1249,6 +1284,35 @@ public class TutorialSceneController : MonoBehaviour
         return root;
     }
 
+    void EnsureWorkbenchShadow(Transform workbenchRoot)
+    {
+        if (workbenchRoot == null)
+            return;
+        Transform spriteChild = workbenchRoot.Find("WorkbenchSprite");
+        if (spriteChild == null)
+            return;
+
+        // 이미 있으면 건드리지 않음 (씬에서 수동 조정 유지)
+        if (spriteChild.Find("Character Direction Shadow") != null)
+            return;
+
+        SpriteRenderer ownerSr = spriteChild.GetComponent<SpriteRenderer>();
+        if (ownerSr == null || ownerSr.sprite == null)
+            return;
+
+        GameObject shadowGo = new GameObject("Character Direction Shadow");
+        shadowGo.transform.SetParent(spriteChild, false);
+        SpriteRenderer shadowSr = shadowGo.AddComponent<SpriteRenderer>();
+        shadowSr.sprite = ownerSr.sprite;
+        shadowSr.color = new Color(0.03f, 0.022f, 0.018f, 0.3f);
+        shadowSr.sortingLayerID = ownerSr.sortingLayerID;
+        shadowSr.sortingOrder = ownerSr.sortingOrder - 1;
+        shadowSr.sharedMaterial = ownerSr.sharedMaterial;
+        shadowGo.transform.localRotation = Quaternion.Euler(0f, 0f, -28f);
+        shadowGo.transform.localScale = new Vector3(1.08f, 0.42f, 1f);
+        shadowGo.transform.localPosition = new Vector3(0.12f, -0.12f, 0.02f);
+    }
+
     void AddSpriteBlock(Transform parent, string objectName, Vector2 localPosition, Vector2 scale, Color color, int sortingOrder)
     {
         GameObject go = new GameObject(objectName);
@@ -1286,6 +1350,13 @@ public class TutorialSceneController : MonoBehaviour
         menuButtonObject = FindHudChild("MenuIconButton");
         if (menuButtonObject != null)
             menuButtonObject.SetActive(false);
+
+        if (runHud != null)
+        {
+            runHud.mapKeyAllowed       = () => step >= TutorialStep.Map;
+            runHud.inventoryKeyAllowed = () => step >= TutorialStep.Inventory;
+            runHud.menuKeyAllowed      = () => step >= TutorialStep.Menu;
+        }
     }
 
     GameObject FindHudChild(string childName)

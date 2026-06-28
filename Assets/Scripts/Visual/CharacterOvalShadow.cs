@@ -14,8 +14,9 @@ public class CharacterOvalShadow : MonoBehaviour
     [SerializeField] Vector2 footAnchorOffset = new Vector2(0f, 0f);
     [SerializeField] Vector2 shadowScale = new Vector2(1.08f, 0.42f);
     [SerializeField] float rotationZ = -28f;
-    [SerializeField] Color shadowColor = new Color(0.03f, 0.022f, 0.018f, 0.5f);
+    [SerializeField] Color shadowColor = new Color(0.03f, 0.022f, 0.018f, 0.3f);
     [SerializeField] int sortingOrderOffset = -1;
+    [SerializeField] bool forceShadow;
 
     SpriteRenderer ownerRenderer;
     SpriteRenderer shadowRenderer;
@@ -32,6 +33,10 @@ public class CharacterOvalShadow : MonoBehaviour
 
     void LateUpdate()
     {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            return;
+#endif
         Configure();
     }
 
@@ -95,9 +100,11 @@ public class CharacterOvalShadow : MonoBehaviour
         shadowTransform.localPosition = CalculateFootLockedShadowPosition(sourceSprite, shadowTransform.localRotation);
     }
 
+    public void SetForceShadow(bool force) { forceShadow = force; }
+
     bool IsShadowTarget()
     {
-        return ownerRenderer != null && (CompareTag("Player") || GetComponent<EnemyBase>() != null);
+        return ownerRenderer != null && (CompareTag("Player") || GetComponent<EnemyBase>() != null || forceShadow);
     }
 
     SpriteRenderer EnsureShadowRenderer()

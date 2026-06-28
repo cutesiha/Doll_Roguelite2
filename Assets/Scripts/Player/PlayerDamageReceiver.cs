@@ -149,7 +149,7 @@ public class PlayerDamageReceiver : MonoBehaviour
             return;
 
         DamageNextBodyTarget(contactDamage);
-        SetInvincible(1.5f);
+        SetInvincible(1f);
         PlayHitFeedback();
         StartInvincibilityBlink();
         ShakeCamera();
@@ -169,7 +169,7 @@ public class PlayerDamageReceiver : MonoBehaviour
             return false;
 
         DamageNextBodyTarget(finalDamage);
-        SetInvincible(1.5f);
+        SetInvincible(1f);
         PlayHitFeedback();
         StartInvincibilityBlink();
         ShakeCamera();
