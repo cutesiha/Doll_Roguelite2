@@ -255,6 +255,18 @@ public class ItemInventoryManager : MonoBehaviour
             AddCoins(1);
     }
 
+    public ItemData RemoveConsumable()
+    {
+        ItemData removed = consumable;
+        consumable = null;
+        if (removed != null)
+        {
+            AutoEquipNextConsumable();
+            NotifyChanged();
+        }
+        return removed;
+    }
+
     public void AddCoins(int amount)
     {
         if (amount <= 0)
