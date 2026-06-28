@@ -99,6 +99,14 @@ public class PlayerController : MonoBehaviour
         rb.gravityScale = 0f;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
+        var col = GetComponent<Collider2D>();
+        if (col != null)
+        {
+            var mat = new PhysicsMaterial2D("PlayerNoFriction") { friction = 0f, bounciness = 0f };
+            col.sharedMaterial = mat;
+            rb.sharedMaterial = mat;
+        }
+
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
 

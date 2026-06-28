@@ -48,6 +48,12 @@ public class InventoryUI : MonoBehaviour
     [Header("재봉 상태")]
     [SerializeField] TextMeshProUGUI _sewingStatus;
 
+    [Header("특수 슬롯 (버리기 / Q 보석)")]
+    Image _trashImg;
+    Image _qGemImg;
+    TextMeshProUGUI _qGemName;
+    Button _qGemBtn;
+
     GameObject _toggleHotspot;
     Button _toggleHotspotButton;
     RectTransform _panelRect;
@@ -60,6 +66,7 @@ public class InventoryUI : MonoBehaviour
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color CSlot  = new Color(0.88f, 0.48f, 0.24f, 1f);
     static readonly Color CEmpty = new Color(0.17f, 0.15f, 0.13f, 0.20f);
+    static readonly Color CTrash = new Color(0.55f, 0.12f, 0.10f, 0.55f);
     static readonly Color CUnequippedPart = new Color(0.04f, 0.035f, 0.03f, 0.48f);
     static readonly string[] PartSpriteNames =
     {
@@ -84,6 +91,7 @@ public class InventoryUI : MonoBehaviour
     {
         EnsurePanelReference();
         EnsureStorageSlots();
+        EnsureSpecialSlots();
         ForceClosePanelImmediate();
         NormalizeCanvasTransform();
         if (transform.parent == null)
@@ -99,6 +107,8 @@ public class InventoryUI : MonoBehaviour
     {
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.OnInventoryChanged += RefreshUI;
+        if (ItemInventoryManager.Instance != null)
+            ItemInventoryManager.Instance.Changed += RefreshUI;
         ForceClosePanelImmediate();
         RefreshUI();
     }
@@ -108,6 +118,8 @@ public class InventoryUI : MonoBehaviour
         RunUiPauseManager.SetPaused("Inventory", false);
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.OnInventoryChanged -= RefreshUI;
+        if (ItemInventoryManager.Instance != null)
+            ItemInventoryManager.Instance.Changed -= RefreshUI;
     }
 
     void Update()
@@ -389,6 +401,98 @@ public class InventoryUI : MonoBehaviour
         return label;
     }
 
+    // ── 특수 슬롯 (버리기 / Q 보석) ───────────────────────────────────
+    void EnsureSpecialSlots()
+    {
+        EnsurePanelReference();
+        Transform parent = StorageSlotsParent();
+        if (parent == null)
+            return;
+
+        const float slotWidth = 148f;
+        const float slotHeight = 92f;
+        const float y = -430f;
+
+        // 버리는 칸 (왼쪽) — 아이템을 끌어다 놓으면 월드에 다시 떨어뜨린다.
+        GameObject trash = EnsureSpecialSlotRoot(parent, "TrashSlot", new Vector2(-82f, y), new Vector2(slotWidth, slotHeight));
+        _trashImg = trash.GetComponent<Image>();
+        _trashImg.color = CTrash;
+        _trashImg.raycastTarget = true;
+        if (trash.GetComponent<InventoryTrashDropTarget>() == null)
+            trash.AddComponent<InventoryTrashDropTarget>();
+        EnsureStorageSlotLabel(trash.transform, "SlotLabel", "버리기", 18f, new Vector2(0f, -8f), new Vector2(slotWidth, 28f), TextAlignmentOptions.Center);
+        EnsureStorageSlotLabel(trash.transform, "SlotHint", "여기에 끌어다 놓기", 13f, new Vector2(0f, -50f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
+
+        // Q 보석 칸 (오른쪽) — 기존 Q 소모품 시스템(ItemInventoryManager)을 표시·사용.
+        GameObject qgem = EnsureSpecialSlotRoot(parent, "QGemSlot", new Vector2(82f, y), new Vector2(slotWidth, slotHeight));
+        _qGemImg = qgem.GetComponent<Image>();
+        _qGemImg.preserveAspect = true;
+        _qGemImg.type = Image.Type.Simple;
+        _qGemImg.raycastTarget = true;
+        _qGemBtn = qgem.GetComponent<Button>();
+        if (_qGemBtn == null)
+            _qGemBtn = qgem.AddComponent<Button>();
+        _qGemBtn.targetGraphic = _qGemImg;
+        _qGemBtn.onClick.RemoveListener(UseQGem);
+        _qGemBtn.onClick.AddListener(UseQGem);
+        EnsureStorageSlotLabel(qgem.transform, "SlotLabel", "Q 보석", 18f, new Vector2(0f, -8f), new Vector2(slotWidth, 28f), TextAlignmentOptions.Center);
+        _qGemName = EnsureStorageSlotLabel(qgem.transform, "SlotName", "없음", 14f, new Vector2(0f, -50f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
+    }
+
+    GameObject EnsureSpecialSlotRoot(Transform parent, string name, Vector2 anchoredPosition, Vector2 size)
+    {
+        Transform existing = FindChildRecursive(parent, name);
+        GameObject go = existing != null ? existing.gameObject : new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.SetActive(true);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = size;
+        rect.localScale = Vector3.one;
+
+        Image image = go.GetComponent<Image>();
+        if (image == null)
+            image = go.AddComponent<Image>();
+
+        return go;
+    }
+
+    void RefreshSpecialSlots()
+    {
+        if (_trashImg != null)
+            _trashImg.color = CTrash;
+
+        if (_qGemImg == null)
+            return;
+
+        ItemData consumable = ItemInventoryManager.Instance != null ? ItemInventoryManager.Instance.Consumable : null;
+        SetImageSpriteSafely(_qGemImg, consumable != null ? consumable.Sprite : null);
+        _qGemImg.preserveAspect = true;
+        _qGemImg.type = Image.Type.Simple;
+        _qGemImg.color = consumable != null
+            ? (_qGemImg.sprite != null ? Color.white : CSlot)
+            : CEmpty;
+
+        if (_qGemName != null)
+            _qGemName.text = consumable != null ? consumable.ItemName : "없음";
+    }
+
+    // Q 보석 칸 클릭 시: 기존 Q 키와 동일하게 장착된 소모품을 발동한다.
+    void UseQGem()
+    {
+        var items = ItemInventoryManager.Instance;
+        if (items == null || items.Consumable == null)
+            return;
+
+        if (items.TryUseEquippedConsumable())
+            SoundManager.PlayClick();
+    }
+
     Color TextColorForStorage(string name)
     {
         if (name == "SlotHP")
@@ -594,6 +698,8 @@ public class InventoryUI : MonoBehaviour
     public void RefreshUI()
     {
         EnsureStorageSlots();
+        EnsureSpecialSlots();
+        RefreshSpecialSlots();
         var inv = InventoryManager.Instance;
         if (inv == null) return;
 

@@ -144,6 +144,35 @@ public class InventoryManager : MonoBehaviour
         return true;
     }
 
+    // 보관함 칸을 비우고 그 아이템을 돌려준다. "버리는 칸"에서 월드로 떨어뜨릴 때 사용.
+    public BodyPart RemoveStorageAt(int index)
+    {
+        if (index < 0 || index >= storage.Length) return null;
+
+        BodyPart part = storage[index];
+        if (part == null) return null;
+
+        storage[index] = null;
+        OnInventoryChanged?.Invoke();
+        return part;
+    }
+
+    // 장착된 부위를 떼어내 돌려준다. 잠긴 슬롯은 버릴 수 없다.
+    public BodyPart RemoveEquipped(BodySlot slot)
+    {
+        int index = (int)slot;
+        if (index < 0 || index >= equipped.Length) return null;
+        if (IsSlotLocked(slot)) return null;
+
+        BodyPart part = equipped[index];
+        if (part == null) return null;
+
+        equipped[index] = null;
+        SyncBodyState();
+        OnInventoryChanged?.Invoke();
+        return part;
+    }
+
     public bool TryAddPart(BodyPart part, bool equipIfEmpty = true)
     {
         if (part == null)
