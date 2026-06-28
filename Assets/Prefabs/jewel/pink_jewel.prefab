@@ -152,3 +152,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JewelWorldPickup
   iconOverride: {fileID: 0}
+  gemItemId: pink_gem

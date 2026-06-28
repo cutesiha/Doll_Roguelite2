@@ -455,7 +455,16 @@ public class ItemInventoryManager : MonoBehaviour
         if (applied)
         {
             if (item.ItemId == "black_gem")
+            {
                 DarkAuraEffect.SpawnOn(player.transform, 3f);
+                ScreenVignetteEffect.Show(3f, Color.black);
+            }
+            else if (item.ItemId == "pink_gem")
+            {
+                Color pink = new Color(1f, 0.35f, 0.68f);
+                DarkAuraEffect.SpawnOn(player.transform, 3f, pink);
+                ScreenVignetteEffect.Show(3f, pink);
+            }
 
             ShowItemPopup(item);
             Announce(item.ItemName + " 사용: " + item.Description);
