@@ -141,7 +141,7 @@ public class RunHudUI : MonoBehaviour
     static readonly Color ColRouteOnly = new Color(0.45f, 0.45f, 0.45f, 1f);
     static readonly Color ColHidden = new Color(0.22f, 0.22f, 0.22f, 1f);
     const float MapScrollLeftRightMargin = 54f;
-    const float MapScrollBottomMargin = 90f;
+    const float MapScrollBottomMargin = 130f;
     const float MapScrollTopMargin = 124f;
     const float MapViewportTopGuard = 80f;
     const float MapViewportBottomGuard = 120f;
@@ -241,6 +241,7 @@ public class RunHudUI : MonoBehaviour
     void Update()
     {
         UpdateHudState();
+        UpdateMiniMap();
 
         if (!Application.isPlaying)
             return;
@@ -669,9 +670,16 @@ public class RunHudUI : MonoBehaviour
         if (image == null)
             return;
 
-        image.sprite = null;
-        image.color = new Color(1f, 1f, 1f, 0f);
+        SetRoundedImage(image, roundedPanelSprite);
+        image.color = PanelColor;
         image.raycastTarget = true;
+
+        if (mapButton.GetComponent<Outline>() == null)
+        {
+            Outline outline = mapButton.gameObject.AddComponent<Outline>();
+            outline.effectColor = LineColor;
+            outline.effectDistance = new Vector2(2f, -2f);
+        }
     }
 
     void DestroyDirectChild(Transform parent, string childName)
@@ -1458,7 +1466,11 @@ void BuildPixelDoll(Transform parent)
     void UpdateMiniMap()
     {
         if (miniMapContent == null)
+        {
+            if (mapButton != null && MapRunState.Root != null)
+                EnsureMiniMapOnExistingButton();
             return;
+        }
 
         MapRunState.EnsureRun();
         MapNode current = MapRunState.CurrentNode;
@@ -1483,88 +1495,64 @@ void BuildPixelDoll(Transform parent)
             DestroyUiObject(miniMapContent.GetChild(i).gameObject);
 
         MapRunState.EnsureRun();
-        MapNode root = MapRunState.Root;
-        MapNode current = MapRunState.CurrentNode;
-        if (root == null || current == null)
-            return;
-
-        Dictionary<MapNode, Vector2> positions = BuildMiniMapPositions(root);
-        Vector2 currentPosition = positions.ContainsKey(current) ? positions[current] : Vector2.zero;
-        miniMapTargetOffset = -currentPosition;
-        if (lastMiniMapCurrentId == -999)
-            miniMapContent.anchoredPosition = miniMapTargetOffset;
-        lastMiniMapCurrentId = current.id;
-
-        HashSet<MapNode> nodeSet = new HashSet<MapNode>();
-        nodeSet.Add(current);
-        foreach (MapNode child in current.children)
-            nodeSet.Add(child);
-
-        HashSet<string> lineKeys = new HashSet<string>();
-        foreach (MapNode child in current.children)
-            AddMiniMapLine(lineKeys, positions, current, child, true);
-
-        foreach (MapNode node in nodeSet)
-            if (positions.ContainsKey(node))
-                BuildMiniMapNode(node, positions[node], node == current);
-    }
-
-    Dictionary<MapNode, Vector2> BuildMiniMapPositions(MapNode root)
-    {
-        Dictionary<MapNode, Vector2> positions = new Dictionary<MapNode, Vector2>();
         MapNode current = MapRunState.CurrentNode;
         if (current == null)
-            return positions;
+            return;
 
-        positions[current] = Vector2.zero;
+        // 트리맵과 동일한 170×170 노드를 사용하고, 버튼 크기에 맞게 축소
+        // 버튼 실제 크기: ~178px, viewport: ~158px (half=79)
+        // scale=0.31 → 170*0.31≈53px 노드, 3개까지 가로로 맞음
+        const float miniScale = 0.31f;
+        const float nodeHalfGap = 95f;
+        const float maxChildHalfX = 170f;
 
         List<MapNode> children = new List<MapNode>(current.children);
-        if (children.Count == 0)
-            return positions;
+        Dictionary<MapNode, Vector2> positions = new Dictionary<MapNode, Vector2>();
+        positions[current] = new Vector2(0f, nodeHalfGap);
 
-        const float ySpacing = 52f;
-        const float maxHalfWidth = 58f;
-        float xSpacing = children.Count <= 1 ? 0f : Mathf.Min(maxHalfWidth * 2f / (children.Count - 1), maxHalfWidth);
-        float startX = children.Count <= 1 ? 0f : -(children.Count - 1) * xSpacing * 0.5f;
+        if (children.Count > 0)
+        {
+            float xStep = children.Count <= 1 ? 0f
+                : Mathf.Min(maxChildHalfX * 2f / (children.Count - 1), maxChildHalfX);
+            float startX = children.Count <= 1 ? 0f : -(children.Count - 1) * xStep * 0.5f;
+            for (int i = 0; i < children.Count; i++)
+                positions[children[i]] = new Vector2(startX + i * xStep, -nodeHalfGap);
+        }
 
-        for (int i = 0; i < children.Count; i++)
-            positions[children[i]] = new Vector2(startX + i * xSpacing, -ySpacing);
+        miniMapContent.localScale = new Vector3(miniScale, miniScale, 1f);
+        miniMapTargetOffset = Vector2.zero;
+        if (lastMiniMapCurrentId == -999)
+            miniMapContent.anchoredPosition = Vector2.zero;
+        lastMiniMapCurrentId = current.id;
 
-        return positions;
+        // 연결선 (노드 뒤에)
+        Color lineColor = MapBrown;
+        lineColor.a = 1f;
+        foreach (MapNode child in children)
+            BuildDashedLine(miniMapContent, "MiniLine", positions[current], positions[child], 22f, 13f, 5f, lineColor);
+
+        // 노드 (트리맵과 동일 스타일)
+        foreach (KeyValuePair<MapNode, Vector2> kvp in positions)
+            BuildMiniMapTreeNode(kvp.Key, kvp.Value, kvp.Key == current);
     }
 
-    void AddMiniMapLine(HashSet<string> lineKeys, Dictionary<MapNode, Vector2> positions, MapNode from, MapNode to, bool solid)
+    void BuildMiniMapTreeNode(MapNode node, Vector2 position, bool isCurrent)
     {
-        if (from == null || to == null || !positions.ContainsKey(from) || !positions.ContainsKey(to))
-            return;
+        bool revealRoom = ShouldRevealRoom(node);
+        GameObject nodeGO = Rect(miniMapContent, "MiniNode_" + node.id, Anchor.Center, position, new Vector2(170f, 170f));
+        Image nodeImage = nodeGO.AddComponent<Image>();
+        Sprite icon = revealRoom ? MapIcon(node) : circleSprite;
+        nodeImage.sprite = icon != null ? icon : circleSprite;
+        nodeImage.preserveAspect = true;
+        nodeImage.color = revealRoom ? Color.white : HiddenMapNodeColor;
+        nodeImage.raycastTarget = false;
 
-        string key = from.id + "_" + to.id;
-        if (!lineKeys.Add(key))
-            return;
-
-        BuildMiniMapLine(positions[from], positions[to], solid);
-    }
-
-    void BuildMiniMapLine(Vector2 from, Vector2 to, bool solid)
-    {
-        Color color = solid ? LineColor : SoftLineColor;
-        color.a = solid ? 1f : 0.72f;
-        BuildDashedLine(miniMapContent, "MiniMapLine", from, to, 9f, 6f, solid ? 3f : 2f, color);
-    }
-
-    void BuildMiniMapNode(MapNode node, Vector2 position, bool current)
-    {
-        GameObject nodeGO = Rect(miniMapContent, "MiniMapNode_" + node.id, Anchor.Center, position, current ? new Vector2(48f, 48f) : new Vector2(38f, 38f));
-        Image image = nodeGO.AddComponent<Image>();
-        Sprite icon = MapIcon(node);
-        image.sprite = icon != null ? icon : circleSprite;
-        image.preserveAspect = true;
-        image.color = Color.white;
-        image.raycastTarget = false;
-
-        Outline outline = nodeGO.AddComponent<Outline>();
-        outline.effectColor = current ? MapBrown : new Color(MapBrown.r, MapBrown.g, MapBrown.b, 0.82f);
-        outline.effectDistance = new Vector2(1f, -1f);
+        if (isCurrent)
+        {
+            Outline outline = nodeGO.AddComponent<Outline>();
+            outline.effectColor = MapBrown;
+            outline.effectDistance = new Vector2(4f, -4f);
+        }
     }
 
     void BuildDiaryText()
