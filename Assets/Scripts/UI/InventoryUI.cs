@@ -435,6 +435,8 @@ public class InventoryUI : MonoBehaviour
         _qGemBtn.targetGraphic = _qGemImg;
         _qGemBtn.onClick.RemoveListener(UseQGem);
         _qGemBtn.onClick.AddListener(UseQGem);
+        if (qgem.GetComponent<ItemConsumableDragSource>() == null)
+            qgem.AddComponent<ItemConsumableDragSource>();
         EnsureStorageSlotLabel(qgem.transform, "SlotLabel", "Q 보석", 18f, new Vector2(0f, -8f), new Vector2(slotWidth, 28f), TextAlignmentOptions.Center);
         _qGemName = EnsureStorageSlotLabel(qgem.transform, "SlotName", "없음", 14f, new Vector2(0f, -50f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
     }

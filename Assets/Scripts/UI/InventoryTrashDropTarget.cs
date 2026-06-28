@@ -7,8 +7,28 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
 {
     public void OnDrop(PointerEventData eventData)
     {
+        if (eventData.pointerDrag == null)
+            return;
+
+        // Q 보석(소모품) 슬롯 → 버리기.
+        var consumableSource = eventData.pointerDrag.GetComponent<ItemConsumableDragSource>();
+        if (consumableSource != null)
+        {
+            var itemInv = ItemInventoryManager.Instance;
+            if (itemInv != null && itemInv.Consumable != null)
+            {
+                ItemData removedItem = itemInv.RemoveConsumable();
+                if (removedItem != null)
+                {
+                    DropItemToWorld(removedItem);
+                    SoundManager.PlayClick();
+                }
+            }
+            return;
+        }
+
         var inv = InventoryManager.Instance;
-        if (inv == null || eventData.pointerDrag == null)
+        if (inv == null)
             return;
 
         BodyPart removed = null;
@@ -45,5 +65,14 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
             : (part.IsEquippable ? InventoryUI.FindDisplaySpriteForSlot(part.slot) : null);
 
         BodyPartWorldDrop.Spawn(part, origin + offset, sprite);
+    }
+
+    static void DropItemToWorld(ItemData item)
+    {
+        GameObject player = GameObject.FindWithTag("Player");
+        Vector3 origin = player != null ? player.transform.position : Vector3.zero;
+        Vector3 offset = new Vector3(Random.Range(-0.4f, 0.4f), -1.4f, 0f);
+
+        ItemDropSpawner.Spawn(item, origin + offset, false, 0);
     }
 }
