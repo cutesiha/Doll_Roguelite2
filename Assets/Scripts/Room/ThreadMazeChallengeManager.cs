@@ -86,7 +86,9 @@ public class ThreadMazeChallengeManager : MonoBehaviour
         if (pending != null)
             return pending.roomType == RoomType.Challenge;
 
-        return allowDirectRoomSceneTest && SceneManager.GetActiveScene().name.StartsWith("RoomScene");
+        string sceneName = SceneManager.GetActiveScene().name;
+        return allowDirectRoomSceneTest &&
+               (sceneName.StartsWith("RoomScene") || sceneName.StartsWith("ChallengeScene"));
     }
 
     public void BeginChallenge()

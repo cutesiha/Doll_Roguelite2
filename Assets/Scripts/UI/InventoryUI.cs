@@ -391,7 +391,10 @@ public class InventoryUI : MonoBehaviour
         _storageHp[index] = EnsureStorageSlotLabel(slot.transform, "SlotHP", "", 16f, new Vector2(0f, -66f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
     }
 
-    // task4: 슬롯 내 아이템 아이콘 — 원본 픽셀 크기로 표시, 슬롯 경계 침범 가능
+    // 슬롯 안 아이템 아이콘이 차지하는 정사각 박스 크기 (비율 유지하며 이 안에 맞춤)
+    const float SlotIconBox = 80f;
+
+    // 슬롯 내 아이템 아이콘 — 슬롯 크기에 맞춰 비율 유지하며 표시
     static void EnsureSlotItemIcon(Transform slotRoot, float slotW, float slotH)
     {
         if (slotRoot.Find("ItemIcon") != null)
@@ -403,15 +406,25 @@ public class InventoryUI : MonoBehaviour
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = Vector2.zero;
-        rt.sizeDelta = Vector2.zero; // SetNativeSize()로 런타임에 결정
+        rt.sizeDelta = new Vector2(SlotIconBox, SlotIconBox);
 
         Image img = go.AddComponent<Image>();
-        img.preserveAspect = false; // SetNativeSize가 비율을 이미 반영
+        img.preserveAspect = true; // 비율 유지하며 박스 안에 맞춤
         img.raycastTarget = false;
         img.color = Color.clear;
 
         // task5: 또잉은 슬롯이 아닌 아이템 아이콘에
         go.AddComponent<InventoryBoingEffect>();
+    }
+
+    // 아이콘을 슬롯 박스에 맞춰 비율 유지 (SetNativeSize 대체 — 너무 커지지 않도록)
+    static void FitSlotIcon(Image icon)
+    {
+        if (icon == null) return;
+        icon.preserveAspect = true;
+        icon.type = Image.Type.Simple;
+        RectTransform rt = icon.transform as RectTransform;
+        if (rt != null) rt.sizeDelta = new Vector2(SlotIconBox, SlotIconBox);
     }
 
     // task7: 동전 3x3 그리드 컨테이너
@@ -822,7 +835,7 @@ public class InventoryUI : MonoBehaviour
                 Sprite slotSprite = p == null ? null : (p.icon != null ? p.icon : (p.IsEquippable ? DisplaySpriteForSlot(p.slot) : null));
                 itemIcon.sprite = slotSprite;
                 itemIcon.color = slotSprite != null ? Color.white : Color.clear;
-                if (slotSprite != null) itemIcon.SetNativeSize();
+                if (slotSprite != null) FitSlotIcon(itemIcon);
                 else (itemIcon.transform as RectTransform).sizeDelta = Vector2.zero;
             }
 
@@ -861,7 +874,7 @@ public class InventoryUI : MonoBehaviour
                 {
                     icon.sprite = item.Sprite;
                     icon.color  = item.Sprite != null ? Color.white : new Color(0.88f, 0.48f, 0.24f, 0.8f);
-                    if (item.Sprite != null) icon.SetNativeSize();
+                    if (item.Sprite != null) FitSlotIcon(icon);
                     else (icon.transform as RectTransform).sizeDelta = Vector2.zero;
                 }
                 SetCoinGrid(_storageImg[i], 0, null);

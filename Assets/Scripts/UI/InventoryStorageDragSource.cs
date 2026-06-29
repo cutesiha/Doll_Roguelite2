@@ -89,9 +89,20 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
 
     Vector2 SourceSize()
     {
+        // 슬롯에 표시 중인 ItemIcon 자식 크기와 동일하게 (처음 집을 때와 같은 크기로)
+        Transform iconTr = transform.Find("ItemIcon");
+        if (iconTr is RectTransform iconRt)
+        {
+            Vector2 iconSize = iconRt.rect.size;
+            if (iconSize.x <= 0f || iconSize.y <= 0f)
+                iconSize = iconRt.sizeDelta;
+            if (iconSize.x > 1f && iconSize.y > 1f)
+                return iconSize;
+        }
+
         RectTransform sourceRect = transform as RectTransform;
         if (sourceRect == null)
-            return new Vector2(170f, 170f);
+            return new Vector2(80f, 80f);
 
         Vector2 size = sourceRect.rect.size;
         if (size.x <= 0f || size.y <= 0f)
