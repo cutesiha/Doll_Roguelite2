@@ -20,11 +20,17 @@ public class ItemInventoryManager : MonoBehaviour
 
     readonly List<ItemData> storage = new();
     readonly Dictionary<ItemEquipLocation, ItemData> equipped = new();
+    // 신체부위 아이템을 BodySlot별로 장착 (task3)
+    [System.NonSerialized] readonly Dictionary<BodySlot, ItemData> equippedByBodySlot = new();
+    // 동전 스택: 각 원소 = 해당 스택의 동전 개수 (최대 9) (task7)
+    [System.NonSerialized] readonly List<int> coinStacks = new();
+    // 동전 ItemData 참조 (3x3 표시용)
+    ItemData coinItemRef;
 
     ItemSystemSettings settings;
     ItemData consumable;
     ItemData shield;
-    int coins;
+    int coins; // legacy abstract coins (AddCoins 등 비-아이템 경로)
     bool shieldWaitingForNextRoom;
     bool shieldArmed;
     int shieldEquippedSceneHandle = -1;
@@ -38,8 +44,19 @@ public class ItemInventoryManager : MonoBehaviour
     public IReadOnlyList<ItemData> Storage => storage;
     public ItemData Consumable => consumable;
     public ItemData Shield => shield;
-    public int Coins => coins;
+    // 총 동전 = storage 스택 합계 + abstract coins
+    public int Coins => ComputeTotalCoins();
     public bool ShieldArmed => shieldArmed;
+    // task7: 동전 스택 리스트 (UI 3x3 표시용)
+    public IReadOnlyList<int> CoinStacks => coinStacks;
+    // task7: 동전 아이템 데이터 참조
+    public ItemData CoinItemRef => coinItemRef;
+    // task3: 신체부위 장착 아이템
+    public ItemData GetEquippedByBodySlot(BodySlot slot)
+    {
+        equippedByBodySlot.TryGetValue(slot, out ItemData item);
+        return item;
+    }
     public float RoomMoveSpeedBonus => roomBuffSceneHandle == SceneManager.GetActiveScene().handle ? roomMoveSpeedBonus : 0f;
     public float RoomArmDamageBonus => roomBuffSceneHandle == SceneManager.GetActiveScene().handle ? roomArmDamageBonus : 0f;
 
@@ -70,7 +87,7 @@ public class ItemInventoryManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
         settings = ItemSystemSettings.Load();
-        coins = settings.startingCoins;
+        coins = settings != null ? settings.startingCoins : 0;
         SceneManager.sceneLoaded += OnSceneLoaded;
         EnsureDebugHud();
     }
@@ -128,8 +145,25 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (item.Type == ItemType.Currency)
         {
-            AddCoins(Mathf.Max(1, Mathf.RoundToInt(item.Value)));
+            // 동전을 스택으로 인벤토리 슬롯에 저장 (task7)
+            coinItemRef = item;
+            int amount = Mathf.Max(1, Mathf.RoundToInt(item.Value));
+            int remaining = amount;
+            for (int idx = 0; idx < coinStacks.Count && remaining > 0; idx++)
+            {
+                int space = 9 - coinStacks[idx];
+                if (space <= 0) continue;
+                int add = Mathf.Min(space, remaining);
+                coinStacks[idx] += add;
+                remaining -= add;
+            }
+            while (remaining > 0)
+            {
+                coinStacks.Add(Mathf.Min(9, remaining));
+                remaining -= 9;
+            }
             message = item.ItemName + " 획득";
+            NotifyChanged();
             return true;
         }
 
@@ -160,7 +194,18 @@ public class ItemInventoryManager : MonoBehaviour
         }
 
         if (item.Type == ItemType.BodyPart && item.EquipLocation != ItemEquipLocation.None)
-            return TryEquipBodyPart(item, out message);
+        {
+            // 자동 장착 대신 인벤토리 보관함에 넣는다. 사용자가 직접 드래그해서 장착.
+            if (storage.Count >= Capacity)
+            {
+                message = "인벤토리가 가득 참";
+                return false;
+            }
+            storage.Add(item);
+            message = item.ItemName + "을(를) 인벤토리에 넣었습니다.";
+            NotifyChanged();
+            return true;
+        }
 
         if (storage.Count >= Capacity)
         {
@@ -182,8 +227,24 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (item.Type == ItemType.Currency)
         {
-            AddCoins(Mathf.Max(1, Mathf.RoundToInt(item.Value)));
+            coinItemRef = item;
+            int amount = Mathf.Max(1, Mathf.RoundToInt(item.Value));
+            int remaining = amount;
+            for (int idx = 0; idx < coinStacks.Count && remaining > 0; idx++)
+            {
+                int space = 9 - coinStacks[idx];
+                if (space <= 0) continue;
+                int add = Mathf.Min(space, remaining);
+                coinStacks[idx] += add;
+                remaining -= add;
+            }
+            while (remaining > 0)
+            {
+                coinStacks.Add(Mathf.Min(9, remaining));
+                remaining -= 9;
+            }
             message = item.ItemName + " 획득";
+            NotifyChanged();
             return true;
         }
 
@@ -202,7 +263,7 @@ public class ItemInventoryManager : MonoBehaviour
     public bool TryPurchase(ItemData item, int price, out string message)
     {
         price = Mathf.Max(0, price);
-        if (coins < price)
+        if (Coins < price)
         {
             message = "동전이 부족합니다.";
             return false;
@@ -211,11 +272,11 @@ public class ItemInventoryManager : MonoBehaviour
         if (!CanAcquire(item, out message))
             return false;
 
-        coins -= price;
+        SpendCoins(price);
         bool acquired = TryAcquire(item, out message);
         if (!acquired)
         {
-            coins += price;
+            AddCoins(price); // 환불
             return false;
         }
 
@@ -323,6 +384,83 @@ public class ItemInventoryManager : MonoBehaviour
 
         coins += amount;
         NotifyChanged();
+    }
+
+    // task3: 보관함의 신체부위 아이템을 특정 BodySlot에 장착
+    public bool TryEquipBodyPartFromStorage(ItemData item, BodySlot targetSlot)
+    {
+        if (item == null || item.Type != ItemType.BodyPart)
+            return false;
+        if (!IsBodyPartCompatibleWithSlot(item.EquipLocation, targetSlot))
+            return false;
+
+        int idx = storage.IndexOf(item);
+        if (idx < 0)
+            return false;
+
+        storage.RemoveAt(idx);
+
+        // 기존 장착 아이템이 있으면 보관함으로
+        if (equippedByBodySlot.TryGetValue(targetSlot, out ItemData old) && old != null)
+        {
+            if (storage.Count < Capacity)
+                storage.Add(old);
+        }
+
+        equippedByBodySlot[targetSlot] = item;
+        Announce(item.ItemName + " 장착");
+        NotifyChanged();
+        return true;
+    }
+
+    // task3: 장착된 신체부위 아이템을 보관함으로 되돌리기
+    public bool TryUnequipBodyPartToStorage(BodySlot slot)
+    {
+        if (!equippedByBodySlot.TryGetValue(slot, out ItemData item) || item == null)
+            return false;
+        if (storage.Count >= Capacity)
+            return false;
+
+        storage.Add(item);
+        equippedByBodySlot.Remove(slot);
+        NotifyChanged();
+        return true;
+    }
+
+    // task7: 동전 총 개수 계산 (coinStacks + abstract coins)
+    int ComputeTotalCoins()
+    {
+        int total = coins;
+        for (int i = 0; i < coinStacks.Count; i++)
+            total += coinStacks[i];
+        return total;
+    }
+
+    // task7: 동전 소비 (coinStacks → abstract coins 순)
+    void SpendCoins(int amount)
+    {
+        for (int i = coinStacks.Count - 1; i >= 0 && amount > 0; i--)
+        {
+            int take = Mathf.Min(amount, coinStacks[i]);
+            coinStacks[i] -= take;
+            amount -= take;
+            if (coinStacks[i] == 0)
+                coinStacks.RemoveAt(i);
+        }
+        if (amount > 0)
+            coins = Mathf.Max(0, coins - amount);
+    }
+
+    public static bool IsBodyPartCompatibleWithSlot(ItemEquipLocation location, BodySlot slot)
+    {
+        switch (location)
+        {
+            case ItemEquipLocation.Eye: return slot == BodySlot.EyeLeft || slot == BodySlot.EyeRight;
+            case ItemEquipLocation.Arm: return slot == BodySlot.ArmLeft || slot == BodySlot.ArmRight;
+            case ItemEquipLocation.Leg: return slot == BodySlot.LegLeft || slot == BodySlot.LegRight;
+            case ItemEquipLocation.Body: return false; // Body는 별도 처리
+            default: return false;
+        }
     }
 
     bool CanAcquire(ItemData item, out string message)

@@ -413,6 +413,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!60 &5073778386803255588
 PolygonCollider2D:
   m_ObjectHideFlags: 0

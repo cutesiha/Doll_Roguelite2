@@ -10,11 +10,15 @@ public class ItemTestRoomSpawner : MonoBehaviour
     [SerializeField] bool clearExistingItems = true;
     [SerializeField] bool includeCurrency = true;
     [SerializeField] float labelFontSize = 0.34f;
+    [Tooltip("에디터 툴로 하이어라키에 직접 배치된 경우 true. 런타임 스폰을 건너뜀.")]
+    [SerializeField] bool authoredInHierarchy;
 
     bool spawned;
 
     void Start()
     {
+        if (authoredInHierarchy)
+            return;
         SpawnAllItems();
     }
 

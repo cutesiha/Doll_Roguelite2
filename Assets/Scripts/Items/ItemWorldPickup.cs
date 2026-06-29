@@ -32,6 +32,8 @@ public class ItemWorldPickup : MonoBehaviour
     [SerializeField, Min(0.1f)] float tooltipFontSize = 2.0f;
     [SerializeField] Color tooltipBackgroundColor = new Color(0.10f, 0.07f, 0.05f, 0.92f);
     [SerializeField] Color tooltipTextColor = Color.white;
+    [Header("Authoring (에디터 배치용)")]
+    [SerializeField] ItemData itemAsset;
     [Header("Shop Feedback")]
     [SerializeField, Min(0f)] float purchaseFailureShakeDistance = 0.22f;
     [SerializeField, Min(0.02f)] float purchaseFailureShakeDuration = 0.34f;
@@ -77,6 +79,9 @@ public class ItemWorldPickup : MonoBehaviour
         Collider2D collider = GetComponent<Collider2D>();
         if (collider != null)
             collider.isTrigger = true;
+
+        if (itemAsset != null && item == null)
+            Configure(itemAsset, false, 0, false);
     }
 
     void Start()

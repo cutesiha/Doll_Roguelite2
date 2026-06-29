@@ -97,6 +97,8 @@ public class RunHudUI : MonoBehaviour
     readonly List<HudPipGroup> hudPipGroups = new List<HudPipGroup>();
     HudPipGroup bodyPips;
     Coroutine waveClearRoutine;
+    // task8: 장착 아이템 표시 패널
+    EquippedItemHudPanel equippedItemPanel;
     Coroutine mapAnimationRoutine;
     bool suppressInventoryOutsideClick;
     int lastMiniMapCurrentId = -999;
@@ -318,6 +320,7 @@ public class RunHudUI : MonoBehaviour
         if (rootRect == null) rootRect = gameObject.AddComponent<RectTransform>();
 
         BuildBodyHud();
+        BuildEquippedItemPanel();
         BuildWaveHud();
         BuildTopRightMapButton();
         BuildDiaryText();
@@ -870,7 +873,48 @@ public class RunHudUI : MonoBehaviour
         BuildPartRow(group.transform, "BodyRow", HudPartIcon.Body, null, 0, null, 5, new Vector2(rowX, -118f), true);
     }
 
-void BuildPixelDoll(Transform parent)
+// task8: HP 섹션 아래에 장착된 Q보석 아이템 표시 패널
+    void BuildEquippedItemPanel()
+    {
+        // BodyPipHud 아래 (y=-30-176=-206, 여백 10 추가)
+        const float panelY = -216f;
+        const float panelH = 48f;
+        const float panelW = 260f;
+
+        GameObject existing = null;
+        for (int i = 0; i < transform.childCount; i++)
+            if (transform.GetChild(i).name == "EquippedItemPanel") { existing = transform.GetChild(i).gameObject; break; }
+
+        GameObject panel = existing ?? Rect(transform, "EquippedItemPanel", Anchor.TopLeft, new Vector2(30f, panelY), new Vector2(panelW, panelH));
+        panel.SetActive(false);
+
+        Image backing = panel.GetComponent<Image>() ?? panel.AddComponent<Image>();
+        SetRoundedImage(backing, roundedPanelSprite);
+        backing.color = HudPanelColor;
+        backing.raycastTarget = false;
+
+        // 아이콘
+        GameObject iconGo = panel.transform.Find("ItemIcon")?.gameObject ?? Rect(panel.transform, "ItemIcon", Anchor.TopLeft, new Vector2(6f, -6f), new Vector2(36f, 36f));
+        Image iconImg = iconGo.GetComponent<Image>() ?? iconGo.AddComponent<Image>();
+        iconImg.preserveAspect = true;
+        iconImg.raycastTarget = false;
+
+        // 이름 레이블
+        GameObject labelGo = panel.transform.Find("ItemName")?.gameObject ?? Rect(panel.transform, "ItemName", Anchor.TopLeft, new Vector2(48f, -8f), new Vector2(panelW - 56f, 32f));
+        TextMeshProUGUI label = labelGo.GetComponent<TextMeshProUGUI>() ?? labelGo.AddComponent<TextMeshProUGUI>();
+        label.font = uiFont != null ? uiFont : UIThinDungFont.Get();
+        label.fontSize = 18f;
+        label.color = TextColor;
+        label.alignment = TextAlignmentOptions.Left;
+        label.raycastTarget = false;
+
+        EquippedItemHudPanel comp = panel.GetComponent<EquippedItemHudPanel>() ?? panel.AddComponent<EquippedItemHudPanel>();
+        comp.SetReferences(iconImg, label);
+        equippedItemPanel = comp;
+        comp.Refresh();
+    }
+
+    void BuildPixelDoll(Transform parent)
     {
         GameObject frame = Rect(parent, "PlayerDollFrame", Anchor.TopLeft, new Vector2(0f, -3f), new Vector2(82f, 116f));
         Image image = frame.AddComponent<Image>();

@@ -420,6 +420,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: darkJewel
       objectReference: {fileID: 0}
+    - target: {fileID: 381289143660746825, guid: 111bd8163e077014aba93472ea0b3c7f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9199995137349216452, guid: 111bd8163e077014aba93472ea0b3c7f, type: 3}
       propertyPath: m_LocalPosition.x
       value: -6.0124164
@@ -1068,6 +1072,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: pink_jewel
       objectReference: {fileID: 0}
+    - target: {fileID: 5757940488603958258, guid: 76710a80fb5d7754895f4e2ab6a483cb, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1682,6 +1690,10 @@ PrefabInstance:
     - target: {fileID: 1000000000000001, guid: 279d8c5bd6b06004d98cd0cbe0acd9bd, type: 3}
       propertyPath: m_Name
       value: white_jewel
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000001, guid: 279d8c5bd6b06004d98cd0cbe0acd9bd, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1000000000000002, guid: 279d8c5bd6b06004d98cd0cbe0acd9bd, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6233,6 +6245,10 @@ PrefabInstance:
     - target: {fileID: 9131682489910783828, guid: 9448e7f5864961d4693e48a141d47b0d, type: 3}
       propertyPath: m_Name
       value: BlueJewel
+      objectReference: {fileID: 0}
+    - target: {fileID: 9131682489910783828, guid: 9448e7f5864961d4693e48a141d47b0d, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
