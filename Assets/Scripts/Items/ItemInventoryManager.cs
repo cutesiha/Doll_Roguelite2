@@ -257,9 +257,12 @@ public class ItemInventoryManager : MonoBehaviour
         if (Time.time >= coinOnKillUntil)
             return;
 
-        ItemData coin = ItemCatalog.Find("coin");
-        if (coin != null)
-            ItemDropSpawner.Spawn(coin, deathPosition, false, 0);
+        GameObject coinPrefab = Resources.Load<GameObject>("Drops/동전");
+        if (coinPrefab != null)
+        {
+            GameObject go = Instantiate(coinPrefab, deathPosition, Quaternion.identity);
+            go.GetComponent<CoinWorldPickup>()?.Toss(deathPosition);
+        }
         else
             AddCoins(1);
     }
@@ -464,6 +467,21 @@ public class ItemInventoryManager : MonoBehaviour
                 Color pink = new Color(1f, 0.35f, 0.68f);
                 DarkAuraEffect.SpawnOn(player.transform, 3f, pink);
                 ScreenVignetteEffect.Show(3f, pink);
+            }
+            else if (item.ItemId == "blue_gem")
+            {
+                Color blue = new Color(0.18f, 0.48f, 1f);
+                DarkAuraEffect.SpawnOn(player.transform, 3f, blue);
+                ScreenVignetteEffect.Show(3f, blue);
+            }
+            else if (item.ItemId == "yellow_gem")
+            {
+                YellowAuraEffect.SpawnOn(player.transform, 15f);
+                ScreenFogEffect.Show(1.5f, 0.5f, new Color(1f, 0.9f, 0.3f));
+            }
+            else if (item.ItemId == "white_gem")
+            {
+                WhiteAuraEffect.SpawnOn(player.transform, 20f);
             }
 
             ShowItemPopup(item);

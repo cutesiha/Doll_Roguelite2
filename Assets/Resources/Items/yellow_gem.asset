@@ -22,12 +22,12 @@ MonoBehaviour:
   consumable: 1
   value: 0
   secondaryValue: 0
-  duration: 20
+  duration: 15
   shopPrice: 12
   effects:
   - effectType: 18
     value: 0
-    duration: 20
+    duration: 15
   sprite: {fileID: 21300000, guid: 21199bb01fcef3c42ae53a0e86f66430, type: 3}
   placeholderShape: 2
   placeholderColor: {r: 1, g: 0.82, b: 0.12, a: 1}
