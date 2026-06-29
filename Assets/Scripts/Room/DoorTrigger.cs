@@ -276,6 +276,12 @@ public class DoorTrigger : MonoBehaviour
                 tooltipRoot = existingTooltip;
         }
 
+        // 하이어라키에 직접 만들어 둔 툴팁(BalloonBackground + 텍스트 자식이 있는 경우)이면
+        // 코드가 위치·크기·폰트를 덮어쓰지 않는다. 에디터에서 직접 조정한 값을 그대로 유지.
+        bool authored = tooltipRoot != null
+            && tooltipRoot.Find("BalloonBackground") != null
+            && tooltipRoot.GetComponentInChildren<TextMeshPro>(true) != null;
+
         if (tooltipRoot == null)
         {
             GameObject rootObject = new GameObject("_DoorTooltip");
@@ -284,7 +290,8 @@ public class DoorTrigger : MonoBehaviour
         }
 
         tooltipRoot.rotation = Quaternion.identity;
-        tooltipRoot.localScale = Vector3.one;
+        if (!authored)
+            tooltipRoot.localScale = Vector3.one;
 
         SpriteRenderer background = tooltipRoot.GetComponentInChildren<SpriteRenderer>(true);
         if (background == null)
@@ -293,10 +300,12 @@ public class DoorTrigger : MonoBehaviour
             backgroundObject.transform.SetParent(tooltipRoot, false);
             background = backgroundObject.AddComponent<SpriteRenderer>();
         }
-        background.sprite = tooltipSpriteOverride != null ? tooltipSpriteOverride : TooltipSprite();
+        if (background.sprite == null || !authored)
+            background.sprite = tooltipSpriteOverride != null ? tooltipSpriteOverride : TooltipSprite();
         background.color = Color.white;
         background.sortingOrder = 300;
-        background.transform.localScale = tooltipBackgroundScale;
+        if (!authored)
+            background.transform.localScale = tooltipBackgroundScale;
 
         if (tooltipText == null)
             tooltipText = tooltipRoot.GetComponentInChildren<TextMeshPro>(true);
@@ -306,15 +315,19 @@ public class DoorTrigger : MonoBehaviour
             textObject.transform.SetParent(tooltipRoot, false);
             tooltipText = textObject.AddComponent<TextMeshPro>();
         }
-        tooltipText.transform.localPosition = tooltipTextLocalPosition;
         tooltipText.font = UIThinDungFont.Get();
-        tooltipText.fontSize = tooltipFontSize;
-        tooltipText.fontStyle = FontStyles.Bold;
-        tooltipText.alignment = TextAlignmentOptions.Center;
-        tooltipText.color = new Color(0.24f, 0.14f, 0.09f, 1f);
         tooltipText.sortingOrder = 301;
-        tooltipText.textWrappingMode = TextWrappingModes.NoWrap;
-        tooltipText.rectTransform.sizeDelta = tooltipTextBoxSize;
+        if (!authored)
+        {
+            tooltipText.transform.localPosition = tooltipTextLocalPosition;
+            tooltipText.fontSize = tooltipFontSize;
+            tooltipText.fontStyle = FontStyles.Bold;
+            tooltipText.alignment = TextAlignmentOptions.Center;
+            tooltipText.color = new Color(0.24f, 0.14f, 0.09f, 1f);
+            tooltipText.sortingOrder = 301;
+            tooltipText.textWrappingMode = TextWrappingModes.NoWrap;
+            tooltipText.rectTransform.sizeDelta = tooltipTextBoxSize;
+        }
 
         tooltipRoot.gameObject.SetActive(false);
     }
@@ -342,7 +355,14 @@ public class DoorTrigger : MonoBehaviour
             return;
 
         bool canEnter = BodyConditionUtility.CanPass(targetNode);
-        string secondLine = canEnter ? "[Enter] 키로 입장" : "조건에 부합하지 않음";
+        string secondLine;
+        if (canEnter)
+            secondLine = "[Enter] 입장";
+        else if (targetNode.roomType == RoomType.ConditionCombat)
+            secondLine = ConditionLabel(targetNode.conditionType) + " 제거 후 입장";
+        else
+            secondLine = "입장 불가";
+
         tooltipText.text = DoorTitle(targetNode) + "\n" + secondLine;
         tooltipText.color = canEnter
             ? new Color(0.24f, 0.14f, 0.09f, 1f)
@@ -416,7 +436,7 @@ public class DoorTrigger : MonoBehaviour
             return "잠긴 문";
 
         if (node.roomType == RoomType.ConditionCombat)
-            return ConditionLabel(node.conditionType) + " 전투방";
+            return ConditionLabel(node.conditionType) + " 봉인 전투방";
 
         switch (node.roomType)
         {
@@ -437,12 +457,12 @@ public class DoorTrigger : MonoBehaviour
     {
         switch (condition)
         {
-            case NodeConditionType.NoLeftArm: return "왼팔 없음";
-            case NodeConditionType.NoRightArm: return "오른팔 없음";
-            case NodeConditionType.NoLeftEye: return "왼눈 없음";
-            case NodeConditionType.NoRightEye: return "오른눈 없음";
-            case NodeConditionType.NoLeftLeg: return "왼다리 없음";
-            case NodeConditionType.NoRightLeg: return "오른다리 없음";
+            case NodeConditionType.NoLeftArm: return "왼쪽 팔";
+            case NodeConditionType.NoRightArm: return "오른쪽 팔";
+            case NodeConditionType.NoLeftEye: return "왼쪽 눈";
+            case NodeConditionType.NoRightEye: return "오른쪽 눈";
+            case NodeConditionType.NoLeftLeg: return "왼쪽 다리";
+            case NodeConditionType.NoRightLeg: return "오른쪽 다리";
             default: return "조건";
         }
     }

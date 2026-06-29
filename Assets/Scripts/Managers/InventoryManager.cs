@@ -17,9 +17,12 @@ public class InventoryManager : MonoBehaviour
     }
 
     // indexed by (int)BodySlot — null means not equipped
-    public BodyPart[] equipped  = new BodyPart[6];
+    // [NonSerialized]: 이 배열들은 전적으로 런타임에서 관리된다. Unity 직렬화에 노출되면
+    // 씬 전환 시 null 요소가 기본 BodyPart(EyeLeft, hp 0) 인스턴스로 치환되어
+    // 보관함이 가짜 "눈"으로 가득 차는 버그가 발생한다.
+    [System.NonSerialized] public BodyPart[] equipped  = new BodyPart[6];
     // storage slots — null means empty
-    public BodyPart[] storage   = new BodyPart[StorageSlotCount];
+    [System.NonSerialized] public BodyPart[] storage   = new BodyPart[StorageSlotCount];
     bool[] lockedSlots = new bool[6];
 
     public event Action OnInventoryChanged;

@@ -99,8 +99,13 @@ public class EnemyChaser : EnemyBase
             cols[i].isTrigger = true;
         }
 
+        // 점프 중(공중)에는 닿아도 접촉 데미지를 주지 않는다 — 착지 슬램만 데미지.
+        SuppressContactDamage = true;
+
         yield return StartCoroutine(JumpToTarget(targetPosition, baseScale));
 
+        // 착지: 슬램 데미지 적용 후 접촉 데미지 복구
+        SuppressContactDamage = false;
         DealSlamDamage(targetPosition, impactRadius);
 
         for (int i = 0; i < cols.Length; i++)

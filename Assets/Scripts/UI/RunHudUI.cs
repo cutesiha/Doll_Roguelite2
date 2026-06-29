@@ -791,7 +791,8 @@ public class RunHudUI : MonoBehaviour
         Button closeButton = FindChildComponent<Button>("MapCloseButton_X");
         if (closeButton != null)
         {
-            ConfigureMapCloseButtonStyle(closeButton);
+            // 씬에 배치된 X 버튼이므로 하이어라키의 위치/크기를 유지한다.
+            ConfigureMapCloseButtonStyle(closeButton, false);
             closeButton.onClick.RemoveListener(PlayClickSound);
             closeButton.onClick.RemoveListener(CloseMap);
             closeButton.onClick.AddListener(PlayClickSound);
@@ -811,6 +812,8 @@ public class RunHudUI : MonoBehaviour
             pauseMenu = gameObject.AddComponent<RunPauseMenuUI>();
 
         pauseMenu.SetMenuButton(menuButton);
+        // 다른 패널이 열려 있으면 메뉴를 열지 못하게 한다 (패널 겹침 방지)
+        pauseMenu.CanOpenMenu = () => !IsMapPanelOpen() && !IsInventoryPanelOpen();
     }
 
     void AttachHudTooltip(Button button, string text)
@@ -2166,7 +2169,30 @@ void BuildPixelDoll(Transform parent)
         if (mapOverlay != null && mapOverlay.activeSelf)
             CloseMap();
         else
+        {
+            // 다른 패널이 열려 있으면 지도를 열지 않는다 (패널 겹침 방지)
+            if (IsInventoryPanelOpen() || IsMenuPanelOpen())
+                return;
             OpenMap();
+        }
+    }
+
+    // ── 패널 상호 배제: 한 번에 하나의 패널만 ──────────────────────────────
+    bool IsMapPanelOpen()
+    {
+        return mapOverlay != null && mapOverlay.activeSelf;
+    }
+
+    bool IsInventoryPanelOpen()
+    {
+        InventoryUI inv = FindInventory();
+        return inv != null && inv.IsOpen;
+    }
+
+    bool IsMenuPanelOpen()
+    {
+        RunPauseMenuUI pauseMenu = GetComponent<RunPauseMenuUI>();
+        return pauseMenu != null && pauseMenu.IsAnyOpen;
     }
 
     void HandleMapHotkey()
@@ -2344,8 +2370,9 @@ void BuildPixelDoll(Transform parent)
         }
         else
         {
-            if (mapOverlay != null && mapOverlay.activeSelf)
-                CloseMap();
+            // 다른 패널이 열려 있으면 인벤토리를 열지 않는다 (패널 겹침 방지)
+            if (IsMapPanelOpen() || IsMenuPanelOpen())
+                return;
 
             inventory.OpenPanel();
             suppressInventoryOutsideClick = true;
@@ -2721,16 +2748,21 @@ void BuildPixelDoll(Transform parent)
         return button;
     }
 
-    void ConfigureMapCloseButtonStyle(Button button)
+    void ConfigureMapCloseButtonStyle(Button button, bool applyLayout = true)
     {
         if (button == null)
             return;
 
-        RectTransform rect = button.transform as RectTransform;
-        rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-18f, -18f);
-        rect.sizeDelta = new Vector2(60f, 60f);
+        // applyLayout=false: 씬에 직접 배치한 X 버튼의 앵커/피벗/위치/크기를 그대로 유지한다.
+        // (런타임에 강제로 우상단으로 옮기던 동작이 하이어라키 배치를 무시하는 문제 수정)
+        if (applyLayout)
+        {
+            RectTransform rect = button.transform as RectTransform;
+            rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-18f, -18f);
+            rect.sizeDelta = new Vector2(60f, 60f);
+        }
 
         Color closeBrown = new Color(0.30f, 0.18f, 0.10f, 1f);
         Image background = button.GetComponent<Image>();

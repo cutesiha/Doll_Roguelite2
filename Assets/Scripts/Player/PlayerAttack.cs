@@ -251,20 +251,25 @@ public class PlayerAttack : MonoBehaviour
             return;
 
         AttackArm arm;
+        bool oneArmedOnly;
         if (hasLeft && hasRight)
         {
             // 양팔 있으면 왼팔 → 오른팔 교대
             arm = nextAttackUsesLeftArm ? AttackArm.Left : AttackArm.Right;
             nextAttackUsesLeftArm = !nextAttackUsesLeftArm;
+            oneArmedOnly = false;
         }
         else
         {
             // 한 팔만 남으면 그 팔로만 공격 (없는 팔 차례는 건너뜀 → 모션도 안 나감)
             arm = hasLeft ? AttackArm.Left : AttackArm.Right;
             nextAttackUsesLeftArm = !hasLeft; // 나중에 반대 팔 되찾으면 그 팔부터
+            oneArmedOnly = true;
         }
 
-        cooldownTimer = attackCooldown;
+        // 한 팔만 남으면 없는 팔 차례(왼→[오 생략]→왼…)를 건너뛰는 만큼
+        // 다음 공격까지 두 배로 기다린다 → 실효 공격 속도 절반
+        cooldownTimer = oneArmedOnly ? attackCooldown * 2f : attackCooldown;
         StartCoroutine(AttackRoutine(NormalizedDirection(direction), arm));
     }
 
