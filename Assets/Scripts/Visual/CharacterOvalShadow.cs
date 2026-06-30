@@ -82,8 +82,16 @@ public class CharacterOvalShadow : MonoBehaviour
             return;
         }
 
+        // forceShadow is used for static props whose shadow is hand-authored in the
+        // editor. Once such a shadow exists, leave its transform/look exactly as the
+        // user adjusted it instead of regenerating it from the serialized defaults.
+        bool authored = forceShadow && transform.Find(ShadowName) != null;
+
         shadowRenderer = EnsureShadowRenderer();
         if (shadowRenderer == null)
+            return;
+
+        if (authored)
             return;
 
         Sprite sourceSprite = playerController != null ? playerController.GetShadowSourceSprite() : ownerRenderer.sprite;

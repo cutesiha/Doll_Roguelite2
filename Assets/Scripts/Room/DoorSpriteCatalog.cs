@@ -22,6 +22,20 @@ public sealed class DoorSpriteCatalog : ScriptableObject
     public Sprite noRightLegIcon;
     public AudioClip doorOpenSfx;
 
+    [Header("Door Layout (authored once, applied to every door)")]
+    // Door image size = sprite.bounds * doorVisualScale; placed at doorVisualOffset from the door root.
+    public float doorVisualScale = 2.4928f;
+    public Vector2 doorVisualOffset = new Vector2(-0.3441f, 0.5196f);
+    // Icon is normalized to iconLocalHeight (in the door-visual local space) and placed at iconLocalOffset.
+    public float iconLocalHeight = 0.62f;
+    public Vector3 iconLocalOffset = new Vector3(0.016f, 0.223f, -0.02f);
+    // Interaction trigger collider. If doorColliderPath has >= 3 points, a PolygonCollider2D
+    // with those points (world-offset from the door root) is used; otherwise a BoxCollider2D
+    // of doorColliderSize/doorColliderOffset is used.
+    public Vector2 doorColliderSize = new Vector2(2.34f, 2.70f);
+    public Vector2 doorColliderOffset = Vector2.zero;
+    public Vector2[] doorColliderPath = new Vector2[0];
+
     static DoorSpriteCatalog instance;
 
     public static DoorSpriteCatalog Load()

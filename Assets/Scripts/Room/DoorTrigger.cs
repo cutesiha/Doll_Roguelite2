@@ -215,11 +215,18 @@ public class DoorTrigger : MonoBehaviour
         if (iconRenderer == null)
             iconRenderer = iconTransform.gameObject.AddComponent<SpriteRenderer>();
         iconRenderer.sortingOrder = 81;
-        iconTransform.localPosition = iconLocalPosition;
 
+        DoorSpriteCatalog layout = DoorSpriteCatalog.Load();
+        float visualScale = layout != null ? layout.doorVisualScale : doorWorldScale;
+        Vector2 visualOffset = layout != null ? layout.doorVisualOffset : Vector2.zero;
+        iconTransform.localPosition = layout != null ? layout.iconLocalOffset : iconLocalPosition;
+
+        // The door root carries a non-uniform scale; compensate so the visual ends up at the
+        // authored world size/position regardless of that root scale.
         float parentX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
         float parentY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
-        visualRoot.localScale = new Vector3(doorWorldScale / parentX, doorWorldScale / parentY, 1f);
+        visualRoot.localScale = new Vector3(visualScale / parentX, visualScale / parentY, 1f);
+        visualRoot.localPosition = new Vector3(visualOffset.x / parentX, visualOffset.y / parentY, 0f);
         visualRestPosition = visualRoot.localPosition;
     }
 
@@ -244,7 +251,8 @@ public class DoorTrigger : MonoBehaviour
             if (iconSprite != null)
             {
                 float iconHeight = Mathf.Max(0.01f, iconSprite.bounds.size.y);
-                float scale = 0.62f / iconHeight;
+                float targetHeight = catalog != null ? catalog.iconLocalHeight : 0.62f;
+                float scale = targetHeight / iconHeight;
                 iconRenderer.transform.localScale = new Vector3(scale, scale, 1f);
             }
         }
@@ -252,17 +260,52 @@ public class DoorTrigger : MonoBehaviour
 
     void EnsureInteractionCollider()
     {
+        DoorSpriteCatalog layout = DoorSpriteCatalog.Load();
+        float parentX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
+        float parentY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
+
+        // Authored polygon trigger (preferred). Points are stored as world-offset from the
+        // door root, so divide by the root scale to express them in collider-local space.
+        if (layout != null && layout.doorColliderPath != null && layout.doorColliderPath.Length >= 3)
+        {
+            BoxCollider2D legacyBox = GetComponent<BoxCollider2D>();
+            if (legacyBox != null)
+                Destroy(legacyBox);
+
+            PolygonCollider2D polygon = GetComponent<PolygonCollider2D>();
+            if (polygon == null)
+                polygon = gameObject.AddComponent<PolygonCollider2D>();
+            polygon.isTrigger = true;
+
+            Vector2[] path = new Vector2[layout.doorColliderPath.Length];
+            for (int i = 0; i < path.Length; i++)
+                path[i] = new Vector2(layout.doorColliderPath[i].x / parentX, layout.doorColliderPath[i].y / parentY);
+            polygon.pathCount = 1;
+            polygon.SetPath(0, path);
+            return;
+        }
+
+        // Box fallback.
+        PolygonCollider2D stalePolygon = GetComponent<PolygonCollider2D>();
+        if (stalePolygon != null)
+            Destroy(stalePolygon);
+
         BoxCollider2D interactionCollider = GetComponent<BoxCollider2D>();
         if (interactionCollider == null)
             interactionCollider = gameObject.AddComponent<BoxCollider2D>();
-
         interactionCollider.isTrigger = true;
+
+        if (layout != null)
+        {
+            interactionCollider.size = new Vector2(layout.doorColliderSize.x / parentX, layout.doorColliderSize.y / parentY);
+            interactionCollider.offset = new Vector2(layout.doorColliderOffset.x / parentX, layout.doorColliderOffset.y / parentY);
+            return;
+        }
+
         if (doorRenderer == null || doorRenderer.sprite == null)
             return;
 
         Vector2 spriteSize = doorRenderer.sprite.bounds.size * doorWorldScale;
-        float parentX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
-        float parentY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
         interactionCollider.size = new Vector2(spriteSize.x / parentX, spriteSize.y / parentY);
         interactionCollider.offset = Vector2.zero;
     }

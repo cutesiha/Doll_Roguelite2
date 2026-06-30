@@ -30,3 +30,16 @@ MonoBehaviour:
   noLeftLegIcon: {fileID: 21300000, guid: fa962c23cbac9bb4f950047fd6a39be0, type: 3}
   noRightLegIcon: {fileID: 21300000, guid: c2a2253d8cc687743a159212d6946f11, type: 3}
   doorOpenSfx: {fileID: 0}
+  doorVisualScale: 2.4928
+  doorVisualOffset: {x: -0.3441, y: 0.5196}
+  iconLocalHeight: 0.62
+  iconLocalOffset: {x: 0.016, y: 0.223, z: -0.02}
+  doorColliderSize: {x: 2.34, y: 2.7}
+  doorColliderOffset: {x: 0, y: 0}
+  doorColliderPath:
+  - {x: -1.7439, y: 2.2492}
+  - {x: -1.7593, y: -0.9531}
+  - {x: -1.5541, y: -1.2043}
+  - {x: 1.0461, y: -1.2043}
+  - {x: 1.0416, y: 1.8216}
+  - {x: 0.8927, y: 2.2186}
