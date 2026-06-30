@@ -434,8 +434,8 @@ Transform:
   m_GameObject: {fileID: 349709967}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.0674, y: -0.0191, z: 0}
-  m_LocalScale: {x: 2.63475, y: 2.63475, z: 1.0539}
+  m_LocalPosition: {x: -0.3779, y: 0.3535, z: 0}
+  m_LocalScale: {x: 3.2557604, y: 3.2557604, z: 1.3023043}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1483620006}
@@ -2480,6 +2480,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   moveSpeed: 5
   missingLegSpeedMultiplier: 0.5
+  perLegSpeedPenalty: 1
   bodyColor: {r: 0.3, g: 0.6, b: 1, a: 1}
   spriteRenderer: {fileID: 2064320640}
   leftArmRenderer: {fileID: 660535627}
@@ -2545,6 +2546,38 @@ MonoBehaviour:
   - {fileID: -2835099235331689093, guid: edba35ddf1c10e843967397ad0b2251c, type: 3}
   - {fileID: 2809980501799723204, guid: edba35ddf1c10e843967397ad0b2251c, type: 3}
   frontWalkFramesPerSecond: 8
+  noLegUpFrames:
+  - {fileID: 568963238373150208, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  - {fileID: -4358985810033928933, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  - {fileID: -8056608158246801473, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  noLegDownFrames:
+  - {fileID: -2272619552551927911, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  - {fileID: 4669231909452902497, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  - {fileID: -47465634400977427, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  noLegLeftFrames:
+  - {fileID: -1062366810021938902, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  - {fileID: 4355872510066443794, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  - {fileID: -5269726287677772586, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  noLegRightFrames:
+  - {fileID: -359258633040352251, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  - {fileID: -1896816412282063671, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  - {fileID: 7528591735929290170, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  noLeftLegUpSprite: {fileID: 21300000, guid: ff91cd5b20f155e4291f9bb4587facf2, type: 3}
+  noLeftLegDownSprite: {fileID: 21300000, guid: f4003f89ca1b35547b9e17df28b85221, type: 3}
+  noLeftLegLeftSprite: {fileID: 21300000, guid: fb847f588338c1b4089ea4ec89f19aaa, type: 3}
+  noLeftLegRightSprite: {fileID: 21300000, guid: 94ff0078f8da7d34798ad5ff614c620e, type: 3}
+  noRightLegUpSprite: {fileID: 21300000, guid: 307db27be9dade34f8b39ed30d5c11e2, type: 3}
+  noRightLegDownSprite: {fileID: 21300000, guid: eb8595ae6705bd9479d3c77676bf8006, type: 3}
+  noRightLegLeftSprite: {fileID: 21300000, guid: 6c4fbf65727ad154eaac477472ad804e, type: 3}
+  noRightLegRightSprite: {fileID: 21300000, guid: 96aed0efe7d6d9945807ffeae7e22f2a, type: 3}
+  hopHeight: 0.16
+  hopFrequency: 6
+  oneLegMinSpeedMultiplier: 0.35
+  crawlFramesPerSecond: 6
+  noLegArmOffset: {x: 0, y: -0.1}
+  noLegEyeOffset: {x: 0, y: 0}
+  crawlEyeHeightFrac: 0.32
+  crawlEyeSpacingFrac: 0.3
 --- !u!61 &2064320643
 BoxCollider2D:
   m_ObjectHideFlags: 0
