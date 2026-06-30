@@ -59,8 +59,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Sprite noRightLegRightSprite;
     [SerializeField, Min(0f)] float hopHeight = 0.16f;
     [SerializeField, Min(0f)] float hopFrequency = 11f;
+    [SerializeField, Range(0.05f, 1f)] float oneLegMinSpeedMultiplier = 0.35f;
     [SerializeField, Min(1f)] float crawlFramesPerSecond = 6f;
-    [SerializeField] Vector2 noLegArmOffset = new Vector2(0f, 0.1f);
+    [SerializeField] Vector2 noLegArmOffset = Vector2.zero;
 
     Rigidbody2D rb;
     Vector2 moveInput;
@@ -74,6 +75,8 @@ public class PlayerController : MonoBehaviour
     float facingLockTimer;
     float walkAnimationTime;
     int lastWalkFrame = -1;
+    int currentNoLegFrame;
+    int currentNoLegFrameCount = 1;
     SpriteRenderer leftEyeSocketRenderer;
     SpriteRenderer rightEyeSocketRenderer;
     static Sprite eyeSocketSprite;
@@ -139,10 +142,16 @@ public class PlayerController : MonoBehaviour
             spriteRenderer.color = Color.white;
             ApplyFacingSprite();
         }
+
+        NormalizeLegacyNoLegArmOffset();
     }
 
     void Start()
     {
+        // hop 비주얼이 transform에만 적용되고 rb.position에 누적되지 않도록 보장한다.
+        // Unity 기본값(true)이면 transform 변경이 rb.position을 즉시 바꿔 hop이 물리에 새어든다.
+        Physics2D.autoSyncTransforms = false;
+
         PlayerManager.Instance?.ApplyTo(gameObject);
     }
 
@@ -217,16 +226,23 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // 콩콩 비주얼 오프셋이 트랜스폼에 남아있으면 물리 시뮬레이션 동기화 전에 제거한다.
-        // (Physics2D.autoSyncTransforms=false 환경: 트랜스폼→바디 동기화 때 hop이 새어들어가
-        //  MovePosition과 충돌해 위로 드리프트하던 버그 방지)
+        // LateUpdate에서 얹은 hop 오프셋을 FixedUpdate 첫머리에 제거한다.
+        // Physics2D.autoSyncTransforms=false(Start에서 강제 설정)이므로
+        // transform.position이 rb.position과 다르면 hop이 남아있는 것이다.
         if (transform.position.x != rb.position.x || transform.position.y != rb.position.y)
             transform.position = new Vector3(rb.position.x, rb.position.y, transform.position.z);
 
         float speed = Mathf.Max(0f, moveSpeed + itemMoveSpeedBonus);
         var state = BodyConditionUtility.CurrentState();
+        bool hasOneLeg = false;
         if (state != null && (!state.legLeft || !state.legRight))
+        {
+            hasOneLeg = state.legLeft != state.legRight;
             speed *= missingLegSpeedMultiplier;
+        }
+
+        if (hasOneLeg && moveInput.sqrMagnitude > 0.001f)
+            speed = Mathf.Max(speed, moveSpeed * oneLegMinSpeedMultiplier);
 
         if (Time.time < speedMultiplierUntil)
             speed *= speedMultiplier;
@@ -850,11 +866,11 @@ public class PlayerController : MonoBehaviour
 
     void LoadNoLegSpritesIfMissing()
     {
-        // 양다리 없음 (3프레임)
-        if (NeedsNoLegFrameReload(noLegUpFrames))    noLegUpFrames    = LoadNoLegFrames("noleg_behind.png");
-        if (NeedsNoLegFrameReload(noLegDownFrames))  noLegDownFrames  = LoadNoLegFrames("noleg_front.png");
-        if (NeedsNoLegFrameReload(noLegLeftFrames))  noLegLeftFrames  = LoadNoLegFrames("noleg_left.png");
-        if (NeedsNoLegFrameReload(noLegRightFrames)) noLegRightFrames = LoadNoLegFrames("noleg_right2.png");
+        // 양다리 없음 (3프레임) - prefix 검사로 잘못된 파일 캐시 자동 무효화
+        if (NeedsNoLegFrameReload(noLegUpFrames,    "noleg_behind"))  noLegUpFrames    = LoadNoLegFrames("noleg_behind.png");
+        if (NeedsNoLegFrameReload(noLegDownFrames,  "noleg_front"))   noLegDownFrames  = LoadNoLegFrames("noleg_front.png");
+        if (NeedsNoLegFrameReload(noLegLeftFrames,  "noleg_left2"))   noLegLeftFrames  = LoadNoLegFrames("noleg_left2.png");
+        if (NeedsNoLegFrameReload(noLegRightFrames, "noleg_right_"))  noLegRightFrames = LoadNoLegFrames("noleg_right.png");
 
         // 한쪽 다리 없음 (단일 프레임)
         if (noLeftLegUpSprite == null)    noLeftLegUpSprite    = LoadNoLegSprite("noleftlef_behind.png");
@@ -868,9 +884,10 @@ public class PlayerController : MonoBehaviour
         if (noRightLegRightSprite == null) noRightLegRightSprite = LoadNoLegSprite("norightleg_right.png");
     }
 
-    bool NeedsNoLegFrameReload(Sprite[] frames)
+    bool NeedsNoLegFrameReload(Sprite[] frames, string expectedPrefix)
     {
-        return frames == null || frames.Length == 0 || frames.Any(s => s == null);
+        return frames == null || frames.Length < 2
+            || frames.Any(s => s == null || !s.name.StartsWith(expectedPrefix));
     }
 
     Sprite LoadNoLegSprite(string filename)
@@ -919,23 +936,63 @@ public class PlayerController : MonoBehaviour
                 idx = s < frames.Length ? s : seqLen - s;
             }
             idx = Mathf.Clamp(idx, 0, frames.Length - 1);
+            currentNoLegFrame = idx;
+            currentNoLegFrameCount = frames.Length;
             if (frames[idx] != null) spriteRenderer.sprite = frames[idx];
         }
 
-        ApplyStandingArmSprites(spriteRenderer.sprite);
-        ApplyNoLegArmOffset();
+        ApplyNoLegArmSprites(spriteRenderer.sprite);
         lastWalkFrame = -1;
     }
 
-    // 양다리 없는 몸통은 키가 달라서 팔이 어긋난다. 보정 오프셋을 더해 위치를 맞춘다.
-    void ApplyNoLegArmOffset()
+    // 팔 스프라이트 pivot은 서 있는 몸통 기준으로 설정되어 있으므로
+    // 노다리 바디 pivot 대신 현재 방향의 standing 스프라이트를 기준으로 계산한다.
+    // noLegArmOffset으로 노다리 스프라이트와 서있는 스프라이트의 body 높이 차이를 보정한다.
+    void ApplyNoLegArmSprites(Sprite _)
     {
-        if (noLegArmOffset == Vector2.zero)
+        ApplyNoLegArmSpritesForFrame(spriteRenderer.sprite, currentNoLegFrame, currentNoLegFrameCount);
+    }
+
+    void ApplyNoLegArmSpritesForFrame(Sprite bodySprite, int bodyFrame, int bodyFrameCount)
+    {
+        switch (facingDirection)
+        {
+            case FacingDirection.Up:
+                ApplyNoLegArmFrame(leftArmRenderer, standingBehindLeftArmSprite, bodySprite, bodyFrame, bodyFrameCount, BodySlot.ArmLeft);
+                ApplyNoLegArmFrame(rightArmRenderer, standingBehindRightArmSprite, bodySprite, bodyFrame, bodyFrameCount, BodySlot.ArmRight);
+                break;
+            case FacingDirection.Left:
+                SetRendererVisible(leftArmRenderer, false);
+                ApplyNoLegArmFrame(rightArmRenderer, standingLeftFacingRightArmSprite, bodySprite, bodyFrame, bodyFrameCount, BodySlot.ArmRight);
+                break;
+            case FacingDirection.Right:
+                ApplyNoLegArmFrame(leftArmRenderer, standingRightFacingLeftArmSprite, bodySprite, bodyFrame, bodyFrameCount, BodySlot.ArmLeft);
+                SetRendererVisible(rightArmRenderer, false);
+                break;
+            default:
+                ApplyNoLegArmFrame(leftArmRenderer, standingFrontLeftArmSprite, bodySprite, bodyFrame, bodyFrameCount, BodySlot.ArmLeft);
+                ApplyNoLegArmFrame(rightArmRenderer, standingFrontRightArmSprite, bodySprite, bodyFrame, bodyFrameCount, BodySlot.ArmRight);
+                break;
+        }
+    }
+
+    void ApplyNoLegArmFrame(SpriteRenderer renderer, Sprite armSprite, Sprite bodySprite, int bodyFrame, int bodyFrameCount, BodySlot slot)
+    {
+        if (renderer == null)
             return;
-        if (leftArmRenderer != null && leftArmRenderer.enabled)
-            leftArmRenderer.transform.localPosition += (Vector3)noLegArmOffset;
-        if (rightArmRenderer != null && rightArmRenderer.enabled)
-            rightArmRenderer.transform.localPosition += (Vector3)noLegArmOffset;
+
+        if (armSprite == null || bodySprite == null || !BodyConditionUtility.HasPart(slot))
+        {
+            renderer.enabled = false;
+            return;
+        }
+
+        renderer.sprite = armSprite;
+        renderer.transform.localPosition = CalculatePartOffset(bodySprite, bodyFrame, Mathf.Max(1, bodyFrameCount), armSprite, 0, 1)
+            + (Vector3)noLegArmOffset;
+        renderer.sortingLayerID = spriteRenderer.sortingLayerID;
+        renderer.sortingOrder = spriteRenderer.sortingOrder + 1;
+        renderer.enabled = true;
     }
 
     // 한쪽 다리 없음 → noleftleg/norightleg 스프라이트 (팔은 그대로)
@@ -983,13 +1040,12 @@ public class PlayerController : MonoBehaviour
             && moveInput.sqrMagnitude > 0.001f;
     }
 
-    // 한다리 콩콩 효과: 물리(rb)는 절대 건드리지 않고 렌더(transform)만 Y로 통통 튀게 한다.
-    // hop은 트랜스폼에만 얹고, 다음 FixedUpdate가 물리 동기화 전에 다시 제거한다.
+    // 한다리 콩콩 효과: transform만 Y로 튀기고 rb.position은 건드리지 않는다.
+    // Start()에서 Physics2D.autoSyncTransforms=false 설정으로 transform 변경이 rb에 새지 않는다.
     void ApplyLegHopOffset()
     {
         if (!IsHopping())
         {
-            // 콩콩이 끝났는데 오프셋이 남아있으면 지면(물리 위치)으로 복귀
             if (transform.position.x != rb.position.x || transform.position.y != rb.position.y)
                 transform.position = new Vector3(rb.position.x, rb.position.y, transform.position.z);
             return;
@@ -997,6 +1053,12 @@ public class PlayerController : MonoBehaviour
 
         float hop = Mathf.Abs(Mathf.Sin(walkAnimationTime * hopFrequency)) * hopHeight;
         transform.position = new Vector3(rb.position.x, rb.position.y + hop, transform.position.z);
+    }
+
+    void NormalizeLegacyNoLegArmOffset()
+    {
+        if (Mathf.Abs(noLegArmOffset.x) < 0.0001f && Mathf.Abs(noLegArmOffset.y - 0.3f) < 0.0001f)
+            noLegArmOffset = Vector2.zero;
     }
 
     Sprite[] SortSprites(Sprite[] sprites)

@@ -14,13 +14,12 @@ using UnityEditor;
 public class MinotaurBoss : EnemyBase
 {
     [Header("Minotaur")]
-    [SerializeField] string spriteName = "mino";
+    [SerializeField] string spriteName = "mino_jjin";
     [SerializeField, Min(1)] int bossHp = 100;
     [SerializeField, Min(0.5f)] float bossScale = 3.0f;
 
     [Header("Breathing")]
-    [SerializeField, Min(0f)] float breathAmplitude = 0.05f;
-    [SerializeField, Min(0.1f)] float breathFrequency = 0.35f;
+    [SerializeField] MinoBreathAnimator breathAnimator;
 
     [Header("Timing")]
     [SerializeField, Min(0.1f)] float introDelay = 1.0f;
@@ -61,19 +60,11 @@ public class MinotaurBoss : EnemyBase
     public System.Action Defeated;
 
     SpriteRenderer bossRenderer;
-    MeshFilter breathingMeshFilter;
-    MeshRenderer breathingMeshRenderer;
-    Mesh breathingMesh;
-    Material breathingMaterial;
-    Vector3[] breathingBaseVertices;
-    Vector3[] breathingVertices;
-    Vector2[] breathingVertexWeights;
     Transform player;
     PlayerController playerController;
     Vector3 baseScale;
     Vector2 arenaCenter = Vector2.zero;
     Vector2 arenaSize = new Vector2(26f, 14f);
-    float breathTime;
     bool stunned;
     bool bossDefeated;
     bool pinTurn;
@@ -95,13 +86,13 @@ public class MinotaurBoss : EnemyBase
         currentHp = maxHp;
 
         LoadSprite();
+        EnsureMinoBreathAnimator();
         transform.localScale = new Vector3(bossScale, bossScale, 1f);
         baseScale = transform.localScale;
 
         SetupRigidbody();
         EnsureCharacterShadow();
         EnsureBossCollider();
-        BuildBreathingMesh();
     }
 
     protected override void Start()
@@ -131,12 +122,8 @@ public class MinotaurBoss : EnemyBase
 
     protected override void Update()
     {
-        SyncBreathingColor();
         if (bossDefeated || stunned)
             return;
-
-        breathTime += Time.deltaTime;
-        UpdateBreathingMesh(BreathAmount(breathTime * breathFrequency));
     }
 
     protected override void OnDamaged()
@@ -157,141 +144,7 @@ public class MinotaurBoss : EnemyBase
     protected override void OnDestroy()
     {
         RunHudUI.HideBossHealth();
-        if (breathingMaterial != null)
-            Destroy(breathingMaterial);
-        if (breathingMesh != null)
-            Destroy(breathingMesh);
         base.OnDestroy();
-    }
-
-    // Builds a continuous grid over the original sprite. Regional weights let the torso,
-    // head and arms follow the breath independently without cutting visible seams into fur.
-    void BuildBreathingMesh()
-    {
-        if (bossRenderer == null || bossRenderer.sprite == null)
-            return;
-
-        const int columns = 18;
-        const int rows = 16;
-        Sprite sprite = bossRenderer.sprite;
-        Bounds bounds = sprite.bounds;
-        Rect textureRect = sprite.rect;
-        Texture texture = sprite.texture;
-
-        GameObject meshObject = new GameObject("MinotaurBreathingMesh");
-        meshObject.transform.SetParent(transform, false);
-        breathingMeshFilter = meshObject.AddComponent<MeshFilter>();
-        breathingMeshRenderer = meshObject.AddComponent<MeshRenderer>();
-
-        int vertexCount = (columns + 1) * (rows + 1);
-        breathingBaseVertices = new Vector3[vertexCount];
-        breathingVertices = new Vector3[vertexCount];
-        breathingVertexWeights = new Vector2[vertexCount];
-        Vector2[] uvs = new Vector2[vertexCount];
-        int vertex = 0;
-        for (int y = 0; y <= rows; y++)
-        {
-            float ty = y / (float)rows;
-            for (int x = 0; x <= columns; x++)
-            {
-                float tx = x / (float)columns;
-                breathingBaseVertices[vertex] = new Vector3(
-                    Mathf.Lerp(bounds.min.x, bounds.max.x, tx),
-                    Mathf.Lerp(bounds.min.y, bounds.max.y, ty),
-                    0f);
-                uvs[vertex] = new Vector2(
-                    (textureRect.x + textureRect.width * tx) / texture.width,
-                    (textureRect.y + textureRect.height * ty) / texture.height);
-
-                float torso = SmoothBand(tx, 0.22f, 0.34f, 0.66f, 0.78f)
-                    * SmoothBand(ty, 0.30f, 0.42f, 0.70f, 0.82f);
-                float head = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.62f, 0.82f, ty));
-                float arms = (1f - SmoothBand(tx, 0.27f, 0.39f, 0.61f, 0.73f))
-                    * SmoothBand(ty, 0.33f, 0.43f, 0.67f, 0.78f);
-                breathingVertexWeights[vertex] = new Vector2(torso, Mathf.Max(head, arms * 0.7f));
-                vertex++;
-            }
-        }
-
-        int[] triangles = new int[columns * rows * 6];
-        int triangle = 0;
-        for (int y = 0; y < rows; y++)
-            for (int x = 0; x < columns; x++)
-            {
-                int bottomLeft = y * (columns + 1) + x;
-                int topLeft = bottomLeft + columns + 1;
-                triangles[triangle++] = bottomLeft;
-                triangles[triangle++] = topLeft;
-                triangles[triangle++] = topLeft + 1;
-                triangles[triangle++] = bottomLeft;
-                triangles[triangle++] = topLeft + 1;
-                triangles[triangle++] = bottomLeft + 1;
-            }
-
-        breathingMesh = new Mesh { name = "MinotaurBreathingMesh" };
-        breathingMesh.vertices = breathingBaseVertices;
-        breathingMesh.uv = uvs;
-        breathingMesh.triangles = triangles;
-        breathingMesh.RecalculateBounds();
-        breathingMeshFilter.sharedMesh = breathingMesh;
-
-        Shader shader = Shader.Find("Sprites/Default");
-        if (shader == null)
-            shader = Shader.Find("Universal Render Pipeline/Unlit");
-        breathingMaterial = new Material(shader) { name = "MinotaurBreathingMaterial" };
-        breathingMaterial.mainTexture = texture;
-        breathingMeshRenderer.sharedMaterial = breathingMaterial;
-        breathingMeshRenderer.sortingLayerID = bossRenderer.sortingLayerID;
-        breathingMeshRenderer.sortingOrder = bossRenderer.sortingOrder;
-        bossRenderer.enabled = false;
-    }
-
-    void UpdateBreathingMesh(float amount)
-    {
-        if (breathingMesh == null || breathingBaseVertices == null)
-            return;
-
-        float centerX = bossRenderer != null && bossRenderer.sprite != null
-            ? bossRenderer.sprite.bounds.center.x
-            : 0f;
-        for (int i = 0; i < breathingVertices.Length; i++)
-        {
-            Vector3 source = breathingBaseVertices[i];
-            float torso = breathingVertexWeights[i].x;
-            float follower = breathingVertexWeights[i].y;
-
-            // Chest expansion is small; the head and shoulders rise even less. The lower
-            // vertices have zero weight, so both feet remain planted throughout the cycle.
-            source.x += (source.x - centerX) * amount * breathAmplitude * 0.24f * torso;
-            source.y += amount * breathAmplitude * (0.30f * torso + 0.16f * follower);
-            breathingVertices[i] = source;
-        }
-
-        breathingMesh.vertices = breathingVertices;
-        breathingMesh.RecalculateBounds();
-    }
-
-    float BreathAmount(float cycles)
-    {
-        float phase = Mathf.Repeat(cycles, 1f);
-        if (phase < 0.38f)
-            return Mathf.SmoothStep(0f, 1f, phase / 0.38f);
-        if (phase < 0.48f)
-            return 1f;
-        return Mathf.SmoothStep(1f, 0f, (phase - 0.48f) / 0.52f);
-    }
-
-    float SmoothBand(float value, float outerMin, float innerMin, float innerMax, float outerMax)
-    {
-        float enter = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(outerMin, innerMin, value));
-        float exit = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(innerMax, outerMax, value));
-        return enter * exit;
-    }
-
-    void SyncBreathingColor()
-    {
-        if (breathingMaterial != null && bossRenderer != null)
-            breathingMaterial.color = bossRenderer.color;
     }
 
     void ReportHealth()
@@ -987,6 +840,46 @@ public class MinotaurBoss : EnemyBase
         }
     }
 
+    void EnsureMinoBreathAnimator()
+    {
+        if (breathAnimator == null)
+            breathAnimator = GetComponent<MinoBreathAnimator>();
+        if (breathAnimator == null)
+            breathAnimator = gameObject.AddComponent<MinoBreathAnimator>();
+
+#if UNITY_EDITOR
+        if (!breathAnimator.HasFrames)
+        {
+            Sprite[] frames =
+            {
+                LoadEditorSprite("mino_jjin"),
+                LoadEditorSprite("mino_head1"),
+                LoadEditorSprite("mino_body1"),
+                LoadEditorSprite("mino_head2"),
+                LoadEditorSprite("mino_body2"),
+                LoadEditorSprite("mino_head2"),
+                LoadEditorSprite("mino_body1"),
+                LoadEditorSprite("mino_head1"),
+                LoadEditorSprite("mino_jjin")
+            };
+
+            bool hasAllFrames = true;
+            for (int i = 0; i < frames.Length; i++)
+                hasAllFrames &= frames[i] != null;
+
+            if (hasAllFrames)
+            {
+                breathAnimator.Configure(
+                    frames,
+                    new[] { 0.12f, 0.08f, 0.09f, 0.08f, 0.22f, 0.08f, 0.09f, 0.08f, 0.24f },
+                    true,
+                    true,
+                    true);
+            }
+        }
+#endif
+    }
+
     void LoadSprite()
     {
         if (bossRenderer == null)
@@ -1003,4 +896,11 @@ public class MinotaurBoss : EnemyBase
         bossRenderer.color = Color.white;
         bossRenderer.sortingOrder = 70;
     }
+
+#if UNITY_EDITOR
+    Sprite LoadEditorSprite(string frameName)
+    {
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + frameName + ".png");
+    }
+#endif
 }

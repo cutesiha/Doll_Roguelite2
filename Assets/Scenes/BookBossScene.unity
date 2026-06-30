@@ -594,6 +594,35 @@ MonoBehaviour:
   - {fileID: -2835099235331689093, guid: edba35ddf1c10e843967397ad0b2251c, type: 3}
   - {fileID: 2809980501799723204, guid: edba35ddf1c10e843967397ad0b2251c, type: 3}
   frontWalkFramesPerSecond: 8
+  noLegUpFrames:
+  - {fileID: 568963238373150208, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  - {fileID: -4358985810033928933, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  - {fileID: -8056608158246801473, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  noLegDownFrames:
+  - {fileID: -2272619552551927911, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  - {fileID: 4669231909452902497, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  - {fileID: -47465634400977427, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  noLegLeftFrames:
+  - {fileID: -1062366810021938902, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  - {fileID: 4355872510066443794, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  - {fileID: -5269726287677772586, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  noLegRightFrames:
+  - {fileID: -359258633040352251, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  - {fileID: -1896816412282063671, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  - {fileID: 7528591735929290170, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  noLeftLegUpSprite: {fileID: 21300000, guid: ff91cd5b20f155e4291f9bb4587facf2, type: 3}
+  noLeftLegDownSprite: {fileID: 21300000, guid: f4003f89ca1b35547b9e17df28b85221, type: 3}
+  noLeftLegLeftSprite: {fileID: 21300000, guid: fb847f588338c1b4089ea4ec89f19aaa, type: 3}
+  noLeftLegRightSprite: {fileID: 21300000, guid: 94ff0078f8da7d34798ad5ff614c620e, type: 3}
+  noRightLegUpSprite: {fileID: 21300000, guid: 307db27be9dade34f8b39ed30d5c11e2, type: 3}
+  noRightLegDownSprite: {fileID: 21300000, guid: eb8595ae6705bd9479d3c77676bf8006, type: 3}
+  noRightLegLeftSprite: {fileID: 21300000, guid: 6c4fbf65727ad154eaac477472ad804e, type: 3}
+  noRightLegRightSprite: {fileID: 21300000, guid: 96aed0efe7d6d9945807ffeae7e22f2a, type: 3}
+  hopHeight: 0.16
+  hopFrequency: 11
+  oneLegMinSpeedMultiplier: 0.35
+  crawlFramesPerSecond: 6
+  noLegArmOffset: {x: 0, y: 0.3}
 --- !u!61 &211311188
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -762,6 +791,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!60 &211311195
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -1405,6 +1435,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!1 &370359446
 GameObject:
   m_ObjectHideFlags: 0
@@ -2461,6 +2492,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!114 &874001734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3184,6 +3216,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!1 &1018022202
 GameObject:
   m_ObjectHideFlags: 0
@@ -3542,6 +3575,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!1 &1073542016
 GameObject:
   m_ObjectHideFlags: 0
@@ -4687,6 +4721,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!61 &1730252295
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5033,6 +5068,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!1 &1760093656
 GameObject:
   m_ObjectHideFlags: 0
@@ -6674,8 +6710,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb4e6c78f240dea46be7930c9290034f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThresholdManager
-  overlayColor: {r: 0, g: 0, b: 0, a: 1}
-  overlayAlpha: 0.72
+  leftEyeMissingImage: {fileID: 0}
+  rightEyeMissingImage: {fileID: 0}
   roomSceneName: RoomScene
   bossSceneName: BossScene
   middleBossSceneName: MiddleBossScene
@@ -6852,6 +6888,7 @@ GameObject:
   - component: {fileID: 3200000012}
   - component: {fileID: 3200000014}
   - component: {fileID: 3200000015}
+  - component: {fileID: 3200000016}
   m_Layer: 0
   m_Name: BookBossPart_Body
   m_TagString: Untagged
@@ -6923,7 +6960,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 70
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: b388e155fd2be14489f6e4983ebac058, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d730763600156f544bbb9e3c56066a35, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -7055,6 +7092,32 @@ PolygonCollider2D:
       - {x: -0.19, y: -1.03}
       - {x: 0.19, y: -1.03}
   m_UseDelaunayMesh: 1
+--- !u!114 &3200000016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3200000010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d6dbe41f93b43cbb24672c34112c5af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteFrameAnimator
+  targetRenderer: {fileID: 3200000012}
+  frames:
+  - {fileID: 21300000, guid: d730763600156f544bbb9e3c56066a35, type: 3}
+  - {fileID: 21300000, guid: c1c7879d51f514b43a733536f3386e88, type: 3}
+  - {fileID: 21300000, guid: ccba5df0875a43940b36d5a6a95b9de0, type: 3}
+  - {fileID: 21300000, guid: c1c7879d51f514b43a733536f3386e88, type: 3}
+  frameDurations:
+  - 0.18
+  - 0.14
+  - 0.22
+  - 0.14
+  defaultFrameTime: 0.16
+  loop: 1
+  playOnStart: 1
 --- !u!1 &3200000020
 GameObject:
   m_ObjectHideFlags: 0

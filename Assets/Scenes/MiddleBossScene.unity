@@ -594,6 +594,34 @@ MonoBehaviour:
   - {fileID: -2835099235331689093, guid: edba35ddf1c10e843967397ad0b2251c, type: 3}
   - {fileID: 2809980501799723204, guid: edba35ddf1c10e843967397ad0b2251c, type: 3}
   frontWalkFramesPerSecond: 8
+  noLegUpFrames:
+  - {fileID: 568963238373150208, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  - {fileID: -4358985810033928933, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  - {fileID: -8056608158246801473, guid: 719e5349bd3c26d4197fe0a1257f7aec, type: 3}
+  noLegDownFrames:
+  - {fileID: -2272619552551927911, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  - {fileID: 4669231909452902497, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  - {fileID: -47465634400977427, guid: 7832e451169e8a546b8409fe48e78c09, type: 3}
+  noLegLeftFrames:
+  - {fileID: -1062366810021938902, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  - {fileID: 4355872510066443794, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  - {fileID: -5269726287677772586, guid: fe9c7ad946df8b64db6f91fabf3f2a7b, type: 3}
+  noLegRightFrames:
+  - {fileID: -359258633040352251, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  - {fileID: -1896816412282063671, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  - {fileID: 7528591735929290170, guid: dac147b24f4439249afaebad03e3491a, type: 3}
+  noLeftLegUpSprite: {fileID: 21300000, guid: ff91cd5b20f155e4291f9bb4587facf2, type: 3}
+  noLeftLegDownSprite: {fileID: 21300000, guid: f4003f89ca1b35547b9e17df28b85221, type: 3}
+  noLeftLegLeftSprite: {fileID: 21300000, guid: fb847f588338c1b4089ea4ec89f19aaa, type: 3}
+  noLeftLegRightSprite: {fileID: 21300000, guid: 94ff0078f8da7d34798ad5ff614c620e, type: 3}
+  noRightLegUpSprite: {fileID: 21300000, guid: 307db27be9dade34f8b39ed30d5c11e2, type: 3}
+  noRightLegDownSprite: {fileID: 21300000, guid: eb8595ae6705bd9479d3c77676bf8006, type: 3}
+  noRightLegLeftSprite: {fileID: 21300000, guid: 6c4fbf65727ad154eaac477472ad804e, type: 3}
+  noRightLegRightSprite: {fileID: 21300000, guid: 96aed0efe7d6d9945807ffeae7e22f2a, type: 3}
+  hopHeight: 0.16
+  hopFrequency: 11
+  crawlFramesPerSecond: 6
+  noLegArmOffset: {x: 0, y: 0}
 --- !u!61 &211311188
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -762,6 +790,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!60 &211311195
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -1405,6 +1434,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!1 &370359446
 GameObject:
   m_ObjectHideFlags: 0
@@ -2461,6 +2491,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!114 &874001734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3184,6 +3215,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!1 &1018022202
 GameObject:
   m_ObjectHideFlags: 0
@@ -3542,6 +3574,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!1 &1073542016
 GameObject:
   m_ObjectHideFlags: 0
@@ -4687,6 +4720,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!61 &1730252295
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5033,6 +5067,7 @@ MonoBehaviour:
   rotationZ: -28
   shadowColor: {r: 0.03, g: 0.022, b: 0.018, a: 0.5}
   sortingOrderOffset: -1
+  forceShadow: 0
 --- !u!1 &1760093656
 GameObject:
   m_ObjectHideFlags: 0
@@ -6674,8 +6709,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb4e6c78f240dea46be7930c9290034f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThresholdManager
-  overlayColor: {r: 0, g: 0, b: 0, a: 1}
-  overlayAlpha: 0.72
+  leftEyeMissingImage: {fileID: 0}
+  rightEyeMissingImage: {fileID: 0}
   roomSceneName: RoomScene
   bossSceneName: BossScene
   middleBossSceneName: MiddleBossScene
@@ -6838,6 +6873,7 @@ GameObject:
   - component: {fileID: 3100000014}
   - component: {fileID: 3100000015}
   - component: {fileID: 3100000016}
+  - component: {fileID: 3100000017}
   m_Layer: 0
   m_Name: MinotaurBoss
   m_TagString: Untagged
@@ -6909,7 +6945,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 70
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 10e18557f8da2b944a32c332e6f038ae, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e299cca29c4429a4c90d8f3d803b133c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -7016,11 +7052,10 @@ MonoBehaviour:
   shakeCameraOnHit: 1
   cameraShakeDuration: 0.12
   cameraShakeMagnitude: 0.1
-  spriteName: mino
+  spriteName: mino_jjin
   bossHp: 100
   bossScale: 3
-  breathAmplitude: 0.05
-  breathFrequency: 0.35
+  breathAnimator: {fileID: 3100000017}
   introDelay: 1
   betweenActions: 1.6
   strikeTime: 0.35
@@ -7255,6 +7290,42 @@ PolygonCollider2D:
       - {x: 0.25, y: -1.0799999}
       - {x: 0.26, y: -1.0699999}
   m_UseDelaunayMesh: 1
+--- !u!114 &3100000017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3100000010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c0425bc8f2c4f7d9d1fc8c522995b6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MinoBreathAnimator
+  targetRenderer: {fileID: 3100000012}
+  frames:
+  - {fileID: 21300000, guid: e299cca29c4429a4c90d8f3d803b133c, type: 3}
+  - {fileID: 21300000, guid: 1a4a668fc5167fa419046c6d540a8e53, type: 3}
+  - {fileID: 21300000, guid: c7e5427a2dbcb2649a85575467034a08, type: 3}
+  - {fileID: 21300000, guid: a91b92920c5be0847bc8eeebce872eb1, type: 3}
+  - {fileID: 21300000, guid: 22ba8e77b16154a41963eac5d3905eed, type: 3}
+  - {fileID: 21300000, guid: a91b92920c5be0847bc8eeebce872eb1, type: 3}
+  - {fileID: 21300000, guid: c7e5427a2dbcb2649a85575467034a08, type: 3}
+  - {fileID: 21300000, guid: 1a4a668fc5167fa419046c6d540a8e53, type: 3}
+  - {fileID: 21300000, guid: e299cca29c4429a4c90d8f3d803b133c, type: 3}
+  frameDurations:
+  - 0.12
+  - 0.08
+  - 0.09
+  - 0.08
+  - 0.22
+  - 0.08
+  - 0.09
+  - 0.08
+  - 0.24
+  defaultFrameTime: 0.1
+  loop: 1
+  playOnStart: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

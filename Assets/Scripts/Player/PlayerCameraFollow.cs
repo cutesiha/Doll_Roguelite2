@@ -79,7 +79,12 @@ public class PlayerCameraFollow : MonoBehaviour
 
     Vector3 GetTargetCameraPosition()
     {
-        Vector3 desiredPosition = new Vector3(target.position.x, target.position.y, transform.position.z);
+        // 한다리 hop 비주얼이 transform에 실리므로 카메라는 rb.position(물리 위치)을 따라간다.
+        // rb가 없으면 transform.position을 그대로 사용한다.
+        Rigidbody2D targetRb = target.GetComponent<Rigidbody2D>();
+        float x = targetRb != null ? targetRb.position.x : target.position.x;
+        float y = targetRb != null ? targetRb.position.y : target.position.y;
+        Vector3 desiredPosition = new Vector3(x, y, transform.position.z);
         return clampToBackground ? ClampToBackground(desiredPosition) : desiredPosition;
     }
 

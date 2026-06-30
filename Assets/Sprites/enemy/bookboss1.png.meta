@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 10e18557f8da2b944a32c332e6f038ae
+guid: d730763600156f544bbb9e3c56066a35
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4600137674983574095
-    second: mino_0
+      213: -3060663986833771353
+    second: bookboss1_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: mino_0
+      name: bookboss1_0
       rect:
         serializedVersion: 2
-        x: 16
-        y: 1
-        width: 318
-        height: 293
+        x: 12
+        y: 13
+        width: 356
+        height: 206
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 1b576bc38270920c0800000000000000
-      internalID: -4600137674983574095
+      spriteID: 7a431ffe1565685d0800000000000000
+      internalID: -3060663986833771353
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      mino_0: -4600137674983574095
+      bookboss1_0: -3060663986833771353
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -280,9 +280,10 @@ public class BookBossController : MonoBehaviour
     void SpawnParts()
     {
         Vector2 bodyCenter = new Vector2(arenaCenter.x, arenaCenter.y + arenaSize.y * 0.5f - 3.2f);
-        body = ResolvePart(body, BookPartType.Body, bodyHp, "bookboss", bodyCenter, 1.7f, 70, false);
+        body = ResolvePart(body, BookPartType.Body, bodyHp, "bookboss1", bodyCenter, 1.7f, 70, false);
         leftArm = ResolvePart(leftArm, BookPartType.LeftArm, armHp, "bookboss_leftarm", bodyCenter + new Vector2(-3.4f, -0.4f), 1.4f, 72, true);
         rightArm = ResolvePart(rightArm, BookPartType.RightArm, armHp, "bookboss_rightarm", bodyCenter + new Vector2(3.4f, -0.4f), 1.4f, 72, true);
+        ConfigureBodyIdleAnimation();
 
         leftArm.Destroyed += OnArmDestroyed;
         rightArm.Destroyed += OnArmDestroyed;
@@ -310,6 +311,26 @@ public class BookBossController : MonoBehaviour
         BookBossPart part = go.AddComponent<BookBossPart>();
         part.Configure(type, hp, LoadEnemySprite(spriteName), center, scale, sortingOrder, damageable);
         return part;
+    }
+
+    void ConfigureBodyIdleAnimation()
+    {
+        if (body == null)
+            return;
+
+        SpriteFrameAnimator animator = body.GetComponent<SpriteFrameAnimator>();
+        if (animator == null)
+            animator = body.gameObject.AddComponent<SpriteFrameAnimator>();
+
+        Sprite[] frames =
+        {
+            LoadEnemySprite("bookboss1"),
+            LoadEnemySprite("bookboss2"),
+            LoadEnemySprite("bookboss3"),
+            LoadEnemySprite("bookboss2")
+        };
+
+        animator.Configure(frames, new[] { 0.18f, 0.14f, 0.22f, 0.14f }, true, true, true);
     }
 
     // ---- wave state -------------------------------------------------------
