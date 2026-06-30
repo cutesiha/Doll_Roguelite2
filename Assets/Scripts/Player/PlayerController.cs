@@ -12,6 +12,8 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 5f;
     [SerializeField, Range(0f, 1f)] float missingLegSpeedMultiplier = 0.5f;
+    // 다리 한쪽이 없을 때마다 빠지는 속도. 양다리 full(moveSpeed=5) → 한쪽만 4 → 양쪽 다 없음 3.
+    [SerializeField] float perLegSpeedPenalty = 1f;
     [SerializeField] Color bodyColor = new Color(0.3f, 0.6f, 1f, 1f);
     [SerializeField] SpriteRenderer spriteRenderer;
     [SerializeField] SpriteRenderer leftArmRenderer;
@@ -58,10 +60,18 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Sprite noRightLegLeftSprite;
     [SerializeField] Sprite noRightLegRightSprite;
     [SerializeField, Min(0f)] float hopHeight = 0.16f;
-    [SerializeField, Min(0f)] float hopFrequency = 11f;
+    // 콩콩 점프 기본 빈도. 실제 빈도는 이동 속도에 비례해 조절된다(LocomotionSpeedFactor).
+    [SerializeField, Min(0f)] float hopFrequency = 6f;
     [SerializeField, Range(0.05f, 1f)] float oneLegMinSpeedMultiplier = 0.35f;
     [SerializeField, Min(1f)] float crawlFramesPerSecond = 6f;
-    [SerializeField] Vector2 noLegArmOffset = Vector2.zero;
+    // 양다리 없음(기어가기) 시 팔 위치 보정. 서있는 팔 스프라이트는 키 큰 프레임에 그려져 있어
+    // 그대로 두면 짧은 noleg 몸통의 머리 쪽에 뜬다. 아래로 내려 몸통 하단 옆에 붙인다.
+    [SerializeField] Vector2 noLegArmOffset = new Vector2(0f, -0.1f);
+    // 양다리 없음(기어가기) 시 검은 눈 소켓 위치 보정. 크롤 전용 배치는 몸통 스프라이트 bounds 기준으로
+    // 계산하고, 이 오프셋으로 미세 조정한다(서있는 프레임 좌표는 키 낮은 noleg에 안 맞음).
+    [SerializeField] Vector2 noLegEyeOffset = Vector2.zero;
+    [SerializeField] float crawlEyeHeightFrac = 0.32f;   // 몸통 중심 위로 눈 높이(halfHeight 비율)
+    [SerializeField] float crawlEyeSpacingFrac = 0.30f;  // 좌우 눈 간격(halfWidth 비율)
 
     Rigidbody2D rb;
     Vector2 moveInput;
@@ -74,11 +84,14 @@ public class PlayerController : MonoBehaviour
     FacingDirection lastWalkDirection = FacingDirection.Down;
     float facingLockTimer;
     float walkAnimationTime;
+    float lastLocomotionSpeed;
     int lastWalkFrame = -1;
     int currentNoLegFrame;
     int currentNoLegFrameCount = 1;
     SpriteRenderer leftEyeSocketRenderer;
     SpriteRenderer rightEyeSocketRenderer;
+    Transform visualRoot;
+    SpriteRenderer rootBodyRenderer;
     static Sprite eyeSocketSprite;
 
     const float PlayerFrameWidth = 70f;
@@ -148,10 +161,6 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        // hop 비주얼이 transform에만 적용되고 rb.position에 누적되지 않도록 보장한다.
-        // Unity 기본값(true)이면 transform 변경이 rb.position을 즉시 바꿔 hop이 물리에 새어든다.
-        Physics2D.autoSyncTransforms = false;
-
         PlayerManager.Instance?.ApplyTo(gameObject);
     }
 
@@ -226,27 +235,22 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // LateUpdate에서 얹은 hop 오프셋을 FixedUpdate 첫머리에 제거한다.
-        // Physics2D.autoSyncTransforms=false(Start에서 강제 설정)이므로
-        // transform.position이 rb.position과 다르면 hop이 남아있는 것이다.
-        if (transform.position.x != rb.position.x || transform.position.y != rb.position.y)
-            transform.position = new Vector3(rb.position.x, rb.position.y, transform.position.z);
-
-        float speed = Mathf.Max(0f, moveSpeed + itemMoveSpeedBonus);
+        // 다리 개수 기반 속도: 양다리 full(moveSpeed) → 다리 한쪽 없을 때마다 perLegSpeedPenalty(2) 차감.
+        // moveSpeed=5 기준 → 양다리 5, 한쪽만 3, 양쪽 다 없음 1.
         var state = BodyConditionUtility.CurrentState();
-        bool hasOneLeg = false;
-        if (state != null && (!state.legLeft || !state.legRight))
+        int missingLegs = 0;
+        if (state != null)
         {
-            hasOneLeg = state.legLeft != state.legRight;
-            speed *= missingLegSpeedMultiplier;
+            if (!state.legLeft) missingLegs++;
+            if (!state.legRight) missingLegs++;
         }
 
-        if (hasOneLeg && moveInput.sqrMagnitude > 0.001f)
-            speed = Mathf.Max(speed, moveSpeed * oneLegMinSpeedMultiplier);
+        float speed = Mathf.Max(0f, moveSpeed + itemMoveSpeedBonus - perLegSpeedPenalty * missingLegs);
 
         if (Time.time < speedMultiplierUntil)
             speed *= speedMultiplier;
 
+        lastLocomotionSpeed = speed; // 콩콩/기어가기 애니메이션 속도 연동용
         rb.MovePosition(rb.position + moveInput * speed * Time.fixedDeltaTime);
     }
 
@@ -463,6 +467,9 @@ public class PlayerController : MonoBehaviour
         if (spriteRenderer == null)
             return;
 
+        EnsureVisualRoot();
+        MoveBodyRendererToVisualRoot();
+
         leftArmRenderer = EnsureArmRenderer(leftArmRenderer, "PlayerArm_Left");
         rightArmRenderer = EnsureArmRenderer(rightArmRenderer, "PlayerArm_Right");
         leftEyeSocketRenderer = EnsureEyeSocketRenderer("PlayerEyeSocket_Left");
@@ -473,20 +480,84 @@ public class PlayerController : MonoBehaviour
         ApplyPlayerSorting();
     }
 
+    // 콩콩 점프(hop) 비주얼을 루트 transform에 쓰면 rb.MovePosition 이동이 통째로 무효화된다
+    // (Dynamic Rigidbody2D + MovePosition에 직접 transform 쓰기를 섞으면 안 되는 Unity 함정).
+    // 그래서 몸통·팔·눈 렌더러를 모두 이 자식 노드 아래로 모으고, hop은 이 노드의
+    // localPosition만 흔든다. 루트 transform == rb.position이 항상 유지되어 이동이 정상 동작한다.
+    void EnsureVisualRoot()
+    {
+        if (visualRoot != null)
+            return;
+
+        Transform existing = transform.Find("PlayerVisual");
+        GameObject go = existing != null ? existing.gameObject : new GameObject("PlayerVisual");
+        go.transform.SetParent(transform, false);
+        go.transform.localPosition = Vector3.zero;
+        go.transform.localRotation = Quaternion.identity;
+        go.transform.localScale = Vector3.one;
+        visualRoot = go.transform;
+    }
+
+    // 루트의 몸통 SpriteRenderer를 visualRoot 자식 렌더러로 옮긴다.
+    // 루트 렌더러는 비활성화하되 RequireComponent 충족과 그림자 정렬 기준을 위해 남겨둔다.
+    void MoveBodyRendererToVisualRoot()
+    {
+        if (spriteRenderer != null && spriteRenderer.transform == visualRoot)
+            return; // 이미 이동됨
+
+        rootBodyRenderer = GetComponent<SpriteRenderer>();
+
+        Transform existing = visualRoot.Find("PlayerBody");
+        SpriteRenderer child = existing != null ? existing.GetComponent<SpriteRenderer>() : null;
+        if (child == null)
+        {
+            GameObject go = existing != null ? existing.gameObject : new GameObject("PlayerBody");
+            go.transform.SetParent(visualRoot, false);
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+            child = go.GetComponent<SpriteRenderer>();
+            if (child == null)
+                child = go.AddComponent<SpriteRenderer>();
+        }
+
+        SpriteRenderer source = spriteRenderer != null ? spriteRenderer : rootBodyRenderer;
+        if (source != null)
+        {
+            child.sprite = source.sprite;
+            child.sharedMaterial = source.sharedMaterial;
+            child.sortingLayerID = source.sortingLayerID;
+            child.sortingOrder = source.sortingOrder;
+            child.flipX = source.flipX;
+        }
+        child.color = Color.white;
+        child.enabled = true;
+
+        if (rootBodyRenderer != null && rootBodyRenderer != child)
+        {
+            rootBodyRenderer.sortingOrder = playerSortingOrder; // 그림자 정렬 기준 유지
+            rootBodyRenderer.enabled = false;                   // 루트는 그리지 않음(자식이 몸통을 렌더)
+        }
+
+        spriteRenderer = child; // 이후 모든 로직이 자식 몸통 렌더러를 사용
+    }
+
     SpriteRenderer EnsureArmRenderer(SpriteRenderer renderer, string objectName)
     {
         if (renderer == null)
         {
-            Transform existing = transform.Find(objectName);
+            Transform existing = visualRoot != null ? visualRoot.Find(objectName) : null;
+            if (existing == null)
+                existing = transform.Find(objectName);
             GameObject go = existing != null ? existing.gameObject : new GameObject(objectName);
-            go.transform.SetParent(transform, false);
-            go.transform.localRotation = Quaternion.identity;
-            go.transform.localScale = Vector3.one;
             renderer = go.GetComponent<SpriteRenderer>();
             if (renderer == null)
                 renderer = go.AddComponent<SpriteRenderer>();
         }
 
+        renderer.transform.SetParent(visualRoot, false);
+        renderer.transform.localRotation = Quaternion.identity;
+        renderer.transform.localScale = Vector3.one;
         renderer.color = Color.white;
         renderer.sortingLayerID = spriteRenderer.sortingLayerID;
         renderer.sortingOrder = spriteRenderer.sortingOrder + 1;
@@ -496,9 +567,11 @@ public class PlayerController : MonoBehaviour
 
     SpriteRenderer EnsureEyeSocketRenderer(string objectName)
     {
-        Transform existing = transform.Find(objectName);
+        Transform existing = visualRoot != null ? visualRoot.Find(objectName) : null;
+        if (existing == null)
+            existing = transform.Find(objectName);
         GameObject go = existing != null ? existing.gameObject : new GameObject(objectName);
-        go.transform.SetParent(transform, false);
+        go.transform.SetParent(visualRoot, false);
         go.transform.localRotation = Quaternion.identity;
         go.transform.localScale = Vector3.one;
 
@@ -588,6 +661,16 @@ public class PlayerController : MonoBehaviour
         leftEyeSocketRenderer.color = missingEyeSocketColor;
         rightEyeSocketRenderer.color = missingEyeSocketColor;
 
+        // 양다리 없음(기어가기): 서있는 프레임 좌표가 키 낮은 noleg 스프라이트에 안 맞아 소켓이 몸통
+        // 밖으로 떠버린다. 크롤일 땐 몸통 bounds 기준으로 배치한다.
+        bool crawling = !BodyConditionUtility.HasPart(BodySlot.LegLeft)
+            && !BodyConditionUtility.HasPart(BodySlot.LegRight);
+        if (crawling)
+        {
+            ApplyCrawlEyeSockets(missingLeft, missingRight);
+            return;
+        }
+
         switch (facingDirection)
         {
             case FacingDirection.Up:
@@ -596,23 +679,74 @@ public class PlayerController : MonoBehaviour
                 break;
 
             case FacingDirection.Left:
-                ConfigureEyeSocket(leftEyeSocketRenderer, missingLeft, new Vector2(24.5f, 39.5f), new Vector2(0.5f, 0.78f));
+                ConfigureEyeSocket(leftEyeSocketRenderer, missingLeft, new Vector2(24.5f, 39.5f), new Vector2(0.5f, 0.78f), Vector2.zero);
                 SetRendererVisible(rightEyeSocketRenderer, false);
                 break;
 
             case FacingDirection.Right:
                 SetRendererVisible(leftEyeSocketRenderer, false);
-                ConfigureEyeSocket(rightEyeSocketRenderer, missingRight, new Vector2(46.5f, 38f), new Vector2(0.5f, 1f));
+                ConfigureEyeSocket(rightEyeSocketRenderer, missingRight, new Vector2(46.5f, 38f), new Vector2(0.5f, 1f), Vector2.zero);
                 break;
 
             default:
-                ConfigureEyeSocket(leftEyeSocketRenderer, missingLeft, new Vector2(24.5f, 38f), Vector2.one);
-                ConfigureEyeSocket(rightEyeSocketRenderer, missingRight, new Vector2(45.5f, 38f), Vector2.one);
+                ConfigureEyeSocket(leftEyeSocketRenderer, missingLeft, new Vector2(24.5f, 38f), Vector2.one, Vector2.zero);
+                ConfigureEyeSocket(rightEyeSocketRenderer, missingRight, new Vector2(45.5f, 38f), Vector2.one, Vector2.zero);
                 break;
         }
     }
 
-    void ConfigureEyeSocket(SpriteRenderer renderer, bool visible, Vector2 pixelCenterFromTop, Vector2 scale)
+    // 기어가기 전용 눈 소켓 배치: 몸통 스프라이트 bounds 기준(서있는 프레임 좌표 미사용).
+    void ApplyCrawlEyeSockets(bool missingLeft, bool missingRight)
+    {
+        if (facingDirection == FacingDirection.Up)
+        {
+            SetRendererVisible(leftEyeSocketRenderer, false);
+            SetRendererVisible(rightEyeSocketRenderer, false);
+            return;
+        }
+
+        Bounds b = spriteRenderer.sprite.bounds; // 언스케일 로컬 공간(visualRoot 기준과 동일)
+        Vector2 c = b.center;
+        float halfW = b.extents.x;
+        float halfH = b.extents.y;
+        float frontEyeY = c.y + halfH * crawlEyeHeightFrac + noLegEyeOffset.y;
+        float frontDx = halfW * crawlEyeSpacingFrac;
+        // 사이드뷰는 얼굴이 옆을 향하므로 눈이 더 낮고 바라보는 쪽으로 치우친다.
+        float sideEyeY = c.y + halfH * crawlEyeHeightFrac * 0.45f + noLegEyeOffset.y;
+        float sideDx = halfW * crawlEyeSpacingFrac * 1.5f;
+        Vector2 scale = new Vector2(0.7f, 0.7f);
+
+        switch (facingDirection)
+        {
+            case FacingDirection.Left:
+                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(c.x - sideDx + noLegEyeOffset.x, sideEyeY), scale);
+                SetRendererVisible(rightEyeSocketRenderer, false);
+                break;
+            case FacingDirection.Right:
+                SetRendererVisible(leftEyeSocketRenderer, false);
+                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(c.x + sideDx + noLegEyeOffset.x, sideEyeY), scale);
+                break;
+            default: // Down (정면)
+                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(c.x - frontDx + noLegEyeOffset.x, frontEyeY), scale);
+                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(c.x + frontDx + noLegEyeOffset.x, frontEyeY), scale);
+                break;
+        }
+    }
+
+    void PlaceCrawlSocket(SpriteRenderer renderer, bool visible, Vector2 localPos, Vector2 scale)
+    {
+        if (renderer == null)
+            return;
+
+        renderer.enabled = visible;
+        if (!visible)
+            return;
+
+        renderer.transform.localPosition = new Vector3(localPos.x, localPos.y, 0f);
+        renderer.transform.localScale = new Vector3(scale.x, scale.y, 1f);
+    }
+
+    void ConfigureEyeSocket(SpriteRenderer renderer, bool visible, Vector2 pixelCenterFromTop, Vector2 scale, Vector2 extraLocalOffset)
     {
         if (renderer == null)
             return;
@@ -627,8 +761,8 @@ public class PlayerController : MonoBehaviour
         float textureX = frameStartX + pixelCenterFromTop.x;
         float textureY = PlayerFrameHeight - 1f - pixelCenterFromTop.y;
         renderer.transform.localPosition = new Vector3(
-            (textureX - bodySprite.rect.x - bodySprite.pivot.x) / pixelsPerUnit,
-            (textureY - bodySprite.rect.y - bodySprite.pivot.y) / pixelsPerUnit,
+            (textureX - bodySprite.rect.x - bodySprite.pivot.x) / pixelsPerUnit + extraLocalOffset.x,
+            (textureY - bodySprite.rect.y - bodySprite.pivot.y) / pixelsPerUnit + extraLocalOffset.y,
             0f);
         renderer.transform.localScale = new Vector3(scale.x, scale.y, 1f);
     }
@@ -930,9 +1064,9 @@ public class PlayerController : MonoBehaviour
             int idx = 0;
             if (moveInput.sqrMagnitude > 0.001f && frames.Length > 1)
             {
-                // 0→1→2→1 핑퐁으로 꿈틀거림
+                // 0→1→2→1 핑퐁으로 꿈틀거림 (속도에 비례해 빨라지고 느려짐)
                 int seqLen = Mathf.Max(1, frames.Length * 2 - 2);
-                int s = Mathf.FloorToInt(walkAnimationTime * crawlFramesPerSecond) % seqLen;
+                int s = Mathf.FloorToInt(walkAnimationTime * crawlFramesPerSecond * LocomotionSpeedFactor()) % seqLen;
                 idx = s < frames.Length ? s : seqLen - s;
             }
             idx = Mathf.Clamp(idx, 0, frames.Length - 1);
@@ -1040,25 +1174,38 @@ public class PlayerController : MonoBehaviour
             && moveInput.sqrMagnitude > 0.001f;
     }
 
-    // 한다리 콩콩 효과: transform만 Y로 튀기고 rb.position은 건드리지 않는다.
-    // Start()에서 Physics2D.autoSyncTransforms=false 설정으로 transform 변경이 rb에 새지 않는다.
-    void ApplyLegHopOffset()
+    // 현재 이동 속도를 full(moveSpeed) 대비 비율로 반환. 콩콩/기어가기 애니메이션 빈도에 곱한다.
+    // (느리게 움직이면 애니메이션도 느리게, 빠르면 빠르게.)
+    float LocomotionSpeedFactor()
     {
-        if (!IsHopping())
-        {
-            if (transform.position.x != rb.position.x || transform.position.y != rb.position.y)
-                transform.position = new Vector3(rb.position.x, rb.position.y, transform.position.z);
-            return;
-        }
-
-        float hop = Mathf.Abs(Mathf.Sin(walkAnimationTime * hopFrequency)) * hopHeight;
-        transform.position = new Vector3(rb.position.x, rb.position.y + hop, transform.position.z);
+        float full = Mathf.Max(0.01f, moveSpeed);
+        return Mathf.Clamp(lastLocomotionSpeed / full, 0.1f, 2f);
     }
 
+    // 한다리 콩콩 효과: visualRoot 자식만 Y로 튀긴다. 루트 transform/rb.position은 절대 건드리지
+    // 않으므로 rb.MovePosition 이동이 무효화되지 않는다(이게 "제자리 점프" 버그의 핵심 수정).
+    void ApplyLegHopOffset()
+    {
+        if (visualRoot == null)
+            return;
+
+        float hop = IsHopping()
+            ? Mathf.Abs(Mathf.Sin(walkAnimationTime * hopFrequency * LocomotionSpeedFactor())) * hopHeight
+            : 0f;
+
+        Vector3 lp = visualRoot.localPosition;
+        if (!Mathf.Approximately(lp.x, 0f) || !Mathf.Approximately(lp.y, hop))
+            visualRoot.localPosition = new Vector3(0f, hop, lp.z);
+    }
+
+    // 프리팹/씬에 직렬화된 레거시(0,0.3)나 미설정(0,0) 값을 튜닝된 기본 크롤 팔 오프셋으로 올린다.
+    // (여러 씬의 Player 인스턴스가 옛 값을 들고 있어도 런타임에 일관되게 보정됨.)
     void NormalizeLegacyNoLegArmOffset()
     {
-        if (Mathf.Abs(noLegArmOffset.x) < 0.0001f && Mathf.Abs(noLegArmOffset.y - 0.3f) < 0.0001f)
-            noLegArmOffset = Vector2.zero;
+        bool legacy = Mathf.Abs(noLegArmOffset.x) < 0.0001f && Mathf.Abs(noLegArmOffset.y - 0.3f) < 0.0001f;
+        bool unset = noLegArmOffset == Vector2.zero;
+        if (legacy || unset)
+            noLegArmOffset = new Vector2(0f, -0.1f);
     }
 
     Sprite[] SortSprites(Sprite[] sprites)
