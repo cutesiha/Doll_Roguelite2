@@ -85,6 +85,7 @@ public class BookBossController : MonoBehaviour
         public float radius;
         public float endTime;     // float.MaxValue = persistent
         public GameObject visual;
+        public string cause;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -459,7 +460,6 @@ public class BookBossController : MonoBehaviour
     {
         float fontSize = Mathf.Max(1f, floorSentenceFontSize);
         float worldScale = Mathf.Max(0.001f, floorSentenceWorldScale);
-        float visualFontSize = fontSize * worldScale;
         TextMeshPro text = CreateWorldText(sentence, pos, fontSize, new Color(0.85f, 0.18f, 0.18f, 0.45f), 55);
         text.transform.localScale = Vector3.one * worldScale;
         text.maxVisibleCharacters = 0;
@@ -479,17 +479,20 @@ public class BookBossController : MonoBehaviour
 
         text.color = new Color(0.08f, 0.06f, 0.06f, 1f);
 
-        float halfWidth = total * visualFontSize * 0.32f;
-        float halfHeight = visualFontSize * 0.6f;
+        text.ForceMeshUpdate();
+        Vector2 textWorldCenter = text.transform.TransformPoint(text.textBounds.center);
+        float halfWidth  = text.textBounds.extents.x * worldScale;
+        float halfHeight = text.textBounds.extents.y * worldScale;
+
         float activeTime = floorSentenceActiveTime;
         float activeElapsed = 0f;
         while (activeElapsed < activeTime)
         {
             if (player != null
-                && Mathf.Abs(player.position.x - pos.x) <= halfWidth
-                && Mathf.Abs(player.position.y - pos.y) <= halfHeight)
+                && Mathf.Abs(player.position.x - textWorldCenter.x) <= halfWidth
+                && Mathf.Abs(player.position.y - textWorldCenter.y) <= halfHeight)
             {
-                DamagePlayer(letterDamage, 0.5f);
+                DamagePlayer(letterDamage, 0.5f, $"바닥 문장: \"{sentence}\"");
             }
 
             activeElapsed += Time.deltaTime;
@@ -554,7 +557,7 @@ public class BookBossController : MonoBehaviour
 
             if (player != null && Vector2.Distance(scrap.transform.position, player.position) <= 0.7f)
             {
-                DamagePlayer(paperDamage, 0.5f);
+                DamagePlayer(paperDamage, 0.5f, "종이 조각");
                 hit = true;
                 break;
             }
@@ -576,7 +579,7 @@ public class BookBossController : MonoBehaviour
         Vector2 landing = scrap.transform.position;
         renderer.color = new Color(0.82f, 0.78f, 0.68f, 1f);
         GameObject ringVisual = CreatePoisonRingVisual(landing, 1.8f);
-        AddPoisonZone(landing, 1.8f, Time.time + 4f, ringVisual);
+        AddPoisonZone(landing, 1.8f, Time.time + 4f, ringVisual, "종이 독 링");
 
         float life = 4f;
         float lifeElapsed = 0f;
@@ -643,7 +646,7 @@ public class BookBossController : MonoBehaviour
         stainRenderer.color = new Color(0.06f, 0.05f, 0.08f, 0.7f);
         stainRenderer.sortingOrder = 52;
         stain.transform.localScale = new Vector3(1.5f, 1.0f, 1f);
-        AddPoisonZone(new Vector2(x, groundY), 0.8f, Time.time + 12f, stain);
+        AddPoisonZone(new Vector2(x, groundY), 0.8f, Time.time + 12f, stain, "잉크 얼룩");
 
         if (text != null)
         {
@@ -1028,16 +1031,16 @@ public class BookBossController : MonoBehaviour
         {
             if (Vector2.Distance(player.position, poisonZones[i].center) <= poisonZones[i].radius)
             {
-                DamagePlayer(poisonTickDamage, 0.5f);
+                DamagePlayer(poisonTickDamage, 0.5f, poisonZones[i].cause);
                 nextPoisonTick = Time.time + 0.5f;
                 break;
             }
         }
     }
 
-    void AddPoisonZone(Vector2 center, float radius, float endTime, GameObject visual)
+    void AddPoisonZone(Vector2 center, float radius, float endTime, GameObject visual, string cause = "독 구역")
     {
-        poisonZones.Add(new PoisonZone { center = center, radius = radius, endTime = endTime, visual = visual });
+        poisonZones.Add(new PoisonZone { center = center, radius = radius, endTime = endTime, visual = visual, cause = cause });
 
         // cap persistent stains so the floor doesn't fill up
         int persistent = 0;
@@ -1116,12 +1119,12 @@ public class BookBossController : MonoBehaviour
         return canvasGO;
     }
 
-    void DamagePlayer(int damage, float cooldown)
+    void DamagePlayer(int damage, float cooldown, string cause = "알 수 없음")
     {
         if (receiver == null)
             receiver = FindFirstObjectByType<PlayerDamageReceiver>();
-        if (receiver != null)
-            receiver.TryTakePatternDamage(damage, cooldown);
+        if (receiver != null && receiver.TryTakePatternDamage(damage, cooldown))
+            Debug.Log($"[BookBoss 피격] 원인: {cause} | 데미지: {damage}");
     }
 
     void UpdateHud()

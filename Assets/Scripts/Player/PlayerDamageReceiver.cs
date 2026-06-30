@@ -153,6 +153,7 @@ public class PlayerDamageReceiver : MonoBehaviour
             return;
 
         DamageNextBodyTarget(contactDamage);
+        Debug.Log($"[피격] 원인: 적 접촉 ({enemyCollider.gameObject.name}) | 데미지: {contactDamage}");
         SetInvincible(1f);
         PlayHitFeedback();
         StartInvincibilityBlink();
