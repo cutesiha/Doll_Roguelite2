@@ -634,8 +634,16 @@ public class ItemInventoryManager : MonoBehaviour
         EnemyBase[] enemies = FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
         HashSet<EnemyBase> damaged = new();
         for (int i = 0; i < enemies.Length; i++)
-            if (enemies[i] != null && damaged.Add(enemies[i]))
+        {
+            if (enemies[i] == null || !damaged.Add(enemies[i]))
+                continue;
+
+            BookBossPart bossPart = enemies[i] as BookBossPart;
+            if (bossPart != null)
+                bossPart.TakeDamage(4);
+            else
                 enemies[i].TakeDamage(99999);
+        }
     }
 
     void DamageAllPlayerParts(int damage)

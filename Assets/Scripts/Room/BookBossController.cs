@@ -352,7 +352,7 @@ public class BookBossController : MonoBehaviour
     void OnArmDamaged(BookBossPart arm)
     {
         int dropped = arm.PartType == BookPartType.LeftArm ? leftLettersDropped : rightLettersDropped;
-        int shouldHave = (arm.MaxHp - arm.CurrentHp) / 7;
+        int shouldHave = (arm.MaxHp - Mathf.Max(0, arm.CurrentHp)) / 7;
         while (dropped < shouldHave)
         {
             DropLetter(arm.BasePosition);

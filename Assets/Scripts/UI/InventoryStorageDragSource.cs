@@ -37,7 +37,8 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
 
         SoundManager.PlayClick();
 
-        Image sourceImage = GetComponent<Image>();
+        Transform iconTr = transform.Find("ItemIcon");
+        Image itemIconImage = iconTr != null ? iconTr.GetComponent<Image>() : null;
 
         GameObject go = new GameObject("InventoryDragGhost");
         go.transform.SetParent(rootCanvas.transform, false);
@@ -51,9 +52,10 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
 
         if (hasBodyPart)
         {
-            image.sprite = sourceImage != null && sourceImage.sprite != null
-                ? sourceImage.sprite
-                : InventoryUI.FindDisplaySpriteForSlot(inv.storage[storageIndex].slot);
+            BodyPart part = inv.storage[storageIndex];
+            image.sprite = itemIconImage != null && itemIconImage.sprite != null
+                ? itemIconImage.sprite
+                : (part.icon != null ? part.icon : InventoryUI.FindDisplaySpriteForSlot(part.slot));
         }
         else
         {
