@@ -29,7 +29,7 @@ MonoBehaviour:
   - effectType: 15
     value: 2
     duration: 0
-  sprite: {fileID: 21300000, guid: 6affeb533e31c95428e90541d36cbc4c, type: 3}
+  sprite: {fileID: -4226764421701463308, guid: d48ebebad68a6ee4e9a1beab89f027a0, type: 3}
   placeholderShape: 1
   placeholderColor: {r: 0.92, g: 0.8, b: 0.72, a: 1}
   worldScale: 2.8498912
