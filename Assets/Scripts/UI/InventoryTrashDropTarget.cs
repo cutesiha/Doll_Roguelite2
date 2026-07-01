@@ -37,18 +37,6 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
         var storageSource = eventData.pointerDrag.GetComponent<InventoryStorageDragSource>();
         if (storageSource != null)
         {
-            // 동전 스택 버리기 → 월드에 개별 동전으로 떨어뜨림
-            if (storageSource.IsCoinStack)
-            {
-                int count = inv.RemoveCoinFromSlot(storageSource.CoinStackIndex);
-                if (count > 0)
-                {
-                    DropCoinsToWorld(count, inv.coinIcon);
-                    SoundManager.PlayClick();
-                }
-                return;
-            }
-
             // 아이템(보석 등)이 표시된 슬롯이면 ItemInventoryManager에서 제거.
             ItemData draggedItem = storageSource.DraggedItemData;
             if (draggedItem != null && inv.storage[storageSource.StorageIndex] == null)
@@ -100,7 +88,6 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
             drop.Toss(origin);
     }
 
-<<<<<<< Updated upstream
     // 동전 더미를 버리면 개수만큼 낱개 동전으로 나뉘어 사방으로 흩어진다.
     static void DropCoinStackToWorld(BodyPart stack, Vector3 origin)
     {
@@ -119,21 +106,6 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
             BodyPartWorldDrop drop = BodyPartWorldDrop.Spawn(single, origin, single.icon);
             if (drop != null)
                 drop.Toss(origin, dir, distance);
-=======
-    static void DropCoinsToWorld(int count, Sprite coinSprite)
-    {
-        GameObject player = GameObject.FindWithTag("Player");
-        Vector3 origin = player != null ? player.transform.position : Vector3.zero;
-
-        GameObject coinPrefab = Resources.Load<GameObject>("Drops/동전");
-        for (int i = 0; i < count; i++)
-        {
-            if (coinPrefab != null)
-            {
-                GameObject go = UnityEngine.Object.Instantiate(coinPrefab, origin, Quaternion.identity);
-                go.GetComponent<CoinWorldPickup>()?.Toss(origin);
-            }
->>>>>>> Stashed changes
         }
     }
 

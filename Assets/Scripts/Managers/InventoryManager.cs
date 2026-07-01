@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -27,13 +26,6 @@ public class InventoryManager : MonoBehaviour
     // storage slots — null means empty
     [System.NonSerialized] public BodyPart[] storage   = new BodyPart[StorageSlotCount];
     bool[] lockedSlots = new bool[6];
-
-    // 동전: 슬롯 인덱스 → 동전 개수 (슬롯에 직접 귀속)
-    [System.NonSerialized] public readonly Dictionary<int, int> coinSlots = new Dictionary<int, int>();
-    [System.NonSerialized] public Sprite coinIcon;
-    const int MaxCoinsPerStack = 9;
-
-    public IReadOnlyDictionary<int, int> CoinSlots => coinSlots;
 
     public event Action OnInventoryChanged;
 
@@ -198,78 +190,13 @@ public class InventoryManager : MonoBehaviour
         return true;
     }
 
-    // 동전을 슬롯에 귀속하여 추가 (기존 슬롯 채우기 → 새 슬롯 할당 순)
-    public bool AddCoin(int amount = 1, Sprite icon = null)
-    {
-        if (icon != null) coinIcon = icon;
-        int remaining = amount;
-
-        // 기존 슬롯 채우기
-        for (int i = 0; i < StorageSlotCount && remaining > 0; i++)
-        {
-            if (storage[i] != null) continue;
-            if (!coinSlots.TryGetValue(i, out int existing)) continue;
-            int space = MaxCoinsPerStack - existing;
-            if (space <= 0) continue;
-            int add = Mathf.Min(space, remaining);
-            coinSlots[i] = existing + add;
-            remaining -= add;
-        }
-
-        // 빈 슬롯에 새 스택 생성
-        for (int i = 0; i < StorageSlotCount && remaining > 0; i++)
-        {
-            if (storage[i] != null) continue;
-            if (coinSlots.ContainsKey(i)) continue;
-            int add = Mathf.Min(MaxCoinsPerStack, remaining);
-            coinSlots[i] = add;
-            remaining -= add;
-        }
-
-        OnInventoryChanged?.Invoke();
-        return true;
-    }
-
-    // 동전 슬롯을 다른 슬롯으로 이동 또는 교환
-    public bool MoveCoinToSlot(int fromSlot, int toSlot)
-    {
-        if (fromSlot == toSlot) return false;
-        if (!coinSlots.TryGetValue(fromSlot, out int fromCount)) return false;
-        if (toSlot < 0 || toSlot >= StorageSlotCount) return false;
-        if (storage[toSlot] != null) return false; // BodyPart 있는 슬롯엔 불가
-
-        coinSlots.TryGetValue(toSlot, out int toCount);
-        if (toCount > 0)
-            coinSlots[fromSlot] = toCount;
-        else
-            coinSlots.Remove(fromSlot);
-        coinSlots[toSlot] = fromCount;
-        OnInventoryChanged?.Invoke();
-        return true;
-    }
-
-    // 슬롯에서 동전 스택 제거 후 개수 반환
-    public int RemoveCoinFromSlot(int slotIndex)
-    {
-        if (!coinSlots.TryGetValue(slotIndex, out int count)) return 0;
-        coinSlots.Remove(slotIndex);
-        OnInventoryChanged?.Invoke();
-        return count;
-    }
-
     public bool TryAddPart(BodyPart part, bool equipIfEmpty = true)
     {
         if (part == null)
             return false;
 
-<<<<<<< Updated upstream
         if (part.kind == ItemKind.Coin)
             return TryAddCoin(part);
-=======
-        // 동전은 스택으로 별도 관리 (슬롯 하나에 최대 9개)
-        if (part.kind == ItemKind.Coin)
-            return AddCoin(1, part.icon);
->>>>>>> Stashed changes
 
         int equippedIndex = (int)part.slot;
         bool canEquip = equippedIndex >= 0
