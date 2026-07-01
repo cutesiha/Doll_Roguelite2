@@ -22,7 +22,7 @@ public class PlayerDamageReceiver : MonoBehaviour
     [SerializeField, Range(0.05f, 0.45f)] float hitFeedbackDuration = 0.16f;
     [SerializeField, Min(0f)] float hitShakeDistance = 0.055f;
     [SerializeField, Min(1f)] float hitScaleMultiplier = 1.08f;
-    [SerializeField] Color hitTint = new Color(1f, 0.42f, 0.38f, 1f);
+    [SerializeField] Color hitTint = new Color(0.97f, 0.64f, 0.55f, 1f);
 
     [Header("Camera Shake")]
     [SerializeField] bool shakeCameraOnHit = true;
@@ -60,12 +60,15 @@ public class PlayerDamageReceiver : MonoBehaviour
     PlayerController playerController;
     SpriteRenderer bodyRenderer;
     Collider2D playerCollider;
+    CapsuleCollider2D bodyCapsule;   // 일반 피격판정(적 몸통 접촉 등)
+    BoxCollider2D floorHitbox;       // 바닥 공격(스풀 실, 보스 바닥 글자) 전용 피격판정
     Coroutine feedbackRoutine;
     Coroutine invincibilityRoutine;
     float nextDamageTime;
     float invincibleUntil;
     bool bodyDropped;
     bool isDead;
+    bool hpLossDisabled;
 
     void Awake()
     {
@@ -132,6 +135,12 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     public bool IsInvincible => Time.time < invincibleUntil;
 
+    // 튜토리얼용: 피격 모션/피드백은 그대로 재생하되 실제 HP는 깎이지 않게 한다.
+    public void SetHpLossDisabled(bool disabled)
+    {
+        hpLossDisabled = disabled;
+    }
+
     public void TryTakeHit(Collider2D enemyCollider)
     {
         if (isDead || enemyCollider == null || Time.time < nextDamageTime || IsInvincible)
@@ -148,11 +157,18 @@ public class PlayerDamageReceiver : MonoBehaviour
         if (enemy.SuppressContactDamage)
             return;
 
+        // 적 몸통 접촉 피격판정은 Capsule 콜라이더로 한다. (Box는 바닥 공격 전용)
+        if (bodyCapsule == null)
+            bodyCapsule = GetComponent<CapsuleCollider2D>();
+        if (bodyCapsule != null && enemyCollider.enabled && !Physics2D.Distance(bodyCapsule, enemyCollider).isOverlapped)
+            return;
+
         nextDamageTime = Time.time + damageCooldown;
         if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryBlockHit())
             return;
 
-        DamageNextBodyTarget(contactDamage);
+        if (!hpLossDisabled)
+            DamageNextBodyTarget(contactDamage);
         Debug.Log($"[피격] 원인: 적 접촉 ({enemyCollider.gameObject.name}) | 데미지: {contactDamage}");
         SetInvincible(1f);
         PlayHitFeedback();
@@ -173,7 +189,8 @@ public class PlayerDamageReceiver : MonoBehaviour
         if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryBlockHit())
             return false;
 
-        DamageNextBodyTarget(finalDamage);
+        if (!hpLossDisabled)
+            DamageNextBodyTarget(finalDamage);
         SetInvincible(1f);
         PlayHitFeedback();
         StartInvincibilityBlink();
@@ -546,6 +563,62 @@ public class PlayerDamageReceiver : MonoBehaviour
 
         if (playerCollider == null)
             playerCollider = GetComponent<Collider2D>();
+
+        if (bodyCapsule == null)
+            bodyCapsule = GetComponent<CapsuleCollider2D>();
+
+        if (floorHitbox == null)
+            floorHitbox = GetComponent<BoxCollider2D>();
+    }
+
+    // 바닥 공격(스풀 실 등)이 플레이어의 Box 히트박스와 겹치는지. Box가 없으면 위치 점으로 폴백.
+    public bool FloorAttackHitsSegment(Vector2 segStart, Vector2 segEnd, float radius)
+    {
+        ResolveReferences();
+        if (floorHitbox != null)
+        {
+            Bounds bounds = floorHitbox.bounds;
+            Vector2 closest = ClosestPointOnSegment(bounds.center, segStart, segEnd);
+            return Mathf.Abs(closest.x - bounds.center.x) <= bounds.extents.x + radius
+                && Mathf.Abs(closest.y - bounds.center.y) <= bounds.extents.y + radius;
+        }
+
+        Vector2 point = transform.position;
+        Vector2 nearest = ClosestPointOnSegment(point, segStart, segEnd);
+        return Vector2.Distance(point, nearest) <= radius;
+    }
+
+    // 바닥 공격(보스 바닥 글자 등)의 사각 영역이 플레이어의 Box 히트박스와 겹치는지.
+    public bool FloorAttackHitsRect(Vector2 rectCenter, Vector2 rectHalfExtents)
+    {
+        ResolveReferences();
+        Vector2 center;
+        Vector2 half;
+        if (floorHitbox != null)
+        {
+            Bounds bounds = floorHitbox.bounds;
+            center = bounds.center;
+            half = bounds.extents;
+        }
+        else
+        {
+            center = transform.position;
+            half = Vector2.zero;
+        }
+
+        return Mathf.Abs(center.x - rectCenter.x) <= half.x + rectHalfExtents.x
+            && Mathf.Abs(center.y - rectCenter.y) <= half.y + rectHalfExtents.y;
+    }
+
+    static Vector2 ClosestPointOnSegment(Vector2 point, Vector2 start, Vector2 end)
+    {
+        Vector2 segment = end - start;
+        float lengthSqr = segment.sqrMagnitude;
+        if (lengthSqr <= 0.0001f)
+            return start;
+
+        float t = Mathf.Clamp01(Vector2.Dot(point - start, segment) / lengthSqr);
+        return start + segment * t;
     }
 
     void EnsurePlayerCollider()

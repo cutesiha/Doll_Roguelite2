@@ -46,6 +46,12 @@ public class StartBodyPartSelector : MonoBehaviour
     [SerializeField] float roadButtonFloatSpeed = 2.2f;
     [SerializeField, Range(0f, 1f)] float roadButtonAlphaHitThreshold = 0.1f;
     [SerializeField] Color panelLineColor = new Color(0.30f, 0.18f, 0.10f, 1f);
+    [Tooltip("저장 패널 페이지 삼각형에 마우스를 올렸을 때 색 (밝은 브라운 계열)")]
+    [SerializeField] Color roadButtonHoverColor = new Color(1.5f, 1.18f, 0.78f, 1f);
+    [Tooltip("빈 슬롯 클릭 시 저장 패널이 좌우로 흔들리는 폭(px)")]
+    [SerializeField] float roadPanelShakeDistance = 16f;
+    [Tooltip("빈 슬롯 클릭 시 흔들림 지속 시간(초)")]
+    [SerializeField] float roadPanelShakeDuration = 0.28f;
     [SerializeField] AudioSource optionVolumeClickSource;
     [SerializeField] AudioSource roadPageClickSource;
     [SerializeField] AudioSource roadEmptySlotClickSource;
@@ -84,6 +90,7 @@ public class StartBodyPartSelector : MonoBehaviour
     Vector2 roadPanelCenterPosition;
     Vector2 roadPanelHiddenPosition;
     Coroutine roadPanelRoutine;
+    Coroutine roadPanelShakeRoutine;
     Coroutine roadButtonFloatRoutine;
     Coroutine roadEmptySlotMessageRoutine;
     Coroutine startSequenceRoutine;
@@ -869,6 +876,8 @@ public class StartBodyPartSelector : MonoBehaviour
             roadPanelRoutine = null;
         }
 
+        StopRoadPanelShake();
+
         if (roadButtonFloatRoutine != null)
         {
             StopCoroutine(roadButtonFloatRoutine);
@@ -1212,18 +1221,15 @@ public class StartBodyPartSelector : MonoBehaviour
 
         Button button = image.GetComponent<Button>();
         if (button == null)
-        {
             button = image.gameObject.AddComponent<Button>();
-            button.transition = Selectable.Transition.ColorTint;
-            ApplyButtonTint(button, Color.white, new Color(1.18f, 1.18f, 1.18f, 1f));
-        }
 
+        button.transition = Selectable.Transition.ColorTint;
         button.targetGraphic = image;
         button.interactable = true;
         button.enabled = true;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(ToggleRoadPage);
-        ApplyButtonTint(button, Color.white, new Color(1.18f, 1.18f, 1.18f, 1f));
+        ApplyRoadButtonTint(button);
         UpdateRoadPageButtonVisual();
     }
 
@@ -1286,7 +1292,7 @@ public class StartBodyPartSelector : MonoBehaviour
 
             TextMeshProUGUI dateText = EnsureTMPText(roadPanel.transform, "RoadSaveSlotDateText" + (i + 1));
             dateText.font = UIThinDungFont.Get();
-            dateText.text = info.exists ? info.savedAt + " 저장됨" : "";
+            dateText.text = info.exists ? info.savedAt + " 저장됨" : "저장된 파일이 없습니다";
             dateText.fontSize = 17f;
             dateText.alignment = TextAlignmentOptions.Center;
             dateText.color = Color.black;
@@ -1338,11 +1344,54 @@ public class StartBodyPartSelector : MonoBehaviour
 
     void HandleRoadSlotClicked(int rowIndex)
     {
-        PlayPanelAudioSource(roadEmptySlotClickSource, false);
         if (GameSaveSystem.HasSave(rowIndex))
+        {
+            PlayPanelAudioSource(roadEmptySlotClickSource, false);
             ShowLoadConfirmPanel(rowIndex);
+        }
         else
-            ShowRoadEmptySlotMessage();
+        {
+            PlayPanelAudioSource(roadEmptySlotClickSource, true);
+            ShakeRoadPanel();
+        }
+    }
+
+    void ShakeRoadPanel()
+    {
+        if (roadPanelRect == null || roadPanel == null || !roadPanel.activeInHierarchy)
+            return;
+
+        StopRoadPanelShake();
+        roadPanelShakeRoutine = StartCoroutine(ShakeRoadPanelRoutine());
+    }
+
+    void StopRoadPanelShake()
+    {
+        if (roadPanelShakeRoutine != null)
+        {
+            StopCoroutine(roadPanelShakeRoutine);
+            roadPanelShakeRoutine = null;
+        }
+    }
+
+    System.Collections.IEnumerator ShakeRoadPanelRoutine()
+    {
+        Vector2 center = roadPanelCenterPosition;
+        float duration = Mathf.Max(0.05f, roadPanelShakeDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float damp = 1f - t;
+            float offset = Mathf.Sin(t * Mathf.PI * 8f) * roadPanelShakeDistance * damp;
+            roadPanelRect.anchoredPosition = center + new Vector2(offset, 0f);
+            yield return null;
+        }
+
+        roadPanelRect.anchoredPosition = center;
+        roadPanelShakeRoutine = null;
     }
 
     void ShowLoadConfirmPanel(int rowIndex)
@@ -1875,6 +1924,7 @@ public class StartBodyPartSelector : MonoBehaviour
             return;
 
         roadPanelClosing = false;
+        StopRoadPanelShake();
         if (roadPanelRoutine != null)
             StopCoroutine(roadPanelRoutine);
 
@@ -1912,6 +1962,7 @@ public class StartBodyPartSelector : MonoBehaviour
         }
 
         roadPanelClosing = true;
+        StopRoadPanelShake();
         if (roadPanelRoutine != null)
             StopCoroutine(roadPanelRoutine);
 
@@ -2052,13 +2103,30 @@ public class StartBodyPartSelector : MonoBehaviour
         if (roadButtonRect == null)
             return;
 
+        // 1페이지: 기본 방향(아래), 2페이지: 위아래 반전되어 삼각형이 위를 향함
         float pageDirection = roadPageIndex == 0 ? 1f : -1f;
-        float baseX = Mathf.Abs(roadButtonBaseScale.x);
-        if (baseX <= 0.0001f)
-            baseX = 1f;
+        float baseY = Mathf.Abs(roadButtonBaseScale.y);
+        if (baseY <= 0.0001f)
+            baseY = 1f;
 
-        float baseXSign = roadButtonBaseScale.x < 0f ? -1f : 1f;
-        roadButtonRect.localScale = new Vector3(baseX * baseXSign * pageDirection, roadButtonBaseScale.y, roadButtonBaseScale.z);
+        float baseYSign = roadButtonBaseScale.y < 0f ? -1f : 1f;
+        roadButtonRect.localScale = new Vector3(roadButtonBaseScale.x, baseY * baseYSign * pageDirection, roadButtonBaseScale.z);
+    }
+
+    void ApplyRoadButtonTint(Button button)
+    {
+        if (button == null)
+            return;
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = roadButtonHoverColor;
+        colors.selectedColor = roadButtonHoverColor;
+        colors.pressedColor = new Color(roadButtonHoverColor.r * 0.85f, roadButtonHoverColor.g * 0.85f, roadButtonHoverColor.b * 0.85f, 1f);
+        colors.disabledColor = new Color(0.45f, 0.45f, 0.45f, 0.5f);
+        colors.colorMultiplier = 1f;
+        colors.fadeDuration = 0.08f;
+        button.colors = colors;
     }
 
     void ShowQuitPanel()

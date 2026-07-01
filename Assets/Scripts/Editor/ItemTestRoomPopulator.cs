@@ -135,7 +135,7 @@ public static class ItemTestRoomPopulator
         go.transform.SetParent(parent, false);
         go.transform.position = pos;
 
-        float size = item.Type == ItemType.BodyPart ? 0.95f : 0.72f;
+        float size = item.ResolveWorldScale();
         go.transform.localScale = Vector3.one * size;
 
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();

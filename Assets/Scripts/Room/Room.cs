@@ -24,10 +24,16 @@ public class Room : MonoBehaviour
     [SerializeField] GameObject[] doors;
     [SerializeField] Vector2 doorLine = new Vector2(8f, 4f);
 
+    // Spool(실타래) 스폰 제한: 웨이브당 최대 2개, 한 방(3웨이브) 누적 최대 5개.
+    const int SpoolMaxPerWave = 2;
+    const int SpoolMaxPerRoom = 5;
+
     readonly List<EnemyBase> enemies = new List<EnemyBase>();
     readonly List<DoorTrigger> activeDoors = new List<DoorTrigger>();
     readonly List<GameObject> sceneEnemyTemplates = new List<GameObject>();
+    readonly List<GameObject> nonSpoolTemplateBuffer = new List<GameObject>();
     GameObject sceneEnemyTemplate;
+    int spoolSpawnedThisRoom;
     bool waveCleared;
     bool isCleared;
 
@@ -45,6 +51,7 @@ public class Room : MonoBehaviour
 
         SetDoorsOpen(false);
         PrepareSceneEnemyTemplate();
+        spoolSpawnedThisRoom = 0;
 
         if (EnemyTemplate() == null)
         {
@@ -540,8 +547,59 @@ public class Room : MonoBehaviour
         while (templates.Count < count)
             templates.Add(EnemyTemplate(wave));
 
+        EnforceSpoolLimit(templates);
         Shuffle(templates);
         return templates;
+    }
+
+    // 스폰 목록에서 spool 개수를 웨이브당/방 누적 한도로 제한하고, 초과분은 다른 적으로 교체한다.
+    void EnforceSpoolLimit(List<GameObject> templates)
+    {
+        int allowedThisWave = Mathf.Min(SpoolMaxPerWave, SpoolMaxPerRoom - spoolSpawnedThisRoom);
+        if (allowedThisWave < 0)
+            allowedThisWave = 0;
+
+        int spoolCount = 0;
+        for (int i = 0; i < templates.Count; i++)
+        {
+            if (!IsSpoolTemplate(templates[i]))
+                continue;
+
+            if (spoolCount < allowedThisWave)
+            {
+                spoolCount++;
+                continue;
+            }
+
+            GameObject replacement = RandomNonSpoolTemplate();
+            if (replacement != null)
+                templates[i] = replacement;
+            else
+                spoolCount++; // 대체할 비-spool 적이 없으면 그대로 둔다.
+        }
+
+        spoolSpawnedThisRoom += spoolCount;
+    }
+
+    bool IsSpoolTemplate(GameObject template)
+    {
+        return template != null && template.GetComponent<SpoolEnemy>() != null;
+    }
+
+    GameObject RandomNonSpoolTemplate()
+    {
+        if (enemyPrefab != null && !IsSpoolTemplate(enemyPrefab.gameObject))
+            return enemyPrefab.gameObject;
+
+        nonSpoolTemplateBuffer.Clear();
+        for (int i = 0; i < sceneEnemyTemplates.Count; i++)
+            if (sceneEnemyTemplates[i] != null && !IsSpoolTemplate(sceneEnemyTemplates[i]))
+                nonSpoolTemplateBuffer.Add(sceneEnemyTemplates[i]);
+
+        if (nonSpoolTemplateBuffer.Count > 0)
+            return nonSpoolTemplateBuffer[Random.Range(0, nonSpoolTemplateBuffer.Count)];
+
+        return null;
     }
 
     int GuaranteedButtonCountForWave(int count)

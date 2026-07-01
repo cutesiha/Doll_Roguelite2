@@ -227,10 +227,10 @@ public class SpoolEnemy : EnemyBase
         if (receiver == null)
             return;
 
-        Vector2 playerPosition = receiver.transform.position;
         for (int i = 0; i < activeStrands.Count; i++)
         {
-            if (DistancePointToSegment(playerPosition, activeStrands[i].start, activeStrands[i].end) <= strandWidth * 0.85f)
+            // 바닥 실 피격판정은 플레이어의 Box 히트박스 기준.
+            if (receiver.FloorAttackHitsSegment(activeStrands[i].start, activeStrands[i].end, strandWidth * 0.85f))
             {
                 receiver.TryTakePatternDamage(strandDamage, 0.45f);
                 return;

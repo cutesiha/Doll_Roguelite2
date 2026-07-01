@@ -68,10 +68,31 @@ public class DoorTrigger : MonoBehaviour
             return;
         }
 
+        // 문 루트가 비균등 스케일(예: 1.5 x 0.4)이면 폴리곤 콜라이더가 왜곡되어
+        // 문과 어긋난다. 루트 스케일을 1로 정규화하면 카탈로그의 폴리곤 예시가
+        // 왜곡 없이 그대로(월드 좌표=로컬 좌표) 적용된다. 비주얼은 _DoorVisual 자식이
+        // 카탈로그 크기로 별도 처리하므로 외형은 영향받지 않는다.
+        transform.localScale = Vector3.one;
+
         EnsureDoorVisual();
         ApplyDoorVisual();
         EnsureInteractionCollider();
-        UpdateTooltip();
+        DisableTooltip();
+    }
+
+    // task17: 문 위 말풍선(문구)은 표시하지 않는다. 방 종류 아이콘(도형)은 그대로 유지.
+    // 하이어라키/템플릿에 미리 만들어 둔 _DoorTooltip 자식이 있으면 비활성화한다.
+    void DisableTooltip()
+    {
+        if (tooltipRoot == null)
+        {
+            Transform existing = transform.Find("_DoorTooltip");
+            if (existing != null)
+                tooltipRoot = existing;
+        }
+
+        if (tooltipRoot != null)
+            tooltipRoot.gameObject.SetActive(false);
     }
 
     public void CopyPresentationFrom(DoorTrigger template)
@@ -99,12 +120,7 @@ public class DoorTrigger : MonoBehaviour
         if (!isOpen || targetNode == null || entering)
             return;
 
-        bool showTooltip = playerNearby || mouseHovered;
-        if (showTooltip)
-            ShowTooltip();
-        else
-            HideTooltip();
-
+        // task17: 말풍선 문구는 더 이상 표시하지 않는다.
         if (!playerNearby)
             return;
 
@@ -377,13 +393,8 @@ public class DoorTrigger : MonoBehaviour
 
     void ShowTooltip()
     {
-        if (!isOpen || targetNode == null || entering)
-            return;
-
-        EnsureTooltip();
-        UpdateTooltip();
-        tooltipRoot.position = transform.position + tooltipOffset;
-        tooltipRoot.gameObject.SetActive(true);
+        // task17: 말풍선 문구 비표시. 혹시 남아있는 툴팁이 있으면 숨긴다.
+        DisableTooltip();
     }
 
     void HideTooltip()

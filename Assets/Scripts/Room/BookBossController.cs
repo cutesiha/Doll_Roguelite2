@@ -488,9 +488,12 @@ public class BookBossController : MonoBehaviour
         float activeElapsed = 0f;
         while (activeElapsed < activeTime)
         {
-            if (player != null
-                && Mathf.Abs(player.position.x - textWorldCenter.x) <= halfWidth
-                && Mathf.Abs(player.position.y - textWorldCenter.y) <= halfHeight)
+            if (receiver == null)
+                receiver = FindFirstObjectByType<PlayerDamageReceiver>();
+
+            // 바닥 글자(문장) 피격판정은 플레이어의 Box 히트박스 기준.
+            if (receiver != null
+                && receiver.FloorAttackHitsRect(textWorldCenter, new Vector2(halfWidth, halfHeight)))
             {
                 DamagePlayer(letterDamage, 0.5f, $"바닥 문장: \"{sentence}\"");
             }

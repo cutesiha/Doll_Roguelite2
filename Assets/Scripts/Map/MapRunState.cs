@@ -139,6 +139,23 @@ public static class MapRunState
             ResetRun();
     }
 
+    // task22: 중간보스 방을 지났는지 여부.
+    // 중간보스 방에 있는 동안(CurrentNode == 중간보스)과, 그 이후(중간보스 노드가 클리어됨) 모두 true.
+    public static bool HasPassedMiddleBoss()
+    {
+        if (CurrentNode != null && CurrentNode.roomType == RoomType.MiddleBoss)
+            return true;
+
+        if (Root == null)
+            return false;
+
+        foreach (MapNode node in CollectNodes(Root))
+            if (node.roomType == RoomType.MiddleBoss && (node.isCleared || node.state == NodeState.Cleared))
+                return true;
+
+        return false;
+    }
+
     public static bool BeginRoom(MapNode node)
     {
         if (CurrentNode == null || node == null) return false;

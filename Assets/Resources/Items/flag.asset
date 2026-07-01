@@ -38,3 +38,4 @@ MonoBehaviour:
   sprite: {fileID: 0}
   placeholderShape: 3
   placeholderColor: {r: 0.85, g: 0.18, b: 0.2, a: 1}
+  worldScale: 2.28

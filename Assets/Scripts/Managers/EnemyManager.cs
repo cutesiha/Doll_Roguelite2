@@ -51,8 +51,16 @@ public class EnemyManager : MonoBehaviour
             return false;
 
         enemy.ApplyProfile(profile);
+
+        // task22: 중간보스 방 이후의 잡몹은 체력을 50% 올린다.
+        if (MapRunState.HasPassedMiddleBoss())
+            enemy.ScaleMaxHealth(MiddleBossClearedHpMultiplier);
+
         return true;
     }
+
+    // 중간보스 통과 이후 잡몹 체력 배율. 중간 지점 강화이므로 킬타임이 과도하게 늘지 않는 1.5배로 설정.
+    const float MiddleBossClearedHpMultiplier = 1.5f;
 
     public void RegisterRoom(List<EnemyBase> enemies, System.Action onCleared)
     {

@@ -32,3 +32,4 @@ MonoBehaviour:
   sprite: {fileID: 21300000, guid: 5cd343ecb24f673418a81792f327c3a4, type: 3}
   placeholderShape: 2
   placeholderColor: {r: 0.72, g: 0.72, b: 0.78, a: 1}
+  worldScale: 2.8498912

@@ -408,9 +408,34 @@ public class ItemInventoryManager : MonoBehaviour
         }
 
         equippedByBodySlot[targetSlot] = item;
+        // task-C: 부위 슬롯 장착 아이템의 효과가 PlayerItemEffects(GetEquipped 기반)에 반영되도록
+        // location별 equipped 사전도 동기화한다. (보석 외 아이템 효과 미적용 버그)
+        SyncEquippedLocationFromSlots(item.EquipLocation);
         Announce(item.ItemName + " 장착");
         NotifyChanged();
         return true;
+    }
+
+    // equippedByBodySlot(좌/우 슬롯)에 장착된 아이템 기준으로 equipped[location]을 다시 맞춘다.
+    void SyncEquippedLocationFromSlots(ItemEquipLocation location)
+    {
+        if (location == ItemEquipLocation.None)
+            return;
+
+        ItemData found = null;
+        foreach (var kv in equippedByBodySlot)
+        {
+            if (kv.Value != null && kv.Value.EquipLocation == location)
+            {
+                found = kv.Value;
+                break;
+            }
+        }
+
+        if (found != null)
+            equipped[location] = found;
+        else
+            equipped.Remove(location);
     }
 
     // task3: 장착된 신체부위 아이템을 보관함으로 되돌리기

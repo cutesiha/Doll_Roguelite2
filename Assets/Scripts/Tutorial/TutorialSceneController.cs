@@ -37,8 +37,8 @@ public class TutorialSceneController : MonoBehaviour
     [SerializeField] Sprite doorSprite;
 
     [Header("Tuning")]
-    [SerializeField] float workbenchPromptDistance = 2.0f;
-    [SerializeField] float doorPromptDistance = 1.65f;
+    [SerializeField] float workbenchPromptDistance = 3.2f;
+    [SerializeField] float doorPromptDistance = 2.6f;
     [SerializeField] Vector2 enemyEntranceStart = new Vector2(-12f, -0.6f);
     [SerializeField] Vector2 enemyEntranceEnd = new Vector2(-3.1f, -0.6f);
     [SerializeField] Vector2 doorPosition = new Vector2(0f, 1.1f);
@@ -112,6 +112,7 @@ public class TutorialSceneController : MonoBehaviour
             workbench = found != null ? found.transform : CreateWorkbench(new Vector2(5.4f, -0.9f)).transform;
         }
         EnsureWorkbenchShadow(workbench);
+        AttachInteractableHighlight(workbench, workbenchPromptDistance);
 
         EnsureCamera();
         EnsureEventSystem();
@@ -130,9 +131,10 @@ public class TutorialSceneController : MonoBehaviour
         if (player != null)
         {
             player.transform.position = new Vector3(-5.6f, -1.2f, 0f);
+            // 튜토리얼: 적에 닿으면 피격 모션은 그대로 재생하되 실제 HP는 깎이지 않게 한다.
             PlayerDamageReceiver pdr = player.GetComponent<PlayerDamageReceiver>();
             if (pdr != null)
-                pdr.SetInvincible(99999f);
+                pdr.SetHpLossDisabled(true);
         }
 
         HideAllPrompts();
@@ -1212,10 +1214,19 @@ public class TutorialSceneController : MonoBehaviour
         }
 #endif
 
+        // 다른 문들과 동일한 크기/콜라이더를 쓰도록 DoorSpriteCatalog 설정을 적용한다.
+        DoorSpriteCatalog catalog = DoorSpriteCatalog.Load();
+
         if (sprite != null)
         {
             GameObject spriteGO = new GameObject("DoorSprite");
             spriteGO.transform.SetParent(door.transform, false);
+
+            float visualScale = catalog != null ? catalog.doorVisualScale : 2.4928f;
+            Vector2 visualOffset = catalog != null ? catalog.doorVisualOffset : Vector2.zero;
+            spriteGO.transform.localScale = new Vector3(visualScale, visualScale, 1f);
+            spriteGO.transform.localPosition = new Vector3(visualOffset.x, visualOffset.y, 0f);
+
             SpriteRenderer sr = spriteGO.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
             sr.sortingOrder = 20;
@@ -1227,7 +1238,44 @@ public class TutorialSceneController : MonoBehaviour
             AddSpriteBlock(doorRoot, "DoorKnob", new Vector2(0.28f, -0.05f), new Vector2(0.11f, 0.11f), new Color(0.94f, 0.72f, 0.28f, 1f), 22);
         }
 
+        AddDoorInteractionCollider(door, catalog);
+        AttachInteractableHighlight(doorRoot, doorPromptDistance);
         door.SetActive(false);
+    }
+
+    // 튜토리얼 문에 다른 문(DoorTrigger)과 동일한 상호작용 콜라이더를 붙인다.
+    // 문 루트의 스케일이 1이므로 카탈로그의 월드 오프셋 좌표를 그대로 사용할 수 있다.
+    void AddDoorInteractionCollider(GameObject doorObject, DoorSpriteCatalog catalog)
+    {
+        if (catalog != null && catalog.doorColliderPath != null && catalog.doorColliderPath.Length >= 3)
+        {
+            PolygonCollider2D poly = doorObject.GetComponent<PolygonCollider2D>();
+            if (poly == null)
+                poly = doorObject.AddComponent<PolygonCollider2D>();
+            poly.isTrigger = true;
+            poly.pathCount = 1;
+            poly.SetPath(0, catalog.doorColliderPath);
+            return;
+        }
+
+        BoxCollider2D box = doorObject.GetComponent<BoxCollider2D>();
+        if (box == null)
+            box = doorObject.AddComponent<BoxCollider2D>();
+        box.isTrigger = true;
+        box.size = catalog != null ? catalog.doorColliderSize : new Vector2(2.34f, 2.7f);
+        box.offset = catalog != null ? catalog.doorColliderOffset : Vector2.zero;
+    }
+
+    void AttachInteractableHighlight(Transform target, float distance)
+    {
+        if (target == null)
+            return;
+
+        InteractableHighlight highlight = target.GetComponent<InteractableHighlight>();
+        if (highlight == null)
+            highlight = target.gameObject.AddComponent<InteractableHighlight>();
+
+        highlight.Configure(player != null ? player.transform : null, distance);
     }
 
     void ShowDoor()

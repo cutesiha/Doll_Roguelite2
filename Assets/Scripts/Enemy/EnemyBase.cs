@@ -242,6 +242,18 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
+    // task22: 중간보스 통과 이후 방의 잡몹 체력을 배율만큼 올린다.
+    // 정수 HP라 올림 처리하고, 최소 +1 을 보장한다. (예: ×1.5 → 2→3, 3→5, 4→6)
+    public void ScaleMaxHealth(float multiplier)
+    {
+        if (multiplier <= 1f)
+            return;
+
+        int scaled = Mathf.CeilToInt(maxHp * multiplier);
+        maxHp = Mathf.Max(maxHp + 1, scaled);
+        currentHp = maxHp;
+    }
+
     // Applies only the shared stats (HP) without touching sprites/colors. Used by
     // the special enemies that keep their own art but still want HP tunable from
     // the EnemyManager profile list.
@@ -452,7 +464,7 @@ public class EnemyBase : MonoBehaviour
         Color baseColor = spriteBaseColor;
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         float prevWave = 0f;
-        float shakeDist = Mathf.Max(hitShakeDistance, 0.55f);
+        float shakeDist = Mathf.Max(hitShakeDistance, 0.46f);
 
         while (elapsed < duration)
         {

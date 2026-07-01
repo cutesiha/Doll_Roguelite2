@@ -120,6 +120,8 @@ public class ItemData : ScriptableObject
     [SerializeField] Sprite sprite;
     [SerializeField] ItemPlaceholderShape placeholderShape = ItemPlaceholderShape.Square;
     [SerializeField] Color placeholderColor = Color.white;
+    [Tooltip("월드에 스폰될 때 적용할 크기. 0 이하이면 타입별 기본 크기를 사용. (아이템 테스트룸에서 조정한 값과 동기화됨)")]
+    [SerializeField] float worldScale = 0f;
 
     public string ItemId => string.IsNullOrWhiteSpace(itemId) ? name : itemId;
     public string ItemName => string.IsNullOrWhiteSpace(itemName) ? name : itemName;
@@ -137,6 +139,22 @@ public class ItemData : ScriptableObject
     public Sprite Sprite => sprite;
     public ItemPlaceholderShape PlaceholderShape => placeholderShape;
     public Color PlaceholderColor => placeholderColor;
+    public float WorldScale => worldScale;
+
+    public float ResolveWorldScale()
+    {
+        if (worldScale > 0.0001f)
+            return worldScale;
+
+        return itemType == ItemType.BodyPart ? 0.95f : 0.72f;
+    }
+
+#if UNITY_EDITOR
+    public void EditorSetWorldScale(float scale)
+    {
+        worldScale = Mathf.Max(0f, scale);
+    }
+#endif
 
     public bool HasEffect(ItemEffectType effectType)
     {

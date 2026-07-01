@@ -5,10 +5,11 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class ScreenFlash : MonoBehaviour
 {
-    [SerializeField, Range(0f, 1f)] float maxAlpha = 0.65f;
+    [SerializeField, Range(0f, 1f)] float maxAlpha = 0.42f;
     [SerializeField, Min(0.05f)] float fadeInDuration = 0.05f;
     [SerializeField, Min(0.05f)] float fadeOutDuration = 0.28f;
-    [SerializeField] Color flashColor = new Color(1f, 0f, 0f, 1f);
+    // 순수 빨강 대신 주황/갈색이 살짝 섞인 연한 붉은색
+    [SerializeField] Color flashColor = new Color(0.92f, 0.42f, 0.3f, 1f);
 
     static ScreenFlash instance;
     Image flashImage;

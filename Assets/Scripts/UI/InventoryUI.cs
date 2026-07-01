@@ -133,11 +133,25 @@ public class InventoryUI : MonoBehaviour
     {
         _closeButton?.onClick.AddListener(ClosePanel);
 
-        // task5: 보관 슬롯 클릭 시 또잉 애니메이션
+        // task5/task19: 보관 슬롯 클릭 시 또잉 애니메이션
         for (int i = 0; i < _storageBtn.Length; i++)
         {
             int captured = i;
             _storageBtn[i]?.onClick.AddListener(() => PlaySlotBoing(captured));
+        }
+
+        // task19: 장착된 신체 부위(캐릭터) 슬롯도 클릭하면 또잉
+        for (int i = 0; i < _charBtn.Length; i++)
+        {
+            if (_charBtn[i] == null || _charImg == null || i >= _charImg.Length || _charImg[i] == null)
+                continue;
+
+            InventoryBoingEffect boing = _charImg[i].GetComponent<InventoryBoingEffect>();
+            if (boing == null)
+                boing = _charImg[i].gameObject.AddComponent<InventoryBoingEffect>();
+
+            InventoryBoingEffect captured = boing;
+            _charBtn[i].onClick.AddListener(() => captured.PlayBoing());
         }
     }
 
@@ -386,13 +400,16 @@ public class InventoryUI : MonoBehaviour
         // task7: 동전 3x3 그리드 컨테이너
         EnsureCoinGrid(slot.transform, slotWidth, slotHeight);
 
-        EnsureStorageSlotLabel(slot.transform, "SlotLabel", "슬롯 " + (index + 1), 18f, new Vector2(0f, -8f), new Vector2(slotWidth, 28f), TextAlignmentOptions.Center);
-        _storageName[index] = EnsureStorageSlotLabel(slot.transform, "SlotName", "빈 슬롯", 14f, new Vector2(0f, -38f), new Vector2(slotWidth - 12f, 28f), TextAlignmentOptions.Center);
+        EnsureStorageSlotLabel(slot.transform, "SlotLabel", "슬롯 " + (index + 1), 18f, new Vector2(0f, -6f), new Vector2(slotWidth, 24f), TextAlignmentOptions.Center);
+        // task21: 아이콘을 키웠으므로 이름은 슬롯 하단으로 이동
+        _storageName[index] = EnsureStorageSlotLabel(slot.transform, "SlotName", "빈 슬롯", 14f, new Vector2(0f, -68f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
+        // task20: 부위 저장 시 하단 체력 동그라미(●○) 표시 제거 — 라벨은 남기되 항상 비운다
         _storageHp[index] = EnsureStorageSlotLabel(slot.transform, "SlotHP", "", 16f, new Vector2(0f, -66f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
     }
 
     // 슬롯 안 아이템 아이콘이 차지하는 정사각 박스 크기 (비율 유지하며 이 안에 맞춤)
-    const float SlotIconBox = 80f;
+    // task21: 보관 슬롯에 넣은 부위/아이템이 너무 작아 보이지 않도록 확대.
+    const float SlotIconBox = 100f;
 
     // 슬롯 내 아이템 아이콘 — 슬롯 크기에 맞춰 비율 유지하며 표시
     static void EnsureSlotItemIcon(Transform slotRoot, float slotW, float slotH)
@@ -845,7 +862,8 @@ public class InventoryUI : MonoBehaviour
             if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
                 _storageBtn[i].targetGraphic = _storageImg[i];
             if (_storageName[i] != null) _storageName[i].text = p != null ? p.DisplayName() : "빈 슬롯";
-            if (_storageHp[i]   != null) _storageHp[i].text  = p != null && p.IsEquippable ? Dots(p) : "";
+            // task20: 보관 슬롯에 저장된 부위의 체력 동그라미 표시 안 함
+            if (_storageHp[i]   != null) _storageHp[i].text  = "";
         }
 
         // ─ 빈 슬롯에 ItemInventoryManager 아이템 + 동전 스택 표시 ─

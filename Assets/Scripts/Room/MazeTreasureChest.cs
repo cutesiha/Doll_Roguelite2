@@ -61,7 +61,8 @@ public class MazeTreasureChest : MonoBehaviour
         // 부유하는 아이템 오브젝트 생성
         GameObject go = new GameObject("ChestReward_" + itemId);
         go.transform.position = transform.position + Vector3.up * 0.5f;
-        go.transform.localScale = Vector3.one * 0.9f;
+        // task23: 하드코딩 0.9 대신 아이템별 테스트룸 크기(worldScale)를 사용해 다른 보상들과 크기를 통일한다.
+        go.transform.localScale = Vector3.one * chosen.ResolveWorldScale();
 
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = chosen.Sprite;

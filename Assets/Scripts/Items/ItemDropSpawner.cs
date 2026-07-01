@@ -24,7 +24,7 @@ public static class ItemDropSpawner
         renderer.color = item.Sprite != null ? Color.white : item.PlaceholderColor;
         renderer.sortingOrder = 35;
 
-        float size = item.Type == ItemType.BodyPart ? 0.95f : 0.72f;
+        float size = item.ResolveWorldScale();
         go.transform.localScale = Vector3.one * size;
 
         CircleCollider2D collider = go.GetComponent<CircleCollider2D>();
