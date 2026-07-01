@@ -46,15 +46,6 @@ public class InventoryEquipDropTarget : MonoBehaviour, IDropHandler
         if (part == null || !part.IsEquippable || part.slot != acceptedSlot)
             return;
 
-        // task13: 슬롯에 아이템 부위가 장착돼 있으면 먼저 아이템 보관함으로 내린 뒤 원래 부위를 끼운다.
-        // 자리가 없으면 교체를 중단한다(Q2: 교체 차단).
-        var bodyItemInv = ItemInventoryManager.Instance;
-        if (bodyItemInv != null && bodyItemInv.GetEquippedByBodySlot(acceptedSlot) != null)
-        {
-            if (!bodyItemInv.TryUnequipBodyPartToStorage(acceptedSlot))
-                return;
-        }
-
         if (InventoryManager.Instance.EquipFromStorage(storageIndex))
             SoundManager.PlayClick();
     }

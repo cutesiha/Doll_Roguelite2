@@ -387,11 +387,7 @@ public class ItemInventoryManager : MonoBehaviour
         NotifyChanged();
     }
 
-    // task3/11/12/13: 보관함의 신체부위 아이템을 특정 BodySlot에 장착(교체 포함).
-    // - 슬롯에 이미 '원래 부위'가 있으면 부위 보관함으로 밀어냄(task11).
-    // - 슬롯에 이미 '다른 아이템 부위'가 있으면 아이템 보관함으로 밀어냄(task13).
-    // - 밀려나는 것이 들어갈 자리가 없으면 교체를 차단한다(Q2).
-    // - 장착 후 InventoryManager 몸 상태를 갱신해 아이템 부위가 '있음'으로 반영되게 함.
+    // task3: 보관함의 신체부위 아이템을 특정 BodySlot에 장착
     public bool TryEquipBodyPartFromStorage(ItemData item, BodySlot targetSlot)
     {
         if (item == null || item.Type != ItemType.BodyPart)
@@ -403,39 +399,19 @@ public class ItemInventoryManager : MonoBehaviour
         if (idx < 0)
             return false;
 
-        InventoryManager bodyInv = InventoryManager.Instance;
+        storage.RemoveAt(idx);
 
-        // 조건방 등으로 잠긴 슬롯에는 장착 불가.
-        if (bodyInv != null && bodyInv.IsSlotLocked(targetSlot))
-            return false;
-
-        equippedByBodySlot.TryGetValue(targetSlot, out ItemData oldItem);
-        BodyPart oldOriginal = bodyInv != null ? bodyInv.GetEquippedPart(targetSlot) : null;
-
-        // Q2(교체 차단): 장착할 item은 아이템 보관함에서 빠져 자리 1개가 비므로,
-        // 밀려나는 것들(oldItem/oldOriginal)을 합쳐 용량을 넘으면 교체하지 않는다.
-        int bodyStored = bodyInv != null ? bodyInv.CountStoredParts() : 0;
-        int occupiedAfter = (bodyStored + storage.Count) - 1
-            + (oldItem != null ? 1 : 0)
-            + (oldOriginal != null ? 1 : 0);
-        bool originalHasNoSlot = oldOriginal != null && (bodyInv == null || !bodyInv.HasFreeStorageSlot());
-        if (occupiedAfter > Capacity || originalHasNoSlot)
+        // 기존 장착 아이템이 있으면 보관함으로
+        if (equippedByBodySlot.TryGetValue(targetSlot, out ItemData old) && old != null)
         {
-            Announce("인벤토리가 가득 참");
-            return false;
+            if (storage.Count < Capacity)
+                storage.Add(old);
         }
 
-        // 커밋
-        storage.RemoveAt(idx);
-        if (oldOriginal != null)
-            bodyInv.MoveEquippedPartToStorage(targetSlot);   // 원래 부위 → 부위 보관함
-        if (oldItem != null)
-            storage.Add(oldItem);                            // 이전 아이템 → 아이템 보관함
-
         equippedByBodySlot[targetSlot] = item;
-        // 부위 슬롯 장착 아이템의 효과가 PlayerItemEffects(GetEquipped 기반)에 반영되도록 동기화.
+        // task-C: 부위 슬롯 장착 아이템의 효과가 PlayerItemEffects(GetEquipped 기반)에 반영되도록
+        // location별 equipped 사전도 동기화한다. (보석 외 아이템 효과 미적용 버그)
         SyncEquippedLocationFromSlots(item.EquipLocation);
-        bodyInv?.SyncBodyState();   // 아이템 부위 '있음' 반영
         Announce(item.ItemName + " 장착");
         NotifyChanged();
         return true;
@@ -463,8 +439,7 @@ public class ItemInventoryManager : MonoBehaviour
             equipped.Remove(location);
     }
 
-    // task2/3/4/12: 장착된 신체부위 아이템을 보관함으로 되돌리기.
-    // 되돌린 뒤 효과·몸 상태를 갱신해 '부위 없음' 상태가 그대로 유지되게 한다(태스크4: 뗀 효과 지속).
+    // task3: 장착된 신체부위 아이템을 보관함으로 되돌리기
     public bool TryUnequipBodyPartToStorage(BodySlot slot)
     {
         if (!equippedByBodySlot.TryGetValue(slot, out ItemData item) || item == null)
@@ -474,8 +449,6 @@ public class ItemInventoryManager : MonoBehaviour
 
         storage.Add(item);
         equippedByBodySlot.Remove(slot);
-        SyncEquippedLocationFromSlots(item.EquipLocation);   // 효과 제거 반영
-        InventoryManager.Instance?.SyncBodyState();          // 부위 '없음' 반영
         NotifyChanged();
         return true;
     }

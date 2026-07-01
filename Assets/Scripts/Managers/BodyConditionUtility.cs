@@ -19,7 +19,7 @@ public static class BodyConditionUtility
     {
         InventoryManager inventory = InventoryManager.Instance;
         if (inventory != null)
-            return inventory.IsSlotOccupied(slot);   // task: 아이템 부위도 '있음'으로 취급
+            return inventory.IsEquipped(slot);
 
         BodyState state = CurrentState();
         switch (slot)
