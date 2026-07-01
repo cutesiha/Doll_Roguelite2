@@ -156,6 +156,26 @@ public class ItemData : ScriptableObject
     }
 #endif
 
+    // task10: 신체부위 아이템 툴팁에 표시할 부위 이름(한글). 부위 아이템이 아니면 빈 문자열.
+    public string BodyPartLabel()
+    {
+        if (itemType != ItemType.BodyPart)
+            return "";
+        return EquipLocationLabel(equipLocation);
+    }
+
+    public static string EquipLocationLabel(ItemEquipLocation location)
+    {
+        switch (location)
+        {
+            case ItemEquipLocation.Eye:  return "눈";
+            case ItemEquipLocation.Arm:  return "팔";
+            case ItemEquipLocation.Leg:  return "다리";
+            case ItemEquipLocation.Body: return "몸";
+            default:                     return "";
+        }
+    }
+
     public bool HasEffect(ItemEffectType effectType)
     {
         return GetEffect(effectType) != null;

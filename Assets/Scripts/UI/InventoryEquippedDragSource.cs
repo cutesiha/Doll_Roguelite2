@@ -21,8 +21,13 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
     public void OnBeginDrag(PointerEventData eventData)
     {
         var inv = InventoryManager.Instance;
+        var itemInv = ItemInventoryManager.Instance;
         int index = (int)bodySlot;
-        if (inv == null || index < 0 || index >= inv.equipped.Length || inv.equipped[index] == null)
+
+        // task2/12: 원래 부위뿐 아니라 '아이템 부위'가 장착된 슬롯도 드래그해서 뺄 수 있게 한다.
+        bool hasOriginal = inv != null && index >= 0 && index < inv.equipped.Length && inv.equipped[index] != null;
+        ItemData slotItem = itemInv != null ? itemInv.GetEquippedByBodySlot(bodySlot) : null;
+        if (!hasOriginal && slotItem == null)
             return;
 
         rootCanvas = GetComponentInParent<Canvas>();
@@ -47,9 +52,11 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
         image.raycastTarget = false;
         image.preserveAspect = true;
         image.color = new Color(1f, 1f, 1f, 0.94f);
-        image.sprite = sourceImage != null && sourceImage.sprite != null
-            ? sourceImage.sprite
-            : InventoryUI.FindDisplaySpriteForSlot(bodySlot);
+        image.sprite = slotItem != null && slotItem.Sprite != null
+            ? slotItem.Sprite
+            : (sourceImage != null && sourceImage.sprite != null
+                ? sourceImage.sprite
+                : InventoryUI.FindDisplaySpriteForSlot(bodySlot));
 
         CanvasGroup group = go.AddComponent<CanvasGroup>();
         group.blocksRaycasts = false;
@@ -68,11 +75,14 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
             Destroy(ghost.gameObject);
 
         var inv = InventoryManager.Instance;
-        int index = (int)bodySlot;
         if (sourceImage != null)
-            sourceImage.color = inv != null && index >= 0 && index < inv.equipped.Length && inv.equipped[index] == null
-                ? new Color(0.04f, 0.035f, 0.03f, 0.48f)
-                : sourceColor;
+        {
+            // 슬롯이 여전히 (원래 부위 또는 아이템 부위로) 차 있으면 원래 색, 비었으면 어둡게.
+            bool stillOccupied = inv != null && inv.IsSlotOccupied(bodySlot);
+            sourceImage.color = stillOccupied
+                ? sourceColor
+                : new Color(0.04f, 0.035f, 0.03f, 0.48f);
+        }
     }
 
     Vector2 SourceSize()

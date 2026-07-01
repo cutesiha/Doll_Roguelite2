@@ -258,6 +258,37 @@ public class InventoryManager : MonoBehaviour
         return index >= 0 && index < equipped.Length && equipped[index] != null;
     }
 
+    // task2/3/4/11~13: 슬롯이 원래 부위 '또는' 아이템 부위로 채워져 있으면 true.
+    // 아이템 부위(유리눈·목제다리 등)도 '부위 있음'으로 취급하기 위한 통합 판정.
+    public bool IsSlotOccupied(BodySlot slot)
+    {
+        if (IsEquipped(slot))
+            return true;
+
+        ItemInventoryManager items = ItemInventoryManager.Instance;
+        return items != null && items.GetEquippedByBodySlot(slot) != null;
+    }
+
+    public bool HasFreeStorageSlot()
+    {
+        return FreeStorageIndex() >= 0;
+    }
+
+    public int CountStoredParts()
+    {
+        int count = 0;
+        for (int i = 0; i < storage.Length; i++)
+            if (storage[i] != null)
+                count++;
+        return count;
+    }
+
+    // task11/13: 아이템 부위로 교체할 때 원래 부위를 보관함으로 밀어낸다. 자리 없으면 false(교체 차단).
+    public bool MoveEquippedPartToStorage(BodySlot slot)
+    {
+        return TryUnequip(slot);
+    }
+
     public BodyPart GetEquippedPart(BodySlot slot)
     {
         int index = (int)slot;
@@ -297,15 +328,16 @@ public class InventoryManager : MonoBehaviour
             || BodyManager.Instance.State == null
             || BodyManager.Instance.State.body;
 
+        // task: 아이템 부위도 '있음'으로 취급 → 이동/전투/스프라이트/조건문 판정에 반영.
         return new BodyState
         {
             body = bodyAlive,
-            eyeLeft = IsEquipped(BodySlot.EyeLeft),
-            eyeRight = IsEquipped(BodySlot.EyeRight),
-            armLeft = IsEquipped(BodySlot.ArmLeft),
-            armRight = IsEquipped(BodySlot.ArmRight),
-            legLeft = IsEquipped(BodySlot.LegLeft),
-            legRight = IsEquipped(BodySlot.LegRight)
+            eyeLeft = IsSlotOccupied(BodySlot.EyeLeft),
+            eyeRight = IsSlotOccupied(BodySlot.EyeRight),
+            armLeft = IsSlotOccupied(BodySlot.ArmLeft),
+            armRight = IsSlotOccupied(BodySlot.ArmRight),
+            legLeft = IsSlotOccupied(BodySlot.LegLeft),
+            legRight = IsSlotOccupied(BodySlot.LegRight)
         };
     }
 

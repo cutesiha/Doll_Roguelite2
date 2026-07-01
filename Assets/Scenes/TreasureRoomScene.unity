@@ -966,6 +966,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &684499125
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 684499126}
+  m_Layer: 0
+  m_Name: TreasureLayout
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &684499126
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 684499125}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &713235772
 GameObject:
   m_ObjectHideFlags: 0
@@ -1491,6 +1522,7 @@ Transform:
   - {fileID: 1678030005}
   - {fileID: 1235046306}
   - {fileID: 931354353}
+  - {fileID: 1351650271}
   m_Father: {fileID: 751850772}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &931354352
@@ -2166,6 +2198,10 @@ MonoBehaviour:
   blockedColor: {r: 0.72, g: 0.2, b: 0.18, a: 1}
   doorWorldScale: 1.8
   tooltipHeight: 2.25
+  proximityRadius: 2.6
+  nearHighlightColor: {r: 1, g: 0.8, b: 0.62, a: 1}
+  tintShopDoorBlue: 1
+  shopDoorTint: {r: 0.3, g: 0.6, b: 1, a: 1}
   doorSpriteOverride: {fileID: 0}
   roomIconSpriteOverride: {fileID: 0}
   tooltipSpriteOverride: {fileID: 0}
@@ -2407,6 +2443,37 @@ MeshRenderer:
   m_SortingOrder: 40
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &1351650270
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1351650271}
+  m_Layer: 0
+  m_Name: TreasureRewardAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1351650271
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351650270}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.55, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 891967779}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1372885571
 GameObject:
   m_ObjectHideFlags: 0
@@ -3908,3 +3975,4 @@ SceneRoots:
   - {fileID: 2006974083}
   - {fileID: 1993731298}
   - {fileID: 751850772}
+  - {fileID: 684499126}
