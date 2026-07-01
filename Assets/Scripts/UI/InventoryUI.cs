@@ -66,6 +66,20 @@ public class InventoryUI : MonoBehaviour
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color ClearColor = new Color(0f, 0f, 0f, 0f);
     static readonly Color CSlot  = new Color(0.88f, 0.48f, 0.24f, 1f);
+
+    // 동전이 하나씩 추가될수록 중앙에서 바깥으로 퍼지며 미묘하게 겹치는 파일 위치
+    static readonly Vector2[] CoinPilePositions = new Vector2[]
+    {
+        new Vector2(  0f,   0f),
+        new Vector2(-13f,   5f),
+        new Vector2( 14f,  -4f),
+        new Vector2(  3f,  14f),
+        new Vector2( -5f, -13f),
+        new Vector2(-22f,   0f),
+        new Vector2( 22f,  -1f),
+        new Vector2(  7f,  22f),
+        new Vector2(-10f, -22f),
+    };
     static readonly Color CEmpty = new Color(0.17f, 0.15f, 0.13f, 0.20f);
     static readonly Color CTrash = new Color(0.55f, 0.12f, 0.10f, 0.55f);
     static readonly Color CUnequippedPart = new Color(0.04f, 0.035f, 0.03f, 0.48f);
@@ -461,27 +475,22 @@ public class InventoryUI : MonoBehaviour
         gridRt.anchoredPosition = Vector2.zero;
         gridRt.sizeDelta = new Vector2(slotW * 0.85f, slotH * 0.85f);
 
-        // 3x3=9개 동전 셀 생성
-        float cellW = gridRt.sizeDelta.x / 3f;
-        float cellH = gridRt.sizeDelta.y / 3f;
-        for (int r = 0; r < 3; r++)
+        // 9개 동전을 중앙에서 바깥으로 겹치며 쌓이는 파일(pile) 형태로 배치
+        const float coinSize = 50f;
+        for (int k = 0; k < 9; k++)
         {
-            for (int c = 0; c < 3; c++)
-            {
-                GameObject cell = new GameObject("Coin_" + (r * 3 + c));
-                cell.transform.SetParent(grid.transform, false);
-                RectTransform cellRt = cell.AddComponent<RectTransform>();
-                cellRt.anchorMin = cellRt.anchorMax = new Vector2(0f, 1f);
-                cellRt.pivot = new Vector2(0.5f, 0.5f);
-                cellRt.anchoredPosition = new Vector2((c + 0.5f) * cellW - gridRt.sizeDelta.x * 0.5f,
-                                                      -((r + 0.5f) * cellH));
-                cellRt.sizeDelta = new Vector2(cellW * 0.8f, cellH * 0.8f);
+            GameObject cell = new GameObject("Coin_" + k);
+            cell.transform.SetParent(grid.transform, false);
+            RectTransform cellRt = cell.AddComponent<RectTransform>();
+            cellRt.anchorMin = cellRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cellRt.pivot = new Vector2(0.5f, 0.5f);
+            cellRt.anchoredPosition = CoinPilePositions[k];
+            cellRt.sizeDelta = new Vector2(coinSize, coinSize);
 
-                Image coinImg = cell.AddComponent<Image>();
-                coinImg.raycastTarget = false;
-                coinImg.color = Color.clear;
-                coinImg.preserveAspect = true;
-            }
+            Image coinImg = cell.AddComponent<Image>();
+            coinImg.raycastTarget = false;
+            coinImg.color = Color.clear;
+            coinImg.preserveAspect = true;
         }
         grid.SetActive(false);
     }
@@ -898,30 +907,41 @@ public class InventoryUI : MonoBehaviour
         int storageCount = Mathf.Min(inv.storage.Length, _storageImg.Length, _storageName.Length, _storageHp.Length);
         SetExtraStorageSlotsVisible(storageCount);
 
-        // 각 슬롯 드래그 소스 초기화 + 툴팁 초기화
+        // 각 슬롯 드래그 소스 + 드롭 타겟 + 툴팁 초기화
         for (int i = 0; i < storageCount; i++)
         {
             InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
             if (dragSource != null)
+            {
                 dragSource.SetItemData(null);
+                dragSource.SetCoinStackIndex(-1);
+            }
 
             InventoryItemTooltip tooltip = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryItemTooltip>() : null;
             if (tooltip != null)
                 tooltip.SetItemData(null);
         }
 
-        // ─ InventoryManager BodyPart 슬롯 ─
+        // ─ InventoryManager BodyPart / 동전 슬롯 ─
         for (int i = 0; i < storageCount; i++)
         {
             var p = inv.storage[i];
-            // task4: 배경 Image는 빈/찬 색상만; 실제 스프라이트는 ItemIcon 자식에 표시
+            inv.coinSlots.TryGetValue(i, out int coinCount);
+            bool hasCoin = p == null && coinCount > 0;
+
             if (_storageImg[i] != null)
             {
-                SetImageSpriteSafely(_storageImg[i], null); // 배경은 스프라이트 없음
-                _storageImg[i].color = p != null ? new Color(0.12f, 0.09f, 0.06f, 0.35f) : CEmpty;
+                SetImageSpriteSafely(_storageImg[i], null);
+                if (p != null)
+                    _storageImg[i].color = new Color(0.12f, 0.09f, 0.06f, 0.35f);
+                else if (hasCoin)
+                    _storageImg[i].color = new Color(0.18f, 0.13f, 0.04f, 0.45f);
+                else
+                    _storageImg[i].color = CEmpty;
                 ApplyAlphaHitTest(_storageImg[i], 0f);
             }
 
+<<<<<<< Updated upstream
             bool isCoinStack = p != null && p.kind == ItemKind.Coin;
 
             // ItemIcon 자식에 스프라이트 표시 (task4: 원본 크기). 동전 더미는 CoinPile로 대신 표시.
@@ -932,17 +952,32 @@ public class InventoryUI : MonoBehaviour
                 {
                     itemIcon.sprite = null;
                     itemIcon.color = Color.clear;
+=======
+            Image itemIcon = GetSlotItemIcon(_storageImg[i]);
+            if (itemIcon != null)
+            {
+                if (hasCoin)
+                {
+                    itemIcon.sprite = null;
+                    itemIcon.color = Color.clear;
+                    (itemIcon.transform as RectTransform).sizeDelta = Vector2.zero;
+>>>>>>> Stashed changes
                 }
                 else
                 {
                     Sprite slotSprite = p == null ? null : (p.icon != null ? p.icon : (p.IsEquippable ? DisplaySpriteForSlot(p.slot) : null));
                     itemIcon.sprite = slotSprite;
                     itemIcon.color = slotSprite != null ? Color.white : Color.clear;
+<<<<<<< Updated upstream
                     if (slotSprite != null) FitSlotIcon(itemIcon);
+=======
+                    if (slotSprite != null) itemIcon.SetNativeSize();
+>>>>>>> Stashed changes
                     else (itemIcon.transform as RectTransform).sizeDelta = Vector2.zero;
                 }
             }
 
+<<<<<<< Updated upstream
             // 동전 그리드 숨기기 (ItemInventoryManager 전용, BodyPart 슬롯에서는 미사용)
             SetCoinGrid(_storageImg[i], 0, null);
             // 동전 더미는 비스듬히 겹쳐진 아이콘들로 표시
@@ -953,23 +988,39 @@ public class InventoryUI : MonoBehaviour
             if (_storageName[i] != null) _storageName[i].text = p != null ? p.DisplayName() : "빈 슬롯";
             // task20: 보관 슬롯에 저장된 부위의 체력 동그라미 표시 안 함
             if (_storageHp[i]   != null) _storageHp[i].text  = "";
+=======
+            SetCoinGrid(_storageImg[i], hasCoin ? coinCount : 0, hasCoin ? inv.coinIcon : null);
+
+            if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
+                _storageBtn[i].targetGraphic = _storageImg[i];
+            if (_storageName[i] != null)
+                _storageName[i].text = p != null ? p.DisplayName() : (hasCoin ? "동전 ×" + coinCount : "빈 슬롯");
+            if (_storageHp[i] != null)
+                _storageHp[i].text = p != null && p.IsEquippable ? Dots(p) : "";
+
+            // 동전 슬롯 드래그 소스에 슬롯 인덱스 기록
+            if (hasCoin)
+            {
+                InventoryStorageDragSource coinDrag = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
+                if (coinDrag != null) coinDrag.SetCoinStackIndex(i);
+            }
+>>>>>>> Stashed changes
         }
 
         // ─ 빈 슬롯에 ItemInventoryManager 아이템 + 동전 스택 표시 ─
         var itemInv = ItemInventoryManager.Instance;
         int itemIndex = 0;
-        int coinIndex = 0;
-        int itemStorageCount = itemInv != null ? itemInv.Storage.Count : 0;
-        int coinStackCount   = itemInv != null ? itemInv.CoinStacks.Count : 0;
+        int itemCoinIndex = 0;
+        int itemStorageCount   = itemInv != null ? itemInv.Storage.Count : 0;
+        int itemCoinStackCount = itemInv != null ? itemInv.CoinStacks.Count : 0;
 
         for (int i = 0; i < storageCount; i++)
         {
-            if (inv.storage[i] != null)
-                continue; // BodyPart가 이미 사용 중
+            if (inv.storage[i] != null) continue;  // BodyPart 사용 중
+            if (inv.coinSlots.ContainsKey(i)) continue; // 동전 슬롯은 첫 번째 루프에서 처리됨
 
             if (itemIndex < itemStorageCount)
             {
-                // task4: ItemData 아이템 표시
                 ItemData item = itemInv.Storage[itemIndex++];
                 if (_storageImg[i] != null)
                 {
@@ -984,22 +1035,20 @@ public class InventoryUI : MonoBehaviour
                     if (item.Sprite != null) FitSlotIcon(icon);
                     else (icon.transform as RectTransform).sizeDelta = Vector2.zero;
                 }
-                SetCoinGrid(_storageImg[i], 0, null);
+                SetCoinGrid(_storageImg[i], 0, (Sprite)null);
                 if (_storageName[i] != null) _storageName[i].text = item.ItemName;
                 if (_storageHp[i]   != null) _storageHp[i].text  = "";
 
                 InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
-                if (dragSource != null)
-                    dragSource.SetItemData(item);
+                if (dragSource != null) dragSource.SetItemData(item);
 
                 InventoryItemTooltip tooltip = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryItemTooltip>() : null;
-                if (tooltip != null)
-                    tooltip.SetItemData(item);
+                if (tooltip != null) tooltip.SetItemData(item);
             }
-            else if (coinIndex < coinStackCount)
+            else if (itemCoinIndex < itemCoinStackCount)
             {
-                // task7: 동전 3x3 표시
-                int count = itemInv.CoinStacks[coinIndex++];
+                // ItemInventoryManager 동전 스택 표시
+                int count = itemInv.CoinStacks[itemCoinIndex++];
                 if (_storageImg[i] != null)
                 {
                     _storageImg[i].color = new Color(0.18f, 0.13f, 0.04f, 0.45f);
@@ -1007,8 +1056,7 @@ public class InventoryUI : MonoBehaviour
                 }
                 Image icon = GetSlotItemIcon(_storageImg[i]);
                 if (icon != null) icon.color = Color.clear;
-
-                SetCoinGrid(_storageImg[i], count, itemInv.CoinItemRef);
+                SetCoinGrid(_storageImg[i], count, itemInv.CoinItemRef != null ? itemInv.CoinItemRef.Sprite : null);
                 if (_storageName[i] != null) _storageName[i].text = "동전 ×" + count;
                 if (_storageHp[i]   != null) _storageHp[i].text  = "";
             }
@@ -1351,8 +1399,8 @@ public class InventoryUI : MonoBehaviour
         return iconTr != null ? iconTr.GetComponent<Image>() : null;
     }
 
-    // task7: 동전 3x3 그리드 업데이트
-    static void SetCoinGrid(Image slotBackground, int count, ItemData coinItem)
+    // 동전 파일(pile) 그리드 업데이트 — coinSprite 직접 받음
+    static void SetCoinGrid(Image slotBackground, int count, Sprite coinSprite)
     {
         if (slotBackground == null) return;
         Transform gridTr = slotBackground.transform.Find("CoinGrid");
@@ -1362,7 +1410,6 @@ public class InventoryUI : MonoBehaviour
         gridTr.gameObject.SetActive(show);
         if (!show) return;
 
-        Sprite coinSprite = coinItem != null ? coinItem.Sprite : null;
         for (int k = 0; k < 9; k++)
         {
             Transform cellTr = gridTr.Find("Coin_" + k);

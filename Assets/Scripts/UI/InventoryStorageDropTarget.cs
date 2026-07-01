@@ -5,10 +5,7 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
 {
     [SerializeField] int storageIndex;
 
-    public void SetStorageIndex(int index)
-    {
-        storageIndex = index;
-    }
+    public void SetStorageIndex(int index) { storageIndex = index; }
 
     public void OnDrop(PointerEventData eventData)
     {
@@ -45,6 +42,15 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
         var storageSource = eventData.pointerDrag.GetComponent<InventoryStorageDragSource>();
         if (storageSource != null)
         {
+            // 동전 슬롯 → 다른 슬롯으로 이동/교환
+            if (storageSource.IsCoinStack)
+            {
+                var inv = InventoryManager.Instance;
+                if (inv != null && inv.MoveCoinToSlot(storageSource.CoinStackIndex, storageIndex))
+                    SoundManager.PlayClick();
+                return;
+            }
+
             if (storageSource.DraggedItemData != null)
                 return;
 

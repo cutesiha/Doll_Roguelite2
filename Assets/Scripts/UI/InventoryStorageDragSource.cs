@@ -9,9 +9,12 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
     RectTransform ghost;
     Canvas rootCanvas;
     ItemData itemData;
+    int coinStackIndex = -1;
 
     public int StorageIndex => storageIndex;
     public ItemData DraggedItemData => itemData;
+    public int CoinStackIndex => coinStackIndex;
+    public bool IsCoinStack => coinStackIndex >= 0;
 
     public void SetStorageIndex(int index)
     {
@@ -23,12 +26,17 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         itemData = item;
     }
 
+    public void SetCoinStackIndex(int index)
+    {
+        coinStackIndex = index;
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
         var inv = InventoryManager.Instance;
         bool hasBodyPart = inv != null && storageIndex >= 0 && storageIndex < inv.storage.Length && inv.storage[storageIndex] != null;
 
-        if (!hasBodyPart && itemData == null)
+        if (!hasBodyPart && itemData == null && !IsCoinStack)
             return;
 
         rootCanvas = GetComponentInParent<Canvas>();
@@ -56,6 +64,10 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
             image.sprite = itemIconImage != null && itemIconImage.sprite != null
                 ? itemIconImage.sprite
                 : (part.icon != null ? part.icon : InventoryUI.FindDisplaySpriteForSlot(part.slot));
+        }
+        else if (IsCoinStack)
+        {
+            image.sprite = inv != null ? inv.coinIcon : null;
         }
         else
         {

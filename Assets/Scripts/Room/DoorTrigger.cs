@@ -376,10 +376,10 @@ public class DoorTrigger : MonoBehaviour
         }
         tooltipText.font = UIThinDungFont.Get();
         tooltipText.sortingOrder = 301;
+        tooltipText.fontSize = tooltipFontSize;
         if (!authored)
         {
             tooltipText.transform.localPosition = tooltipTextLocalPosition;
-            tooltipText.fontSize = tooltipFontSize;
             tooltipText.fontStyle = FontStyles.Bold;
             tooltipText.alignment = TextAlignmentOptions.Center;
             tooltipText.color = new Color(0.24f, 0.14f, 0.09f, 1f);
