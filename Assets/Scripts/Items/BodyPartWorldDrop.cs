@@ -34,8 +34,14 @@ public class BodyPartWorldDrop : MonoBehaviour
 
     public void Toss(Vector3 origin, float distance = 2.5f, float duration = 0.4f)
     {
+        Toss(origin, Random.insideUnitCircle, distance, duration);
+    }
+
+    // 방향을 직접 지정. 동전 더미를 여러 개로 나눠 사방으로 흩뿌릴 때 사용.
+    public void Toss(Vector3 origin, Vector2 direction, float distance = 2.5f, float duration = 0.4f)
+    {
         pickupImmuneUntil = Time.time + duration + 0.15f;
-        Vector2 dir = Random.insideUnitCircle.normalized;
+        Vector2 dir = direction.normalized;
         if (dir.sqrMagnitude < 0.01f)
             dir = Vector2.right;
         Vector3 target = origin + (Vector3)(dir * distance);

@@ -412,6 +412,8 @@ public class PlayerAttack : MonoBehaviour
             if (enemy != null && damaged.Add(enemy))
                 enemy.TakeDamage(damage);
         }
+        if (damaged.Count > 0)
+            SoundManager.PlayPunch();
     }
 
     SpriteRenderer EnsureFistRenderer()

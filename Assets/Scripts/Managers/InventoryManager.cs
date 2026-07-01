@@ -6,6 +6,8 @@ using UnityEngine.SceneManagement;
 public class InventoryManager : MonoBehaviour
 {
     public const int StorageSlotCount = 9;
+    // 동전은 한 보관함 칸에 이 개수까지 쌓인다.
+    public const int MaxCoinStackCount = 9;
     public static InventoryManager Instance { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -192,6 +194,9 @@ public class InventoryManager : MonoBehaviour
     {
         if (part == null)
             return false;
+
+        if (part.kind == ItemKind.Coin)
+            return TryAddCoin(part);
 
         int equippedIndex = (int)part.slot;
         bool canEquip = equippedIndex >= 0
@@ -421,6 +426,39 @@ public class InventoryManager : MonoBehaviour
         for (int i = 0; i < storage.Length; i++)
             if (storage[i] == null) return i;
         return -1;
+    }
+
+    // 주운 동전(들)을 여유 있는 기존 동전 더미에 나눠 합치고, 남으면 빈 칸에 새 더미로 놓는다.
+    // coin.count 가 1보다 커도(예: 버렸던 동전 더미를 다시 주울 때) 개수를 잃지 않고 전부 반영한다.
+    bool TryAddCoin(BodyPart coin)
+    {
+        int remaining = Mathf.Max(1, coin.count);
+
+        for (int i = 0; i < storage.Length && remaining > 0; i++)
+        {
+            BodyPart existing = storage[i];
+            if (existing == null || existing.kind != ItemKind.Coin || existing.count >= MaxCoinStackCount)
+                continue;
+
+            int space = MaxCoinStackCount - existing.count;
+            int add = Mathf.Min(space, remaining);
+            existing.count += add;
+            remaining -= add;
+        }
+
+        while (remaining > 0)
+        {
+            int free = FreeStorageIndex();
+            if (free < 0)
+                return false; // 일부는 이미 기존 더미에 합쳐졌을 수 있으나 나머지를 넣을 칸이 없음
+
+            int add = Mathf.Min(MaxCoinStackCount, remaining);
+            storage[free] = new BodyPart(ItemKind.Coin) { icon = coin.icon, itemId = coin.itemId, count = add };
+            remaining -= add;
+        }
+
+        OnInventoryChanged?.Invoke();
+        return true;
     }
 
     int RepairParts(BodyPart[] parts)

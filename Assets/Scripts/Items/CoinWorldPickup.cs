@@ -68,7 +68,7 @@ public class CoinWorldPickup : MonoBehaviour
             return;
 
         collected = true;
-        SoundManager.PlayClick();
+        SoundManager.PlayCoinPickup();
         Destroy(gameObject);
     }
 }

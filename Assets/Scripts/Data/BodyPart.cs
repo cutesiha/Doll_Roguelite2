@@ -18,6 +18,8 @@ public class BodyPart
     public Sprite icon;
     // 보석일 때 어떤 보석인지 식별하는 ID (ItemCatalog 키).
     public string itemId;
+    // 동전 더미의 개수. 동전 외 종류는 항상 1.
+    public int count = 1;
 
     public BodyPart(BodySlot slot)
     {
@@ -35,6 +37,7 @@ public class BodyPart
         slot = BodySlot.EyeLeft; // 미사용 (장착 불가)
         maxHp = 1;
         currentHp = 1;
+        count = 1;
     }
 
     public bool IsEquippable => kind == ItemKind.BodyPart;
@@ -43,7 +46,7 @@ public class BodyPart
     {
         switch (kind)
         {
-            case ItemKind.Coin: return "동전";
+            case ItemKind.Coin: return count > 1 ? "동전 x" + count : "동전";
             case ItemKind.Rag:  return "누더기";
             case ItemKind.Gem:  return "보석";
             default:            return SlotName();

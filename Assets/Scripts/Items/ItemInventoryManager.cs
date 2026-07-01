@@ -296,6 +296,7 @@ public class ItemInventoryManager : MonoBehaviour
 
         consumable = null;
         NotifyChanged();
+        SoundManager.PlayGemUse();
         return true;
     }
 

@@ -400,6 +400,9 @@ public class InventoryUI : MonoBehaviour
         // task7: 동전 3x3 그리드 컨테이너
         EnsureCoinGrid(slot.transform, slotWidth, slotHeight);
 
+        // 월드 동전 프리팹(BodyPart 동전 더미) 표시용 — 비스듬히 쌓인 동전더미
+        EnsureCoinPile(slot.transform, slotWidth, slotHeight);
+
         EnsureStorageSlotLabel(slot.transform, "SlotLabel", "슬롯 " + (index + 1), 18f, new Vector2(0f, -6f), new Vector2(slotWidth, 24f), TextAlignmentOptions.Center);
         // task21: 아이콘을 키웠으므로 이름은 슬롯 하단으로 이동
         _storageName[index] = EnsureStorageSlotLabel(slot.transform, "SlotName", "빈 슬롯", 14f, new Vector2(0f, -68f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
@@ -481,6 +484,80 @@ public class InventoryUI : MonoBehaviour
             }
         }
         grid.SetActive(false);
+    }
+
+    // 월드 동전 프리팹(BodyPart 동전 더미) 표시 — 개별 아이콘을 살짝 어긋난 위치/각도로 겹쳐 쌓은 더미처럼 보이게 한다.
+    const float CoinPileIconSize = SlotIconBox * 0.55f;
+    static readonly Vector2[] CoinPileOffsets =
+    {
+        new Vector2(0f, 0f),
+        new Vector2(9f, -6f),
+        new Vector2(-10f, -4f),
+        new Vector2(4f, 9f),
+        new Vector2(-7f, 8f),
+        new Vector2(13f, 4f),
+        new Vector2(-13f, -9f),
+        new Vector2(2f, -13f),
+        new Vector2(-3f, 13f)
+    };
+    static readonly float[] CoinPileRotations = { 0f, 12f, -10f, 18f, -16f, 8f, -14f, 20f, -6f };
+
+    static void EnsureCoinPile(Transform slotRoot, float slotW, float slotH)
+    {
+        if (slotRoot.Find("CoinPile") != null)
+            return;
+
+        GameObject pile = new GameObject("CoinPile");
+        pile.transform.SetParent(slotRoot, false);
+        RectTransform pileRt = pile.AddComponent<RectTransform>();
+        pileRt.anchorMin = pileRt.anchorMax = new Vector2(0.5f, 0.5f);
+        pileRt.pivot = new Vector2(0.5f, 0.5f);
+        pileRt.anchoredPosition = Vector2.zero;
+        pileRt.sizeDelta = new Vector2(slotW, slotH);
+
+        for (int i = 0; i < InventoryManager.MaxCoinStackCount; i++)
+        {
+            GameObject coin = new GameObject("Coin_" + i);
+            coin.transform.SetParent(pile.transform, false);
+            RectTransform coinRt = coin.AddComponent<RectTransform>();
+            coinRt.anchorMin = coinRt.anchorMax = new Vector2(0.5f, 0.5f);
+            coinRt.pivot = new Vector2(0.5f, 0.5f);
+            coinRt.anchoredPosition = CoinPileOffsets[i];
+            coinRt.sizeDelta = new Vector2(CoinPileIconSize, CoinPileIconSize);
+            coinRt.localRotation = Quaternion.Euler(0f, 0f, CoinPileRotations[i]);
+
+            Image coinImg = coin.AddComponent<Image>();
+            coinImg.raycastTarget = false;
+            coinImg.preserveAspect = true;
+            coinImg.color = Color.clear;
+        }
+
+        pile.SetActive(false);
+    }
+
+    // 동전 더미 아이콘 개수만큼 활성화 (겹쳐 쌓인 모양)
+    static void SetCoinPile(Image slotBackground, int count, Sprite coinSprite)
+    {
+        if (slotBackground == null) return;
+        Transform pileTr = slotBackground.transform.Find("CoinPile");
+        if (pileTr == null) return;
+
+        bool show = count > 0;
+        pileTr.gameObject.SetActive(show);
+        if (!show) return;
+
+        int visible = Mathf.Clamp(count, 0, InventoryManager.MaxCoinStackCount);
+        for (int i = 0; i < InventoryManager.MaxCoinStackCount; i++)
+        {
+            Transform coinTr = pileTr.Find("Coin_" + i);
+            if (coinTr == null) continue;
+            Image coinImg = coinTr.GetComponent<Image>();
+            if (coinImg == null) continue;
+
+            bool filled = i < visible;
+            coinImg.sprite = filled ? coinSprite : null;
+            coinImg.color = filled ? Color.white : Color.clear;
+        }
     }
 
     TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string value, float fontSize, Vector2 position, Vector2 size, TextAlignmentOptions alignment)
@@ -845,19 +922,31 @@ public class InventoryUI : MonoBehaviour
                 ApplyAlphaHitTest(_storageImg[i], 0f);
             }
 
-            // ItemIcon 자식에 스프라이트 표시 (task4: 원본 크기)
+            bool isCoinStack = p != null && p.kind == ItemKind.Coin;
+
+            // ItemIcon 자식에 스프라이트 표시 (task4: 원본 크기). 동전 더미는 CoinPile로 대신 표시.
             Image itemIcon = GetSlotItemIcon(_storageImg[i]);
             if (itemIcon != null)
             {
-                Sprite slotSprite = p == null ? null : (p.icon != null ? p.icon : (p.IsEquippable ? DisplaySpriteForSlot(p.slot) : null));
-                itemIcon.sprite = slotSprite;
-                itemIcon.color = slotSprite != null ? Color.white : Color.clear;
-                if (slotSprite != null) FitSlotIcon(itemIcon);
-                else (itemIcon.transform as RectTransform).sizeDelta = Vector2.zero;
+                if (isCoinStack)
+                {
+                    itemIcon.sprite = null;
+                    itemIcon.color = Color.clear;
+                }
+                else
+                {
+                    Sprite slotSprite = p == null ? null : (p.icon != null ? p.icon : (p.IsEquippable ? DisplaySpriteForSlot(p.slot) : null));
+                    itemIcon.sprite = slotSprite;
+                    itemIcon.color = slotSprite != null ? Color.white : Color.clear;
+                    if (slotSprite != null) FitSlotIcon(itemIcon);
+                    else (itemIcon.transform as RectTransform).sizeDelta = Vector2.zero;
+                }
             }
 
-            // 동전 그리드 숨기기 (BodyPart 슬롯)
+            // 동전 그리드 숨기기 (ItemInventoryManager 전용, BodyPart 슬롯에서는 미사용)
             SetCoinGrid(_storageImg[i], 0, null);
+            // 동전 더미는 비스듬히 겹쳐진 아이콘들로 표시
+            SetCoinPile(_storageImg[i], isCoinStack ? p.count : 0, isCoinStack ? p.icon : null);
 
             if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
                 _storageBtn[i].targetGraphic = _storageImg[i];

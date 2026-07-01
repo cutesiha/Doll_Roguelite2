@@ -73,6 +73,12 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
         GameObject player = GameObject.FindWithTag("Player");
         Vector3 origin = player != null ? player.transform.position : Vector3.zero;
 
+        if (part.kind == ItemKind.Coin && part.count > 1)
+        {
+            DropCoinStackToWorld(part, origin);
+            return;
+        }
+
         Sprite sprite = part.icon != null
             ? part.icon
             : (part.IsEquippable ? InventoryUI.FindDisplaySpriteForSlot(part.slot) : null);
@@ -80,6 +86,27 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
         BodyPartWorldDrop drop = BodyPartWorldDrop.Spawn(part, origin, sprite);
         if (drop != null)
             drop.Toss(origin);
+    }
+
+    // 동전 더미를 버리면 개수만큼 낱개 동전으로 나뉘어 사방으로 흩어진다.
+    static void DropCoinStackToWorld(BodyPart stack, Vector3 origin)
+    {
+        int count = stack.count;
+        float angleStep = 360f / count;
+        float angleJitter = angleStep * 0.35f;
+
+        for (int i = 0; i < count; i++)
+        {
+            BodyPart single = new BodyPart(ItemKind.Coin) { icon = stack.icon, itemId = stack.itemId, count = 1 };
+
+            float angle = angleStep * i + Random.Range(-angleJitter, angleJitter);
+            Vector2 dir = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            float distance = Random.Range(1.6f, 2.8f);
+
+            BodyPartWorldDrop drop = BodyPartWorldDrop.Spawn(single, origin, single.icon);
+            if (drop != null)
+                drop.Toss(origin, dir, distance);
+        }
     }
 
     static void DropItemToWorld(ItemData item)

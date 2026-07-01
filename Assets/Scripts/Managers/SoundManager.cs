@@ -10,6 +10,9 @@ public class SoundManager : MonoBehaviour
     public const string PanelSfxPath = "Sounds/paper555_[cut_0sec]";
     public const string SlimeSfxPath = "Sounds/slime";
     public const string ClickSfxPath = "Sounds/click";
+    public const string PunchSfxPath = "SoundEffects/punch";
+    public const string CoinPickupSfxPath = "SoundEffects/동전 먹을떄 효과음";
+    public const string GemUseSfxPath = "SoundEffects/보석 효과음";
     public const float DefaultRepeatGuard = 0.08f;
     public const int DefaultVolumeLevel = 7;
     // BGM 전체 볼륨 배율 (0~1). 낮출수록 배경음악만 조용해짐. 효과음엔 영향 없음.
@@ -31,6 +34,16 @@ public class SoundManager : MonoBehaviour
     [SerializeField, Range(0f, 3f)] float slimeVolume = 1f;
     [SerializeField] AudioClip clickClip;
     [SerializeField, Range(0f, 3f)] float clickVolume = 1.35f;
+    [SerializeField] AudioClip punchClip;
+    [SerializeField, Range(0f, 3f)] float punchVolume = 1f;
+    [SerializeField] AudioClip coinPickupClip;
+    [SerializeField, Range(0f, 3f)] float coinPickupVolume = 1f;
+    [SerializeField] AudioClip gemUseClip;
+    [SerializeField, Range(0f, 3f)] float gemUseVolume = 1f;
+    [SerializeField, Min(0f)] float gemUseDuration = 1.4f;
+
+    AudioSource gemAudioSource;
+    Coroutine gemStopRoutine;
 
     [Header("Combat Clips")]
     [SerializeField] AudioClip enemyHitClip;
@@ -153,6 +166,24 @@ public class SoundManager : MonoBehaviour
     {
         SoundManager manager = EnsureInstance();
         manager.PlayManaged(manager.GetClickClip(), manager.clickVolume, repeatGuard);
+    }
+
+    public static void PlayGemUse()
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayGemUseInternal();
+    }
+
+    public static void PlayCoinPickup(float repeatGuard = DefaultRepeatGuard)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetCoinPickupClip(), manager.coinPickupVolume, repeatGuard);
+    }
+
+    public static void PlayPunch(float repeatGuard = DefaultRepeatGuard)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetPunchClip(), manager.punchVolume, repeatGuard);
     }
 
     public static void PlayEnemyHit(float repeatGuard = DefaultRepeatGuard)
@@ -334,6 +365,58 @@ public class SoundManager : MonoBehaviour
 
         instance.EnsureSource();
         return instance;
+    }
+
+    void PlayGemUseInternal()
+    {
+        if (gemUseClip == null)
+            gemUseClip = LoadClipResource(GemUseSfxPath);
+
+        if (gemUseClip == null)
+            return;
+
+        EnsureGemSource();
+        if (gemStopRoutine != null)
+            StopCoroutine(gemStopRoutine);
+
+        gemAudioSource.clip = gemUseClip;
+        gemAudioSource.volume = Mathf.Max(0f, gemUseVolume) * Mathf.Max(0f, masterSfxVolume);
+        gemAudioSource.Play();
+        gemStopRoutine = StartCoroutine(StopGemAfterDuration());
+    }
+
+    System.Collections.IEnumerator StopGemAfterDuration()
+    {
+        yield return new WaitForSeconds(Mathf.Max(0f, gemUseDuration));
+        if (gemAudioSource != null)
+            gemAudioSource.Stop();
+        gemStopRoutine = null;
+    }
+
+    void EnsureGemSource()
+    {
+        if (gemAudioSource != null)
+            return;
+
+        gemAudioSource = gameObject.AddComponent<AudioSource>();
+        gemAudioSource.playOnAwake = false;
+        gemAudioSource.loop = false;
+    }
+
+    AudioClip GetCoinPickupClip()
+    {
+        if (coinPickupClip == null)
+            coinPickupClip = LoadClipResource(CoinPickupSfxPath);
+
+        return coinPickupClip;
+    }
+
+    AudioClip GetPunchClip()
+    {
+        if (punchClip == null)
+            punchClip = LoadClipResource(PunchSfxPath);
+
+        return punchClip;
     }
 
     AudioClip GetPanelClip()

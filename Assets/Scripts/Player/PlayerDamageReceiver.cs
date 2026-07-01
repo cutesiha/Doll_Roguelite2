@@ -174,7 +174,7 @@ public class PlayerDamageReceiver : MonoBehaviour
         PlayHitFeedback();
         StartInvincibilityBlink();
         ShakeCamera();
-        SoundManager.PlayPlayerHit();
+        SoundManager.PlayPunch();
         Damaged?.Invoke();
     }
 
@@ -195,7 +195,7 @@ public class PlayerDamageReceiver : MonoBehaviour
         PlayHitFeedback();
         StartInvincibilityBlink();
         ShakeCamera();
-        SoundManager.PlayPlayerHit();
+        SoundManager.PlayPunch();
         Damaged?.Invoke();
         return true;
     }
