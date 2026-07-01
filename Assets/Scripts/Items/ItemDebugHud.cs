@@ -93,7 +93,7 @@ public class ItemDebugHud : MonoBehaviour
         StringBuilder builder = new StringBuilder();
         builder.AppendLine("<b>ITEM TEST</b>  <size=75%>[F8 숨기기]</size>");
         builder.Append("코인 ").Append(inventory.Coins)
-            .Append("  |  보관 ").Append(inventory.OccupiedStorageCount).Append('/').Append(inventory.Capacity).AppendLine();
+            .Append("  |  보관 ").Append(inventory.Storage.Count).Append('/').Append(inventory.Capacity).AppendLine();
         AppendSlot(builder, "눈", inventory.GetEquipped(ItemEquipLocation.Eye));
         AppendSlot(builder, "팔", inventory.GetEquipped(ItemEquipLocation.Arm));
         AppendSlot(builder, "몸", inventory.GetEquipped(ItemEquipLocation.Body));

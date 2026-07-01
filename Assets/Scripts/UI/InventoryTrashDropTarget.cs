@@ -87,7 +87,7 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
 
         if (part.kind == ItemKind.Coin && part.count > 1)
         {
-            DropCoinsToWorld(part.count, part.icon);
+            DropCoinStackToWorld(part, origin);
             return;
         }
 
@@ -100,6 +100,26 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
             drop.Toss(origin);
     }
 
+<<<<<<< Updated upstream
+    // 동전 더미를 버리면 개수만큼 낱개 동전으로 나뉘어 사방으로 흩어진다.
+    static void DropCoinStackToWorld(BodyPart stack, Vector3 origin)
+    {
+        int count = stack.count;
+        float angleStep = 360f / count;
+        float angleJitter = angleStep * 0.35f;
+
+        for (int i = 0; i < count; i++)
+        {
+            BodyPart single = new BodyPart(ItemKind.Coin) { icon = stack.icon, itemId = stack.itemId, count = 1 };
+
+            float angle = angleStep * i + Random.Range(-angleJitter, angleJitter);
+            Vector2 dir = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            float distance = Random.Range(1.6f, 2.8f);
+
+            BodyPartWorldDrop drop = BodyPartWorldDrop.Spawn(single, origin, single.icon);
+            if (drop != null)
+                drop.Toss(origin, dir, distance);
+=======
     static void DropCoinsToWorld(int count, Sprite coinSprite)
     {
         GameObject player = GameObject.FindWithTag("Player");
@@ -113,6 +133,7 @@ public class InventoryTrashDropTarget : MonoBehaviour, IDropHandler
                 GameObject go = UnityEngine.Object.Instantiate(coinPrefab, origin, Quaternion.identity);
                 go.GetComponent<CoinWorldPickup>()?.Toss(origin);
             }
+>>>>>>> Stashed changes
         }
     }
 
