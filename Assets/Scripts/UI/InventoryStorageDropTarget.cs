@@ -57,7 +57,19 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
         var equippedSource = eventData.pointerDrag.GetComponent<InventoryEquippedDragSource>();
         if (equippedSource != null)
         {
-            if (InventoryManager.Instance.TryUnequipToStorage(equippedSource.BodySlot, storageIndex))
+            BodySlot slot = equippedSource.BodySlot;
+
+            // task2/12: 슬롯에 아이템 부위가 장착돼 있으면 그 아이템을 아이템 보관함으로 내린다.
+            var itemInv = ItemInventoryManager.Instance;
+            if (itemInv != null && itemInv.GetEquippedByBodySlot(slot) != null)
+            {
+                if (itemInv.TryUnequipBodyPartToStorage(slot))
+                    SoundManager.PlayClick();
+                return;
+            }
+
+            // 원래 부위 내리기.
+            if (InventoryManager.Instance.TryUnequipToStorage(slot, storageIndex))
                 SoundManager.PlayClick();
         }
     }

@@ -34,6 +34,10 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] Button[] _charBtn = new Button[6];
     [SerializeField, Range(0f, 1f)] float partAlphaHitThreshold = 0.1f;
     readonly GameObject[] _charLockBadge = new GameObject[6];
+    // bug1: 아이템 장착 시 캐릭터 슬롯 sprite를 아이템 것으로 덮어쓰므로, 원래 부위 스프라이트를
+    // 최초 1회 저장해 두었다가 아이템 해제 시 복원한다(아이템 모양 잔상 방지).
+    bool _charBaseSpritesCaptured;
+    readonly Sprite[] _charBaseSprites = new Sprite[6];
 
     [Header("Character Base Images")]
     [SerializeField] Sprite _baseBodySprite;
@@ -1014,6 +1018,14 @@ public class InventoryUI : MonoBehaviour
             }
         }
 
+        // bug1: 캐릭터 슬롯 원본(부위) 스프라이트를 최초 1회 캡처(아이템으로 덮어쓰기 전).
+        if (!_charBaseSpritesCaptured)
+        {
+            for (int i = 0; i < 6 && i < _charImg.Length; i++)
+                _charBaseSprites[i] = _charImg[i] != null ? _charImg[i].sprite : null;
+            _charBaseSpritesCaptured = true;
+        }
+
         // ─ task3: 캐릭터 부위 슬롯 — InventoryManager + ItemInventoryManager 장착 표시 ─
         for (int i = 0; i < 6; i++)
         {
@@ -1034,7 +1046,11 @@ public class InventoryUI : MonoBehaviour
                 }
                 else
                 {
-                    // 기존 BodyPart 상태
+                    // bug1: 아이템이 없으면 원래 부위 스프라이트로 복원(아이템 모양 잔상 방지).
+                    Sprite baseSprite = i < _charBaseSprites.Length ? _charBaseSprites[i] : null;
+                    if (baseSprite == null)
+                        baseSprite = GetPartSprite(bodySlot);
+                    SetImageSpriteSafely(_charImg[i], baseSprite);
                     _charImg[i].color = p != null ? Color.white : CUnequippedPart;
                 }
                 ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
@@ -1047,11 +1063,12 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < 6; i++)
         {
             var p = inv.equipped[i];
-            if (_statName[i] != null) _statName[i].text  = p != null ? "장착됨" : "없음";
+            bool occupied = inv.IsSlotOccupied((BodySlot)i);   // 아이템 부위 포함
+            if (_statName[i] != null) _statName[i].text  = occupied ? "장착됨" : "없음";
             if (_statHp[i]   != null)
             {
-                _statHp[i].text  = p != null ? Dots(p) : new string('○', 5);
-                _statHp[i].color = p != null
+                _statHp[i].text  = p != null ? Dots(p) : (occupied ? new string('●', 5) : new string('○', 5));
+                _statHp[i].color = occupied
                     ? new Color(0.88f, 0.48f, 0.24f, 1f)
                     : new Color(0.17f, 0.15f, 0.13f, 0.42f);
             }
@@ -1529,7 +1546,8 @@ public class InventoryUI : MonoBehaviour
 
         for (int i = 0; i < inv.equipped.Length; i++)
         {
-            if (inv.equipped[i] != null) continue;
+            // task: 아이템 부위도 채워진 것으로 취급 (빈 슬롯 경고 오작동 방지)
+            if (inv.IsSlotOccupied((BodySlot)i)) continue;
 
             emptyCount++;
             missingParts.Add(BodySlotLabel((BodySlot)i) + " 없음");

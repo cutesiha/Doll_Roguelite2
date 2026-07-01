@@ -81,6 +81,10 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
             return "";
 
         string text = "<b>" + item.ItemName + "</b>";
+        // task10: 신체부위 아이템이면 이름 아래에 "부위: 00" 표기
+        string partLabel = item.BodyPartLabel();
+        if (!string.IsNullOrEmpty(partLabel))
+            text += "\n<size=80%>부위: " + partLabel + "</size>";
         if (!string.IsNullOrEmpty(item.Description))
             text += "\n<size=85%>" + item.Description + "</size>";
         if (item.Type == ItemType.Currency)

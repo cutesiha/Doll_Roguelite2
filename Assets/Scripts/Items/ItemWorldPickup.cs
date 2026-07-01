@@ -20,6 +20,7 @@ public class ItemWorldPickup : MonoBehaviour
     Vector3 shakeOffset;
     Coroutine purchaseFailureRoutine;
     SpriteRenderer itemRenderer;
+    ItemPickupSparkle sparkle;
     [Header("Tooltip Authoring")]
     [SerializeField] Transform tooltipRoot;
     [SerializeField] SpriteRenderer tooltipBackground;
@@ -103,16 +104,16 @@ public class ItemWorldPickup : MonoBehaviour
         float distance = player != null ? Vector2.Distance(player.position, transform.position) : float.PositiveInfinity;
         bool nearby = distance <= settings.tooltipRadius;
         SetTooltipVisible(pointerOver || nearby);
+        SetSparkleActive(nearby);   // task5: 근처에 가면 반짝반짝 파티클
 
         if (shopItem)
         {
-            if (nearby && WasInteractPressed())
-                TryPurchase();
+            // task6: 상점은 닿아도 안 사지고, 근처 + E 로 구매 확인창을 띄운다.
+            if (nearby && !ShopPurchaseConfirmUI.IsOpen && WasInteractPressed())
+                OpenPurchaseConfirm();
         }
-        else if (distance <= settings.pickupRadius)
-        {
-            TryCollectPlayer();
-        }
+        // task5: 일반 아이템은 거리 기반 자동획득을 제거했다.
+        // 실제 획득은 플레이어 캡슐 콜라이더가 아이템에 닿는 OnTrigger 콜백에서만 일어난다.
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -125,6 +126,40 @@ public class ItemWorldPickup : MonoBehaviour
     {
         if (!shopItem)
             TryCollect(other);
+    }
+
+    // task6/7: 구매 확인창(StartExitPanel 복제)을 띄운다. 예 → 동전 차감(TryPurchase), 아니오 → 취소.
+    void OpenPurchaseConfirm()
+    {
+        if (ItemInventoryManager.Instance == null || item == null)
+            return;
+
+        string question = "이 아이템을 구매하시겠습니까?\n<size=55%>" + item.ItemName + "  -  " + price + " 코인</size>";
+        ShopPurchaseConfirmUI.Present(question, TryPurchase);
+    }
+
+    // task5: 근처에서만 켜지는 반짝이 파티클
+    void SetSparkleActive(bool active)
+    {
+        if (active && sparkle == null)
+            EnsureSparkle();
+
+        if (sparkle != null && sparkle.gameObject.activeSelf != active)
+            sparkle.gameObject.SetActive(active);
+    }
+
+    void EnsureSparkle()
+    {
+        Transform existing = transform.Find("ItemSparkle");
+        GameObject go = existing != null ? existing.gameObject : new GameObject("ItemSparkle");
+        go.transform.SetParent(transform, false);
+        go.transform.localPosition = Vector3.zero;
+        go.transform.localScale = Vector3.one / Mathf.Max(0.01f, transform.localScale.x);
+
+        sparkle = go.GetComponent<ItemPickupSparkle>();
+        if (sparkle == null)
+            sparkle = go.AddComponent<ItemPickupSparkle>();
+        sparkle.Configure(itemRenderer != null ? itemRenderer.sortingOrder + 1 : 60);
     }
 
     void OnMouseEnter()
@@ -166,6 +201,11 @@ public class ItemWorldPickup : MonoBehaviour
     void TryCollect(Collider2D other)
     {
         if (collected || other == null || !other.CompareTag("Player"))
+            return;
+
+        // task5: 플레이어의 캡슐 콜라이더(몸통)가 아이템에 실제로 닿았을 때만 획득.
+        // (원 콜라이더는 물리 차단용이라 접촉 판정에서 제외한다.)
+        if (!(other is CapsuleCollider2D))
             return;
 
         if (Time.time < pickupImmuneUntil)
@@ -338,10 +378,14 @@ public class ItemWorldPickup : MonoBehaviour
         if (item == null)
             return "아이템 데이터 없음";
 
+        // task10: 신체부위 아이템이면 이름 아래에 "부위: 00" 표기
+        string partLabel = item.BodyPartLabel();
+        string partLine = string.IsNullOrEmpty(partLabel) ? "" : "\n<size=70%>부위: " + partLabel + "</size>";
+
         string suffix = shopItem
             ? "\n[E] 구매  " + price + " 코인"
-            : "\n가까이 가면 자동 획득";
-        return "<b>" + item.ItemName + "</b>\n<size=70%>" + item.Description + suffix + "</size>";
+            : "\n닿으면 획득";
+        return "<b>" + item.ItemName + "</b>" + partLine + "\n<size=70%>" + item.Description + suffix + "</size>";
     }
 
     void SetTooltipVisible(bool visible)
