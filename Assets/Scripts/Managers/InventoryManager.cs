@@ -262,14 +262,9 @@ public class InventoryManager : MonoBehaviour
         if (part == null)
             return false;
 
-<<<<<<< Updated upstream
-        if (part.kind == ItemKind.Coin)
-            return TryAddCoin(part);
-=======
         // 동전은 스택으로 별도 관리 (슬롯 하나에 최대 9개)
         if (part.kind == ItemKind.Coin)
             return AddCoin(1, part.icon);
->>>>>>> Stashed changes
 
         int equippedIndex = (int)part.slot;
         bool canEquip = equippedIndex >= 0

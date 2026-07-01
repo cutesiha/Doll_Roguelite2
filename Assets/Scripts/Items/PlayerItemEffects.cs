@@ -18,7 +18,8 @@ public class PlayerItemEffects : MonoBehaviour
     ItemData armItem;
     ItemData legItem;
     ItemData bodyItem;
-    ItemData eyeItem;
+    ItemData leftEyeItem;
+    ItemData rightEyeItem;
 
     public float MoveSpeedBonus => moveSpeedBonus;
     public float LeftArmDamageBonus => leftArmDamageBonus;
@@ -70,7 +71,8 @@ public class PlayerItemEffects : MonoBehaviour
         if (inventory == null)
             return;
 
-        eyeItem = inventory.GetEquipped(ItemEquipLocation.Eye);
+        leftEyeItem = inventory.GetEquippedByBodySlot(BodySlot.EyeLeft);
+        rightEyeItem = inventory.GetEquippedByBodySlot(BodySlot.EyeRight);
         armItem = inventory.GetEquipped(ItemEquipLocation.Arm);
         bodyItem = inventory.GetEquipped(ItemEquipLocation.Body);
         legItem = inventory.GetEquipped(ItemEquipLocation.Leg);
@@ -80,7 +82,8 @@ public class PlayerItemEffects : MonoBehaviour
         rightArmDamageBonus = inventory.RoomArmDamageBonus;
         maxHealthModifier = 0;
 
-        AccumulateEquippedEffects(eyeItem);
+        AccumulateEquippedEffects(leftEyeItem);
+        AccumulateEquippedEffects(rightEyeItem);
         AccumulateEquippedEffects(armItem);
         AccumulateEquippedEffects(bodyItem);
         AccumulateEquippedEffects(legItem);
@@ -99,10 +102,14 @@ public class PlayerItemEffects : MonoBehaviour
                 visionEffect = camera.gameObject.AddComponent<ItemVisionEffect>();
 
             visionEffect.Configure(
-                eyeItem != null && eyeItem.HasEffect(ItemEffectType.VerticalViewFlip),
-                eyeItem != null && eyeItem.HasEffect(ItemEffectType.PixelatedView),
-                eyeItem != null && eyeItem.HasEffect(ItemEffectType.InvertedView),
-                eyeItem != null && eyeItem.HasEffect(ItemEffectType.ButtonView));
+                leftEyeItem != null && leftEyeItem.HasEffect(ItemEffectType.VerticalViewFlip),
+                leftEyeItem != null && leftEyeItem.HasEffect(ItemEffectType.PixelatedView),
+                leftEyeItem != null && leftEyeItem.HasEffect(ItemEffectType.InvertedView),
+                leftEyeItem != null && leftEyeItem.HasEffect(ItemEffectType.ButtonView),
+                rightEyeItem != null && rightEyeItem.HasEffect(ItemEffectType.VerticalViewFlip),
+                rightEyeItem != null && rightEyeItem.HasEffect(ItemEffectType.PixelatedView),
+                rightEyeItem != null && rightEyeItem.HasEffect(ItemEffectType.InvertedView),
+                rightEyeItem != null && rightEyeItem.HasEffect(ItemEffectType.ButtonView));
         }
     }
 

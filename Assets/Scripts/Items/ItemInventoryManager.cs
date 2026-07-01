@@ -18,7 +18,8 @@ public class ItemInventoryManager : MonoBehaviour
         go.AddComponent<ItemInventoryManager>();
     }
 
-    readonly List<ItemData> storage = new();
+    // 고정 슬롯 배열(인덱스 = 화면 슬롯 위치, InventoryManager.storage 와 1:1 대응). null = 빈 슬롯.
+    readonly ItemData[] storage = new ItemData[InventoryManager.StorageSlotCount];
     readonly Dictionary<ItemEquipLocation, ItemData> equipped = new();
     // 신체부위 아이템을 BodySlot별로 장착 (task3)
     [System.NonSerialized] readonly Dictionary<BodySlot, ItemData> equippedByBodySlot = new();
@@ -42,6 +43,17 @@ public class ItemInventoryManager : MonoBehaviour
     public event Action Changed;
 
     public IReadOnlyList<ItemData> Storage => storage;
+    // 실제로 아이템이 채워진 슬롯 개수 (storage.Length 는 항상 고정 슬롯 총 개수라 별도 계산 필요)
+    public int OccupiedStorageCount
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < storage.Length; i++)
+                if (storage[i] != null) count++;
+            return count;
+        }
+    }
     public ItemData Consumable => consumable;
     public ItemData Shield => shield;
     // 총 동전 = storage 스택 합계 + abstract coins
@@ -137,6 +149,30 @@ public class ItemInventoryManager : MonoBehaviour
         return item;
     }
 
+    // Capacity 범위 내에서 첫 번째 빈 슬롯 인덱스를 찾는다. 없으면 -1.
+    int FindFreeStorageIndex()
+    {
+        int limit = Mathf.Min(Capacity, storage.Length);
+        for (int i = 0; i < limit; i++)
+            if (storage[i] == null) return i;
+        return -1;
+    }
+
+    // 빈 슬롯을 찾아 item 을 넣는다. 자리가 없으면 message 에 안내문을 채우고 false 반환.
+    bool TryPlaceInFreeSlot(ItemData item, out string message)
+    {
+        message = "";
+        int index = FindFreeStorageIndex();
+        if (index < 0)
+        {
+            message = "인벤토리가 가득 참";
+            return false;
+        }
+
+        storage[index] = item;
+        return true;
+    }
+
     public bool TryAcquire(ItemData item, out string message)
     {
         message = "";
@@ -169,12 +205,8 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (item.Type == ItemType.GemConsumable || item.EquipLocation == ItemEquipLocation.Consumable)
         {
-            if (storage.Count >= Capacity)
-            {
-                message = "인벤토리가 가득 참";
+            if (!TryPlaceInFreeSlot(item, out message))
                 return false;
-            }
-            storage.Add(item);
             message = item.ItemName + "을(를) 인벤토리에 넣었습니다. Q 보석 칸에 끌어다 놓아 장착하세요.";
             NotifyChanged();
             return true;
@@ -196,24 +228,16 @@ public class ItemInventoryManager : MonoBehaviour
         if (item.Type == ItemType.BodyPart && item.EquipLocation != ItemEquipLocation.None)
         {
             // 자동 장착 대신 인벤토리 보관함에 넣는다. 사용자가 직접 드래그해서 장착.
-            if (storage.Count >= Capacity)
-            {
-                message = "인벤토리가 가득 참";
+            if (!TryPlaceInFreeSlot(item, out message))
                 return false;
-            }
-            storage.Add(item);
             message = item.ItemName + "을(를) 인벤토리에 넣었습니다.";
             NotifyChanged();
             return true;
         }
 
-        if (storage.Count >= Capacity)
-        {
-            message = "인벤토리가 가득 참";
+        if (!TryPlaceInFreeSlot(item, out message))
             return false;
-        }
 
-        storage.Add(item);
         message = item.ItemName + "을(를) 인벤토리에 넣었습니다.";
         NotifyChanged();
         return true;
@@ -248,13 +272,9 @@ public class ItemInventoryManager : MonoBehaviour
             return true;
         }
 
-        if (storage.Count >= Capacity)
-        {
-            message = "인벤토리가 가득 찼습니다.";
+        if (!TryPlaceInFreeSlot(item, out message))
             return false;
-        }
 
-        storage.Add(item);
         message = item.ItemName + "을(를) 보관함에 넣었습니다.";
         NotifyChanged();
         return true;
@@ -342,14 +362,12 @@ public class ItemInventoryManager : MonoBehaviour
         if (item == null || item.Type != ItemType.GemConsumable)
             return false;
 
-        int index = storage.IndexOf(item);
+        int index = Array.IndexOf(storage, item);
         if (index < 0)
             return false;
 
-        storage.RemoveAt(index);
-
-        if (consumable != null)
-            storage.Add(consumable);
+        // 새 소모품이 빠져나가는 그 슬롯에 이전 Q 아이템을 그대로 되돌려 놓는다.
+        storage[index] = consumable;
 
         consumable = item;
         Announce(item.ItemName + " Q 슬롯 장착");
@@ -361,10 +379,48 @@ public class ItemInventoryManager : MonoBehaviour
     {
         if (item == null)
             return false;
-        bool removed = storage.Remove(item);
-        if (removed)
-            NotifyChanged();
-        return removed;
+
+        int index = Array.IndexOf(storage, item);
+        if (index < 0)
+            return false;
+
+        storage[index] = null;
+        NotifyChanged();
+        return true;
+    }
+
+    // 보관함 내 ItemData 아이템 두 개의 표시 순서(슬롯 위치)를 서로 맞바꾼다.
+    public bool SwapStorageItems(ItemData a, ItemData b)
+    {
+        if (a == null || b == null || a == b)
+            return false;
+
+        int indexA = Array.IndexOf(storage, a);
+        int indexB = Array.IndexOf(storage, b);
+        if (indexA < 0 || indexB < 0)
+            return false;
+
+        (storage[indexA], storage[indexB]) = (storage[indexB], storage[indexA]);
+        NotifyChanged();
+        return true;
+    }
+
+    // 보관함 내 ItemData 아이템을 비어 있는 특정 슬롯(targetIndex)으로 옮긴다.
+    public bool MoveStorageItem(ItemData item, int targetIndex)
+    {
+        if (item == null || targetIndex < 0 || targetIndex >= storage.Length)
+            return false;
+        if (storage[targetIndex] != null)
+            return false;
+
+        int sourceIndex = Array.IndexOf(storage, item);
+        if (sourceIndex < 0)
+            return false;
+
+        storage[targetIndex] = item;
+        storage[sourceIndex] = null;
+        NotifyChanged();
+        return true;
     }
 
     public ItemData RemoveConsumable()
@@ -395,18 +451,13 @@ public class ItemInventoryManager : MonoBehaviour
         if (!IsBodyPartCompatibleWithSlot(item.EquipLocation, targetSlot))
             return false;
 
-        int idx = storage.IndexOf(item);
+        int idx = Array.IndexOf(storage, item);
         if (idx < 0)
             return false;
 
-        storage.RemoveAt(idx);
-
-        // 기존 장착 아이템이 있으면 보관함으로
-        if (equippedByBodySlot.TryGetValue(targetSlot, out ItemData old) && old != null)
-        {
-            if (storage.Count < Capacity)
-                storage.Add(old);
-        }
+        // item이 빠져나간 자리(idx)에 기존 장착 아이템을 그대로 되돌려 놓는다.
+        equippedByBodySlot.TryGetValue(targetSlot, out ItemData old);
+        storage[idx] = old;
 
         equippedByBodySlot[targetSlot] = item;
         // task-C: 부위 슬롯 장착 아이템의 효과가 PlayerItemEffects(GetEquipped 기반)에 반영되도록
@@ -444,10 +495,12 @@ public class ItemInventoryManager : MonoBehaviour
     {
         if (!equippedByBodySlot.TryGetValue(slot, out ItemData item) || item == null)
             return false;
-        if (storage.Count >= Capacity)
+
+        int freeIndex = FindFreeStorageIndex();
+        if (freeIndex < 0)
             return false;
 
-        storage.Add(item);
+        storage[freeIndex] = item;
         equippedByBodySlot.Remove(slot);
         NotifyChanged();
         return true;
@@ -497,7 +550,7 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (item.Type == ItemType.GemConsumable || item.EquipLocation == ItemEquipLocation.Consumable)
         {
-            if (storage.Count >= Capacity)
+            if (OccupiedStorageCount >= Capacity)
             {
                 message = "인벤토리가 가득 참";
                 return false;
@@ -511,7 +564,7 @@ public class ItemInventoryManager : MonoBehaviour
             return true;
 
         int futureCapacity = CapacityAfterEquipping(item);
-        if (storage.Count >= futureCapacity)
+        if (OccupiedStorageCount >= futureCapacity)
         {
             message = "인벤토리가 가득 참";
             return false;
@@ -526,7 +579,7 @@ public class ItemInventoryManager : MonoBehaviour
         ItemEquipLocation location = item.EquipLocation;
         ItemData old = GetEquipped(location);
         int futureCapacity = CapacityAfterEquipping(item);
-        int futureStorageCount = storage.Count + (old != null ? 1 : 0);
+        int futureStorageCount = OccupiedStorageCount + (old != null ? 1 : 0);
 
         if (futureStorageCount > futureCapacity)
         {
@@ -534,8 +587,8 @@ public class ItemInventoryManager : MonoBehaviour
             return false;
         }
 
-        if (old != null)
-            storage.Add(old);
+        if (old != null && !TryPlaceInFreeSlot(old, out message))
+            return false;
         equipped[location] = item;
         message = item.ItemName + " 자동 장착";
         if (old != null)
@@ -548,15 +601,8 @@ public class ItemInventoryManager : MonoBehaviour
     bool TryEquipSpecial(ItemData item, ref ItemData slot, ItemEquipLocation location, out string message)
     {
         message = "";
-        if (slot != null)
-        {
-            if (storage.Count >= Capacity)
-            {
-                message = "인벤토리가 가득 참";
-                return false;
-            }
-            storage.Add(slot);
-        }
+        if (slot != null && !TryPlaceInFreeSlot(slot, out message))
+            return false;
 
         slot = item;
         message = item.ItemName + (location == ItemEquipLocation.Consumable ? " Q 슬롯 장착" : " 방어막 슬롯 장착");
@@ -684,12 +730,12 @@ public class ItemInventoryManager : MonoBehaviour
 
     void AutoEquipNextConsumable()
     {
-        for (int i = 0; i < storage.Count; i++)
+        for (int i = 0; i < storage.Length; i++)
         {
             ItemData item = storage[i];
             if (item == null || item.Type != ItemType.GemConsumable)
                 continue;
-            storage.RemoveAt(i);
+            storage[i] = null;
             consumable = item;
             return;
         }
@@ -697,12 +743,12 @@ public class ItemInventoryManager : MonoBehaviour
 
     void AutoEquipNextShield()
     {
-        for (int i = 0; i < storage.Count; i++)
+        for (int i = 0; i < storage.Length; i++)
         {
             ItemData item = storage[i];
             if (item == null || item.Type != ItemType.Shield)
                 continue;
-            storage.RemoveAt(i);
+            storage[i] = null;
             shield = item;
             shieldWaitingForNextRoom = true;
             shieldEquippedSceneHandle = SceneManager.GetActiveScene().handle;

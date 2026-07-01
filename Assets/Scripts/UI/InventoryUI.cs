@@ -941,18 +941,6 @@ public class InventoryUI : MonoBehaviour
                 ApplyAlphaHitTest(_storageImg[i], 0f);
             }
 
-<<<<<<< Updated upstream
-            bool isCoinStack = p != null && p.kind == ItemKind.Coin;
-
-            // ItemIcon 자식에 스프라이트 표시 (task4: 원본 크기). 동전 더미는 CoinPile로 대신 표시.
-            Image itemIcon = GetSlotItemIcon(_storageImg[i]);
-            if (itemIcon != null)
-            {
-                if (isCoinStack)
-                {
-                    itemIcon.sprite = null;
-                    itemIcon.color = Color.clear;
-=======
             Image itemIcon = GetSlotItemIcon(_storageImg[i]);
             if (itemIcon != null)
             {
@@ -961,34 +949,17 @@ public class InventoryUI : MonoBehaviour
                     itemIcon.sprite = null;
                     itemIcon.color = Color.clear;
                     (itemIcon.transform as RectTransform).sizeDelta = Vector2.zero;
->>>>>>> Stashed changes
                 }
                 else
                 {
                     Sprite slotSprite = p == null ? null : (p.icon != null ? p.icon : (p.IsEquippable ? DisplaySpriteForSlot(p.slot) : null));
                     itemIcon.sprite = slotSprite;
                     itemIcon.color = slotSprite != null ? Color.white : Color.clear;
-<<<<<<< Updated upstream
-                    if (slotSprite != null) FitSlotIcon(itemIcon);
-=======
                     if (slotSprite != null) itemIcon.SetNativeSize();
->>>>>>> Stashed changes
                     else (itemIcon.transform as RectTransform).sizeDelta = Vector2.zero;
                 }
             }
 
-<<<<<<< Updated upstream
-            // 동전 그리드 숨기기 (ItemInventoryManager 전용, BodyPart 슬롯에서는 미사용)
-            SetCoinGrid(_storageImg[i], 0, null);
-            // 동전 더미는 비스듬히 겹쳐진 아이콘들로 표시
-            SetCoinPile(_storageImg[i], isCoinStack ? p.count : 0, isCoinStack ? p.icon : null);
-
-            if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
-                _storageBtn[i].targetGraphic = _storageImg[i];
-            if (_storageName[i] != null) _storageName[i].text = p != null ? p.DisplayName() : "빈 슬롯";
-            // task20: 보관 슬롯에 저장된 부위의 체력 동그라미 표시 안 함
-            if (_storageHp[i]   != null) _storageHp[i].text  = "";
-=======
             SetCoinGrid(_storageImg[i], hasCoin ? coinCount : 0, hasCoin ? inv.coinIcon : null);
 
             if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
@@ -1004,14 +975,11 @@ public class InventoryUI : MonoBehaviour
                 InventoryStorageDragSource coinDrag = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
                 if (coinDrag != null) coinDrag.SetCoinStackIndex(i);
             }
->>>>>>> Stashed changes
         }
 
-        // ─ 빈 슬롯에 ItemInventoryManager 아이템 + 동전 스택 표시 ─
+        // ─ ItemInventoryManager 아이템(고정 슬롯 위치) + 남는 빈 슬롯에 동전 스택 표시 ─
         var itemInv = ItemInventoryManager.Instance;
-        int itemIndex = 0;
         int itemCoinIndex = 0;
-        int itemStorageCount   = itemInv != null ? itemInv.Storage.Count : 0;
         int itemCoinStackCount = itemInv != null ? itemInv.CoinStacks.Count : 0;
 
         for (int i = 0; i < storageCount; i++)
@@ -1019,9 +987,9 @@ public class InventoryUI : MonoBehaviour
             if (inv.storage[i] != null) continue;  // BodyPart 사용 중
             if (inv.coinSlots.ContainsKey(i)) continue; // 동전 슬롯은 첫 번째 루프에서 처리됨
 
-            if (itemIndex < itemStorageCount)
+            ItemData item = itemInv != null && i < itemInv.Storage.Count ? itemInv.Storage[i] : null;
+            if (item != null)
             {
-                ItemData item = itemInv.Storage[itemIndex++];
                 if (_storageImg[i] != null)
                 {
                     _storageImg[i].color = new Color(0.12f, 0.09f, 0.06f, 0.35f);

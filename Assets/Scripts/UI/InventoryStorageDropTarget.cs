@@ -52,7 +52,27 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
             }
 
             if (storageSource.DraggedItemData != null)
+            {
+                // ItemData 아이템 슬롯 이동: 대상이 비어 있으면 그 자리로 옮기고,
+                // 다른 아이템이 있으면 서로 자리를 맞바꾼다. (대상이 BodyPart 슬롯이면 미지원)
+                if (InventoryManager.Instance.storage[storageIndex] != null)
+                    return;
+
+                var itemInv = ItemInventoryManager.Instance;
+                if (itemInv == null)
+                    return;
+
+                InventoryStorageDragSource targetDragSource = GetComponent<InventoryStorageDragSource>();
+                ItemData targetItem = targetDragSource != null ? targetDragSource.DraggedItemData : null;
+
+                bool moved = targetItem != null
+                    ? itemInv.SwapStorageItems(storageSource.DraggedItemData, targetItem)
+                    : itemInv.MoveStorageItem(storageSource.DraggedItemData, storageIndex);
+
+                if (moved)
+                    SoundManager.PlayClick();
                 return;
+            }
 
             if (InventoryManager.Instance.MoveStorage(storageSource.StorageIndex, storageIndex))
                 SoundManager.PlayClick();
