@@ -12,6 +12,7 @@ public class CameraShake : MonoBehaviour
     float magnitude;
     Vector3 lastOffset;
     bool horizontalOnly;
+    float oscillations = 5f;
 
     public static void Shake(float duration, float magnitude)
     {
@@ -26,7 +27,7 @@ public class CameraShake : MonoBehaviour
         shaker.Play(duration, magnitude);
     }
 
-    public static void ShakeHorizontal(float duration, float magnitude)
+    public static void ShakeHorizontal(float duration, float magnitude, float oscillations = 5f)
     {
         Camera camera = Camera.main;
         if (camera == null)
@@ -36,7 +37,7 @@ public class CameraShake : MonoBehaviour
         if (shaker == null)
             shaker = camera.gameObject.AddComponent<CameraShake>();
 
-        shaker.Play(duration, magnitude, true);
+        shaker.Play(duration, magnitude, true, oscillations);
     }
 
     public void PlayDefault()
@@ -46,15 +47,16 @@ public class CameraShake : MonoBehaviour
 
     public void Play(float duration, float newMagnitude)
     {
-        Play(duration, newMagnitude, false);
+        Play(duration, newMagnitude, false, 5f);
     }
 
-    void Play(float duration, float newMagnitude, bool useHorizontalOnly)
+    void Play(float duration, float newMagnitude, bool useHorizontalOnly, float newOscillations)
     {
         totalDuration = Mathf.Max(0.01f, duration);
         remainingDuration = Mathf.Max(remainingDuration, totalDuration);
         magnitude = Mathf.Max(magnitude, newMagnitude);
         horizontalOnly = useHorizontalOnly;
+        oscillations = Mathf.Max(0.5f, newOscillations);
     }
 
     void Update()
@@ -77,7 +79,7 @@ public class CameraShake : MonoBehaviour
         if (horizontalOnly)
         {
             float progress = 1f - t;
-            float wave = Mathf.Sin(progress * Mathf.PI * 10f);
+            float wave = Mathf.Sin(progress * Mathf.PI * 2f * oscillations);
             lastOffset = Vector3.right * wave * strength;
         }
         else

@@ -57,6 +57,12 @@ public class MinotaurBoss : EnemyBase
     [SerializeField] Color stunColor = new Color(1f, 0.30f, 0.26f, 1f);
     [SerializeField] Color trapGlowColor = new Color(0.95f, 0.10f, 0.10f, 0.34f);
 
+    [Header("Basic Attack Impact")]
+    [SerializeField] Color strikeBandColor = new Color(0.34f, 0.18f, 0.08f, 0.82f);
+    [SerializeField, Min(0.02f)] float strikeShakeDuration = 0.6f;
+    [SerializeField, Min(0f)] float strikeShakeMagnitude = 0.45f;
+    [SerializeField, Min(1f)] float strikeShakeOscillations = 8f;
+
     public System.Action Defeated;
 
     SpriteRenderer bossRenderer;
@@ -223,7 +229,11 @@ public class MinotaurBoss : EnemyBase
 
         List<GameObject> strikes = new List<GameObject>();
         for (int i = 0; i < bands.Count; i++)
-            strikes.Add(TrackTelegraph(EnemyTelegraph.CreateBox("BossBandStrike", bands[i].center, bands[i].size, bands[i].angle, strikeColor, 41)));
+            strikes.Add(TrackTelegraph(EnemyTelegraph.CreateBox("BossBandStrike", bands[i].center, bands[i].size, bands[i].angle, strikeBandColor, 41)));
+
+        // 강타가 내리꽂히는 순간 화면을 좌우로 여러 번 "쿠우웅" 흔든다.
+        CameraShake.ShakeHorizontal(strikeShakeDuration, strikeShakeMagnitude, strikeShakeOscillations);
+        SoundManager.PlayEnemyHit();
 
         bool damaged = false;
         float elapsed = 0f;
