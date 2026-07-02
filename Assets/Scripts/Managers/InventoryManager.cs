@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 public class InventoryManager : MonoBehaviour
 {
     public const int StorageSlotCount = 9;
+    public const int BodySlotCount = 7;
     // 동전은 한 보관함 칸에 이 개수까지 쌓인다.
     public const int MaxCoinStackCount = 9;
     public static InventoryManager Instance { get; private set; }
@@ -22,10 +23,10 @@ public class InventoryManager : MonoBehaviour
     // [NonSerialized]: 이 배열들은 전적으로 런타임에서 관리된다. Unity 직렬화에 노출되면
     // 씬 전환 시 null 요소가 기본 BodyPart(EyeLeft, hp 0) 인스턴스로 치환되어
     // 보관함이 가짜 "눈"으로 가득 차는 버그가 발생한다.
-    [System.NonSerialized] public BodyPart[] equipped  = new BodyPart[6];
+    [System.NonSerialized] public BodyPart[] equipped  = new BodyPart[BodySlotCount];
     // storage slots — null means empty
     [System.NonSerialized] public BodyPart[] storage   = new BodyPart[StorageSlotCount];
-    bool[] lockedSlots = new bool[6];
+    bool[] lockedSlots = new bool[BodySlotCount];
 
     public event Action OnInventoryChanged;
 
@@ -62,13 +63,13 @@ public class InventoryManager : MonoBehaviour
     {
         foreach (BodySlot slot in Enum.GetValues(typeof(BodySlot)))
             equipped[(int)slot] = new BodyPart(slot);
-        lockedSlots = new bool[6];
+        lockedSlots = new bool[BodySlotCount];
         SyncBodyState();
     }
 
     public void ResetToDefault()
     {
-        equipped = new BodyPart[6];
+        equipped = new BodyPart[BodySlotCount];
         storage = new BodyPart[StorageSlotCount];
         InitEquipped();
         if (BodyManager.Instance != null && BodyManager.Instance.State != null)
@@ -304,7 +305,7 @@ public class InventoryManager : MonoBehaviour
 
         return new BodyState
         {
-            body = bodyAlive,
+            body = bodyAlive && IsEquipped(BodySlot.Body),
             eyeLeft = IsEquipped(BodySlot.EyeLeft),
             eyeRight = IsEquipped(BodySlot.EyeRight),
             armLeft = IsEquipped(BodySlot.ArmLeft),
@@ -316,16 +317,16 @@ public class InventoryManager : MonoBehaviour
 
     public void ReplaceState(BodyPart[] newEquipped, BodyPart[] newStorage)
     {
-        equipped = NormalizeParts(newEquipped, 6);
+        equipped = NormalizeParts(newEquipped, BodySlotCount);
         storage = NormalizeParts(newStorage, StorageSlotCount);
-        lockedSlots = new bool[6];
+        lockedSlots = new bool[BodySlotCount];
         SyncBodyState();
         OnInventoryChanged?.Invoke();
     }
 
     public void ReplaceState(BodyPart[] newEquipped, BodyPart[] newStorage, bool[] newLockedSlots)
     {
-        equipped = NormalizeParts(newEquipped, 6);
+        equipped = NormalizeParts(newEquipped, BodySlotCount);
         storage = NormalizeParts(newStorage, StorageSlotCount);
         lockedSlots = NormalizeLocks(newLockedSlots);
 
@@ -397,7 +398,7 @@ public class InventoryManager : MonoBehaviour
 
     bool[] NormalizeLocks(bool[] source)
     {
-        bool[] result = new bool[6];
+        bool[] result = new bool[BodySlotCount];
         if (source == null)
             return result;
 

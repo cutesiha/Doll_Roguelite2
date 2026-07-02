@@ -498,8 +498,14 @@ public class MinotaurBoss : EnemyBase
         BodySlot? targetSlot = null;
         if (inventory != null)
         {
+            BodySlot[] damageSlots =
+            {
+                BodySlot.EyeLeft, BodySlot.EyeRight,
+                BodySlot.ArmLeft, BodySlot.ArmRight,
+                BodySlot.LegLeft, BodySlot.LegRight
+            };
             List<BodySlot> equipped = new List<BodySlot>();
-            foreach (BodySlot s in System.Enum.GetValues(typeof(BodySlot)))
+            foreach (BodySlot s in damageSlots)
                 if (inventory.IsEquipped(s))
                     equipped.Add(s);
             if (equipped.Count > 0)

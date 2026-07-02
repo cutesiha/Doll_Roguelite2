@@ -473,6 +473,7 @@ public class ItemInventoryManager : MonoBehaviour
 
         storage.Add(item);
         equippedByBodySlot.Remove(slot);
+        SyncEquippedLocationFromSlots(item.EquipLocation);
         NotifyChanged();
         return true;
     }
@@ -508,7 +509,7 @@ public class ItemInventoryManager : MonoBehaviour
             case ItemEquipLocation.Eye: return slot == BodySlot.EyeLeft || slot == BodySlot.EyeRight;
             case ItemEquipLocation.Arm: return slot == BodySlot.ArmLeft || slot == BodySlot.ArmRight;
             case ItemEquipLocation.Leg: return slot == BodySlot.LegLeft || slot == BodySlot.LegRight;
-            case ItemEquipLocation.Body: return false; // Body는 별도 처리
+            case ItemEquipLocation.Body: return slot == BodySlot.Body;
             default: return false;
         }
     }

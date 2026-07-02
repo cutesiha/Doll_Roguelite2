@@ -30,10 +30,10 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[InventoryManager.StorageSlotCount];
 
     [Header("캐릭터 부위 (EyeLeft=0 ~ LegRight=5)")]
-    [SerializeField] Image[]  _charImg = new Image[6];
-    [SerializeField] Button[] _charBtn = new Button[6];
+    [SerializeField] Image[]  _charImg = new Image[InventoryManager.BodySlotCount];
+    [SerializeField] Button[] _charBtn = new Button[InventoryManager.BodySlotCount];
     [SerializeField, Range(0f, 1f)] float partAlphaHitThreshold = 0.1f;
-    readonly GameObject[] _charLockBadge = new GameObject[6];
+    readonly GameObject[] _charLockBadge = new GameObject[InventoryManager.BodySlotCount];
 
     [Header("Character Base Images")]
     [SerializeField] Sprite _baseBodySprite;
@@ -76,7 +76,8 @@ public class InventoryUI : MonoBehaviour
         "arm_left",
         "arm_right",
         "leg_left",
-        "leg_right"
+        "leg_right",
+        "body"
     };
 
     static Color HpColor(BodyPart p)
@@ -93,6 +94,8 @@ public class InventoryUI : MonoBehaviour
         EnsurePanelReference();
         EnsureStorageSlots();
         EnsureSpecialSlots();
+        EnsureCharacterSlots();
+        EnsureCharacterBaseImages();
         ForceClosePanelImmediate();
         NormalizeCanvasTransform();
         if (transform.parent == null)
@@ -302,6 +305,61 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < count; i++)
             result[i] = source[i];
         return result;
+    }
+
+    void EnsureCharacterSlots()
+    {
+        _charImg = EnsureArrayLength(_charImg, InventoryManager.BodySlotCount);
+        _charBtn = EnsureArrayLength(_charBtn, InventoryManager.BodySlotCount);
+
+        TryBindCharacterSlot(BodySlot.EyeLeft, "EquipPart_EyeLeft");
+        TryBindCharacterSlot(BodySlot.EyeRight, "EquipPart_EyeRight");
+        TryBindCharacterSlot(BodySlot.ArmLeft, "EquipPart_ArmLeft");
+        TryBindCharacterSlot(BodySlot.ArmRight, "EquipPart_ArmRight");
+        TryBindCharacterSlot(BodySlot.LegLeft, "EquipPart_LegLeft");
+        TryBindCharacterSlot(BodySlot.LegRight, "EquipPart_LegRight");
+        TryBindCharacterSlot(BodySlot.Body, "EquipPart_Body");
+    }
+
+    void TryBindCharacterSlot(BodySlot slot, string objectName)
+    {
+        int index = (int)slot;
+        if (index < 0 || index >= _charImg.Length)
+            return;
+
+        Transform part = FindChildRecursive(transform, objectName);
+        if (part == null)
+            return;
+
+        Image image = part.GetComponent<Image>();
+        if (image != null)
+        {
+            _charImg[index] = image;
+            image.preserveAspect = true;
+            image.type = Image.Type.Simple;
+        }
+
+        Button button = part.GetComponent<Button>();
+        if (button == null)
+            button = part.gameObject.AddComponent<Button>();
+        _charBtn[index] = button;
+        if (image != null)
+            button.targetGraphic = image;
+
+        InventoryEquippedDragSource dragSource = part.GetComponent<InventoryEquippedDragSource>();
+        if (dragSource == null)
+            dragSource = part.gameObject.AddComponent<InventoryEquippedDragSource>();
+        dragSource.SetBodySlot(slot);
+
+        InventoryEquipDropTarget dropTarget = part.GetComponent<InventoryEquipDropTarget>();
+        if (dropTarget == null)
+            dropTarget = part.gameObject.AddComponent<InventoryEquipDropTarget>();
+        dropTarget.SetAcceptedSlot(slot);
+
+        InventoryItemTooltip tooltip = part.GetComponent<InventoryItemTooltip>();
+        if (tooltip == null)
+            tooltip = part.gameObject.AddComponent<InventoryItemTooltip>();
+        tooltip.SetBodySlot(slot);
     }
 
     Transform StorageSlotsParent()
@@ -890,6 +948,8 @@ public class InventoryUI : MonoBehaviour
     {
         EnsureStorageSlots();
         EnsureSpecialSlots();
+        EnsureCharacterSlots();
+        EnsureCharacterBaseImages();
         RefreshSpecialSlots();
         var inv = InventoryManager.Instance;
         if (inv == null) return;
@@ -1029,7 +1089,8 @@ public class InventoryUI : MonoBehaviour
         }
 
         // ─ task3: 캐릭터 부위 슬롯 — InventoryManager + ItemInventoryManager 장착 표시 ─
-        for (int i = 0; i < 6; i++)
+        int bodySlotCount = Mathf.Min(inv.equipped.Length, _charImg.Length);
+        for (int i = 0; i < bodySlotCount; i++)
         {
             var p = inv.equipped[i];
             BodySlot bodySlot = (BodySlot)i;
@@ -1058,7 +1119,8 @@ public class InventoryUI : MonoBehaviour
         }
 
         // 우측 상태
-        for (int i = 0; i < 6; i++)
+        int statCount = Mathf.Min(inv.equipped.Length, _statName.Length, _statHp.Length);
+        for (int i = 0; i < statCount; i++)
         {
             var p = inv.equipped[i];
             if (_statName[i] != null) _statName[i].text  = p != null ? "장착됨" : "없음";
@@ -1070,13 +1132,6 @@ public class InventoryUI : MonoBehaviour
                     : new Color(0.17f, 0.15f, 0.13f, 0.42f);
             }
         }
-        if (_statName[6] != null) _statName[6].text  = "장착됨 (고정)";
-        if (_statHp[6]   != null)
-        {
-            _statHp[6].text  = new string('●', 5);
-            _statHp[6].color = new Color(0.88f, 0.48f, 0.24f, 1f);
-        }
-
         RefreshSewingStatus(inv);
         ApplyInventoryHitTesting();
     }
@@ -1357,6 +1412,24 @@ public class InventoryUI : MonoBehaviour
         return sprites.Length > 0 ? sprites[0] : null;
     }
 
+    static Sprite LoadInterfaceSprite(string spriteName)
+    {
+        Sprite sprite = LoadResourceSprite("Sprites/interface/" + spriteName);
+        if (sprite != null)
+            return sprite;
+
+#if UNITY_EDITOR
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/interface/" + spriteName + ".png");
+        for (int i = 0; i < assets.Length; i++)
+            if (assets[i] is Sprite editorSprite)
+                return editorSprite;
+
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/interface/" + spriteName + ".png");
+#else
+        return null;
+#endif
+    }
+
     // task4: 슬롯의 ItemIcon 자식 Image 반환
     static Image GetSlotItemIcon(Image slotBackground)
     {
@@ -1483,6 +1556,11 @@ public class InventoryUI : MonoBehaviour
 
     void ApplyCharacterBaseSprites()
     {
+        if (_baseBodySprite == null)
+            _baseBodySprite = LoadInterfaceSprite("body_real");
+        if (_baseFaceSprite == null)
+            _baseFaceSprite = LoadInterfaceSprite("head");
+
         if (_baseBodyImg != null)
         {
             if (_baseBodySprite != null)
@@ -1578,6 +1656,7 @@ public class InventoryUI : MonoBehaviour
             case BodySlot.ArmRight: return "오른팔";
             case BodySlot.LegLeft: return "왼다리";
             case BodySlot.LegRight: return "오른다리";
+            case BodySlot.Body: return "몸통";
             default: return "알 수 없는 부위";
         }
     }

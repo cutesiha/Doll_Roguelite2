@@ -10,7 +10,7 @@ using UnityEngine.UI;
 public sealed class RoomAtmosphereController : MonoBehaviour
 {
     const string RootName = "_RoomAtmosphere";
-    const int CanvasSortingOrder = -240;
+    const int CanvasSortingOrder = 32000;
     const int LightCount = 3;
 
     enum AtmosphereKind
@@ -81,9 +81,11 @@ public sealed class RoomAtmosphereController : MonoBehaviour
 
     [Header("Global Filter Strength")]
     [SerializeField, Range(0f, 1f)] float colorOverlayMultiplier = 0.35f;
-    [SerializeField, Range(0f, 1f)] float vignetteMultiplier = 0.30f;
-    [SerializeField, Range(0f, 1f)] float postProcessVignetteMultiplier = 0.24f;
+    [SerializeField, Range(0f, 1f)] float vignetteMultiplier = 1.0f;
+    [SerializeField, Range(0f, 1f)] float postProcessVignetteMultiplier = 0.22f;
     [SerializeField, Range(0f, 1f)] float colorFilterStrength = 0.08f;
+    [SerializeField] Color warmEdgeColor = new Color(0.34f, 0.18f, 0.07f, 1f);
+    [SerializeField, Range(0f, 0.35f)] float minimumVisibleEdgeAlpha = 0.16f;
 
     [Header("Global Light Strength")]
     [SerializeField, Range(0f, 3f)] float lightIntensityMultiplier = 1.15f;
@@ -94,7 +96,8 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     [SerializeField, Range(0.25f, 3f)] float particleCountMultiplier = 1.25f;
     [SerializeField, Range(0f, 3f)] float particleAlphaMultiplier = 1.85f;
     [SerializeField, Range(0.25f, 3f)] float particleSizeMultiplier = 1.45f;
-    [SerializeField, Range(0.1f, 2f)] float particleSpeedMultiplier = 0.55f;
+    [SerializeField, Range(0.1f, 2f)] float particleSpeedMultiplier = 0.42f;
+    [SerializeField, Range(0f, 24f)] float particleSoftnessDrift = 8f;
 
     [Header("Room Presets")]
     [SerializeField] AtmospherePreset workshop = new AtmospherePreset
@@ -465,7 +468,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
             return AtmosphereKind.Workshop;
         }
 
-        return AtmosphereKind.None;
+        return AtmosphereKind.Workshop;
     }
 
     AtmospherePreset PresetFor(AtmosphereKind kind)
@@ -486,6 +489,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     {
         overlayCanvas = gameObject.AddComponent<Canvas>();
         overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        overlayCanvas.overrideSorting = true;
         overlayCanvas.sortingOrder = CanvasSortingOrder;
         gameObject.AddComponent<CanvasScaler>();
 
@@ -592,7 +596,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
         colorAdjustments.postExposure.Override(preset.postExposure);
 
         vignette.active = true;
-        vignette.color.Override(Color.black);
+        vignette.color.Override(warmEdgeColor);
         vignette.intensity.Override(Mathf.Clamp01(preset.vignetteAlpha * postProcessVignetteMultiplier));
         vignette.smoothness.Override(0.68f);
 
@@ -627,7 +631,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     {
         tintImage.color = WithAlpha(currentPreset.colorFilter, currentPreset.overlayAlpha * colorOverlayMultiplier);
         bloomImage.color = WithAlpha(currentPreset.primaryLightColor, currentPreset.bloomWashAlpha * screenGlowMultiplier);
-        vignetteImage.color = WithAlpha(Color.black, currentPreset.vignetteAlpha * vignetteMultiplier);
+        vignetteImage.color = WithAlpha(warmEdgeColor, EdgeAlpha(currentPreset.vignetteAlpha));
         ApplyGlowVisuals(0f);
     }
 
@@ -643,7 +647,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
         float pressureOverlay = Mathf.Lerp(0f, 0.045f, challengePressure);
         float pressureVignette = Mathf.Lerp(0f, 0.045f, challengePressure);
         tintImage.color = WithAlpha(currentPreset.colorFilter, currentPreset.overlayAlpha * colorOverlayMultiplier + pressureOverlay + pulse * challengePressure * 0.008f);
-        vignetteImage.color = WithAlpha(Color.black, currentPreset.vignetteAlpha * vignetteMultiplier + pressureVignette);
+        vignetteImage.color = WithAlpha(warmEdgeColor, EdgeAlpha(currentPreset.vignetteAlpha) + pressureVignette);
         ApplyGlowVisuals(challengePressure);
 
         if (colorAdjustments != null)
@@ -755,8 +759,8 @@ public sealed class RoomAtmosphereController : MonoBehaviour
             if (!active)
                 continue;
 
-            bool strand = preset.strandParticles || kind == AtmosphereKind.Challenge || kind == AtmosphereKind.Minotaur;
-            particle.image.texture = strand ? strandTexture : circleTexture;
+            bool fiber = preset.strandParticles || kind == AtmosphereKind.Challenge || kind == AtmosphereKind.Minotaur;
+            particle.image.texture = fiber ? strandTexture : circleTexture;
             particle.position = new Vector2(Random.Range(0f, size.x), Random.Range(0f, size.y));
             particle.velocity = ParticleVelocity(kind, preset);
             particle.phase = Random.Range(0f, 20f);
@@ -764,29 +768,29 @@ public sealed class RoomAtmosphereController : MonoBehaviour
             particle.twinkle = Random.Range(0.25f, 1f);
 
             float pixelSize = Random.Range(3.6f, 9.2f) * preset.particleSize * particleSizeMultiplier;
-            particle.rect.sizeDelta = strand
-                ? new Vector2(pixelSize * Random.Range(4.5f, 8.5f), Mathf.Max(1.4f, pixelSize * 0.34f))
+            particle.rect.sizeDelta = fiber
+                ? new Vector2(pixelSize * Random.Range(3.2f, 5.8f), Mathf.Max(2.2f, pixelSize * Random.Range(0.55f, 0.85f)))
                 : Vector2.one * pixelSize;
             particle.rect.anchoredPosition = particle.position;
-            particle.rect.localRotation = Quaternion.Euler(0f, 0f, strand ? Random.Range(-22f, 22f) : 0f);
+            particle.rect.localRotation = Quaternion.Euler(0f, 0f, fiber ? Random.Range(-28f, 28f) : Random.Range(0f, 360f));
             particle.image.color = ParticleColor(i, preset, particle.baseAlpha);
         }
     }
 
     Vector2 ParticleVelocity(AtmosphereKind kind, AtmospherePreset preset)
     {
-        float speed = preset.particleSpeed * particleSpeedMultiplier * 18f;
+        float speed = preset.particleSpeed * particleSpeedMultiplier * 13f;
         switch (kind)
         {
             case AtmosphereKind.Challenge:
-                return new Vector2(Random.Range(-speed * 0.75f, speed * 0.75f), Random.Range(-speed * 0.16f, speed * 0.18f));
+                return new Vector2(Random.Range(-speed * 0.55f, speed * 0.55f), Random.Range(-speed * 0.12f, speed * 0.14f));
             case AtmosphereKind.Minotaur:
             case AtmosphereKind.Boss:
-                return new Vector2(Random.Range(-speed * 0.45f, speed * 0.45f), Random.Range(-speed * 0.20f, speed * 0.15f));
+                return new Vector2(Random.Range(-speed * 0.34f, speed * 0.34f), Random.Range(-speed * 0.16f, speed * 0.12f));
             case AtmosphereKind.Book:
-                return new Vector2(Random.Range(-speed * 0.28f, speed * 0.28f), Random.Range(-speed * 0.32f, -speed * 0.08f));
+                return new Vector2(Random.Range(-speed * 0.22f, speed * 0.22f), Random.Range(-speed * 0.24f, -speed * 0.06f));
             default:
-                return new Vector2(Random.Range(-speed * 0.20f, speed * 0.25f), Random.Range(speed * 0.10f, speed * 0.36f));
+                return new Vector2(Random.Range(-speed * 0.16f, speed * 0.20f), Random.Range(speed * 0.08f, speed * 0.24f));
         }
     }
 
@@ -828,9 +832,10 @@ public sealed class RoomAtmosphereController : MonoBehaviour
                 continue;
 
             Vector2 drift = particle.velocity * Time.unscaledDeltaTime;
-            drift.x += Mathf.Sin(Time.unscaledTime * 0.65f + particle.phase) * Time.unscaledDeltaTime * 4f;
+            drift.x += Mathf.Sin(Time.unscaledTime * 0.42f + particle.phase) * Time.unscaledDeltaTime * particleSoftnessDrift;
+            drift.y += Mathf.Cos(Time.unscaledTime * 0.36f + particle.phase * 1.37f) * Time.unscaledDeltaTime * particleSoftnessDrift * 0.42f;
             if (currentKind == AtmosphereKind.Challenge)
-                drift.x += challengePressure * Mathf.Sin(Time.unscaledTime * 6f + particle.phase) * Time.unscaledDeltaTime * 10f;
+                drift.x += challengePressure * Mathf.Sin(Time.unscaledTime * 3.2f + particle.phase) * Time.unscaledDeltaTime * 5f;
 
             particle.position += drift;
             if (particle.position.x < -50f) particle.position.x = size.x + 50f;
@@ -840,6 +845,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
 
             float alphaPulse = 0.82f + 0.18f * Mathf.Sin(Time.unscaledTime * particle.twinkle + particle.phase);
             particle.rect.anchoredPosition = particle.position;
+            particle.rect.localRotation *= Quaternion.Euler(0f, 0f, Mathf.Sin(Time.unscaledTime * 0.28f + particle.phase) * Time.unscaledDeltaTime * 6f);
             particle.image.color = ParticleColor(i, currentPreset, particle.baseAlpha * alphaPulse);
         }
     }
@@ -886,7 +892,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     {
         whiteTexture = Texture(1, 1, (x, y) => Color.white);
         circleTexture = Texture(48, 48, CirclePixel);
-        strandTexture = Texture(48, 8, (x, y) => Color.white);
+        strandTexture = Texture(64, 18, FiberPixel);
         vignetteTexture = Texture(256, 256, VignettePixel);
         bloomTexture = Texture(256, 256, BloomPixel);
     }
@@ -912,9 +918,28 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     Color CirclePixel(int x, int y)
     {
         Vector2 center = new Vector2(23.5f, 23.5f);
-        float distance = Vector2.Distance(new Vector2(x, y), center);
-        float alpha = Mathf.Clamp01(1f - Mathf.InverseLerp(10f, 24f, distance));
+        Vector2 point = new Vector2(x, y);
+        float main = Mathf.Clamp01(1f - Mathf.InverseLerp(5f, 24f, Vector2.Distance(point, center)));
+        float puffA = Mathf.Clamp01(1f - Mathf.InverseLerp(2f, 15f, Vector2.Distance(point, center + new Vector2(-5f, 4f))));
+        float puffB = Mathf.Clamp01(1f - Mathf.InverseLerp(2f, 13f, Vector2.Distance(point, center + new Vector2(6f, -3f))));
+        float grain = 0.86f + 0.14f * Mathf.Sin(x * 0.73f + y * 1.19f);
+        float alpha = Mathf.Clamp01((main * 0.58f + puffA * 0.25f + puffB * 0.22f) * grain);
+        alpha *= alpha;
         return new Color(1f, 1f, 1f, alpha);
+    }
+
+    Color FiberPixel(int x, int y)
+    {
+        float nx = (x + 0.5f) / 64f;
+        float ny = (y + 0.5f) / 18f;
+        float centerLine = 0.5f + Mathf.Sin(nx * Mathf.PI * 2.2f) * 0.10f;
+        float distance = Mathf.Abs(ny - centerLine);
+        float tapered = Mathf.Sin(nx * Mathf.PI);
+        float alpha = Mathf.Clamp01(1f - Mathf.InverseLerp(0.03f, 0.32f, distance));
+        alpha *= Mathf.Clamp01(tapered * 1.35f);
+        float fray = 0.78f + 0.22f * Mathf.Sin(x * 1.7f + y * 0.9f);
+        alpha *= fray;
+        return new Color(1f, 1f, 1f, alpha * alpha);
     }
 
     Color VignettePixel(int x, int y)
@@ -924,8 +949,13 @@ public sealed class RoomAtmosphereController : MonoBehaviour
         float dx = Mathf.Abs(p.x - center.x) / center.x;
         float dy = Mathf.Abs(p.y - center.y) / center.y;
         float distance = Mathf.Sqrt(dx * dx + dy * dy);
-        float alpha = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.72f, 1.22f, distance));
+        float alpha = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.48f, 1.08f, distance));
         return new Color(1f, 1f, 1f, alpha);
+    }
+
+    float EdgeAlpha(float presetAlpha)
+    {
+        return Mathf.Max(minimumVisibleEdgeAlpha, presetAlpha * vignetteMultiplier);
     }
 
     Color BloomPixel(int x, int y)

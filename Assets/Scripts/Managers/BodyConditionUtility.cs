@@ -30,6 +30,7 @@ public static class BodyConditionUtility
             case BodySlot.ArmRight: return state.armRight;
             case BodySlot.LegLeft: return state.legLeft;
             case BodySlot.LegRight: return state.legRight;
+            case BodySlot.Body: return state.body;
             default: return true;
         }
     }
@@ -112,6 +113,7 @@ public static class BodyConditionUtility
 
         BodyState source = inventory.GetBodyStateSnapshot();
         BodyState target = bodyManager.State;
+        target.body = source.body;
         target.eyeLeft = source.eyeLeft;
         target.eyeRight = source.eyeRight;
         target.armLeft = source.armLeft;

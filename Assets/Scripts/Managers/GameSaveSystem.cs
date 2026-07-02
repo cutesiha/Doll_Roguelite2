@@ -136,7 +136,7 @@ public static class GameSaveSystem
         {
             InventorySaveData inventoryData = data.inventory;
             inventory.ReplaceState(
-                RestoreParts(inventoryData != null ? inventoryData.equipped : null, 6),
+                RestoreParts(inventoryData != null ? inventoryData.equipped : null, InventoryManager.BodySlotCount),
                 RestoreParts(inventoryData != null ? inventoryData.storage : null, InventoryManager.StorageSlotCount),
                 inventoryData != null ? inventoryData.lockedSlots : null);
         }

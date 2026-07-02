@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public enum BodySlot { EyeLeft, EyeRight, ArmLeft, ArmRight, LegLeft, LegRight }
+public enum BodySlot { EyeLeft, EyeRight, ArmLeft, ArmRight, LegLeft, LegRight, Body }
 
 // 인벤토리에 담기는 모든 오브젝트 종류. BodyPart 는 장착 가능한 부위,
 // 나머지(Coin/Rag/Gem)는 보관함에만 들어가는 소모성/자원 아이템.
@@ -63,6 +63,7 @@ public class BodyPart
             case BodySlot.ArmRight: return "오른쪽 팔";
             case BodySlot.LegLeft:  return "왼쪽 다리";
             case BodySlot.LegRight: return "오른쪽 다리";
+            case BodySlot.Body:     return "몸통";
             default:                return "?";
         }
     }
