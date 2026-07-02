@@ -143,6 +143,7 @@ public class ItemVisionEffect : MonoBehaviour
                 {
                     material = new Material(shader);
                     material.SetFloat("_WidthFraction", 0.5f);
+                    material.SetFloat("_UOffset", isLeft ? 0f : 0.5f);
                     overlay.material = material;
                 }
             }
