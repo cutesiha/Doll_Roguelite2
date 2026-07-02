@@ -98,6 +98,8 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     [SerializeField, Range(0.25f, 3f)] float particleSizeMultiplier = 1.45f;
     [SerializeField, Range(0.1f, 2f)] float particleSpeedMultiplier = 0.42f;
     [SerializeField, Range(0f, 24f)] float particleSoftnessDrift = 8f;
+    [Tooltip("끄면 내장 파티클 대신 최상단 AmbientDustOverlay 를 사용한다(중복 방지).")]
+    [SerializeField] bool useBuiltInParticles = false;
 
     [Header("Room Presets")]
     [SerializeField] AtmospherePreset workshop = new AtmospherePreset
@@ -743,6 +745,12 @@ public sealed class RoomAtmosphereController : MonoBehaviour
 
     void ConfigureParticles(AtmosphereKind kind, AtmospherePreset preset)
     {
+        if (!useBuiltInParticles)
+        {
+            EnsureParticleCount(0);
+            return;
+        }
+
         int count = Mathf.RoundToInt(preset.particleCount * particleCountMultiplier);
         EnsureParticleCount(count);
 
