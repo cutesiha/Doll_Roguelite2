@@ -60,6 +60,7 @@ public class BookBossPart : EnemyBase
         baseLocalPosition = transform.position;
 
         EnsureCollider(sprite);
+        EnsurePartShadow();
     }
 
     // Scene-authored variant: preserve the hierarchy transform and collider so designers
@@ -82,6 +83,17 @@ public class BookBossPart : EnemyBase
         partRenderer.sortingOrder = sortingOrder;
         baseLocalPosition = transform.position;
         EnsureCollider(sprite);
+        EnsurePartShadow();
+    }
+
+    // req: 최종보스도 플레이어와 동일한 실루엣 그림자. 파트(몸통/양팔)마다 붙여서 팔 움직임(bob)도 따라감.
+    // BookBossPart는 Awake에서 base.Awake()를 호출하지 않아 EnsureCharacterShadow가 자동 실행되지 않으므로 여기서 붙인다.
+    void EnsurePartShadow()
+    {
+        EnsureCharacterShadow();
+        CharacterOvalShadow shadow = GetComponent<CharacterOvalShadow>();
+        if (shadow != null)
+            shadow.SetShadowRotation(-20f);   // req: 보스 그림자 각도 20°
     }
 
     public Vector2 BasePosition => baseLocalPosition;

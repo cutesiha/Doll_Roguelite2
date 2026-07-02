@@ -28,7 +28,8 @@ public class DoorTrigger : MonoBehaviour
     [SerializeField] Color nearHighlightColor = new Color(1f, 0.80f, 0.62f, 1f);  // 살구색
     // ShopScene 문이 창백해 보여서 플레이어 몸 색(푸른색)으로 보정.
     [SerializeField] bool tintShopDoorBlue = true;
-    [SerializeField] Color shopDoorTint = new Color(0.30f, 0.60f, 1f, 1f);
+    // #3: 너무 진하지 않은 연한 파란틴트.
+    [SerializeField] Color shopDoorTint = new Color(0.68f, 0.84f, 1f, 1f);
     [Header("Door Authoring")]
     [SerializeField] Sprite doorSpriteOverride;
     [SerializeField] Sprite roomIconSpriteOverride;
@@ -109,32 +110,52 @@ public class DoorTrigger : MonoBehaviour
         blocker.transform.localScale = Vector3.one;
         blocker.layer = ResolveBlockingLayer();
 
+        // #2: 문 모양에 맞추기 위해, 상호작용 트리거와 동일한 폴리곤 경로를 솔리드로 사용한다.
+        if (layout != null && layout.doorColliderPath != null && layout.doorColliderPath.Length >= 3)
+        {
+            BoxCollider2D staleBox = blocker.GetComponent<BoxCollider2D>();
+            if (staleBox != null)
+                Destroy(staleBox);
+
+            PolygonCollider2D polygon = blocker.GetComponent<PolygonCollider2D>();
+            if (polygon == null)
+                polygon = blocker.AddComponent<PolygonCollider2D>();
+            polygon.isTrigger = false;   // 솔리드 → 물리적으로 막음, 문 모양과 일치
+
+            Vector2[] path = new Vector2[layout.doorColliderPath.Length];
+            for (int i = 0; i < path.Length; i++)
+                path[i] = new Vector2(layout.doorColliderPath[i].x / parentX, layout.doorColliderPath[i].y / parentY);
+            polygon.pathCount = 1;
+            polygon.SetPath(0, path);
+            return;
+        }
+
+        // 폴백: 경로가 없으면 박스.
+        PolygonCollider2D stalePolygon = blocker.GetComponent<PolygonCollider2D>();
+        if (stalePolygon != null)
+            Destroy(stalePolygon);
+
         BoxCollider2D box = blocker.GetComponent<BoxCollider2D>();
         if (box == null)
             box = blocker.AddComponent<BoxCollider2D>();
-        box.isTrigger = false;   // 솔리드 → 물리적으로 막음
+        box.isTrigger = false;
 
-        Vector2 size;
-        Vector2 offset;
         if (layout != null && layout.doorColliderSize.x > 0.01f && layout.doorColliderSize.y > 0.01f)
         {
-            size = new Vector2(layout.doorColliderSize.x / parentX, layout.doorColliderSize.y / parentY);
-            offset = new Vector2(layout.doorColliderOffset.x / parentX, layout.doorColliderOffset.y / parentY);
+            box.size = new Vector2(layout.doorColliderSize.x / parentX, layout.doorColliderSize.y / parentY);
+            box.offset = new Vector2(layout.doorColliderOffset.x / parentX, layout.doorColliderOffset.y / parentY);
         }
         else if (doorRenderer != null && doorRenderer.sprite != null)
         {
             Vector2 spriteSize = doorRenderer.sprite.bounds.size * doorWorldScale;
-            size = new Vector2(spriteSize.x / parentX, spriteSize.y / parentY);
-            offset = Vector2.zero;
+            box.size = new Vector2(spriteSize.x / parentX, spriteSize.y / parentY);
+            box.offset = Vector2.zero;
         }
         else
         {
-            size = new Vector2(2.3f / parentX, 2.7f / parentY);
-            offset = Vector2.zero;
+            box.size = new Vector2(2.3f / parentX, 2.7f / parentY);
+            box.offset = Vector2.zero;
         }
-
-        box.size = size;
-        box.offset = offset;
     }
 
     // 방의 벽과 동일한 레이어를 찾는다. 벽이 플레이어를 막고 있으므로 같은 레이어면 문도 확실히 막힌다.
@@ -520,21 +541,36 @@ public class DoorTrigger : MonoBehaviour
     }
 
     // 문 기본 색: 잠김이면 회색, 열림이고 ShopScene이면 푸른색 보정(창백함 방지), 그 외 흰색.
+    bool IsShopDoor()
+    {
+        return tintShopDoorBlue && SceneManager.GetActiveScene().name == "ShopScene";
+    }
+
     Color BaseDoorColor()
     {
         if (!isOpen)
             return lockedColor;
-        if (tintShopDoorBlue && SceneManager.GetActiveScene().name == "ShopScene")
+        if (IsShopDoor())
             return shopDoorTint;
         return Color.white;
     }
 
-    // 근처면 살구색 하이라이트, 아니면 기본 색.
+    // 근처면 살구색 하이라이트. 단 상점 문은 근접해도 파란틴트를 유지한다(#4).
+    // 색은 문 본체 + 아이콘 양쪽에 적용한다(#3: 아이콘에도 틴트).
     void ApplyProximityHighlight(bool nearby)
     {
-        if (doorRenderer == null)
-            return;
-        doorRenderer.color = nearby ? nearHighlightColor : BaseDoorColor();
+        Color c;
+        if (!isOpen)
+            c = lockedColor;
+        else if (IsShopDoor())
+            c = shopDoorTint;                                 // #4: 상점은 근접해도 파란 유지
+        else
+            c = nearby ? nearHighlightColor : Color.white;    // #5: 근처면 살구 하이라이트
+
+        if (doorRenderer != null)
+            doorRenderer.color = c;
+        if (iconRenderer != null)
+            iconRenderer.color = c;                           // #3: 아이콘에도 틴트
     }
 
     // 근처면 반짝이 파티클 표시(아이템과 동일한 ItemPickupSparkle 재사용).

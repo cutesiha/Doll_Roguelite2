@@ -103,6 +103,9 @@ public class MinotaurBoss : EnemyBase
 
         SetupRigidbody();
         EnsureCharacterShadow();   // 플레이어와 동일한 실루엣 그림자(자기 스프라이트 모양 + 숨쉬기 애니메이션 따라감)
+        CharacterOvalShadow shadow = GetComponent<CharacterOvalShadow>();
+        if (shadow != null)
+            shadow.SetShadowRotation(-20f);   // req: 보스 그림자 각도 20°
         EnsureBossCollider();
     }
 

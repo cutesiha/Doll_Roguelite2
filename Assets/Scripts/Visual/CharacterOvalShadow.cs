@@ -110,6 +110,9 @@ public class CharacterOvalShadow : MonoBehaviour
 
     public void SetForceShadow(bool force) { forceShadow = force; }
 
+    // 그림자 기울기(Z 회전) 설정. 보스별로 각도를 맞출 때 사용(매 LateUpdate의 Configure가 이 값을 반영).
+    public void SetShadowRotation(float z) { rotationZ = z; }
+
     bool IsShadowTarget()
     {
         return ownerRenderer != null && (CompareTag("Player") || GetComponent<EnemyBase>() != null || forceShadow);
