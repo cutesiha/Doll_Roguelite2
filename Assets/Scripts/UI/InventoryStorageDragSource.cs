@@ -9,9 +9,13 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
     RectTransform ghost;
     Canvas rootCanvas;
     ItemData itemData;
+    int itemStorageIndex = -1;
 
     public int StorageIndex => storageIndex;
     public ItemData DraggedItemData => itemData;
+    // ItemInventoryManager.Storage 안에서 이 슬롯이 가리키는 실제 리스트 인덱스.
+    // 레거시 BodyPart 칸/동전 더미 칸이면 -1 (이 슬롯 기준 이동/교환 대상 아님).
+    public int ItemStorageIndex => itemStorageIndex;
 
     public void SetStorageIndex(int index)
     {
@@ -21,6 +25,11 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
     public void SetItemData(ItemData item)
     {
         itemData = item;
+    }
+
+    public void SetItemStorageIndex(int index)
+    {
+        itemStorageIndex = index;
     }
 
     public void OnBeginDrag(PointerEventData eventData)

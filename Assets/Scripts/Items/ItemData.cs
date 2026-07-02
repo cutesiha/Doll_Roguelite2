@@ -118,6 +118,8 @@ public class ItemData : ScriptableObject
 
     [Header("표시")]
     [SerializeField] Sprite sprite;
+    [Tooltip("투사체 공격(열쇠고리/못 등)일 때 날아가는 오브젝트에 쓸 전용 스프라이트. 비어있으면 색칠된 도형으로 대체.")]
+    [SerializeField] Sprite projectileSprite;
     [SerializeField] ItemPlaceholderShape placeholderShape = ItemPlaceholderShape.Square;
     [SerializeField] Color placeholderColor = Color.white;
     [Tooltip("월드에 스폰될 때 적용할 크기. 0 이하이면 타입별 기본 크기를 사용. (아이템 테스트룸에서 조정한 값과 동기화됨)")]
@@ -137,6 +139,7 @@ public class ItemData : ScriptableObject
     public int ShopPrice => shopPrice;
     public IReadOnlyList<ItemEffectData> Effects => effects;
     public Sprite Sprite => sprite;
+    public Sprite ProjectileSprite => projectileSprite;
     public ItemPlaceholderShape PlaceholderShape => placeholderShape;
     public Color PlaceholderColor => placeholderColor;
     public float WorldScale => worldScale;
@@ -153,6 +156,11 @@ public class ItemData : ScriptableObject
     public void EditorSetWorldScale(float scale)
     {
         worldScale = Mathf.Max(0f, scale);
+    }
+
+    public void EditorSetProjectileSprite(Sprite sprite)
+    {
+        projectileSprite = sprite;
     }
 #endif
 

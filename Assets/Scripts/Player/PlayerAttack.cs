@@ -12,6 +12,17 @@ public class PlayerAttack : MonoBehaviour
         Right
     }
 
+    // 팔에 장착된 아이템(ArmWeaponKind)에 따라 스윙 모션과 이펙트 색을 다르게 준다.
+    struct ArmAttackStyle
+    {
+        public float durationScale;
+        public float arcHeightScale;
+        public float rotationScale;
+        public float fistScaleMultiplier;
+        public Color tint;
+        public Sprite spriteOverride;
+    }
+
     [Header("Direction")]
     [SerializeField] PlayerController playerController;
 
@@ -23,6 +34,11 @@ public class PlayerAttack : MonoBehaviour
     [Header("Fist")]
     [SerializeField] Sprite fistSprite;
     [SerializeField] SpriteRenderer fistPrefab;
+
+    [Header("Weapon Sprites (비워두면 기본 주먹 사용, 나중에 교체용)")]
+    [SerializeField] Sprite axeWeaponSprite;
+    [SerializeField] Sprite keyringWeaponSprite;
+    [SerializeField] Sprite nailWeaponSprite;
     [SerializeField] Transform leftAttackStart;
     [SerializeField] Transform rightAttackStart;
     [SerializeField] bool useFixedBodyAttackOrigin = true;
@@ -285,34 +301,43 @@ public class PlayerAttack : MonoBehaviour
         isAttacking = true;
         SuppressArm(arm);
 
+        if (itemEffects == null)
+            itemEffects = GetComponent<PlayerItemEffects>();
+        bool leftArm = arm == AttackArm.Left;
+        ArmAttackStyle style = ResolveAttackStyle(leftArm);
+
         SpriteRenderer fist = EnsureFistRenderer();
         if (fist == null || fist.sprite == null)
         {
-            yield return new WaitForSeconds(Mathf.Max(0.01f, attackDuration));
+            yield return new WaitForSeconds(Mathf.Max(0.01f, attackDuration * style.durationScale));
             FinishAttack();
             yield break;
         }
 
         int fistSortingOrder = SortingOrderForDirection(direction);
         int effectSortingOrder = fistSortingOrder + effectSortingOrderOffset;
-        ConfigureFistRenderer(fist, fistSortingOrder);
+        ConfigureFistRenderer(fist, fistSortingOrder, style);
 
         Vector3 hitStart = AttackStartPosition(arm, direction, AttackOrigin());
         Vector3 hitEnd = hitStart + (Vector3)(direction * EffectiveAttackDistance(direction));
-        if (itemEffects == null)
-            itemEffects = GetComponent<PlayerItemEffects>();
         bool usedProjectile = itemEffects != null
-            && itemEffects.TryPerformProjectileAttack(arm == AttackArm.Left, direction, hitStart);
+            && itemEffects.TryPerformProjectileAttack(leftArm, direction, hitStart);
         if (!usedProjectile)
             DealDamage(hitStart, hitEnd, direction, arm);
 
         Vector2 perpendicular = new Vector2(-direction.y, direction.x);
-        float armSign = arm == AttackArm.Left ? 1f : -1f;
+        float armSign = leftArm ? 1f : -1f;
         float baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + fistRotationOffset;
+        float arcHeight = swingArcHeight * style.arcHeightScale;
+        float rotationAmount = swingRotation * style.rotationScale;
+        Vector3 fistRenderScale = fist.transform.localScale;
+        Color trailTint = style.tint;
+        Color slashRenderColor = new Color(style.tint.r, style.tint.g, style.tint.b, slashColor.a);
+        Sprite effectSprite = EffectiveFistSprite(style);
         float elapsed = 0f;
         float nextTrailTime = 0f;
         float nextSlashTime = 0f;
-        float duration = Mathf.Max(0.01f, attackDuration);
+        float duration = Mathf.Max(0.01f, attackDuration * style.durationScale);
 
         fist.gameObject.SetActive(true);
 
@@ -321,17 +346,17 @@ public class PlayerAttack : MonoBehaviour
             float t = Mathf.Clamp01(elapsed / duration);
             Vector3 start = AttackStartPosition(arm, direction, AttackOrigin());
             Vector3 end = start + (Vector3)(direction * EffectiveAttackDistance(direction));
-            ApplyFistPose(fist, start, end, perpendicular, armSign, baseAngle, t);
+            ApplyFistPose(fist, start, end, perpendicular, armSign, baseAngle, t, arcHeight, rotationAmount);
 
             if (elapsed >= nextTrailTime)
             {
-                SpawnTrail(fist.transform.position, fist.transform.rotation, effectSortingOrder);
+                SpawnTrail(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, trailTint, effectSprite);
                 nextTrailTime += trailSpawnInterval;
             }
 
             if (useRedSlashEffect && elapsed >= nextSlashTime)
             {
-                SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder);
+                SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, slashRenderColor, effectSprite);
                 nextSlashTime += slashSpawnInterval;
             }
 
@@ -341,13 +366,75 @@ public class PlayerAttack : MonoBehaviour
 
         Vector3 finalStart = AttackStartPosition(arm, direction, AttackOrigin());
         Vector3 finalEnd = finalStart + (Vector3)(direction * EffectiveAttackDistance(direction));
-        ApplyFistPose(fist, finalStart, finalEnd, perpendicular, armSign, baseAngle, 1f);
-        SpawnTrail(fist.transform.position, fist.transform.rotation, effectSortingOrder);
+        ApplyFistPose(fist, finalStart, finalEnd, perpendicular, armSign, baseAngle, 1f, arcHeight, rotationAmount);
+        SpawnTrail(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, trailTint, effectSprite);
         if (useRedSlashEffect)
-            SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder);
+            SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, slashRenderColor, effectSprite);
 
         fist.gameObject.SetActive(false);
         FinishAttack();
+    }
+
+    // 장착된 팔 아이템(주먹/도끼/열쇠고리/못)에 따라 스윙 모션·크기·색을 결정한다.
+    ArmAttackStyle ResolveAttackStyle(bool leftArm)
+    {
+        ArmWeaponKind kind = itemEffects != null ? itemEffects.GetArmWeaponKind(leftArm) : ArmWeaponKind.Fist;
+
+        switch (kind)
+        {
+            case ArmWeaponKind.Axe:
+                return new ArmAttackStyle
+                {
+                    durationScale = 1.35f,
+                    arcHeightScale = 1.6f,
+                    rotationScale = 1.5f,
+                    fistScaleMultiplier = 1.35f,
+                    tint = axeWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
+                    spriteOverride = axeWeaponSprite,
+                };
+            case ArmWeaponKind.Keyring:
+                return new ArmAttackStyle
+                {
+                    durationScale = 0.6f,
+                    arcHeightScale = 0.45f,
+                    rotationScale = 0.55f,
+                    fistScaleMultiplier = 0.85f,
+                    tint = keyringWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
+                    spriteOverride = keyringWeaponSprite,
+                };
+            case ArmWeaponKind.Nail:
+                return new ArmAttackStyle
+                {
+                    durationScale = 0.7f,
+                    arcHeightScale = 0.4f,
+                    rotationScale = 0.65f,
+                    fistScaleMultiplier = 0.8f,
+                    tint = nailWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
+                    spriteOverride = nailWeaponSprite,
+                };
+            default:
+                return new ArmAttackStyle
+                {
+                    durationScale = 1f,
+                    arcHeightScale = 1f,
+                    rotationScale = 1f,
+                    fistScaleMultiplier = 1f,
+                    tint = Color.white,
+                    spriteOverride = null,
+                };
+        }
+    }
+
+    Color ArmItemColor(bool leftArm)
+    {
+        ItemData armItemData = itemEffects != null ? itemEffects.GetArmItem(leftArm) : null;
+        return armItemData != null ? armItemData.PlaceholderColor : Color.white;
+    }
+
+    // 무기 전용 스프라이트가 없으면 기본 주먹 스프라이트로 대체 (교체용 슬롯이 비어있어도 항상 동작).
+    Sprite EffectiveFistSprite(ArmAttackStyle style)
+    {
+        return style.spriteOverride != null ? style.spriteOverride : fistSprite;
     }
 
     void ApplyFistPose(
@@ -357,14 +444,16 @@ public class PlayerAttack : MonoBehaviour
         Vector2 perpendicular,
         float armSign,
         float baseAngle,
-        float t)
+        float t,
+        float arcHeight,
+        float rotationAmount)
     {
         float eased = EaseOut(t);
         Vector3 position = Vector3.Lerp(start, end, eased);
-        position += (Vector3)(perpendicular * (Mathf.Sin(t * Mathf.PI) * swingArcHeight * armSign));
+        position += (Vector3)(perpendicular * (Mathf.Sin(t * Mathf.PI) * arcHeight * armSign));
         fist.transform.position = position;
 
-        float rotation = Mathf.Lerp(-swingRotation * armSign, swingRotation * 0.35f * armSign, eased);
+        float rotation = Mathf.Lerp(-rotationAmount * armSign, rotationAmount * 0.35f * armSign, eased);
         fist.transform.rotation = Quaternion.Euler(0f, 0f, baseAngle + rotation);
     }
 
@@ -399,7 +488,7 @@ public class PlayerAttack : MonoBehaviour
         if (itemEffects == null)
             itemEffects = GetComponent<PlayerItemEffects>();
         if (itemEffects != null)
-            hitSize *= itemEffects.AttackSizeMultiplier;
+            hitSize *= itemEffects.AttackSizeMultiplier(arm == AttackArm.Left);
 
         Collider2D[] hits = Physics2D.OverlapBoxAll(origin, hitSize, 0f);
         HashSet<EnemyBase> damaged = new HashSet<EnemyBase>();
@@ -440,11 +529,15 @@ public class PlayerAttack : MonoBehaviour
         return fistRenderer;
     }
 
-    void ConfigureFistRenderer(SpriteRenderer renderer, int sortingOrder)
+    void ConfigureFistRenderer(SpriteRenderer renderer, int sortingOrder, ArmAttackStyle style)
     {
-        renderer.sprite = fistSprite != null ? fistSprite : renderer.sprite;
-        renderer.color = Color.white;
-        renderer.transform.localScale = new Vector3(fistScale.x, fistScale.y, 1f);
+        Sprite sprite = EffectiveFistSprite(style);
+        renderer.sprite = sprite != null ? sprite : renderer.sprite;
+        renderer.color = style.tint;
+        renderer.transform.localScale = new Vector3(
+            fistScale.x * style.fistScaleMultiplier,
+            fistScale.y * style.fistScaleMultiplier,
+            1f);
 
         SpriteRenderer sortingSource = bodyRenderer != null ? bodyRenderer : renderer;
         renderer.sortingLayerID = sortingSource.sortingLayerID;
@@ -465,10 +558,10 @@ public class PlayerAttack : MonoBehaviour
             slashPool.Enqueue(CreateSlashRenderer());
     }
 
-    void SpawnTrail(Vector3 position, Quaternion rotation, int sortingOrder)
+    void SpawnTrail(Vector3 position, Quaternion rotation, int sortingOrder, Vector3 scale, Color tint, Sprite sprite)
     {
         SpriteRenderer trail = trailPool.Count > 0 ? trailPool.Dequeue() : CreateTrailRenderer();
-        trail.sprite = fistSprite != null ? fistSprite : (fistRenderer != null ? fistRenderer.sprite : null);
+        trail.sprite = sprite != null ? sprite : (fistRenderer != null ? fistRenderer.sprite : null);
         if (trail.sprite == null)
         {
             trailPool.Enqueue(trail);
@@ -480,8 +573,8 @@ public class PlayerAttack : MonoBehaviour
         trail.sortingOrder = sortingOrder;
         trail.transform.position = position;
         trail.transform.rotation = rotation;
-        trail.transform.localScale = new Vector3(fistScale.x, fistScale.y, 1f);
-        trail.color = new Color(1f, 1f, 1f, trailStartAlpha);
+        trail.transform.localScale = scale;
+        trail.color = new Color(tint.r, tint.g, tint.b, trailStartAlpha);
         trail.gameObject.SetActive(true);
         activeTrails.Add(trail);
 
@@ -508,10 +601,10 @@ public class PlayerAttack : MonoBehaviour
         trailPool.Enqueue(trail);
     }
 
-    void SpawnSlash(Vector3 position, Quaternion rotation, int sortingOrder)
+    void SpawnSlash(Vector3 position, Quaternion rotation, int sortingOrder, Vector3 fistRenderScale, Color color, Sprite sprite)
     {
         SpriteRenderer slash = slashPool.Count > 0 ? slashPool.Dequeue() : CreateSlashRenderer();
-        slash.sprite = fistSprite != null ? fistSprite : (fistRenderer != null ? fistRenderer.sprite : null);
+        slash.sprite = sprite != null ? sprite : (fistRenderer != null ? fistRenderer.sprite : null);
         if (slash.sprite == null)
         {
             slashPool.Enqueue(slash);
@@ -523,23 +616,22 @@ public class PlayerAttack : MonoBehaviour
         slash.sortingOrder = sortingOrder;
         slash.transform.position = position;
         slash.transform.rotation = rotation;
-        slash.transform.localScale = new Vector3(fistScale.x * slashScale.x, fistScale.y * slashScale.y, 1f);
-        slash.color = slashColor;
+        slash.transform.localScale = new Vector3(fistRenderScale.x * slashScale.x, fistRenderScale.y * slashScale.y, 1f);
+        slash.color = color;
         slash.gameObject.SetActive(true);
         activeSlashes.Add(slash);
 
-        StartCoroutine(FadeSlash(slash));
+        StartCoroutine(FadeSlash(slash, color));
     }
 
-    IEnumerator FadeSlash(SpriteRenderer slash)
+    IEnumerator FadeSlash(SpriteRenderer slash, Color color)
     {
         float duration = Mathf.Max(0.01f, slashLifetime);
         float elapsed = 0f;
-        Color color = slashColor;
 
         while (elapsed < duration)
         {
-            float alpha = Mathf.Lerp(slashColor.a, 0f, elapsed / duration);
+            float alpha = Mathf.Lerp(color.a, 0f, elapsed / duration);
             slash.color = new Color(color.r, color.g, color.b, alpha);
             elapsed += Time.deltaTime;
             yield return null;

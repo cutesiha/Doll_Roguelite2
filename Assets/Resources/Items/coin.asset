@@ -26,6 +26,7 @@ MonoBehaviour:
   shopPrice: 0
   effects: []
   sprite: {fileID: 0}
+  projectileSprite: {fileID: 0}
   placeholderShape: 1
   placeholderColor: {r: 1, g: 0.74, b: 0.12, a: 1}
   worldScale: 1.7280002

@@ -1,6 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// 팔 공격이 어떤 무기 성질을 갖는지 (장착된 팔 아이템의 효과로 결정됨).
+public enum ArmWeaponKind
+{
+    Fist,
+    Axe,
+    Keyring,
+    Nail
+}
+
 [DisallowMultipleComponent]
 public class PlayerItemEffects : MonoBehaviour
 {
@@ -15,10 +24,12 @@ public class PlayerItemEffects : MonoBehaviour
     float leftArmDamageBonus;
     float rightArmDamageBonus;
     int maxHealthModifier;
-    ItemData armItem;
+    ItemData leftArmItem;
+    ItemData rightArmItem;
     ItemData legItem;
     ItemData bodyItem;
-    ItemData eyeItem;
+    ItemData leftEyeItem;
+    ItemData rightEyeItem;
 
     public float MoveSpeedBonus => moveSpeedBonus;
     public float LeftArmDamageBonus => leftArmDamageBonus;
@@ -70,8 +81,10 @@ public class PlayerItemEffects : MonoBehaviour
         if (inventory == null)
             return;
 
-        eyeItem = inventory.GetEquipped(ItemEquipLocation.Eye);
-        armItem = inventory.GetEquipped(ItemEquipLocation.Arm);
+        leftEyeItem = inventory.GetEquippedByBodySlot(BodySlot.EyeLeft);
+        rightEyeItem = inventory.GetEquippedByBodySlot(BodySlot.EyeRight);
+        leftArmItem = inventory.GetEquippedByBodySlot(BodySlot.ArmLeft);
+        rightArmItem = inventory.GetEquippedByBodySlot(BodySlot.ArmRight);
         bodyItem = inventory.GetEquipped(ItemEquipLocation.Body);
         legItem = inventory.GetEquipped(ItemEquipLocation.Leg);
 
@@ -80,8 +93,10 @@ public class PlayerItemEffects : MonoBehaviour
         rightArmDamageBonus = inventory.RoomArmDamageBonus;
         maxHealthModifier = 0;
 
-        AccumulateEquippedEffects(eyeItem);
-        AccumulateEquippedEffects(armItem);
+        AccumulateEquippedEffects(leftEyeItem);
+        AccumulateEquippedEffects(rightEyeItem);
+        AccumulateEquippedEffects(leftArmItem);
+        AccumulateEquippedEffects(rightArmItem);
         AccumulateEquippedEffects(bodyItem);
         AccumulateEquippedEffects(legItem);
 
@@ -98,54 +113,83 @@ public class PlayerItemEffects : MonoBehaviour
             if (visionEffect == null)
                 visionEffect = camera.gameObject.AddComponent<ItemVisionEffect>();
 
-            visionEffect.Configure(
-                eyeItem != null && eyeItem.HasEffect(ItemEffectType.VerticalViewFlip),
-                eyeItem != null && eyeItem.HasEffect(ItemEffectType.PixelatedView),
-                eyeItem != null && eyeItem.HasEffect(ItemEffectType.InvertedView),
-                eyeItem != null && eyeItem.HasEffect(ItemEffectType.ButtonView));
+            visionEffect.Configure(VisionFlagsFor(leftEyeItem), VisionFlagsFor(rightEyeItem));
         }
+    }
+
+    static ItemVisionEffect.EyeVisionFlags VisionFlagsFor(ItemData eye)
+    {
+        return new ItemVisionEffect.EyeVisionFlags
+        {
+            flipVertical = eye != null && eye.HasEffect(ItemEffectType.VerticalViewFlip),
+            pixelated = eye != null && eye.HasEffect(ItemEffectType.PixelatedView),
+            inverted = eye != null && eye.HasEffect(ItemEffectType.InvertedView),
+            buttonView = eye != null && eye.HasEffect(ItemEffectType.ButtonView),
+        };
+    }
+
+    // 해당 팔(왼팔/오른팔)에 실제로 장착된 아이템. 좌우 슬롯은 서로 독립적이다.
+    public ItemData GetArmItem(bool leftArm)
+    {
+        return leftArm ? leftArmItem : rightArmItem;
+    }
+
+    // 장착된 팔 아이템의 효과로 무기 종류를 판별 (스윙 모션/이펙트 분기용).
+    public ArmWeaponKind GetArmWeaponKind(bool leftArm)
+    {
+        ItemData arm = GetArmItem(leftArm);
+        if (arm == null)
+            return ArmWeaponKind.Fist;
+        if (arm.HasEffect(ItemEffectType.AxeAttack))
+            return ArmWeaponKind.Axe;
+        if (arm.HasEffect(ItemEffectType.KeyringProjectile))
+            return ArmWeaponKind.Keyring;
+        if (arm.HasEffect(ItemEffectType.NailProjectile))
+            return ArmWeaponKind.Nail;
+        return ArmWeaponKind.Fist;
     }
 
     public float ModifiedAttackDamage(bool leftArm, float baseDamage)
     {
         float bonus = leftArm ? leftArmDamageBonus : rightArmDamageBonus;
-        if (armItem != null && armItem.HasEffect(ItemEffectType.AxeAttack))
+        ItemData arm = GetArmItem(leftArm);
+        if (arm != null && arm.HasEffect(ItemEffectType.AxeAttack))
         {
-            ItemEffectData axe = armItem.GetEffect(ItemEffectType.AxeAttack);
+            ItemEffectData axe = arm.GetEffect(ItemEffectType.AxeAttack);
             bonus += axe != null ? axe.value : 0f;
         }
         return Mathf.Max(0f, baseDamage + bonus);
     }
 
-    public float AttackSizeMultiplier
+    public float AttackSizeMultiplier(bool leftArm)
     {
-        get
-        {
-            if (armItem == null || !armItem.HasEffect(ItemEffectType.AxeAttack))
-                return 1f;
-            ItemEffectData axe = armItem.GetEffect(ItemEffectType.AxeAttack);
-            return axe != null && axe.duration > 0f ? Mathf.Max(1f, axe.duration) : 1.45f;
-        }
+        ItemData arm = GetArmItem(leftArm);
+        if (arm == null || !arm.HasEffect(ItemEffectType.AxeAttack))
+            return 1f;
+        ItemEffectData axe = arm.GetEffect(ItemEffectType.AxeAttack);
+        return axe != null && axe.duration > 0f ? Mathf.Max(1f, axe.duration) : 1.45f;
     }
 
     public bool TryPerformProjectileAttack(bool leftArm, Vector2 direction, Vector3 origin)
     {
-        if (armItem == null)
+        ItemData arm = GetArmItem(leftArm);
+        if (arm == null)
             return false;
 
-        ItemEffectData keyring = armItem.GetEffect(ItemEffectType.KeyringProjectile);
+        ItemEffectData keyring = arm.GetEffect(ItemEffectType.KeyringProjectile);
         if (keyring != null)
         {
             int damage = Mathf.Max(1, Mathf.RoundToInt(ModifiedAttackDamage(leftArm, Mathf.Max(1f, keyring.value))));
-            ItemProjectile.Spawn(origin, direction, 10f, damage, 1.6f, 0.18f, true, armItem.PlaceholderColor, ItemPlaceholderShape.Diamond);
+            // 열쇠 스프라이트는 날(이빨) 부분이 그림 왼쪽에 있어 180도 돌려서 날이 진행 방향을 향하게 한다.
+            ItemProjectile.Spawn(origin, direction, 10f, damage, 1.6f, 0.24f, true, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, arm.ProjectileSprite, 180f);
             return true;
         }
 
-        ItemEffectData nail = armItem.GetEffect(ItemEffectType.NailProjectile);
+        ItemEffectData nail = arm.GetEffect(ItemEffectType.NailProjectile);
         if (nail != null)
         {
             int damage = Mathf.Max(1, Mathf.RoundToInt(ModifiedAttackDamage(leftArm, Mathf.Max(1f, nail.value))));
-            ItemProjectile.Spawn(origin, direction, 12f, damage, 1.4f, 0.11f, false, armItem.PlaceholderColor, ItemPlaceholderShape.Diamond);
+            ItemProjectile.Spawn(origin, direction, 12f, damage, 1.4f, 0.11f, false, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, arm.ProjectileSprite);
             return true;
         }
 
