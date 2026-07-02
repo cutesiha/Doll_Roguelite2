@@ -74,6 +74,8 @@ public class RunHudUI : MonoBehaviour
     TextMeshProUGUI judgementTimerSeconds;
     TextMeshProUGUI judgementTimerCaption;
     Color judgementTimerBaseColor = new Color(1f, 0.36f, 0.12f, 1f);
+    // req: 좌측 상단 캐릭터 HP UI 바로 아래(TopLeft 기준).
+    static readonly Vector2 JudgementTimerAnchoredPos = new Vector2(28f, -214f);
     static readonly Color JudgementTimerHigh = new Color(1f, 0.36f, 0.12f, 1f);
     static readonly Color JudgementTimerLow = new Color(0.88f, 0.08f, 0.06f, 1f);
     RectTransform bossPartsHud;
@@ -1214,7 +1216,8 @@ public class RunHudUI : MonoBehaviour
 
     void BuildJudgementTimer()
     {
-        GameObject hud = Rect(transform, "JudgementTimerGauge", Anchor.TopCenter, new Vector2(0f, -202f), new Vector2(680f, 106f));
+        // req: 좌측 상단 '캐릭터 HP UI'(BodyPipHud, TopLeft 30,-30 크기 470x176 → 바닥 ≈ y-206) 바로 아래에 배치.
+        GameObject hud = Rect(transform, "JudgementTimerGauge", Anchor.TopLeft, JudgementTimerAnchoredPos, new Vector2(620f, 100f));
         judgementTimerHud = hud.GetComponent<RectTransform>();
 
         Image background = hud.AddComponent<Image>();
@@ -1269,6 +1272,10 @@ public class RunHudUI : MonoBehaviour
 
         judgementTimerHud.gameObject.SetActive(true);
         judgementTimerHud.SetAsLastSibling();
+        // req: 표시할 때마다 좌측 상단 캐릭터 HP UI 아래로 위치 재확정(과거 위치가 남아있어도 교정).
+        judgementTimerHud.anchorMin = judgementTimerHud.anchorMax = new Vector2(0f, 1f);
+        judgementTimerHud.pivot = new Vector2(0f, 1f);
+        judgementTimerHud.anchoredPosition = JudgementTimerAnchoredPos;
         judgementTimerBaseColor = JudgementTimerHigh;
 
         if (judgementTimerFill != null)
@@ -2938,6 +2945,10 @@ public class RunHudUI : MonoBehaviour
                 rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
                 rt.pivot = new Vector2(1f, 1f);
                 break;
+            case Anchor.BottomCenter:
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
+                rt.pivot = new Vector2(0.5f, 0f);
+                break;
             case Anchor.BottomRight:
                 rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
                 rt.pivot = new Vector2(1f, 0f);
@@ -3132,6 +3143,7 @@ public class RunHudUI : MonoBehaviour
         TopLeft,
         TopCenter,
         TopRight,
+        BottomCenter,
         BottomRight,
         Left,
         Stretch

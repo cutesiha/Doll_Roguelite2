@@ -155,11 +155,13 @@ public static class BossVisuals
         GameObject root = new GameObject(name);
         if (parent != null)
             root.transform.SetParent(parent, false);
-        root.transform.position = new Vector3(start.x, start.y, 0f);
+        // localPosition/localRotation 사용: 부모가 있으면 부모 기준(도안 파선 등 로컬 좌표 정렬),
+        // 부모가 없으면 로컬=월드(핀 실 등 월드 좌표)라 양쪽 모두 올바르게 동작한다.
+        root.transform.localPosition = new Vector3(start.x, start.y, 0f);
         Vector2 delta = end - start;
         float length = delta.magnitude;
         float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
-        root.transform.rotation = Quaternion.Euler(0f, 0f, angle);
+        root.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
 
         float offset = 0f;
         int index = 0;

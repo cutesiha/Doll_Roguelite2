@@ -16,8 +16,15 @@ public class MinoBreathAnimator : MonoBehaviour
     int frameIndex;
     float elapsedInFrame;
     bool playing;
+    float speedMultiplier = 1f;
 
     public bool HasFrames => frames != null && frames.Length > 0;
+
+    // 숨쉬기 속도 배수. 값이 클수록 빠르게(프레임 지속시간을 나눈다). 3웨이브 연출/유지에 사용.
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        speedMultiplier = Mathf.Max(0.05f, multiplier);
+    }
 
     void Awake()
     {
@@ -111,16 +118,21 @@ public class MinoBreathAnimator : MonoBehaviour
 
     float CurrentFrameDuration()
     {
+        float baseDuration;
         if (frameDurations != null
             && frameDurations.Length == frames.Length
             && frameIndex >= 0
             && frameIndex < frameDurations.Length
             && frameDurations[frameIndex] > 0f)
         {
-            return frameDurations[frameIndex];
+            baseDuration = frameDurations[frameIndex];
+        }
+        else
+        {
+            baseDuration = Mathf.Max(0.01f, defaultFrameTime);
         }
 
-        return Mathf.Max(0.01f, defaultFrameTime);
+        return Mathf.Max(0.005f, baseDuration / speedMultiplier);
     }
 
     void AdvanceFrame()

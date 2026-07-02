@@ -1252,7 +1252,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.3489462, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -1262,7 +1262,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.65, y: 21.6}
+  m_Size: {x: 0.95210767, y: 21.6}
   m_EdgeRadius: 0
 --- !u!1 &517243970
 GameObject:
@@ -1748,7 +1748,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: 0.4611705}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -1758,7 +1758,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 38.4, y: 1.95}
+  m_Size: {x: 38.4, y: 1.027659}
   m_EdgeRadius: 0
 --- !u!1 &715606918
 GameObject:
@@ -1901,7 +1901,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0.3511225, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -1911,7 +1911,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.65, y: 21.6}
+  m_Size: {x: 0.9477551, y: 21.6}
   m_EdgeRadius: 0
 --- !u!1 &874001731
 GameObject:
@@ -4220,7 +4220,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: -0.34767163}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -4230,7 +4230,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 38.4, y: 1.65}
+  m_Size: {x: 38.4, y: 0.95465684}
   m_EdgeRadius: 0
 --- !u!1 &1755960904
 GameObject:
@@ -5866,6 +5866,13 @@ MonoBehaviour:
   slimeVolume: 1
   clickClip: {fileID: 0}
   clickVolume: 1.35
+  punchClip: {fileID: 0}
+  punchVolume: 1
+  coinPickupClip: {fileID: 0}
+  coinPickupVolume: 1
+  gemUseClip: {fileID: 0}
+  gemUseVolume: 1
+  gemUseDuration: 1.4
   enemyHitClip: {fileID: 0}
   enemyHitVolume: 1
   playerHitClip: {fileID: 0}
@@ -6265,16 +6272,16 @@ MonoBehaviour:
   betweenActions: 1.6
   strikeTime: 0.35
   solveTime: 8
-  sewingLineThickness: 2.9
+  sewingLineThickness: 4.5
   diagonalLengthMultiplier: 1.2
-  largeAttackWarningTime: 1
+  largeAttackWarningTime: 2
   firstJudgementTime: 8
   repeatJudgementTime: 6
   designMatchTime: 6
   pinClosureTime: 2
   successStunTime: 1.5
-  judgementPaperOffset: {x: 0, y: -6.4}
-  judgementMapIconSize: 0.9
+  judgementPaperOffset: {x: 0, y: -7}
+  judgementMapIconSize: 1.8
   designMapIconSize: 2.5
   basicDamage: 18
   judgementPartDamage: 80
@@ -6285,6 +6292,10 @@ MonoBehaviour:
   strikeColor: {r: 0.96, g: 0.1, b: 0.1, a: 0.72}
   stunColor: {r: 1, g: 0.3, b: 0.26, a: 1}
   trapGlowColor: {r: 0.95, g: 0.1, b: 0.1, a: 0.34}
+  strikeBandColor: {r: 0.34, g: 0.18, b: 0.08, a: 0.82}
+  strikeShakeDuration: 0.6
+  strikeShakeMagnitude: 0.45
+  strikeShakeOscillations: 8
 --- !u!60 &3100000016
 PolygonCollider2D:
   m_ObjectHideFlags: 0

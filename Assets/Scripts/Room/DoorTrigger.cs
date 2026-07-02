@@ -2,6 +2,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class DoorTrigger : MonoBehaviour
 {
@@ -21,6 +22,13 @@ public class DoorTrigger : MonoBehaviour
     [SerializeField] Color blockedColor = new Color(0.72f, 0.20f, 0.18f, 1f);
     [SerializeField, Min(0.1f)] float doorWorldScale = 1.8f;
     [SerializeField, Min(0.1f)] float tooltipHeight = 2.25f;
+    [Header("Proximity Highlight")]
+    // 근처(거리)만 가면 살구색 하이라이트 + 반짝이 + Enter 상호작용 활성화.
+    [SerializeField, Min(0.1f)] float proximityRadius = 2.6f;
+    [SerializeField] Color nearHighlightColor = new Color(1f, 0.80f, 0.62f, 1f);  // 살구색
+    // ShopScene 문이 창백해 보여서 플레이어 몸 색(푸른색)으로 보정.
+    [SerializeField] bool tintShopDoorBlue = true;
+    [SerializeField] Color shopDoorTint = new Color(0.30f, 0.60f, 1f, 1f);
     [Header("Door Authoring")]
     [SerializeField] Sprite doorSpriteOverride;
     [SerializeField] Sprite roomIconSpriteOverride;
@@ -45,6 +53,8 @@ public class DoorTrigger : MonoBehaviour
     [SerializeField] TextMeshPro tooltipText;
     Vector3 visualRestPosition;
     Coroutine blockedRoutine;
+    Transform playerTransform;
+    ItemPickupSparkle doorSparkle;
 
     static Sprite tooltipSprite;
 
@@ -77,7 +87,67 @@ public class DoorTrigger : MonoBehaviour
         EnsureDoorVisual();
         ApplyDoorVisual();
         EnsureInteractionCollider();
+        EnsureBlockingCollider();
         DisableTooltip();
+    }
+
+    // 문을 물리적으로 막는 솔리드 콜라이더(트리거 아님). 입장 감지용 트리거는 문 루트에 그대로 두고,
+    // 막는 콜라이더는 별도 자식 "_DoorBlocker"에 둔다(루트의 GetComponent 콜라이더 로직과 충돌 방지).
+    // 핵심: 블로커 레이어를 '벽과 동일'하게 맞춰, 플레이어가 벽에 막히듯 문에도 반드시 막히게 한다
+    // (레이어 충돌 매트릭스가 어떻든 벽이 막으면 문도 막힘).
+    void EnsureBlockingCollider()
+    {
+        DoorSpriteCatalog layout = DoorSpriteCatalog.Load();
+        float parentX = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.x));
+        float parentY = Mathf.Max(0.001f, Mathf.Abs(transform.lossyScale.y));
+
+        Transform existing = transform.Find("_DoorBlocker");
+        GameObject blocker = existing != null ? existing.gameObject : new GameObject("_DoorBlocker");
+        blocker.transform.SetParent(transform, false);
+        blocker.transform.localPosition = Vector3.zero;
+        blocker.transform.localRotation = Quaternion.identity;
+        blocker.transform.localScale = Vector3.one;
+        blocker.layer = ResolveBlockingLayer();
+
+        BoxCollider2D box = blocker.GetComponent<BoxCollider2D>();
+        if (box == null)
+            box = blocker.AddComponent<BoxCollider2D>();
+        box.isTrigger = false;   // 솔리드 → 물리적으로 막음
+
+        Vector2 size;
+        Vector2 offset;
+        if (layout != null && layout.doorColliderSize.x > 0.01f && layout.doorColliderSize.y > 0.01f)
+        {
+            size = new Vector2(layout.doorColliderSize.x / parentX, layout.doorColliderSize.y / parentY);
+            offset = new Vector2(layout.doorColliderOffset.x / parentX, layout.doorColliderOffset.y / parentY);
+        }
+        else if (doorRenderer != null && doorRenderer.sprite != null)
+        {
+            Vector2 spriteSize = doorRenderer.sprite.bounds.size * doorWorldScale;
+            size = new Vector2(spriteSize.x / parentX, spriteSize.y / parentY);
+            offset = Vector2.zero;
+        }
+        else
+        {
+            size = new Vector2(2.3f / parentX, 2.7f / parentY);
+            offset = Vector2.zero;
+        }
+
+        box.size = size;
+        box.offset = offset;
+    }
+
+    // 방의 벽과 동일한 레이어를 찾는다. 벽이 플레이어를 막고 있으므로 같은 레이어면 문도 확실히 막힌다.
+    int ResolveBlockingLayer()
+    {
+        string[] wallNames = { "Wall_Left", "Wall_Right", "Wall_Top", "Wall_Bottom" };
+        for (int i = 0; i < wallNames.Length; i++)
+        {
+            GameObject wall = GameObject.Find(wallNames[i]);
+            if (wall != null && wall.GetComponent<Collider2D>() != null)
+                return wall.layer;
+        }
+        return gameObject.layer;
     }
 
     // task17: 문 위 말풍선(문구)은 표시하지 않는다. 방 종류 아이콘(도형)은 그대로 유지.
@@ -120,8 +190,18 @@ public class DoorTrigger : MonoBehaviour
         if (!isOpen || targetNode == null || entering)
             return;
 
-        // task17: 말풍선 문구는 더 이상 표시하지 않는다.
-        if (!playerNearby)
+        // 거리 기반 근접 판정 → 근처에 오기만 하면 살구색 하이라이트 + 반짝이 + Enter 상호작용.
+        ResolvePlayer();
+        float distance = playerTransform != null
+            ? Vector2.Distance(playerTransform.position, transform.position)
+            : float.PositiveInfinity;
+        bool nearby = distance <= proximityRadius;
+
+        if (blockedRoutine == null)
+            ApplyProximityHighlight(nearby);   // 막힘 피드백 애니메이션 중엔 색 안 건드림
+        SetDoorSparkle(nearby);
+
+        if (!nearby)
             return;
 
         Keyboard keyboard = Keyboard.current;
@@ -430,6 +510,59 @@ public class DoorTrigger : MonoBehaviour
         blockedRoutine = StartCoroutine(BlockedFeedbackRoutine());
     }
 
+    void ResolvePlayer()
+    {
+        if (playerTransform != null)
+            return;
+        GameObject go = GameObject.FindWithTag("Player");
+        if (go != null)
+            playerTransform = go.transform;
+    }
+
+    // 문 기본 색: 잠김이면 회색, 열림이고 ShopScene이면 푸른색 보정(창백함 방지), 그 외 흰색.
+    Color BaseDoorColor()
+    {
+        if (!isOpen)
+            return lockedColor;
+        if (tintShopDoorBlue && SceneManager.GetActiveScene().name == "ShopScene")
+            return shopDoorTint;
+        return Color.white;
+    }
+
+    // 근처면 살구색 하이라이트, 아니면 기본 색.
+    void ApplyProximityHighlight(bool nearby)
+    {
+        if (doorRenderer == null)
+            return;
+        doorRenderer.color = nearby ? nearHighlightColor : BaseDoorColor();
+    }
+
+    // 근처면 반짝이 파티클 표시(아이템과 동일한 ItemPickupSparkle 재사용).
+    void SetDoorSparkle(bool active)
+    {
+        if (active && doorSparkle == null)
+            EnsureDoorSparkle();
+        if (doorSparkle != null && doorSparkle.gameObject.activeSelf != active)
+            doorSparkle.gameObject.SetActive(active);
+    }
+
+    void EnsureDoorSparkle()
+    {
+        Transform existing = transform.Find("_DoorSparkle");
+        GameObject go = existing != null ? existing.gameObject : new GameObject("_DoorSparkle");
+        go.transform.SetParent(transform, false);
+
+        DoorSpriteCatalog catalog = DoorSpriteCatalog.Load();
+        Vector2 center = catalog != null ? catalog.doorVisualOffset : Vector2.zero;
+        go.transform.localPosition = new Vector3(center.x, center.y + 0.3f, -0.05f);
+        go.transform.localScale = Vector3.one * 2.2f;
+
+        doorSparkle = go.GetComponent<ItemPickupSparkle>();
+        if (doorSparkle == null)
+            doorSparkle = go.AddComponent<ItemPickupSparkle>();
+        doorSparkle.Configure(90);
+    }
+
     IEnumerator OpenDoorAndEnterRoutine(string sceneName)
     {
         DoorSpriteCatalog catalog = DoorSpriteCatalog.Load();
@@ -448,7 +581,7 @@ public class DoorTrigger : MonoBehaviour
         EnsureDoorVisual();
         float duration = 0.38f;
         float elapsed = 0f;
-        Color baseColor = Color.white;
+        Color baseColor = BaseDoorColor();
         Color rejectColor = Color.Lerp(Color.white, blockedColor, 0.48f);
 
         while (elapsed < duration)
