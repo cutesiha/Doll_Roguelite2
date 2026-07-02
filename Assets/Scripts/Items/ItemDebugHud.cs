@@ -95,7 +95,8 @@ public class ItemDebugHud : MonoBehaviour
         builder.Append("코인 ").Append(inventory.Coins)
             .Append("  |  보관 ").Append(inventory.Storage.Count).Append('/').Append(inventory.Capacity).AppendLine();
         AppendSlot(builder, "눈", inventory.GetEquipped(ItemEquipLocation.Eye));
-        AppendSlot(builder, "팔", inventory.GetEquipped(ItemEquipLocation.Arm));
+        AppendSlot(builder, "왼팔", inventory.GetEquippedByBodySlot(BodySlot.ArmLeft));
+        AppendSlot(builder, "오른팔", inventory.GetEquippedByBodySlot(BodySlot.ArmRight));
         AppendSlot(builder, "몸", inventory.GetEquipped(ItemEquipLocation.Body));
         AppendSlot(builder, "다리", inventory.GetEquipped(ItemEquipLocation.Leg));
         builder.Append("Q: ").Append(inventory.Consumable != null ? inventory.Consumable.ItemName : "없음");

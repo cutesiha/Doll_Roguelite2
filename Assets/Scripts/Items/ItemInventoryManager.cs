@@ -367,6 +367,30 @@ public class ItemInventoryManager : MonoBehaviour
         return removed;
     }
 
+    // 보관함 안에서 아이템을 다른 칸으로 옮긴다. 대상 칸에 아이템이 있으면 서로 교환하고,
+    // 빈 칸(리스트 범위 밖)이면 그 자리로(사실상 맨 뒤로) 옮긴다.
+    public bool TryMoveOrSwapStorage(int fromIndex, int toIndex)
+    {
+        if (fromIndex < 0 || fromIndex >= storage.Count)
+            return false;
+        if (toIndex < 0 || fromIndex == toIndex)
+            return false;
+
+        if (toIndex >= storage.Count)
+        {
+            ItemData moved = storage[fromIndex];
+            storage.RemoveAt(fromIndex);
+            storage.Add(moved);
+        }
+        else
+        {
+            (storage[fromIndex], storage[toIndex]) = (storage[toIndex], storage[fromIndex]);
+        }
+
+        NotifyChanged();
+        return true;
+    }
+
     public ItemData RemoveConsumable()
     {
         ItemData removed = consumable;

@@ -291,6 +291,9 @@ MonoBehaviour:
   rightArmRenderer: {fileID: 4848090082489527840}
   fistSprite: {fileID: -2151256579594707336, guid: ef9e5b455ab12494980e166c13e8c36e, type: 3}
   fistPrefab: {fileID: 0}
+  axeWeaponSprite: {fileID: 0}
+  keyringWeaponSprite: {fileID: 0}
+  nailWeaponSprite: {fileID: 0}
   leftAttackStart: {fileID: 0}
   rightAttackStart: {fileID: 0}
   useFixedBodyAttackOrigin: 1

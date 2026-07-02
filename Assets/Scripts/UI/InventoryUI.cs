@@ -903,7 +903,10 @@ public class InventoryUI : MonoBehaviour
         {
             InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
             if (dragSource != null)
+            {
                 dragSource.SetItemData(null);
+                dragSource.SetItemStorageIndex(-1);
+            }
 
             InventoryItemTooltip tooltip = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryItemTooltip>() : null;
             if (tooltip != null)
@@ -970,6 +973,7 @@ public class InventoryUI : MonoBehaviour
             if (itemIndex < itemStorageCount)
             {
                 // task4: ItemData 아이템 표시
+                int usedItemIndex = itemIndex;
                 ItemData item = itemInv.Storage[itemIndex++];
                 if (_storageImg[i] != null)
                 {
@@ -990,7 +994,10 @@ public class InventoryUI : MonoBehaviour
 
                 InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
                 if (dragSource != null)
+                {
                     dragSource.SetItemData(item);
+                    dragSource.SetItemStorageIndex(usedItemIndex);
+                }
 
                 InventoryItemTooltip tooltip = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryItemTooltip>() : null;
                 if (tooltip != null)
@@ -1011,6 +1018,13 @@ public class InventoryUI : MonoBehaviour
                 SetCoinGrid(_storageImg[i], count, itemInv.CoinItemRef);
                 if (_storageName[i] != null) _storageName[i].text = "동전 ×" + count;
                 if (_storageHp[i]   != null) _storageHp[i].text  = "";
+            }
+            else
+            {
+                // 완전히 빈 칸: 여기로 아이템을 드롭하면 보관함 리스트 맨 뒤로 옮긴다.
+                InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
+                if (dragSource != null)
+                    dragSource.SetItemStorageIndex(itemStorageCount);
             }
         }
 

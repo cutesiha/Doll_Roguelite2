@@ -46,7 +46,23 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
         if (storageSource != null)
         {
             if (storageSource.DraggedItemData != null)
+            {
+                // ItemInventoryManager(신규 아이템 시스템) 보관함 안에서 이동/교환.
+                // 대상 칸이 레거시 BodyPart로 차 있으면 서로 다른 시스템이라 건드리지 않는다.
+                if (InventoryManager.Instance.storage[storageIndex] != null)
+                    return;
+
+                var itemInv = ItemInventoryManager.Instance;
+                if (itemInv == null)
+                    return;
+
+                InventoryStorageDragSource targetSource = GetComponent<InventoryStorageDragSource>();
+                int toIndex = targetSource != null ? targetSource.ItemStorageIndex : -1;
+
+                if (itemInv.TryMoveOrSwapStorage(storageSource.ItemStorageIndex, toIndex))
+                    SoundManager.PlayClick();
                 return;
+            }
 
             if (InventoryManager.Instance.MoveStorage(storageSource.StorageIndex, storageIndex))
                 SoundManager.PlayClick();

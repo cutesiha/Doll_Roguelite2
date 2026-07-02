@@ -4,6 +4,7 @@ Shader "Hidden/DollRoguelite/ItemVision"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Mode ("Mode", Float) = 0
+        _WidthFraction ("Width Fraction", Float) = 1
     }
     SubShader
     {
@@ -38,6 +39,7 @@ Shader "Hidden/DollRoguelite/ItemVision"
             SAMPLER(sampler_MainTex);
             float4 _MainTex_ST;
             float _Mode;
+            float _WidthFraction;
 
             Varyings vert(Attributes input)
             {
@@ -54,7 +56,7 @@ Shader "Hidden/DollRoguelite/ItemVision"
                 if (_Mode > 1.5)
                 {
                     float2 p = input.uv * 2.0 - 1.0;
-                    p.x *= _ScreenParams.x / max(1.0, _ScreenParams.y);
+                    p.x *= (_ScreenParams.x * _WidthFraction) / max(1.0, _ScreenParams.y);
                     float2 c0 = float2(-0.42, 0.28);
                     float2 c1 = float2(0.42, 0.28);
                     float2 c2 = float2(-0.42, -0.28);

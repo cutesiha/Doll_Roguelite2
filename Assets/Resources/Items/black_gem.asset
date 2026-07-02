@@ -30,6 +30,7 @@ MonoBehaviour:
     value: 44
     duration: 0
   sprite: {fileID: 6585164550831265324, guid: 1bf75756b7f37cb4d9e7d23b6c0a0f7f, type: 3}
+  projectileSprite: {fileID: 0}
   placeholderShape: 2
   placeholderColor: {r: 0.08, g: 0.08, b: 0.1, a: 1}
   worldScale: 1.1399565

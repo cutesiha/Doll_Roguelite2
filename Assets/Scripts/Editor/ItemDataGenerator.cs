@@ -41,6 +41,7 @@ public static class ItemDataGenerator
             ItemAcquisitionLocation.BodyRoom, false, 3f, 0f, 0f, 22,
             ItemPlaceholderShape.Diamond, new Color(0.72f, 0.72f, 0.78f, 1f),
             E(ItemEffectType.KeyringProjectile, 3f));
+        SetProjectileSprite("keyring", "Assets/Sprites/Item/Itemeffect/열쇠 나가는거.png");
 
         Create("knitted_body", "뜨개질 몸", "인벤토리를 4x4(16칸)로 확장하지만 최대 체력 -1",
             ItemCategory.BodyRoom, ItemType.BodyPart, ItemEquipLocation.Body,
@@ -84,6 +85,7 @@ public static class ItemDataGenerator
             ItemAcquisitionLocation.MiddleBossRoom, false, 5f, 0f, 0f, 25,
             ItemPlaceholderShape.Square, new Color(0.55f, 0.32f, 0.14f, 1f),
             E(ItemEffectType.NailProjectile, 5f));
+        SetProjectileSprite("wood_plank", "Assets/Sprites/Item/Itemeffect/못.png");
 
         Create("wooden_leg", "목제 다리", "최대 체력 +2, 이동속도 -0.30",
             ItemCategory.ChallengeRoom, ItemType.BodyPart, ItemEquipLocation.Leg,
@@ -183,6 +185,34 @@ public static class ItemDataGenerator
         item.EditorConfigure(
             id, displayName, description, category, type, equipLocation, acquisitions,
             consumable, value, secondaryValue, duration, price, shape, color, effects);
+        EditorUtility.SetDirty(item);
+    }
+
+    static void SetProjectileSprite(string id, string spritePath)
+    {
+        string path = Folder + "/" + id + ".asset";
+        ItemData item = AssetDatabase.LoadAssetAtPath<ItemData>(path);
+        if (item == null)
+            return;
+
+        // Multiple 스프라이트 모드 텍스처는 LoadAssetAtPath<Sprite>가 null을 줄 수 있어 서브 에셋에서 직접 찾는다.
+        Sprite sprite = null;
+        foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(spritePath))
+        {
+            if (asset is Sprite spriteAsset)
+            {
+                sprite = spriteAsset;
+                break;
+            }
+        }
+
+        if (sprite == null)
+        {
+            Debug.LogWarning("투사체 스프라이트를 찾을 수 없음: " + spritePath);
+            return;
+        }
+
+        item.EditorSetProjectileSprite(sprite);
         EditorUtility.SetDirty(item);
     }
 
