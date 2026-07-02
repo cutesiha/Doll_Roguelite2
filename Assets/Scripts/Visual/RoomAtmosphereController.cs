@@ -30,6 +30,8 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     {
         [Header("Tone")]
         public Color colorFilter = Color.white;
+        [Tooltip("화면 전체 색 틴트 강도(스크린 오버레이). 방 분위기 색을 은은하게 덮는다.")]
+        [Range(0f, 0.4f)] public float tintStrength = 0.03f;
         [Range(0f, 0.2f)] public float overlayAlpha = 0.025f;
         [Range(0f, 0.3f)] public float vignetteAlpha = 0.10f;
         [Range(0f, 0.18f)] public float bloomWashAlpha = 0.035f;
@@ -136,7 +138,8 @@ public sealed class RoomAtmosphereController : MonoBehaviour
 
     [SerializeField] AtmospherePreset challenge = new AtmospherePreset
     {
-        colorFilter = new Color(1.00f, 0.88f, 0.84f, 1f),
+        colorFilter = new Color(1.00f, 0.34f, 0.30f, 1f),
+        tintStrength = 0.16f,
         overlayAlpha = 0.020f,
         vignetteAlpha = 0.09f,
         bloomWashAlpha = 0.028f,
@@ -169,7 +172,8 @@ public sealed class RoomAtmosphereController : MonoBehaviour
 
     [SerializeField] AtmospherePreset treasure = new AtmospherePreset
     {
-        colorFilter = new Color(1.00f, 0.94f, 0.78f, 1f),
+        colorFilter = new Color(1.00f, 0.62f, 0.30f, 1f),
+        tintStrength = 0.16f,
         overlayAlpha = 0.018f,
         vignetteAlpha = 0.07f,
         bloomWashAlpha = 0.05f,
@@ -266,7 +270,8 @@ public sealed class RoomAtmosphereController : MonoBehaviour
 
     [SerializeField] AtmospherePreset minotaur = new AtmospherePreset
     {
-        colorFilter = new Color(0.95f, 0.88f, 1.00f, 1f),
+        colorFilter = new Color(0.60f, 0.42f, 0.98f, 1f),
+        tintStrength = 0.16f,
         overlayAlpha = 0.025f,
         vignetteAlpha = 0.105f,
         bloomWashAlpha = 0.036f,
@@ -592,7 +597,8 @@ public sealed class RoomAtmosphereController : MonoBehaviour
         volume.enabled = true;
 
         colorAdjustments.active = true;
-        colorAdjustments.colorFilter.Override(Color.Lerp(Color.white, preset.colorFilter, colorFilterStrength));
+        // 색 틴트는 오버레이 이미지(tintImage)로만 적용한다. 카메라 포스트프로세싱은 색을 건드리지 않도록 흰색 고정.
+        colorAdjustments.colorFilter.Override(Color.white);
         colorAdjustments.contrast.Override(preset.contrast);
         colorAdjustments.saturation.Override(preset.saturation);
         colorAdjustments.postExposure.Override(preset.postExposure);
@@ -631,7 +637,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
 
     void ApplyStaticVisuals()
     {
-        tintImage.color = WithAlpha(currentPreset.colorFilter, currentPreset.overlayAlpha * colorOverlayMultiplier);
+        tintImage.color = WithAlpha(currentPreset.colorFilter, currentPreset.tintStrength);
         bloomImage.color = WithAlpha(currentPreset.primaryLightColor, currentPreset.bloomWashAlpha * screenGlowMultiplier);
         vignetteImage.color = WithAlpha(warmEdgeColor, EdgeAlpha(currentPreset.vignetteAlpha));
         ApplyGlowVisuals(0f);
@@ -648,13 +654,14 @@ public sealed class RoomAtmosphereController : MonoBehaviour
         float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * Mathf.Lerp(1.5f, 3.8f, challengePressure));
         float pressureOverlay = Mathf.Lerp(0f, 0.045f, challengePressure);
         float pressureVignette = Mathf.Lerp(0f, 0.045f, challengePressure);
-        tintImage.color = WithAlpha(currentPreset.colorFilter, currentPreset.overlayAlpha * colorOverlayMultiplier + pressureOverlay + pulse * challengePressure * 0.008f);
+        tintImage.color = WithAlpha(currentPreset.colorFilter, currentPreset.tintStrength + pressureOverlay + pulse * challengePressure * 0.008f);
         vignetteImage.color = WithAlpha(warmEdgeColor, EdgeAlpha(currentPreset.vignetteAlpha) + pressureVignette);
         ApplyGlowVisuals(challengePressure);
 
         if (colorAdjustments != null)
         {
-            colorAdjustments.colorFilter.Override(Color.Lerp(Color.white, currentPreset.primaryLightColor, colorFilterStrength + challengePressure * 0.06f));
+            // 색 틴트는 오버레이 이미지로만. 카메라 포스트프로세싱 색은 흰색 유지.
+            colorAdjustments.colorFilter.Override(Color.white);
             colorAdjustments.postExposure.Override(currentPreset.postExposure - challengePressure * 0.04f);
         }
 

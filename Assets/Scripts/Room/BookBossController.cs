@@ -35,20 +35,51 @@ public class BookBossController : MonoBehaviour
     [Header("Floor Sentence Attack")]
     [SerializeField, Min(1f)] float floorSentenceFontSize = 300f;
     [SerializeField, Min(0.001f)] float floorSentenceWorldScale = 0.05f;
-    [SerializeField, Min(1)] int floorSentenceMinCount = 5;
-    [SerializeField, Min(1)] int floorSentenceMaxCount = 8;
+    [SerializeField, Min(1)] int floorSentenceMinCount = 3;
+    [SerializeField, Min(1)] int floorSentenceMaxCount = 5;
     [SerializeField, Min(0f)] float floorSentenceSpawnDelay = 0.14f;
-    [SerializeField, Min(0.1f)] float floorSentenceWarningTime = 0.55f;
-    [SerializeField, Min(0.1f)] float floorSentenceActiveTime = 2.4f;
+    [SerializeField, Min(0.1f)] float floorSentenceWarningTime = 1.1f;
+    [SerializeField, Min(0.1f)] float floorSentenceActiveTime = 1.55f;
+    [SerializeField, Min(0f)] float floorSentenceToPaperDelay = 1.1f;
     [SerializeField, Min(0.01f)] float floorSentenceImpactShakeDuration = 0.18f;
     [SerializeField, Min(0f)] float floorSentenceImpactShakeMagnitude = 0.18f;
+    [SerializeField, Min(0f)] float floorSentencePlayerSafeRadius = 3.2f;
 
     [Header("Paper Scrap Attack")]
-    [SerializeField, Min(0.1f)] float paperScrapSpeed = 7.2f;
+    [SerializeField, Min(0.1f)] float paperScrapSpeed = 10.2f;
     [SerializeField, Min(0.1f)] float paperScrapMaxTime = 2.8f;
-    [SerializeField, Min(0.1f)] float paperScrapWarningTime = 0.7f;
+    [SerializeField, Min(0.1f)] float paperScrapWarningTime = 1.75f;
     [SerializeField, Min(0.1f)] float paperScrapWarningRadius = 1.05f;
     [SerializeField] Vector2 paperScrapVisualSize = new Vector2(0.82f, 1.05f);
+
+    [Header("Wave 2 Ink Rain")]
+    [SerializeField] Vector2 wave2FloorSentenceRestRange = new Vector2(1.6f, 2.2f);
+    [SerializeField] Vector2 inkRainIntervalRange = new Vector2(0.65f, 0.95f);
+    [SerializeField] Vector2Int inkRainBurstCountRange = new Vector2Int(2, 4);
+    [SerializeField, Min(0.1f)] float inkRainWarningTime = 0.85f;
+    [SerializeField, Min(0.1f)] float inkRainWarningRadius = 0.8f;
+    [SerializeField] Color inkRainWarningColor = new Color(0.38f, 0.58f, 1f, 0.72f);
+
+    [Header("Wave 3 Frenzy")]
+    [SerializeField, Min(0.1f)] float wave3IntroLockDuration = 2.8f;
+    [SerializeField, Min(0.1f)] float wave3IntroCameraSize = 4.2f;
+    [SerializeField, Range(0f, 0.4f)] float wave3ShakeMagnitude = 0.14f;
+    [SerializeField, Min(0.05f)] float wave3ShakeInterval = 0.28f;
+    [SerializeField, Min(1)] int wave3MaxMinions = 5;
+    [SerializeField] Vector2 wave3MinionSpawnInterval = new Vector2(2.4f, 3.4f);
+    [SerializeField, Min(0.1f)] float wave3MinionSpawnWarningTime = 1.05f;
+    [SerializeField, Min(0.1f)] float wave3MinionSpawnWarningRadius = 1.15f;
+    [SerializeField, Min(0f)] float wave3AttackInitialDelay = 2.3f;
+    [SerializeField, Min(0f)] float wave3BasicLetterExtraDelay = 1.25f;
+
+    [Header("Word Fragment Drop")]
+    [SerializeField, Min(0f)] float wordFragmentBossColliderClearance = 0.9f;
+
+    [Header("Rainy Screen Distortion")]
+    [SerializeField] bool enableRainyScreenDistortion = true;
+    [SerializeField, Range(0f, 0.08f)] float distortionStrength = 0.018f;
+    [SerializeField, Min(0f)] float distortionSpeed = 0.22f;
+    [SerializeField, Min(0.1f)] float distortionScale = 5.5f;
 
     [Header("Scene Parts")]
     [SerializeField] BookBossPart body;
@@ -57,6 +88,7 @@ public class BookBossController : MonoBehaviour
 
     static bool hooked;
     static Sprite squareSprite;
+    static Sprite wave3SpawnMarkerSprite;
 
     bool leftDead;
     bool rightDead;
@@ -67,6 +99,7 @@ public class BookBossController : MonoBehaviour
 
     readonly List<string> collectedWords = new List<string>();
     readonly List<EnemyBase> minions = new List<EnemyBase>();
+    readonly HashSet<int> creditedMinionDeaths = new HashSet<int>();
     readonly List<PoisonZone> poisonZones = new List<PoisonZone>();
     int leftLettersDropped;
     int rightLettersDropped;
@@ -75,13 +108,18 @@ public class BookBossController : MonoBehaviour
     bool endingStarted;
     bool armsTyping;
     bool strongShake;
+    bool wave3IntroPlayed;
     float armBobTime;
     float nextPoisonTick;
 
     TextMeshPro floorEndingText;
     GameObject darkenOverlay;
+    GameObject wave3PulseOverlay;
     Coroutine letterFallLoop;
     Coroutine rainWobbleLoop;
+    Coroutine wave3PulseLoop;
+    Coroutine bodyWave3HitRoutine;
+    RainyScreenDistortion rainyScreenDistortion;
     float restoreCameraSize;
     Coroutine cameraZoomRoutine;
 
@@ -138,6 +176,13 @@ public class BookBossController : MonoBehaviour
 
     void OnDestroy()
     {
+        SetRainyScreenDistortion(false);
+        if (wave3PulseOverlay != null)
+        {
+            Destroy(wave3PulseOverlay);
+            wave3PulseOverlay = null;
+        }
+        wave3PulseLoop = null;
         RunHudUI.SetWaveHudVisible(true);
     }
 
@@ -362,7 +407,7 @@ public class BookBossController : MonoBehaviour
         int shouldHave = (arm.MaxHp - Mathf.Max(0, arm.CurrentHp)) / 7;
         while (dropped < shouldHave)
         {
-            DropLetter(arm.BasePosition);
+            DropLetter(arm);
             dropped++;
         }
 
@@ -370,13 +415,152 @@ public class BookBossController : MonoBehaviour
         else rightLettersDropped = dropped;
     }
 
-    void DropLetter(Vector2 nearPosition)
+    void DropLetter(BookBossPart sourcePart)
     {
         string word = BookLetters.Fragments[Random.Range(0, BookLetters.Fragments.Length)];
-        Vector2 pos = nearPosition + new Vector2(Random.Range(-1.2f, 1.2f), Random.Range(-1.6f, -0.6f));
-        pos.x = Mathf.Clamp(pos.x, arenaCenter.x - arenaSize.x * 0.5f + 1f, arenaCenter.x + arenaSize.x * 0.5f - 1f);
-        pos.y = Mathf.Clamp(pos.y, arenaCenter.y - arenaSize.y * 0.5f + 1f, arenaCenter.y + arenaSize.y * 0.5f - 1f);
+        Vector2 pos = LetterDropPosition(sourcePart);
         LetterPickup.Spawn(word, pos, OnWordCollected);
+    }
+
+    Vector2 LetterDropPosition(BookBossPart sourcePart)
+    {
+        Rect bounds = FloorSentencePlacementBounds();
+        Vector2 sourcePosition = sourcePart != null ? sourcePart.BasePosition : arenaCenter;
+        Vector2 outward = WordFragmentOutwardDirection(sourcePart);
+        Vector2 best = ClampToDropBounds(ProjectOutsideBossColliders(sourcePosition + outward * 2.8f), bounds);
+        float bestScore = float.NegativeInfinity;
+
+        for (int attempt = 0; attempt < 90; attempt++)
+        {
+            Vector2 direction = Quaternion.Euler(0f, 0f, Random.Range(-55f, 55f)) * outward;
+            float distance = Random.Range(2.4f, 5.2f);
+            Vector2 candidate = ClampToDropBounds(sourcePosition + direction.normalized * distance, bounds);
+            candidate = ClampToDropBounds(ProjectOutsideBossColliders(candidate), bounds);
+
+            if (TouchesAnyBossPartCollider(candidate, wordFragmentBossColliderClearance))
+                continue;
+
+            float distanceFromSource = Vector2.Distance(candidate, sourcePosition);
+            float colliderDistance = DistanceToNearestBossPartCollider(candidate);
+            float score = distanceFromSource * 0.75f + colliderDistance * 0.9f;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = candidate;
+            }
+
+            if (colliderDistance > wordFragmentBossColliderClearance + 0.6f && distanceFromSource >= 2.6f)
+                break;
+        }
+
+        return ClampToDropBounds(ProjectOutsideBossColliders(best), bounds);
+    }
+
+    Vector2 WordFragmentOutwardDirection(BookBossPart sourcePart)
+    {
+        Vector2 sourcePosition = sourcePart != null ? sourcePart.BasePosition : arenaCenter;
+        Vector2 bodyPosition = body != null ? body.BasePosition : arenaCenter;
+        Vector2 direction = sourcePosition - bodyPosition;
+
+        if (sourcePart != null && sourcePart.PartType == BookPartType.LeftArm)
+            direction += Vector2.left * 1.4f + Vector2.down * 0.35f;
+        else if (sourcePart != null && sourcePart.PartType == BookPartType.RightArm)
+            direction += Vector2.right * 1.4f + Vector2.down * 0.35f;
+        else
+            direction += Vector2.down;
+
+        return direction.sqrMagnitude > 0.001f ? direction.normalized : Vector2.down;
+    }
+
+    Vector2 ClampToDropBounds(Vector2 point, Rect bounds)
+    {
+        return new Vector2(
+            Mathf.Clamp(point.x, bounds.xMin + 1.2f, bounds.xMax - 1.2f),
+            Mathf.Clamp(point.y, bounds.yMin + 1.2f, bounds.yMax - 1.2f));
+    }
+
+    Vector2 ProjectOutsideBossColliders(Vector2 point)
+    {
+        Vector2 projected = point;
+        for (int i = 0; i < 6; i++)
+        {
+            bool moved = false;
+            moved |= PushOutsideBossPartCollider(body, ref projected);
+            moved |= PushOutsideBossPartCollider(leftArm, ref projected);
+            moved |= PushOutsideBossPartCollider(rightArm, ref projected);
+            if (!moved)
+                break;
+        }
+
+        return projected;
+    }
+
+    bool PushOutsideBossPartCollider(BookBossPart part, ref Vector2 point)
+    {
+        if (part == null)
+            return false;
+
+        Collider2D collider = part.GetComponent<Collider2D>();
+        if (collider == null || !collider.enabled)
+            return false;
+
+        Vector2 closest = collider.ClosestPoint(point);
+        float distance = Vector2.Distance(closest, point);
+        float clearance = Mathf.Max(0f, wordFragmentBossColliderClearance);
+        if (distance > clearance && !collider.OverlapPoint(point))
+            return false;
+
+        Vector2 partCenter = collider.bounds.center;
+        Vector2 direction = point - partCenter;
+        if (direction.sqrMagnitude < 0.001f)
+            direction = WordFragmentOutwardDirection(part);
+
+        point = closest + direction.normalized * (clearance + 0.35f);
+        return true;
+    }
+
+    bool TouchesAnyBossPartCollider(Vector2 point, float clearance)
+    {
+        return TouchesBossPartCollider(body, point, clearance)
+            || TouchesBossPartCollider(leftArm, point, clearance)
+            || TouchesBossPartCollider(rightArm, point, clearance);
+    }
+
+    bool TouchesBossPartCollider(BookBossPart part, Vector2 point, float clearance)
+    {
+        if (part == null)
+            return false;
+
+        Collider2D collider = part.GetComponent<Collider2D>();
+        if (collider == null || !collider.enabled)
+            return false;
+
+        Vector2 closest = collider.ClosestPoint(point);
+        if (Vector2.Distance(closest, point) <= Mathf.Max(0f, clearance))
+            return true;
+
+        return collider.OverlapPoint(point);
+    }
+
+    float DistanceToNearestBossPartCollider(Vector2 point)
+    {
+        float nearest = float.MaxValue;
+        nearest = Mathf.Min(nearest, DistanceToBossPartCollider(body, point));
+        nearest = Mathf.Min(nearest, DistanceToBossPartCollider(leftArm, point));
+        nearest = Mathf.Min(nearest, DistanceToBossPartCollider(rightArm, point));
+        return nearest < float.MaxValue ? nearest : 999f;
+    }
+
+    float DistanceToBossPartCollider(BookBossPart part, Vector2 point)
+    {
+        if (part == null)
+            return float.MaxValue;
+
+        Collider2D collider = part.GetComponent<Collider2D>();
+        if (collider == null || !collider.enabled)
+            return float.MaxValue;
+
+        return Vector2.Distance(collider.ClosestPoint(point), point);
     }
 
     void OnWordCollected(string word)
@@ -411,7 +595,14 @@ public class BookBossController : MonoBehaviour
             if (CurrentWave() >= 3) continue;
 
             if (CurrentWave() == 1)
+            {
+                yield return new WaitForSeconds(floorSentenceToPaperDelay);
                 yield return StartCoroutine(PaperAttack());
+            }
+            else if (CurrentWave() == 2)
+            {
+                yield return new WaitForSeconds(RandomRest(wave2FloorSentenceRestRange));
+            }
 
             yield return new WaitForSeconds(0.65f);
         }
@@ -447,19 +638,182 @@ public class BookBossController : MonoBehaviour
         int minCount = Mathf.Max(1, floorSentenceMinCount);
         int maxCount = Mathf.Max(minCount, floorSentenceMaxCount);
         int sentenceCount = Random.Range(minCount, maxCount + 1);
+        string[] sentences = new string[sentenceCount];
+        for (int i = 0; i < sentenceCount; i++)
+            sentences[i] = BookLetters.AttackSentences[Random.Range(0, BookLetters.AttackSentences.Length)];
+
+        List<Vector2> positions = GenerateFloorSentencePositions(sentences);
         List<Coroutine> running = new List<Coroutine>();
         for (int i = 0; i < sentenceCount; i++)
         {
-            string sentence = BookLetters.AttackSentences[Random.Range(0, BookLetters.AttackSentences.Length)];
-            float x = arenaCenter.x + Random.Range(-arenaSize.x * 0.42f, arenaSize.x * 0.42f);
-            float y = arenaCenter.y + Random.Range(-arenaSize.y * 0.36f, arenaSize.y * 0.28f);
-            Vector2 pos = new Vector2(x, y);
+            string sentence = sentences[i];
+            Vector2 pos = positions.Count > i ? positions[i] : RandomFloorSentencePosition();
             running.Add(StartCoroutine(FloorSentenceRoutine(sentence, pos)));
             yield return new WaitForSeconds(floorSentenceSpawnDelay);
         }
 
-        yield return new WaitForSeconds(1.2f);
+        for (int i = 0; i < running.Count; i++)
+            yield return running[i];
+
         armsTyping = false;
+    }
+
+    List<Vector2> GenerateFloorSentencePositions(string[] sentences)
+    {
+        List<Vector2> positions = new List<Vector2>();
+        int count = sentences != null ? sentences.Length : 0;
+        if (count <= 0)
+            return positions;
+
+        Rect placementBounds = FloorSentencePlacementBounds();
+        float minX = placementBounds.xMin;
+        float maxX = placementBounds.xMax;
+        float minY = placementBounds.yMin;
+        float maxY = placementBounds.yMax;
+        float usableHeight = Mathf.Max(0.01f, maxY - minY);
+        List<Rect> occupied = new List<Rect>();
+        List<int> verticalBands = new List<int>(count);
+        for (int i = 0; i < count; i++)
+            verticalBands.Add(i);
+        for (int i = 0; i < verticalBands.Count; i++)
+        {
+            int swap = Random.Range(i, verticalBands.Count);
+            int temp = verticalBands[i];
+            verticalBands[i] = verticalBands[swap];
+            verticalBands[swap] = temp;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 halfExtents = EstimateFloorSentenceHalfExtents(sentences[i]);
+            Rect bestRect = default;
+            Vector2 bestPos = Vector2.zero;
+            float bestScore = float.NegativeInfinity;
+            bool placed = false;
+
+            for (int attempt = 0; attempt < 140; attempt++)
+            {
+                float x = RandomRangeSafe(minX + halfExtents.x, maxX - halfExtents.x);
+                float bandHeight = usableHeight / count;
+                float bandMinY = minY + bandHeight * verticalBands[i] + halfExtents.y;
+                float bandMaxY = minY + bandHeight * (verticalBands[i] + 1) - halfExtents.y;
+                float y = attempt < 95
+                    ? RandomRangeSafe(bandMinY, bandMaxY)
+                    : RandomRangeSafe(minY + halfExtents.y, maxY - halfExtents.y);
+                Vector2 candidate = new Vector2(x, y);
+                Rect rect = SentenceRect(candidate, halfExtents);
+                if (IsInsideFloorSentencePlayerSafeZone(candidate, halfExtents))
+                    continue;
+
+                float score = DistanceScore(rect, occupied);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestRect = rect;
+                    bestPos = candidate;
+                }
+
+                if (!OverlapsAny(rect, occupied))
+                {
+                    placed = true;
+                    break;
+                }
+            }
+
+            positions.Add(bestPos);
+            occupied.Add(placed ? SentenceRect(bestPos, halfExtents) : bestRect);
+        }
+
+        return positions;
+    }
+
+    Rect FloorSentencePlacementBounds()
+    {
+        StageBackgroundSprite background = FindFirstObjectByType<StageBackgroundSprite>();
+        SpriteRenderer renderer = background != null ? background.GetComponent<SpriteRenderer>() : null;
+        if (renderer != null)
+        {
+            Bounds bounds = renderer.bounds;
+            float insetX = Mathf.Max(1.2f, bounds.size.x * 0.07f);
+            float insetY = Mathf.Max(1.0f, bounds.size.y * 0.08f);
+            return new Rect(
+                bounds.min.x + insetX,
+                bounds.min.y + insetY,
+                Mathf.Max(1f, bounds.size.x - insetX * 2f),
+                Mathf.Max(1f, bounds.size.y - insetY * 2f));
+        }
+
+        return new Rect(
+            arenaCenter.x - arenaSize.x * 0.5f,
+            arenaCenter.y - arenaSize.y * 0.5f,
+            arenaSize.x,
+            arenaSize.y);
+    }
+
+    Vector2 EstimateFloorSentenceHalfExtents(string sentence)
+    {
+        float fontSize = Mathf.Max(1f, floorSentenceFontSize);
+        float worldScale = Mathf.Max(0.001f, floorSentenceWorldScale);
+        int length = Mathf.Max(4, string.IsNullOrEmpty(sentence) ? 4 : sentence.Length);
+        float halfWidth = Mathf.Clamp(length * fontSize * worldScale * 0.017f, 2.4f, arenaSize.x * 0.22f);
+        float halfHeight = Mathf.Clamp(fontSize * worldScale * 0.055f, 0.55f, arenaSize.y * 0.10f);
+        return new Vector2(halfWidth + 0.55f, halfHeight + 0.32f);
+    }
+
+    Rect SentenceRect(Vector2 center, Vector2 halfExtents)
+    {
+        return new Rect(center.x - halfExtents.x, center.y - halfExtents.y, halfExtents.x * 2f, halfExtents.y * 2f);
+    }
+
+    bool OverlapsAny(Rect rect, List<Rect> occupied)
+    {
+        for (int i = 0; i < occupied.Count; i++)
+            if (rect.Overlaps(occupied[i]))
+                return true;
+        return false;
+    }
+
+    bool IsInsideFloorSentencePlayerSafeZone(Vector2 candidate, Vector2 halfExtents)
+    {
+        float radius = Mathf.Max(0f, floorSentencePlayerSafeRadius);
+        if (radius <= 0f)
+            return false;
+
+        Vector2 safeCenter = player != null ? (Vector2)player.position : (Vector2)playerSpawn;
+        float paddedRadius = radius + Mathf.Max(halfExtents.x * 0.45f, halfExtents.y);
+        return Vector2.Distance(candidate, safeCenter) < paddedRadius;
+    }
+
+    float DistanceScore(Rect rect, List<Rect> occupied)
+    {
+        if (occupied.Count == 0)
+            return 999f;
+
+        Vector2 center = rect.center;
+        float nearest = float.MaxValue;
+        for (int i = 0; i < occupied.Count; i++)
+            nearest = Mathf.Min(nearest, Vector2.Distance(center, occupied[i].center));
+        return nearest;
+    }
+
+    float RandomRangeSafe(float min, float max)
+    {
+        if (max < min)
+            return (min + max) * 0.5f;
+        return Random.Range(min, max);
+    }
+
+    Vector2 RandomFloorSentencePosition()
+    {
+        Rect bounds = FloorSentencePlacementBounds();
+        for (int attempt = 0; attempt < 60; attempt++)
+        {
+            Vector2 candidate = new Vector2(Random.Range(bounds.xMin, bounds.xMax), Random.Range(bounds.yMin, bounds.yMax));
+            if (!IsInsideFloorSentencePlayerSafeZone(candidate, Vector2.zero))
+                return candidate;
+        }
+
+        return new Vector2(Random.Range(bounds.xMin, bounds.xMax), Random.Range(bounds.yMin, bounds.yMax));
     }
 
     IEnumerator FloorSentenceRoutine(string sentence, Vector2 pos)
@@ -493,7 +847,7 @@ public class BookBossController : MonoBehaviour
             yield return null;
         }
 
-        text.color = new Color(0.08f, 0.06f, 0.06f, 1f);
+        text.color = new Color(0.34f, 0.13f, 0.07f, 1f);
         CameraShake.Shake(floorSentenceImpactShakeDuration, floorSentenceImpactShakeMagnitude);
 
         text.ForceMeshUpdate();
@@ -519,7 +873,7 @@ public class BookBossController : MonoBehaviour
             yield return null;
         }
 
-        float fade = 0.5f;
+        float fade = 0.28f;
         float fadeElapsed = 0f;
         Color from = text.color;
         while (fadeElapsed < fade && text != null)
@@ -625,30 +979,35 @@ public class BookBossController : MonoBehaviour
     {
         if (rainWobbleLoop == null)
             rainWobbleLoop = StartCoroutine(RainWobbleLoop());
+        SetRainyScreenDistortion(CurrentWave() == 2);
 
         while (!endingStarted && !bossDefeated && (CurrentWave() == 2 || CurrentWave() == 3))
         {
-            StartCoroutine(FallingGlyphRoutine());
-            yield return new WaitForSeconds(Random.Range(0.55f, 1.0f));
+            SetRainyScreenDistortion(CurrentWave() == 2);
+            int burstCount = CurrentWave() == 2 ? RandomInkRainBurstCount() : 1;
+            for (int i = 0; i < burstCount; i++)
+            {
+                StartCoroutine(FallingGlyphRoutine());
+                if (i < burstCount - 1)
+                    yield return new WaitForSeconds(Random.Range(0.08f, 0.18f));
+            }
+            yield return new WaitForSeconds(RandomRest(inkRainIntervalRange));
         }
 
+        SetRainyScreenDistortion(false);
         letterFallLoop = null;
     }
 
     IEnumerator FallingGlyphRoutine()
     {
         string glyph = RandomAttackSentenceGlyph();
-        float x = arenaCenter.x + Random.Range(-arenaSize.x * 0.46f, arenaSize.x * 0.46f);
-        float groundY = arenaCenter.y - arenaSize.y * 0.5f + Random.Range(1.2f, arenaSize.y * 0.7f);
-        float topY = arenaCenter.y + arenaSize.y * 0.5f + 1f;
+        Rect rainBounds = FloorSentencePlacementBounds();
+        float x = Random.Range(rainBounds.xMin, rainBounds.xMax);
+        float groundY = Random.Range(rainBounds.yMin, rainBounds.yMax);
+        float topY = rainBounds.yMax + 1.6f;
+        Vector2 target = new Vector2(x, groundY);
 
-        GameObject marker = new GameObject("FallMarker");
-        marker.transform.position = new Vector3(x, groundY, 0f);
-        SpriteRenderer markerRenderer = marker.AddComponent<SpriteRenderer>();
-        markerRenderer.sprite = SquareSprite();
-        markerRenderer.color = new Color(0.9f, 0.15f, 0.15f, 0.5f);
-        markerRenderer.sortingOrder = 53;
-        marker.transform.localScale = new Vector3(1.4f, 0.25f, 1f);
+        yield return StartCoroutine(InkRainWarningRoutine(target));
 
         TextMeshPro text = CreateWorldText(glyph, new Vector2(x, topY), 2.2f, new Color(0.1f, 0.08f, 0.08f, 1f), 60);
         text.fontStyle = FontStyles.Bold;
@@ -663,9 +1022,8 @@ public class BookBossController : MonoBehaviour
             yield return null;
         }
 
-        Destroy(marker);
         CameraShake.Shake(0.16f, 0.11f);
-        StartCoroutine(GlyphSplashRoutine(new Vector2(x, groundY)));
+        StartCoroutine(GlyphSplashRoutine(target));
 
         // ink stain: small persistent poison
         GameObject stain = new GameObject("InkStain");
@@ -691,6 +1049,13 @@ public class BookBossController : MonoBehaviour
             }
             Destroy(text.gameObject);
         }
+    }
+
+    int RandomInkRainBurstCount()
+    {
+        int min = Mathf.Max(1, Mathf.Min(inkRainBurstCountRange.x, inkRainBurstCountRange.y));
+        int max = Mathf.Max(min, Mathf.Max(inkRainBurstCountRange.x, inkRainBurstCountRange.y));
+        return Random.Range(min, max + 1);
     }
 
     IEnumerator PaperScrapWarningRoutine(Vector2 target)
@@ -721,6 +1086,69 @@ public class BookBossController : MonoBehaviour
 
         if (warning != null)
             Destroy(warning);
+    }
+
+    IEnumerator InkRainWarningRoutine(Vector2 target)
+    {
+        GameObject warning = CreateDashedCircle("InkRainWarning", target, inkRainWarningRadius, inkRainWarningColor, 57);
+        SpriteRenderer[] renderers = warning.GetComponentsInChildren<SpriteRenderer>();
+        Color[] baseColors = new Color[renderers.Length];
+        for (int i = 0; i < renderers.Length; i++)
+            baseColors[i] = renderers[i].color;
+
+        float duration = Mathf.Max(0.1f, inkRainWarningTime);
+        float elapsed = 0f;
+        while (elapsed < duration && warning != null)
+        {
+            float t = elapsed / duration;
+            float pulse = 0.5f + 0.5f * Mathf.Sin(elapsed * 10f);
+            float breathe = Mathf.SmoothStep(0f, 1f, Mathf.PingPong(t * 1.6f, 1f));
+            warning.transform.localScale = Vector3.one * Mathf.Lerp(0.88f, 1.08f, breathe);
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] == null) continue;
+                Color c = baseColors[i];
+                c.a = Mathf.Lerp(0.22f, 0.82f, pulse);
+                renderers[i].color = c;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (warning != null)
+            Destroy(warning);
+    }
+
+    float RandomRest(Vector2 range)
+    {
+        float min = Mathf.Max(0f, Mathf.Min(range.x, range.y));
+        float max = Mathf.Max(min, Mathf.Max(range.x, range.y));
+        return Random.Range(min, max);
+    }
+
+    void SetRainyScreenDistortion(bool active)
+    {
+        if (!enableRainyScreenDistortion)
+            active = false;
+
+        if (rainyScreenDistortion == null)
+        {
+            Camera cam = Camera.main;
+            if (cam != null)
+            {
+                rainyScreenDistortion = cam.GetComponent<RainyScreenDistortion>();
+                if (rainyScreenDistortion == null)
+                    rainyScreenDistortion = cam.gameObject.AddComponent<RainyScreenDistortion>();
+            }
+        }
+
+        if (rainyScreenDistortion == null)
+            return;
+
+        rainyScreenDistortion.Configure(distortionStrength, distortionSpeed, distortionScale);
+        rainyScreenDistortion.SetEffectActive(active);
     }
 
     GameObject CreateDashedCircle(string name, Vector2 center, float radius, Color color, int order)
@@ -834,7 +1262,12 @@ public class BookBossController : MonoBehaviour
     IEnumerator Wave3Routine()
     {
         RunHudUI.SetWave(3, 3);
+        if (!wave3IntroPlayed)
+            yield return StartCoroutine(Wave3IntroRoutine());
+
         strongShake = true;
+        if (wave3PulseLoop == null)
+            wave3PulseLoop = StartCoroutine(Wave3PulseLoop());
         if (letterFallLoop == null)
             letterFallLoop = StartCoroutine(LetterFallLoop());
 
@@ -851,15 +1284,90 @@ public class BookBossController : MonoBehaviour
 
         endingStarted = true;
         strongShake = false;
+        StopWave3Pulse();
         yield return StartCoroutine(EndingSequence());
+    }
+
+    IEnumerator Wave3IntroRoutine()
+    {
+        wave3IntroPlayed = true;
+
+        float lockDuration = Mathf.Max(0.1f, wave3IntroLockDuration);
+        if (playerController != null)
+            playerController.LockMovement(lockDuration);
+
+        Camera cam = Camera.main;
+        Vector3 restorePosition = cam != null ? cam.transform.position : Vector3.zero;
+        float restoreSize = cam != null ? cam.orthographicSize : fallbackRestoreCameraSize;
+
+        if (cam != null && body != null)
+        {
+            Vector3 target = new Vector3(body.BasePosition.x, body.BasePosition.y - 0.35f, cam.transform.position.z);
+            if (cameraZoomRoutine != null)
+                StopCoroutine(cameraZoomRoutine);
+
+            yield return StartCoroutine(SmoothCameraFrame(
+                cam,
+                cam.transform.position,
+                target,
+                cam.orthographicSize,
+                Mathf.Max(0.1f, wave3IntroCameraSize),
+                0.65f,
+                null));
+        }
+
+        if (body != null)
+            yield return StartCoroutine(BookFrenzyTremble(1.25f));
+        else
+            yield return new WaitForSeconds(1.25f);
+
+        if (cam != null)
+        {
+            if (cameraZoomRoutine != null)
+                StopCoroutine(cameraZoomRoutine);
+
+            yield return StartCoroutine(SmoothCameraFrame(
+                cam,
+                cam.transform.position,
+                restorePosition,
+                cam.orthographicSize,
+                restoreSize,
+                0.65f,
+                null));
+        }
+    }
+
+    IEnumerator BookFrenzyTremble(float duration)
+    {
+        SpriteRenderer renderer = body != null ? body.GetComponent<SpriteRenderer>() : null;
+        if (renderer == null)
+            yield break;
+
+        Color baseColor = renderer.color;
+        Vector3 basePosition = body.transform.position;
+        float elapsed = 0f;
+        while (elapsed < duration && body != null)
+        {
+            float pulse = 0.5f + 0.5f * Mathf.Sin(elapsed * 26f);
+            renderer.color = Color.Lerp(baseColor, new Color(1f, 0.23f, 0.17f, 1f), 0.35f + pulse * 0.35f);
+            Vector2 jitter = Random.insideUnitCircle * 0.08f;
+            body.transform.position = basePosition + new Vector3(jitter.x, jitter.y, 0f);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (body != null)
+            body.transform.position = basePosition;
+        if (renderer != null)
+            renderer.color = baseColor;
     }
 
     IEnumerator StrongShakeLoop()
     {
         while (strongShake && !bossDefeated)
         {
-            CameraShake.ShakeHorizontal(0.3f, 0.32f);
-            yield return new WaitForSeconds(0.22f);
+            CameraShake.Shake(0.18f, wave3ShakeMagnitude);
+            yield return new WaitForSeconds(wave3ShakeInterval);
         }
     }
 
@@ -867,21 +1375,87 @@ public class BookBossController : MonoBehaviour
     {
         while (strongShake && !endingStarted && !bossDefeated)
         {
-            int batch = Random.Range(1, 3);
-            for (int i = 0; i < batch; i++)
+            PruneMinionList();
+            if (minions.Count < wave3MaxMinions)
             {
                 bool left = Random.value < 0.5f;
                 float ex = left ? arenaCenter.x - arenaSize.x * 0.5f + 1f : arenaCenter.x + arenaSize.x * 0.5f - 1f;
                 float ey = arenaCenter.y + Random.Range(-arenaSize.y * 0.4f, arenaSize.y * 0.4f);
-                SpawnMinion(new Vector2(ex, ey), Random.Range(0, 3));
+                Vector2 spawnPosition = new Vector2(ex, ey);
+                yield return StartCoroutine(MinionSpawnWarningRoutine(spawnPosition));
+                if (strongShake && !endingStarted && !bossDefeated)
+                    SpawnMinion(spawnPosition, Random.Range(0, 3));
             }
 
-            yield return new WaitForSeconds(Random.Range(1.6f, 2.6f));
+            yield return new WaitForSeconds(RandomRest(wave3MinionSpawnInterval));
         }
+    }
+
+    IEnumerator MinionSpawnWarningRoutine(Vector2 target)
+    {
+        SpriteRenderer warning = CreateWave3SpawnMarker(target, Vector2.one * (wave3MinionSpawnWarningRadius * 2f));
+
+        float duration = Mathf.Max(0.1f, wave3MinionSpawnWarningTime);
+        float blinkInterval = 0.12f;
+        float elapsed = 0f;
+        while (elapsed < duration && warning != null)
+        {
+            int blink = Mathf.FloorToInt(elapsed / blinkInterval);
+            warning.enabled = blink % 2 == 0;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (warning != null)
+            Destroy(warning.gameObject);
+    }
+
+    SpriteRenderer CreateWave3SpawnMarker(Vector2 position, Vector2 markerSize)
+    {
+        GameObject marker = new GameObject("BookMinionSpawnBlink");
+        marker.transform.position = new Vector3(position.x, position.y, -0.08f);
+        marker.transform.localScale = new Vector3(Mathf.Max(0.5f, markerSize.x), Mathf.Max(0.5f, markerSize.y), 1f);
+
+        SpriteRenderer renderer = marker.AddComponent<SpriteRenderer>();
+        renderer.sprite = Wave3SpawnMarkerSprite();
+        renderer.color = new Color(1f, 0.38f, 0.22f, 0.9f);
+        renderer.sortingOrder = 58;
+        return renderer;
+    }
+
+    static Sprite Wave3SpawnMarkerSprite()
+    {
+        if (wave3SpawnMarkerSprite != null)
+            return wave3SpawnMarkerSprite;
+
+        Texture2D texture = new Texture2D(8, 8);
+        texture.filterMode = FilterMode.Point;
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        for (int y = 0; y < texture.height; y++)
+        {
+            for (int x = 0; x < texture.width; x++)
+            {
+                bool border = x == 0 || y == 0 || x == texture.width - 1 || y == texture.height - 1;
+                bool cross = x == y || x == texture.width - 1 - y;
+                texture.SetPixel(x, y, border || cross ? Color.white : clear);
+            }
+        }
+
+        texture.Apply();
+        wave3SpawnMarkerSprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 8f);
+        return wave3SpawnMarkerSprite;
+    }
+
+    void PruneMinionList()
+    {
+        for (int i = minions.Count - 1; i >= 0; i--)
+            if (minions[i] == null)
+                minions.RemoveAt(i);
     }
 
     IEnumerator Wave3AttackLoop()
     {
+        yield return new WaitForSeconds(wave3AttackInitialDelay);
         while (strongShake && !endingStarted && !bossDefeated)
         {
             yield return new WaitForSeconds(Random.Range(2.5f, 4f));
@@ -889,7 +1463,12 @@ public class BookBossController : MonoBehaviour
             if (Random.value < 0.5f)
                 yield return StartCoroutine(PaperAttack());
             else
+            {
+                yield return new WaitForSeconds(wave3BasicLetterExtraDelay);
+                if (endingStarted || bossDefeated || !strongShake)
+                    break;
                 yield return StartCoroutine(BasicLetterAttack());
+            }
         }
     }
 
@@ -897,7 +1476,7 @@ public class BookBossController : MonoBehaviour
     {
         GameObject go = new GameObject("BookMinion");
         go.transform.position = position;
-        go.transform.localScale = Vector3.one * 0.9f;
+        go.transform.localScale = Vector3.one * 1.18f;
         SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
         Rigidbody2D rb = go.AddComponent<Rigidbody2D>();
         rb.gravityScale = 0f;
@@ -906,22 +1485,21 @@ public class BookBossController : MonoBehaviour
         EnemyBase enemy;
         if (kind == 0)
         {
-            enemy = go.AddComponent<RibbonEnemy>();
+            enemy = go.AddComponent<EnemyChaser>();
         }
         else if (kind == 1)
         {
-            enemy = go.AddComponent<EnemyChaser>();
+            enemy = go.AddComponent<RibbonEnemy>();
         }
         else
         {
-            // SmallButtonEnemy keeps whatever sprite is on its renderer; give it one.
-            renderer.sprite = BossVisuals.CircleSprite();
-            renderer.color = new Color(0.82f, 0.52f, 0.28f, 1f);
-            renderer.sortingOrder = 6;
-            enemy = go.AddComponent<SmallButtonEnemy>();
+            enemy = go.AddComponent<NeedleEnemy>();
         }
 
+        renderer.sortingOrder = 6;
+        EnemyManager.Instance?.ConfigureEnemy(enemy, true);
         enemy.OnDied += OnMinionDied;
+        StartCoroutine(TrackMinionDeath(enemy, enemy.GetInstanceID()));
         enemy.StartSpawnApproach(1.2f, 1.2f);
         minions.Add(enemy);
         EnemyManager.Instance?.RegisterSpawnedEnemy(enemy);
@@ -929,9 +1507,34 @@ public class BookBossController : MonoBehaviour
 
     void OnMinionDied(EnemyBase enemy)
     {
-        minions.Remove(enemy);
+        if (enemy != null)
+            CreditMinionDeath(enemy.GetInstanceID(), enemy);
+    }
+
+    IEnumerator TrackMinionDeath(EnemyBase enemy, int enemyId)
+    {
+        while (enemy != null && !endingStarted && !bossDefeated)
+            yield return null;
+
+        if (!endingStarted && !bossDefeated)
+            CreditMinionDeath(enemyId, null);
+    }
+
+    void CreditMinionDeath(int enemyId, EnemyBase enemy)
+    {
+        if (enemyId == 0 || creditedMinionDeaths.Contains(enemyId))
+            return;
+
+        creditedMinionDeaths.Add(enemyId);
+        if (enemy != null)
+            minions.Remove(enemy);
+
         if (body != null && !endingStarted)
+        {
             body.ReduceHp(minionKillBodyDamage);
+            if (CurrentWave() == 3)
+                StartBodyWave3HitFeedback();
+        }
     }
 
     // ---- ending cutscene --------------------------------------------------
@@ -1138,6 +1741,118 @@ public class BookBossController : MonoBehaviour
         }
     }
 
+    void StartBodyWave3HitFeedback()
+    {
+        if (bodyWave3HitRoutine != null)
+            StopCoroutine(bodyWave3HitRoutine);
+
+        bodyWave3HitRoutine = StartCoroutine(BodyWave3HitFeedbackRoutine());
+    }
+
+    IEnumerator BodyWave3HitFeedbackRoutine()
+    {
+        SpriteRenderer renderer = body != null ? body.GetComponent<SpriteRenderer>() : null;
+        if (body == null || renderer == null)
+            yield break;
+
+        Color baseColor = renderer.color;
+        Vector3 basePosition = body.BasePosition;
+        float duration = 0.38f;
+        float elapsed = 0f;
+        while (elapsed < duration && body != null)
+        {
+            float t = elapsed / duration;
+            float wave = Mathf.Sin(elapsed * 48f) * 0.18f * (1f - t);
+            body.transform.position = basePosition + new Vector3(wave, 0f, 0f);
+            renderer.color = Color.Lerp(new Color(1f, 0.26f, 0.2f, 1f), baseColor, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (body != null)
+            body.transform.position = basePosition;
+        if (renderer != null)
+            renderer.color = baseColor;
+        bodyWave3HitRoutine = null;
+    }
+
+    IEnumerator Wave3PulseLoop()
+    {
+        Image image = CreateWave3PulseOverlay();
+        if (image == null)
+            yield break;
+
+        Color clear = new Color(0.8f, 0.03f, 0.02f, 0f);
+        Color peak = new Color(0.9f, 0.02f, 0.02f, 0.34f);
+        while (strongShake && !endingStarted && !bossDefeated && image != null)
+        {
+            float elapsed = 0f;
+            float duration = 1.05f;
+            while (elapsed < duration && image != null && strongShake && !endingStarted && !bossDefeated)
+            {
+                float t = elapsed / duration;
+                float pulse = Mathf.Sin(t * Mathf.PI);
+                image.color = Color.Lerp(clear, peak, pulse);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (image != null)
+                image.color = clear;
+            yield return new WaitForSeconds(0.08f);
+        }
+
+        StopWave3Pulse();
+    }
+
+    Image CreateWave3PulseOverlay()
+    {
+        if (wave3PulseOverlay != null)
+        {
+            Image existing = wave3PulseOverlay.GetComponentInChildren<Image>(true);
+            if (existing != null)
+                return existing;
+        }
+
+        wave3PulseOverlay = new GameObject("BookWave3PulseOverlay");
+        Canvas canvas = wave3PulseOverlay.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = 140;
+
+        CanvasScaler scaler = wave3PulseOverlay.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+        GameObject panel = new GameObject("Pulse");
+        panel.transform.SetParent(wave3PulseOverlay.transform, false);
+        RectTransform rect = panel.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        Image image = panel.AddComponent<Image>();
+        image.color = new Color(0.8f, 0.03f, 0.02f, 0f);
+        image.raycastTarget = false;
+        return image;
+    }
+
+    void StopWave3Pulse()
+    {
+        if (wave3PulseLoop != null)
+        {
+            StopCoroutine(wave3PulseLoop);
+            wave3PulseLoop = null;
+        }
+
+        if (wave3PulseOverlay != null)
+        {
+            Destroy(wave3PulseOverlay);
+            wave3PulseOverlay = null;
+        }
+    }
+
     IEnumerator GlowText(TextMeshPro text, Color glow)
     {
         Color baseColor = text != null ? text.color : Color.white;
@@ -1304,7 +2019,12 @@ public class BookBossController : MonoBehaviour
             leftDead || leftArm == null ? 0 : leftArm.CurrentHp,
             rightDead || rightArm == null ? 0 : rightArm.CurrentHp
         };
-        int[] max = { bodyHp, armHp, armHp };
+        int[] max =
+        {
+            body != null ? body.MaxHp : bodyHp,
+            leftArm != null ? leftArm.MaxHp : armHp,
+            rightArm != null ? rightArm.MaxHp : armHp
+        };
         RunHudUI.SetBossParts(names, cur, max);
     }
 

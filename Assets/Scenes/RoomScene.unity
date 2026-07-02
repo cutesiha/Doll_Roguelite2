@@ -1667,13 +1667,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SunlightBeam
   beamColor: {r: 1, g: 0.94, b: 0.72, a: 1}
   beamAlpha: 0.25
-  beamLength: 15
+  beamLength: 16
   topWidth: 2.2
-  bottomWidth: 7
+  bottomWidth: 11
   beamSortingOrder: 60
   poolColor: {r: 1, g: 0.9, b: 0.6, a: 1}
-  poolAlpha: 0.22
-  poolSize: {x: 8, y: 3.2}
+  poolAlpha: 0.21
+  poolSize: {x: 22, y: 6}
   poolSortingOrder: -40
   dustCount: 16
   dustColor: {r: 1, g: 0.85, b: 0.5, a: 1}

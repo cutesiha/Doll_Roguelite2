@@ -76,24 +76,28 @@ public sealed class InteractableHighlightBinder : MonoBehaviour
             player = found.transform;
     }
 
+    // 문 글로우: 더 넓고(배율↑) 더 밝은 살구색. 아이템은 기본값.
+    static readonly Color DoorGlowColor = new Color(1f, 0.88f, 0.72f, 1f);
+    const float DoorGlowSize = 3.0f;
+
     void Scan()
     {
-        // 문
+        // 문 — 더 넓고 밝게
         foreach (DoorTrigger door in FindObjectsByType<DoorTrigger>(FindObjectsSortMode.None))
-            Attach(door.gameObject, DoorDistance);
+            Attach(door.gameObject, DoorDistance, true);
 
-        // 아이템류 픽업
+        // 아이템류 픽업 — 기본
         foreach (ItemWorldPickup p in FindObjectsByType<ItemWorldPickup>(FindObjectsSortMode.None))
-            Attach(p.gameObject, ItemDistance);
+            Attach(p.gameObject, ItemDistance, false);
         foreach (JewelWorldPickup p in FindObjectsByType<JewelWorldPickup>(FindObjectsSortMode.None))
-            Attach(p.gameObject, ItemDistance);
+            Attach(p.gameObject, ItemDistance, false);
         foreach (CoinWorldPickup p in FindObjectsByType<CoinWorldPickup>(FindObjectsSortMode.None))
-            Attach(p.gameObject, ItemDistance);
+            Attach(p.gameObject, ItemDistance, false);
         foreach (DropPickup p in FindObjectsByType<DropPickup>(FindObjectsSortMode.None))
-            Attach(p.gameObject, ItemDistance);
+            Attach(p.gameObject, ItemDistance, false);
     }
 
-    void Attach(GameObject target, float distance)
+    void Attach(GameObject target, float distance, bool isDoor)
     {
         if (target == null)
             return;
@@ -102,5 +106,7 @@ public sealed class InteractableHighlightBinder : MonoBehaviour
 
         InteractableHighlight highlight = target.AddComponent<InteractableHighlight>();
         highlight.Configure(player, distance);
+        if (isDoor)
+            highlight.ConfigureGlow(DoorGlowSize, DoorGlowColor);
     }
 }

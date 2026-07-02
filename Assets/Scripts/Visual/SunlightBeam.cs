@@ -65,7 +65,31 @@ public sealed class SunlightBeam : MonoBehaviour
     {
         lastTime = Time.realtimeSinceStartup;
         Build();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.update -= EditorTick;
+        if (!Application.isPlaying)
+            UnityEditor.EditorApplication.update += EditorTick;
+#endif
     }
+
+    void OnDisable()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.update -= EditorTick;
+#endif
+    }
+
+#if UNITY_EDITOR
+    // 에디터 유휴 상태에서도 인스펙터 변경(색/크기)을 실시간 반영하고 먼지를 애니메이션한다.
+    void EditorTick()
+    {
+        if (this == null || Application.isPlaying || !isActiveAndEnabled)
+            return;
+        Build();
+        Tick();
+        UnityEditor.SceneView.RepaintAll();
+    }
+#endif
 
 #if UNITY_EDITOR
     void OnValidate()
@@ -218,6 +242,15 @@ public sealed class SunlightBeam : MonoBehaviour
     }
 
     void Update()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            return; // 에디터에서는 EditorTick 이 처리
+#endif
+        Tick();
+    }
+
+    void Tick()
     {
         if (beam == null || pool == null || dustRoot == null)
             Build();
