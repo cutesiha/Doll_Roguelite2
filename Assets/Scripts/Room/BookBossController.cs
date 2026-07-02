@@ -34,16 +34,21 @@ public class BookBossController : MonoBehaviour
 
     [Header("Floor Sentence Attack")]
     [SerializeField, Min(1f)] float floorSentenceFontSize = 300f;
-    [SerializeField, Min(0.001f)] float floorSentenceWorldScale = 0.01f;
+    [SerializeField, Min(0.001f)] float floorSentenceWorldScale = 0.05f;
     [SerializeField, Min(1)] int floorSentenceMinCount = 5;
     [SerializeField, Min(1)] int floorSentenceMaxCount = 8;
     [SerializeField, Min(0f)] float floorSentenceSpawnDelay = 0.14f;
     [SerializeField, Min(0.1f)] float floorSentenceWarningTime = 0.55f;
     [SerializeField, Min(0.1f)] float floorSentenceActiveTime = 2.4f;
+    [SerializeField, Min(0.01f)] float floorSentenceImpactShakeDuration = 0.18f;
+    [SerializeField, Min(0f)] float floorSentenceImpactShakeMagnitude = 0.18f;
 
     [Header("Paper Scrap Attack")]
-    [SerializeField, Min(0.1f)] float paperScrapSpeed = 6.0f;
+    [SerializeField, Min(0.1f)] float paperScrapSpeed = 7.2f;
     [SerializeField, Min(0.1f)] float paperScrapMaxTime = 2.8f;
+    [SerializeField, Min(0.1f)] float paperScrapWarningTime = 0.7f;
+    [SerializeField, Min(0.1f)] float paperScrapWarningRadius = 1.05f;
+    [SerializeField] Vector2 paperScrapVisualSize = new Vector2(0.82f, 1.05f);
 
     [Header("Scene Parts")]
     [SerializeField] BookBossPart body;
@@ -76,6 +81,7 @@ public class BookBossController : MonoBehaviour
     TextMeshPro floorEndingText;
     GameObject darkenOverlay;
     Coroutine letterFallLoop;
+    Coroutine rainWobbleLoop;
     float restoreCameraSize;
     Coroutine cameraZoomRoutine;
 
@@ -461,6 +467,7 @@ public class BookBossController : MonoBehaviour
         float fontSize = Mathf.Max(1f, floorSentenceFontSize);
         float worldScale = Mathf.Max(0.001f, floorSentenceWorldScale);
         TextMeshPro text = CreateWorldText(sentence, pos, fontSize, new Color(0.85f, 0.18f, 0.18f, 0.45f), 55);
+        text.fontStyle = FontStyles.Bold;
         text.transform.localScale = Vector3.one * worldScale;
         text.maxVisibleCharacters = 0;
 
@@ -475,9 +482,19 @@ public class BookBossController : MonoBehaviour
         }
         text.maxVisibleCharacters = total;
 
-        yield return new WaitForSeconds(floorSentenceWarningTime);
+        Color warningDim = new Color(0.85f, 0.18f, 0.18f, 0.28f);
+        Color warningBright = new Color(1f, 0.08f, 0.08f, 0.82f);
+        float warningElapsed = 0f;
+        while (warningElapsed < floorSentenceWarningTime && text != null)
+        {
+            float blink = Mathf.PingPong(warningElapsed * 9f, 1f);
+            text.color = Color.Lerp(warningDim, warningBright, blink);
+            warningElapsed += Time.deltaTime;
+            yield return null;
+        }
 
         text.color = new Color(0.08f, 0.06f, 0.06f, 1f);
+        CameraShake.Shake(floorSentenceImpactShakeDuration, floorSentenceImpactShakeMagnitude);
 
         text.ForceMeshUpdate();
         Vector2 textWorldCenter = text.transform.TransformPoint(text.textBounds.center);
@@ -538,10 +555,14 @@ public class BookBossController : MonoBehaviour
     {
         Vector2 start = body.BasePosition;
         Vector2 target = player != null ? (Vector2)player.position : arenaCenter;
+        yield return StartCoroutine(PaperScrapWarningRoutine(target));
 
         GameObject scrap = new GameObject("PaperScrap");
         scrap.transform.position = start;
-        scrap.transform.localScale = new Vector3(0.5f, 0.65f, 1f);
+        scrap.transform.localScale = new Vector3(
+            Mathf.Max(0.1f, paperScrapVisualSize.x),
+            Mathf.Max(0.1f, paperScrapVisualSize.y),
+            1f);
         scrap.transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
         SpriteRenderer renderer = scrap.AddComponent<SpriteRenderer>();
         renderer.sprite = SquareSprite();
@@ -602,6 +623,9 @@ public class BookBossController : MonoBehaviour
 
     IEnumerator LetterFallLoop()
     {
+        if (rainWobbleLoop == null)
+            rainWobbleLoop = StartCoroutine(RainWobbleLoop());
+
         while (!endingStarted && !bossDefeated && (CurrentWave() == 2 || CurrentWave() == 3))
         {
             StartCoroutine(FallingGlyphRoutine());
@@ -613,7 +637,7 @@ public class BookBossController : MonoBehaviour
 
     IEnumerator FallingGlyphRoutine()
     {
-        string glyph = BookLetters.FallingGlyphs[Random.Range(0, BookLetters.FallingGlyphs.Length)];
+        string glyph = RandomAttackSentenceGlyph();
         float x = arenaCenter.x + Random.Range(-arenaSize.x * 0.46f, arenaSize.x * 0.46f);
         float groundY = arenaCenter.y - arenaSize.y * 0.5f + Random.Range(1.2f, arenaSize.y * 0.7f);
         float topY = arenaCenter.y + arenaSize.y * 0.5f + 1f;
@@ -627,6 +651,7 @@ public class BookBossController : MonoBehaviour
         marker.transform.localScale = new Vector3(1.4f, 0.25f, 1f);
 
         TextMeshPro text = CreateWorldText(glyph, new Vector2(x, topY), 2.2f, new Color(0.1f, 0.08f, 0.08f, 1f), 60);
+        text.fontStyle = FontStyles.Bold;
 
         float fallDuration = 0.7f;
         float elapsed = 0f;
@@ -639,7 +664,8 @@ public class BookBossController : MonoBehaviour
         }
 
         Destroy(marker);
-        CameraShake.ShakeHorizontal(0.16f, 0.14f);
+        CameraShake.Shake(0.16f, 0.11f);
+        StartCoroutine(GlyphSplashRoutine(new Vector2(x, groundY)));
 
         // ink stain: small persistent poison
         GameObject stain = new GameObject("InkStain");
@@ -665,6 +691,142 @@ public class BookBossController : MonoBehaviour
             }
             Destroy(text.gameObject);
         }
+    }
+
+    IEnumerator PaperScrapWarningRoutine(Vector2 target)
+    {
+        GameObject warning = CreateDashedCircle("PaperScrapWarning", target, paperScrapWarningRadius, new Color(0.35f, 1f, 0.28f, 0.8f), 57);
+        SpriteRenderer[] renderers = warning.GetComponentsInChildren<SpriteRenderer>();
+        Color[] baseColors = new Color[renderers.Length];
+        for (int i = 0; i < renderers.Length; i++)
+            baseColors[i] = renderers[i].color;
+
+        float duration = Mathf.Max(0.1f, paperScrapWarningTime);
+        float elapsed = 0f;
+        while (elapsed < duration && warning != null)
+        {
+            float pulse = 0.5f + 0.5f * Mathf.Sin(elapsed * 18f);
+            warning.transform.localScale = Vector3.one * Mathf.Lerp(0.94f, 1.12f, pulse);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] == null) continue;
+                Color c = baseColors[i];
+                c.a = Mathf.Lerp(0.35f, 0.95f, pulse);
+                renderers[i].color = c;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (warning != null)
+            Destroy(warning);
+    }
+
+    GameObject CreateDashedCircle(string name, Vector2 center, float radius, Color color, int order)
+    {
+        GameObject root = new GameObject(name);
+        root.transform.position = new Vector3(center.x, center.y, -0.08f);
+        int segments = 28;
+        for (int i = 0; i < segments; i += 2)
+        {
+            float a0 = i / (float)segments * Mathf.PI * 2f;
+            float a1 = (i + 1) / (float)segments * Mathf.PI * 2f;
+            Vector2 p0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * radius;
+            Vector2 p1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * radius;
+            BossVisuals.CreateDashedLine(root.transform, "Arc_" + i, p0, p1, 0.08f, color, order, 0.18f, 0.08f);
+        }
+
+        return root;
+    }
+
+    string RandomAttackSentenceGlyph()
+    {
+        for (int attempt = 0; attempt < 30; attempt++)
+        {
+            string sentence = BookLetters.AttackSentences[Random.Range(0, BookLetters.AttackSentences.Length)];
+            if (string.IsNullOrEmpty(sentence))
+                continue;
+
+            char ch = sentence[Random.Range(0, sentence.Length)];
+            if (!char.IsWhiteSpace(ch))
+                return ch.ToString();
+        }
+
+        return BookLetters.FallingGlyphs[Random.Range(0, BookLetters.FallingGlyphs.Length)];
+    }
+
+    IEnumerator RainWobbleLoop()
+    {
+        while (!endingStarted && !bossDefeated && (CurrentWave() == 2 || CurrentWave() == 3))
+        {
+            CameraShake.Shake(0.16f, 0.035f);
+            yield return new WaitForSeconds(Random.Range(0.35f, 0.55f));
+        }
+
+        rainWobbleLoop = null;
+    }
+
+    IEnumerator GlyphSplashRoutine(Vector2 center)
+    {
+        int droplets = Random.Range(7, 11);
+        for (int i = 0; i < droplets; i++)
+        {
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            StartCoroutine(SplashDroplet(center, direction, Random.Range(0.35f, 0.75f)));
+        }
+
+        GameObject ring = CreateDashedCircle("GlyphSplashRing", center, 0.34f, new Color(0.58f, 0.72f, 1f, 0.55f), 61);
+        float elapsed = 0f;
+        while (elapsed < 0.28f && ring != null)
+        {
+            float t = elapsed / 0.28f;
+            ring.transform.localScale = Vector3.one * Mathf.Lerp(0.6f, 1.7f, t);
+            SpriteRenderer[] renderers = ring.GetComponentsInChildren<SpriteRenderer>();
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Color c = renderers[i].color;
+                c.a = Mathf.Lerp(0.55f, 0f, t);
+                renderers[i].color = c;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (ring != null)
+            Destroy(ring);
+    }
+
+    IEnumerator SplashDroplet(Vector2 center, Vector2 direction, float distance)
+    {
+        GameObject droplet = new GameObject("GlyphSplashDroplet");
+        droplet.transform.position = new Vector3(center.x, center.y, -0.09f);
+        droplet.transform.localScale = Vector3.one * Random.Range(0.08f, 0.16f);
+        SpriteRenderer renderer = droplet.AddComponent<SpriteRenderer>();
+        renderer.sprite = BossVisuals.CircleSprite();
+        renderer.color = new Color(0.48f, 0.62f, 0.95f, 0.75f);
+        renderer.sortingOrder = 62;
+
+        Vector2 start = center;
+        Vector2 end = center + direction.normalized * distance;
+        float duration = 0.32f;
+        float elapsed = 0f;
+        while (elapsed < duration && droplet != null)
+        {
+            float t = elapsed / duration;
+            Vector2 pos = Vector2.Lerp(start, end, t);
+            pos.y += Mathf.Sin(t * Mathf.PI) * 0.25f;
+            droplet.transform.position = new Vector3(pos.x, pos.y, -0.09f);
+            Color c = renderer.color;
+            c.a = Mathf.Lerp(0.75f, 0f, t);
+            renderer.color = c;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (droplet != null)
+            Destroy(droplet);
     }
 
     // ---- pattern 4: wave 3 minions + ending ------------------------------
