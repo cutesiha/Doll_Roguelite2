@@ -1483,12 +1483,9 @@ void NormalizeCanvasTransform()
                 }
                 else
                 {
-                    // 기존 BodyPart 상태. 몸통(Body)은 잃어버릴 수 있는 팔다리와 달리
-                    // 항상 존재하는 기본 몸 스프라이트이므로, 액세서리 미장착 시에도
-                    // 어둡게 틴트하지 않고 원래 색으로 보여준다. (장착 해제 시 기본 몸통 스프라이트로 복원)
-                    if (bodySlot == BodySlot.Body)
-                        SetImageSpriteSafely(_charImg[i], LoadInterfaceSprite("body_real"));
-                    _charImg[i].color = (p != null || bodySlot == BodySlot.Body) ? Color.white : CUnequippedPart;
+                    // 기존 BodyPart 상태. 팔·다리·눈과 동일하게, 장착되어 있으면 원래 색,
+                    // 장착 해제되어 있으면 어둡게 틴트한다.
+                    _charImg[i].color = p != null ? Color.white : CUnequippedPart;
                 }
                 // Body는 _charImg가 히트박스가 아닌 확대 표시용 자식(BodyVisual)을 가리키므로
                 // 여기서 알파 히트테스트를 적용하면 안 된다(실제 히트박스는 항상 클릭 가능한 상태로 둔다).
