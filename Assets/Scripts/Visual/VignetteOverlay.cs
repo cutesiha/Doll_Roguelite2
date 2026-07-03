@@ -121,7 +121,17 @@ public sealed class VignetteOverlay : MonoBehaviour
     void Update()
     {
         Build();   // rebuilds texture only when look params change (keyed)
+        // 시작 씬에서는 카메라 효과(비네트)를 표시하지 않는다.
+        if (canvas != null)
+            canvas.enabled = !IsEffectHiddenScene();
+        if (canvas != null && !canvas.enabled)
+            return;
         Apply();
+    }
+
+    static bool IsEffectHiddenScene()
+    {
+        return SceneManager.GetActiveScene().name == "StartScene";
     }
 
     void Build()

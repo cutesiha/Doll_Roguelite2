@@ -82,10 +82,8 @@ public class StartSceneTransition : MonoBehaviour
 
         SetFadeAlpha(1f);
         GameSaveSystem.StartNewRun();
-        string scene = targetSceneName;
-        if (scene == "TutorialScene" && GameSaveSystem.HasCompletedTutorial())
-            scene = "RoomScene";
-        SceneManager.LoadScene(scene);
+        // 시작 버튼은 항상 처음부터: 튜토리얼 완료 기록과 무관하게 지정한 씬(튜토리얼)으로 간다.
+        SceneManager.LoadScene(targetSceneName);
     }
 
     IEnumerator FadeAndQuit()

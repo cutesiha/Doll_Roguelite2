@@ -625,7 +625,8 @@ public class StartBodyPartSelector : MonoBehaviour
         yield return PlayEyeOpeningRoutine();
 
         if (transition != null)
-            transition.BeginTransition(targetSceneName);
+            // 시작 → 튜토리얼 씬. (튜토리얼을 이미 완료했으면 StartSceneTransition 이 RoomScene 으로 보낸다)
+            transition.BeginTransition("TutorialScene");
     }
 
     System.Collections.IEnumerator AttachChoiceRoutine(StartBodyPartChoice choice)
@@ -1245,8 +1246,13 @@ public class StartBodyPartSelector : MonoBehaviour
         text.raycastTarget = false;
         if (text.font == null || created)
             text.font = UIThinDungFont.Get();
-        if (created)
-            text.text = textValue;
+
+        // 프리팹/씬에서 편집한 글자·폰트크기·색·위치·크기는 그대로 두고,
+        // 코드가 새로 만들 때만 기본값을 채운다(설정 패널 라벨과 동일한 방식).
+        if (!created)
+            return;
+
+        text.text = textValue;
         text.fontSize = fontSize;
         text.alignment = TextAlignmentOptions.Center;
         text.color = Color.black;

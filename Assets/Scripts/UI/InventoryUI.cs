@@ -51,6 +51,9 @@ public class InventoryUI : MonoBehaviour
     [Header("부위 상태 텍스트 (0~5=슬롯, 6=몸)")]
     [SerializeField] TextMeshProUGUI[] _statName = new TextMeshProUGUI[7];
     [SerializeField] TextMeshProUGUI[] _statHp   = new TextMeshProUGUI[7];
+    // #3: 프리팹에서 지정한 HP dots(●) 색을 기억해 장착 상태에 그대로 쓴다.
+    readonly Color[] _statHpAuthoredColor = new Color[7];
+    bool _statHpColorsCaptured;
 
     [Header("재봉 상태")]
     [SerializeField] TextMeshProUGUI _sewingStatus;
@@ -71,6 +74,8 @@ public class InventoryUI : MonoBehaviour
     bool _panelWasAuthoredOpen;
     const float PanelHiddenOffsetY = 980f;
     const float PanelOvershootY = 36f;
+    // #2: 제목 텍스트 박스를 아주 조금 아래로 내리는 오프셋(px). 더 내리려면 값을 더 음수로.
+    const float TitleBoxYOffset = -8f;
 
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color ClearColor = new Color(0f, 0f, 0f, 0f);
@@ -881,7 +886,8 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
         boxRect.anchorMin = new Vector2(0.5f, titleRect.anchorMax.y);
         boxRect.anchorMax = new Vector2(0.5f, titleRect.anchorMax.y);
         boxRect.pivot = titleRect.pivot;
-        boxRect.anchoredPosition = titleRect.anchoredPosition;
+        // #2: 제목 텍스트 박스를 아주 조금 아래로 내린다.
+        boxRect.anchoredPosition = titleRect.anchoredPosition + new Vector2(0f, TitleBoxYOffset);
         boxRect.sizeDelta = boxSize;
 
         Image background = box.GetComponent<Image>();
@@ -1058,9 +1064,11 @@ void CaptureAuthoredPanelOpenState()
         if (_panelRect != null)
             _panelRect.anchoredPosition = _panelShownPosition;
 
-        _panel.SetActive(_panelWasAuthoredOpen);
-        SetToggleHotspotVisible(_panelWasAuthoredOpen);
-        RunUiPauseManager.SetPaused("Inventory", _panelWasAuthoredOpen);
+        // 씬/방 이동 시 인벤토리는 항상 닫힌 상태로 시작한다.
+        // (프리팹엔 편집 편의를 위해 열린 상태로 authored 되어 있어도 무시)
+        _panel.SetActive(false);
+        SetToggleHotspotVisible(false);
+        RunUiPauseManager.SetPaused("Inventory", false);
     }
 
 
@@ -1422,6 +1430,14 @@ void NormalizeCanvasTransform()
         }
 
         // 우측 상태
+        // #3: 코드가 색을 덮기 전에 프리팹에서 지정한 HP dots 색을 한 번 캡처한다.
+        if (!_statHpColorsCaptured)
+        {
+            for (int i = 0; i < _statHp.Length && i < _statHpAuthoredColor.Length; i++)
+                _statHpAuthoredColor[i] = _statHp[i] != null ? _statHp[i].color : new Color(0.88f, 0.48f, 0.24f, 1f);
+            _statHpColorsCaptured = true;
+        }
+
         int statCount = Mathf.Min(inv.equipped.Length, _statName.Length, _statHp.Length);
         for (int i = 0; i < statCount; i++)
         {
@@ -1430,8 +1446,9 @@ void NormalizeCanvasTransform()
             if (_statHp[i]   != null)
             {
                 _statHp[i].text  = p != null ? Dots(p) : new string('○', 5);
+                // 장착 상태: 프리팹에서 지정한 색 유지 / 미장착: 어둡게.
                 _statHp[i].color = p != null
-                    ? new Color(0.88f, 0.48f, 0.24f, 1f)
+                    ? (i < _statHpAuthoredColor.Length ? _statHpAuthoredColor[i] : new Color(0.88f, 0.48f, 0.24f, 1f))
                     : new Color(0.17f, 0.15f, 0.13f, 0.42f);
             }
         }

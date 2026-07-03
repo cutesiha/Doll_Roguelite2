@@ -455,6 +455,9 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     AtmosphereKind KindForScene(Scene scene)
     {
         string sceneName = scene.name;
+        // 시작 씬에는 조명/햇빛/분위기 효과를 적용하지 않는다.
+        if (sceneName == "StartScene")
+            return AtmosphereKind.None;
         if (sceneName == "BookBossScene")
             return AtmosphereKind.Book;
         if (sceneName == "MiddleBossScene")

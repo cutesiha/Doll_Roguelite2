@@ -225,6 +225,12 @@ public sealed class AmbientDustOverlay : MonoBehaviour
         if (canvas == null)
             Build();
 
+        // 시작 씬에서는 먼지 오버레이(카메라 효과)를 표시하지 않는다.
+        if (canvas != null)
+            canvas.enabled = SceneManager.GetActiveScene().name != "StartScene";
+        if (canvas != null && !canvas.enabled)
+            return;
+
         float now = Time.realtimeSinceStartup;
         float dt = Mathf.Clamp(now - lastTime, 0f, 0.1f);
         lastTime = now;
