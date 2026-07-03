@@ -37,6 +37,8 @@ public class RunPauseMenuUI : MonoBehaviour
     Image[] sfxVolumeFills;
     System.Action confirmYesAction;
     Coroutine menuPanelAnimationRoutine;
+    Vector2 menuPanelShownPosition;
+    bool hasMenuPanelShownPosition;
 
     static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
     static readonly Color TextColor = new Color(0.17f, 0.11f, 0.06f, 1f);
@@ -202,6 +204,8 @@ void Build()
         if (menuPanel == null)
             return;
 
+        RememberMenuPanelShownPosition();
+
         string[] labels =
         {
             "\uC124\uC815",
@@ -226,23 +230,44 @@ void Build()
         ConfigureMenuCloseButton();
     }
 
+    void RememberMenuPanelShownPosition()
+    {
+        if (menuPanel == null || hasMenuPanelShownPosition)
+            return;
+
+        RectTransform rect = menuPanel.transform as RectTransform;
+        if (rect == null)
+            rect = menuPanel.GetComponent<RectTransform>();
+
+        if (rect == null)
+            return;
+
+        menuPanelShownPosition = rect.anchoredPosition;
+        hasMenuPanelShownPosition = true;
+    }
+
     void ConfigureMenuCloseButton()
     {
         Transform closeTransform = menuPanel.transform.Find("RunMenuCloseButton");
+        bool createdCloseButton = false;
         if (closeTransform == null)
         {
             GameObject closeObject = new GameObject("RunMenuCloseButton");
             closeObject.transform.SetParent(menuPanel.transform, false);
             closeTransform = closeObject.AddComponent<RectTransform>();
+            createdCloseButton = true;
         }
 
         RectTransform closeRect = closeTransform as RectTransform;
         if (closeRect == null)
             closeRect = closeTransform.gameObject.AddComponent<RectTransform>();
-        closeRect.anchorMin = closeRect.anchorMax = new Vector2(1f, 1f);
-        closeRect.pivot = new Vector2(1f, 1f);
-        closeRect.anchoredPosition = new Vector2(-18f, -18f);
-        closeRect.sizeDelta = new Vector2(60f, 60f);
+        if (createdCloseButton)
+        {
+            closeRect.anchorMin = closeRect.anchorMax = new Vector2(1f, 1f);
+            closeRect.pivot = new Vector2(1f, 1f);
+            closeRect.anchoredPosition = new Vector2(-18f, -18f);
+            closeRect.sizeDelta = new Vector2(60f, 60f);
+        }
 
         Image background = closeTransform.GetComponent<Image>();
         if (background == null)
@@ -764,7 +789,7 @@ void Build()
 
     IEnumerator MenuPanelAnimationRoutine(RectTransform rect, bool show)
     {
-        Vector2 shown = Vector2.zero;
+        Vector2 shown = hasMenuPanelShownPosition ? menuPanelShownPosition : rect.anchoredPosition;
         Vector2 hidden = shown + Vector2.down * MenuPanelHiddenOffsetY;
         Vector2 overshoot = shown + Vector2.up * MenuPanelOvershootY;
 
@@ -814,7 +839,7 @@ void Build()
         menuPanelAnimationRoutine = null;
         RectTransform rect = menuPanel != null ? menuPanel.transform as RectTransform : null;
         if (rect != null)
-            rect.anchoredPosition = Vector2.zero;
+            rect.anchoredPosition = hasMenuPanelShownPosition ? menuPanelShownPosition : rect.anchoredPosition;
     }
 
     GameObject InstantiateStartPanel(GameObject prefab, string instanceName, string resourcesName)
@@ -886,10 +911,6 @@ void Build()
         RectTransform rect = existing as RectTransform;
         if (rect == null)
             rect = existing.gameObject.AddComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
 
         Image image = existing.GetComponent<Image>();
         if (image == null)

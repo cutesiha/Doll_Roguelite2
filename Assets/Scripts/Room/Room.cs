@@ -596,12 +596,28 @@ public class Room : MonoBehaviour
                 templates.Add(buttonTemplate);
         }
 
+        if (guaranteedButtons == 0 && enemyPrefab == null)
+            AddVariedSceneTemplates(templates, count);
+
         while (templates.Count < count)
             templates.Add(EnemyTemplate(wave));
 
         EnforceSpoolLimit(templates);
         Shuffle(templates);
         return templates;
+    }
+
+    void AddVariedSceneTemplates(List<GameObject> templates, int count)
+    {
+        if (sceneEnemyTemplates.Count == 0)
+            return;
+
+        List<GameObject> pool = new List<GameObject>(sceneEnemyTemplates);
+        Shuffle(pool);
+
+        for (int i = 0; i < pool.Count && templates.Count < count; i++)
+            if (pool[i] != null)
+                templates.Add(pool[i]);
     }
 
     // 스폰 목록에서 spool 개수를 웨이브당/방 누적 한도로 제한하고, 초과분은 다른 적으로 교체한다.

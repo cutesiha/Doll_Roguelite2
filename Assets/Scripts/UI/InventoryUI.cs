@@ -60,6 +60,8 @@ public class InventoryUI : MonoBehaviour
     Coroutine _panelAnimationRoutine;
     Vector2 _panelShownPosition;
     bool _panelPositionCaptured;
+    bool _panelOpenStateCaptured;
+    bool _panelWasAuthoredOpen;
     const float PanelHiddenOffsetY = 980f;
     const float PanelOvershootY = 36f;
 
@@ -69,6 +71,8 @@ public class InventoryUI : MonoBehaviour
     static readonly Color CEmpty = new Color(0.17f, 0.15f, 0.13f, 0.20f);
     static readonly Color CTrash = new Color(0.55f, 0.12f, 0.10f, 0.55f);
     static readonly Color CUnequippedPart = new Color(0.04f, 0.035f, 0.03f, 0.48f);
+    static readonly Color CDarkBrown = new Color(0.22f, 0.12f, 0.06f, 1f);
+    static readonly Color CSoftDarkBrown = new Color(0.22f, 0.12f, 0.06f, 0.22f);
     static readonly string[] PartSpriteNames =
     {
         "eye_left",
@@ -89,14 +93,16 @@ public class InventoryUI : MonoBehaviour
     }
 
     // ── Unity 수명 ─────────────────────────────────────────────────────
-    void Awake()
+void Awake()
     {
         EnsurePanelReference();
+        CaptureAuthoredPanelOpenState();
         EnsureStorageSlots();
         EnsureSpecialSlots();
         EnsureCharacterSlots();
         EnsureCharacterBaseImages();
-        ForceClosePanelImmediate();
+        EnsureInventoryDecorations();
+        ApplyAuthoredPanelOpenState();
         NormalizeCanvasTransform();
         if (transform.parent == null)
             DontDestroyOnLoad(gameObject);
@@ -107,13 +113,13 @@ public class InventoryUI : MonoBehaviour
         DisableTextRaycasts();
     }
 
-    void Start()
+void Start()
     {
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.OnInventoryChanged += RefreshUI;
         if (ItemInventoryManager.Instance != null)
             ItemInventoryManager.Instance.Changed += RefreshUI;
-        ForceClosePanelImmediate();
+        ApplyAuthoredPanelOpenState();
         RefreshUI();
     }
 
@@ -403,25 +409,30 @@ public class InventoryUI : MonoBehaviour
 
     void ConfigureStorageSlot(GameObject slot, Transform parent, int index)
     {
+        bool existedInHierarchy = slot.transform.parent != null;
         slot.name = "StorageSlot_" + (index + 1);
         slot.transform.SetParent(parent, false);
         slot.SetActive(true);
 
         RectTransform rect = slot.GetComponent<RectTransform>();
-        if (rect == null)
+        bool createdRect = rect == null;
+        if (createdRect)
             rect = slot.AddComponent<RectTransform>();
 
         const float slotWidth = 148f;
         const float slotHeight = 92f;
         const float gapX = 16f;
         const float gapY = 14f;
-        int col = index % 3;
-        int row = index / 3;
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = new Vector2((col - 1) * (slotWidth + gapX), -96f - row * (slotHeight + gapY));
-        rect.sizeDelta = new Vector2(slotWidth, slotHeight);
-        rect.localScale = Vector3.one;
+        if (!existedInHierarchy || createdRect)
+        {
+            int col = index % 3;
+            int row = index / 3;
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2((col - 1) * (slotWidth + gapX), -96f - row * (slotHeight + gapY));
+            rect.sizeDelta = new Vector2(slotWidth, slotHeight);
+            rect.localScale = Vector3.one;
+        }
 
         Image image = slot.GetComponent<Image>();
         if (image == null)
@@ -618,31 +629,40 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string value, float fontSize, Vector2 position, Vector2 size, TextAlignmentOptions alignment)
+TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string value, float fontSize, Vector2 position, Vector2 size, TextAlignmentOptions alignment)
     {
         Transform existing = parent.Find(name);
         GameObject go = existing != null ? existing.gameObject : new GameObject(name);
         go.transform.SetParent(parent, false);
 
         RectTransform rect = go.GetComponent<RectTransform>();
-        if (rect == null)
+        bool createdRect = rect == null;
+        if (createdRect)
             rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
-        rect.localScale = Vector3.one;
+        if (existing == null || createdRect)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+            rect.localScale = Vector3.one;
+        }
 
         TextMeshProUGUI label = go.GetComponent<TextMeshProUGUI>();
-        if (label == null)
+        bool createdLabel = label == null;
+        if (createdLabel)
             label = go.AddComponent<TextMeshProUGUI>();
-        label.font = UIThinDungFont.Get();
+
         label.text = value;
-        label.fontSize = fontSize;
-        label.alignment = alignment;
-        label.color = TextColorForStorage(name);
         label.raycastTarget = false;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
+        if (createdLabel)
+        {
+            label.font = UIThinDungFont.Get();
+            label.fontSize = fontSize;
+            label.alignment = alignment;
+            label.color = TextColorForStorage(name);
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+        }
         return label;
     }
 
@@ -696,19 +716,173 @@ public class InventoryUI : MonoBehaviour
         go.SetActive(true);
 
         RectTransform rect = go.GetComponent<RectTransform>();
-        if (rect == null)
+        bool createdRect = rect == null;
+        if (createdRect)
             rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = anchoredPosition;
-        rect.sizeDelta = size;
-        rect.localScale = Vector3.one;
+        if (existing == null || createdRect)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
+            rect.localScale = Vector3.one;
+        }
 
         Image image = go.GetComponent<Image>();
         if (image == null)
             image = go.AddComponent<Image>();
 
         return go;
+    }
+
+    void EnsureInventoryDecorations()
+    {
+        EnsureBodyStatusDashedBorders();
+        EnsureInventoryTitleBackground();
+    }
+
+    void EnsureBodyStatusDashedBorders()
+    {
+        HashSet<RectTransform> decorated = new HashSet<RectTransform>();
+        AddStatusBorders(_statName, decorated);
+        AddStatusBorders(_statHp, decorated);
+    }
+
+    void AddStatusBorders(TextMeshProUGUI[] labels, HashSet<RectTransform> decorated)
+    {
+        if (labels == null)
+            return;
+
+        for (int i = 0; i < labels.Length; i++)
+        {
+            if (labels[i] == null)
+                continue;
+
+            RectTransform target = labels[i].transform.parent as RectTransform;
+            if (target == null)
+                target = labels[i].rectTransform;
+
+            if (target == null || !decorated.Add(target))
+                continue;
+
+            EnsureDashedBorder(target, "BodyStatusDashedBorder", CSlotRectSize(target), 14f, 8f, 3f, CDarkBrown);
+        }
+    }
+
+    void EnsureInventoryTitleBackground()
+    {
+        Transform title = FindChildRecursive(transform, "Title");
+        if (title == null)
+            title = FindChildRecursive(transform, "InventoryTitle");
+        if (title == null)
+            title = FindChildRecursive(transform, "TitleText");
+        if (title == null)
+            return;
+
+        RectTransform titleRect = title as RectTransform;
+        if (titleRect == null)
+            titleRect = title.GetComponent<RectTransform>();
+        if (titleRect == null)
+            return;
+
+        Transform existing = title.parent.Find("TitleBackgroundBox");
+        GameObject box = existing != null ? existing.gameObject : new GameObject("TitleBackgroundBox");
+        box.transform.SetParent(title.parent, false);
+        box.transform.SetSiblingIndex(Mathf.Max(0, title.GetSiblingIndex()));
+
+        RectTransform boxRect = box.GetComponent<RectTransform>();
+        bool createdRect = boxRect == null;
+        if (createdRect)
+            boxRect = box.AddComponent<RectTransform>();
+        if (createdRect || existing == null)
+        {
+            boxRect.anchorMin = titleRect.anchorMin;
+            boxRect.anchorMax = titleRect.anchorMax;
+            boxRect.pivot = titleRect.pivot;
+            boxRect.anchoredPosition = titleRect.anchoredPosition;
+            Vector2 titleSize = CSlotRectSize(titleRect);
+            boxRect.sizeDelta = new Vector2(titleSize.x + 36f, titleSize.y + 18f);
+        }
+
+        Image background = box.GetComponent<Image>();
+        if (background == null)
+            background = box.AddComponent<Image>();
+        background.color = CSoftDarkBrown;
+        background.raycastTarget = false;
+
+        EnsureDashedBorder(boxRect, "TitleDashedBorder", CSlotRectSize(boxRect), 18f, 9f, 3f, CDarkBrown);
+        title.SetAsLastSibling();
+    }
+
+    static Vector2 CSlotRectSize(RectTransform rect)
+    {
+        if (rect == null)
+            return Vector2.zero;
+
+        Vector2 size = rect.rect.size;
+        if (size.x <= 0.01f || size.y <= 0.01f)
+            size = rect.sizeDelta;
+        size.x = Mathf.Max(24f, Mathf.Abs(size.x));
+        size.y = Mathf.Max(18f, Mathf.Abs(size.y));
+        return size;
+    }
+
+    static void EnsureDashedBorder(RectTransform parent, string rootName, Vector2 size, float dashLength, float gap, float thickness, Color color)
+    {
+        if (parent == null)
+            return;
+
+        Transform existing = parent.Find(rootName);
+        GameObject root = existing != null ? existing.gameObject : new GameObject(rootName);
+        root.transform.SetParent(parent, false);
+        root.transform.SetAsLastSibling();
+
+        RectTransform rootRect = root.GetComponent<RectTransform>();
+        if (rootRect == null)
+            rootRect = root.AddComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+
+        EnsureDashedLine(rootRect, "Top", new Vector2(-size.x * 0.5f, size.y * 0.5f), Vector2.right, size.x, dashLength, gap, thickness, color);
+        EnsureDashedLine(rootRect, "Bottom", new Vector2(-size.x * 0.5f, -size.y * 0.5f), Vector2.right, size.x, dashLength, gap, thickness, color);
+        EnsureDashedLine(rootRect, "Left", new Vector2(-size.x * 0.5f, -size.y * 0.5f), Vector2.up, size.y, dashLength, gap, thickness, color);
+        EnsureDashedLine(rootRect, "Right", new Vector2(size.x * 0.5f, -size.y * 0.5f), Vector2.up, size.y, dashLength, gap, thickness, color);
+    }
+
+    static void EnsureDashedLine(RectTransform parent, string edgeName, Vector2 start, Vector2 direction, float length, float dash, float gap, float thickness, Color color)
+    {
+        Transform old = parent.Find(edgeName);
+        if (old != null)
+        {
+            if (Application.isPlaying)
+                Destroy(old.gameObject);
+            else
+                DestroyImmediate(old.gameObject);
+        }
+
+        GameObject edge = new GameObject(edgeName);
+        edge.transform.SetParent(parent, false);
+
+        for (float offset = 0f; offset < length; offset += dash + gap)
+        {
+            float segment = Mathf.Min(dash, length - offset);
+            GameObject piece = new GameObject("Dash");
+            piece.transform.SetParent(edge.transform, false);
+            RectTransform rect = piece.AddComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = start + direction * (offset + segment * 0.5f);
+            rect.sizeDelta = Mathf.Abs(direction.x) > 0.5f
+                ? new Vector2(segment, thickness)
+                : new Vector2(thickness, segment);
+
+            Image image = piece.AddComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+        }
     }
 
     void RefreshSpecialSlots()
@@ -770,6 +944,36 @@ public class InventoryUI : MonoBehaviour
         SetToggleHotspotVisible(false);
         RunUiPauseManager.SetPaused("Inventory", false);
     }
+
+void CaptureAuthoredPanelOpenState()
+    {
+        EnsurePanelReference();
+        if (_panelOpenStateCaptured)
+            return;
+
+        _panelWasAuthoredOpen = _panel != null && _panel.activeSelf;
+        _panelOpenStateCaptured = true;
+    }
+
+    void ApplyAuthoredPanelOpenState()
+    {
+        EnsurePanelReference();
+        CapturePanelShownPosition();
+        if (_panel == null)
+        {
+            SetToggleHotspotVisible(false);
+            RunUiPauseManager.SetPaused("Inventory", false);
+            return;
+        }
+
+        if (_panelRect != null)
+            _panelRect.anchoredPosition = _panelShownPosition;
+
+        _panel.SetActive(_panelWasAuthoredOpen);
+        SetToggleHotspotVisible(_panelWasAuthoredOpen);
+        RunUiPauseManager.SetPaused("Inventory", _panelWasAuthoredOpen);
+    }
+
 
     void CapturePanelShownPosition()
     {
@@ -840,34 +1044,42 @@ public class InventoryUI : MonoBehaviour
         _panelRect.anchoredPosition = to;
     }
 
-    void NormalizeCanvasTransform()
+void NormalizeCanvasTransform()
     {
         bool isTopLevelCanvas = transform.parent == null;
         if (isTopLevelCanvas)
             transform.localScale = Vector3.one;
 
         Canvas canvas = GetComponent<Canvas>();
-        if (canvas == null)
+        bool addedCanvas = canvas == null;
+        if (addedCanvas)
             canvas = gameObject.AddComponent<Canvas>();
 
         if (canvas != null)
         {
             canvas.enabled = true;
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.overrideSorting = true;
-            canvas.sortingOrder = 500;
+            if (isTopLevelCanvas || addedCanvas)
+            {
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.overrideSorting = true;
+                canvas.sortingOrder = 500;
+            }
         }
 
         CanvasScaler scaler = GetComponent<CanvasScaler>();
-        if (scaler == null)
+        bool addedScaler = scaler == null;
+        if (addedScaler)
             scaler = gameObject.AddComponent<CanvasScaler>();
 
         if (scaler != null)
         {
             scaler.enabled = true;
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            if (isTopLevelCanvas || addedScaler)
+            {
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight = 0.5f;
+            }
         }
 
         GraphicRaycaster raycaster = GetComponent<GraphicRaycaster>();
@@ -980,7 +1192,7 @@ public class InventoryUI : MonoBehaviour
             // task4: 배경 Image는 빈/찬 색상만; 실제 스프라이트는 ItemIcon 자식에 표시
             if (_storageImg[i] != null)
             {
-                SetImageSpriteSafely(_storageImg[i], null); // 배경은 스프라이트 없음
+                // 슬롯 배경 sprite는 에디터 지정값을 유지한다. 
                 _storageImg[i].color = p != null ? new Color(0.12f, 0.09f, 0.06f, 0.35f) : CEmpty;
                 ApplyAlphaHitTest(_storageImg[i], 0f);
             }
@@ -1038,7 +1250,7 @@ public class InventoryUI : MonoBehaviour
                 if (_storageImg[i] != null)
                 {
                     _storageImg[i].color = new Color(0.12f, 0.09f, 0.06f, 0.35f);
-                    SetImageSpriteSafely(_storageImg[i], null);
+                    // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
                 }
                 Image icon = GetSlotItemIcon(_storageImg[i]);
                 if (icon != null)
@@ -1070,7 +1282,7 @@ public class InventoryUI : MonoBehaviour
                 if (_storageImg[i] != null)
                 {
                     _storageImg[i].color = new Color(0.18f, 0.13f, 0.04f, 0.45f);
-                    SetImageSpriteSafely(_storageImg[i], null);
+                    // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
                 }
                 Image icon = GetSlotItemIcon(_storageImg[i]);
                 if (icon != null) icon.color = Color.clear;
