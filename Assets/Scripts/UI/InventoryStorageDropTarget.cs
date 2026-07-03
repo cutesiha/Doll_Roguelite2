@@ -74,6 +74,14 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
         if (equippedSource != null)
         {
             if (InventoryManager.Instance.TryUnequipToStorage(equippedSource.BodySlot, storageIndex))
+            {
+                SoundManager.PlayClick();
+                return;
+            }
+
+            // 신규 아이템 시스템(ItemInventoryManager)으로 장착된 신체부위 아이템 내리기.
+            var itemInv = ItemInventoryManager.Instance;
+            if (itemInv != null && itemInv.TryUnequipBodyPartToStorage(equippedSource.BodySlot))
                 SoundManager.PlayClick();
         }
     }

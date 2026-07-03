@@ -6,8 +6,6 @@ using UnityEngine;
 public class MazeTreasureChest : MonoBehaviour
 {
     [SerializeField] string[] rewardItemIds = { "wood_plank", "wooden_leg", "spool" };
-    [SerializeField] float floatAmplitude = 0.28f;
-    [SerializeField] float floatSpeed = 1.8f;
     [SerializeField] float popForce = 4.5f;
 
     SpriteRenderer lid;

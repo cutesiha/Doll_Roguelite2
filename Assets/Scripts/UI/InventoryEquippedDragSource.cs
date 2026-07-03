@@ -22,7 +22,9 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
     {
         var inv = InventoryManager.Instance;
         int index = (int)bodySlot;
-        if (inv == null || index < 0 || index >= inv.equipped.Length || inv.equipped[index] == null)
+        bool hasLegacyPart = inv != null && index >= 0 && index < inv.equipped.Length && inv.equipped[index] != null;
+        bool hasItemPart = ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.GetEquippedByBodySlot(bodySlot) != null;
+        if (!hasLegacyPart && !hasItemPart)
             return;
 
         rootCanvas = GetComponentInParent<Canvas>();
@@ -31,7 +33,10 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
 
         SoundManager.PlayClick();
 
-        sourceImage = GetComponent<Image>();
+        // Body 슬롯은 히트박스(이 오브젝트)가 아닌 자식 BodyVisual에 실제 그림이 있으므로
+        // 어둡게 칠할 대상도 그쪽을 찾는다. 다른 부위는 BodyVisual이 없으니 자기 자신을 그대로 쓴다.
+        Transform bodyVisual = transform.Find("BodyVisual");
+        sourceImage = bodyVisual != null ? bodyVisual.GetComponent<Image>() : GetComponent<Image>();
         if (sourceImage != null)
         {
             sourceColor = sourceImage.color;
@@ -69,8 +74,10 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
 
         var inv = InventoryManager.Instance;
         int index = (int)bodySlot;
+        bool stillHasLegacyPart = inv != null && index >= 0 && index < inv.equipped.Length && inv.equipped[index] != null;
+        bool stillHasItemPart = ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.GetEquippedByBodySlot(bodySlot) != null;
         if (sourceImage != null)
-            sourceImage.color = inv != null && index >= 0 && index < inv.equipped.Length && inv.equipped[index] == null
+            sourceImage.color = !stillHasLegacyPart && !stillHasItemPart
                 ? new Color(0.04f, 0.035f, 0.03f, 0.48f)
                 : sourceColor;
     }
