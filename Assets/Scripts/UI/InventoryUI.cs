@@ -44,9 +44,7 @@ public class InventoryUI : MonoBehaviour
 
     [Header("Character Base Images")]
     [SerializeField] Sprite _baseBodySprite;
-    [SerializeField] Sprite _baseFaceSprite;
     [SerializeField] Image _baseBodyImg;
-    [SerializeField] Image _baseFaceImg;
 
     [Header("부위 상태 텍스트 (0~5=슬롯, 6=몸)")]
     [SerializeField] TextMeshProUGUI[] _statName = new TextMeshProUGUI[7];
@@ -162,9 +160,12 @@ void Start()
         }
 
         // task19: 장착된 신체 부위(캐릭터) 슬롯도 클릭하면 또잉
+        // 몸(Body)은 그림이 훨씬 커서 이 효과가 너무 크게 보이므로 뺀다.
         for (int i = 0; i < _charBtn.Length; i++)
         {
             if (_charBtn[i] == null || _charImg == null || i >= _charImg.Length || _charImg[i] == null)
+                continue;
+            if ((BodySlot)i == BodySlot.Body)
                 continue;
 
             InventoryBoingEffect boing = _charImg[i].GetComponent<InventoryBoingEffect>();
@@ -379,6 +380,10 @@ void Start()
         button.colors = cb;
     }
 
+    // 몸통(Body) 슬롯은 히트박스보다 스프라이트를 더 크게 보여주기 위해
+    // 실제 그림은 히트박스 안의 별도 자식 이미지(BodyVisual)에 그린다.
+    static readonly Vector2 BodyVisualSize = new Vector2(579.1426f, 641.98f);
+
     void TryBindCharacterSlot(BodySlot slot, string objectName)
     {
         int index = (int)slot;
@@ -390,12 +395,29 @@ void Start()
             return;
 
         Image image = part.GetComponent<Image>();
-        if (image != null)
+        if (slot == BodySlot.Body)
         {
-            _charImg[index] = image;
+            Sprite existingSprite = image != null ? image.sprite : null;
+            if (image != null)
+            {
+                // 부모(히트박스) 자체는 화면에 보이지 않게 비우고, 클릭/드래그는 계속 받도록 둔다.
+                image.sprite = null;
+                image.color = Color.clear;
+                image.preserveAspect = true;
+                image.type = Image.Type.Simple;
+                image.raycastTarget = true;
+            }
+            image = EnsureBodyVisual(part, existingSprite);
+            // 몸통이 팔/다리/머리보다 앞(위)에 그려지도록 형제 순서를 맨 뒤로 보낸다.
+            part.SetAsLastSibling();
+        }
+        else if (image != null)
+        {
             image.preserveAspect = true;
             image.type = Image.Type.Simple;
         }
+
+        _charImg[index] = image;
 
         Button button = part.GetComponent<Button>();
         if (button == null)
@@ -418,6 +440,34 @@ void Start()
         if (tooltip == null)
             tooltip = part.gameObject.AddComponent<InventoryItemTooltip>();
         tooltip.SetBodySlot(slot);
+    }
+
+    // 히트박스(part)보다 큰 시각적 이미지를 자식으로 만들어, 클릭/드래그 영역은 그대로 두고
+    // 그림만 더 크게 보이도록 한다.
+    static Image EnsureBodyVisual(Transform part, Sprite fallbackSprite)
+    {
+        Transform existing = part.Find("BodyVisual");
+        GameObject go = existing != null ? existing.gameObject : new GameObject("BodyVisual");
+        go.transform.SetParent(part, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(12f, 16f);
+        rect.sizeDelta = BodyVisualSize;
+        rect.localScale = Vector3.one;
+
+        Image image = go.GetComponent<Image>();
+        if (image == null)
+            image = go.AddComponent<Image>();
+        image.raycastTarget = false;
+        image.preserveAspect = true;
+        image.type = Image.Type.Simple;
+        if (image.sprite == null)
+            image.sprite = fallbackSprite != null ? fallbackSprite : LoadInterfaceSprite("body_real");
+        return image;
     }
 
     Transform StorageSlotsParent()
@@ -1433,10 +1483,17 @@ void NormalizeCanvasTransform()
                 }
                 else
                 {
-                    // 기존 BodyPart 상태
-                    _charImg[i].color = p != null ? Color.white : CUnequippedPart;
+                    // 기존 BodyPart 상태. 몸통(Body)은 잃어버릴 수 있는 팔다리와 달리
+                    // 항상 존재하는 기본 몸 스프라이트이므로, 액세서리 미장착 시에도
+                    // 어둡게 틴트하지 않고 원래 색으로 보여준다. (장착 해제 시 기본 몸통 스프라이트로 복원)
+                    if (bodySlot == BodySlot.Body)
+                        SetImageSpriteSafely(_charImg[i], LoadInterfaceSprite("body_real"));
+                    _charImg[i].color = (p != null || bodySlot == BodySlot.Body) ? Color.white : CUnequippedPart;
                 }
-                ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
+                // Body는 _charImg가 히트박스가 아닌 확대 표시용 자식(BodyVisual)을 가리키므로
+                // 여기서 알파 히트테스트를 적용하면 안 된다(실제 히트박스는 항상 클릭 가능한 상태로 둔다).
+                if (bodySlot != BodySlot.Body)
+                    ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
             }
 
             SetCharacterSlotLocked(i, inv.IsSlotLocked(bodySlot));
@@ -1473,7 +1530,7 @@ void NormalizeCanvasTransform()
     {
         for (int i = 0; i < _charImg.Length; i++)
         {
-            if (_charImg[i] == null)
+            if (_charImg[i] == null || (BodySlot)i == BodySlot.Body)
                 continue;
 
             ApplyAlphaHitTest(_charImg[i], partAlphaHitThreshold);
@@ -1844,7 +1901,6 @@ void NormalizeCanvasTransform()
             return;
 
         _baseBodyImg = EnsureBaseImage(frame, "BodyBaseImage", new Vector2(0f, -38f), new Vector2(250f, 340f), new Color(0.17f, 0.15f, 0.13f, 0.20f));
-        _baseFaceImg = EnsureBaseImage(frame, "FaceBaseImage", new Vector2(0f, 118f), new Vector2(190f, 170f), new Color(0.17f, 0.15f, 0.13f, 0.16f));
 
         HideCharacterPartLabels();
         ApplyCharacterBaseSprites();
@@ -1874,8 +1930,6 @@ void NormalizeCanvasTransform()
     {
         if (_baseBodySprite == null)
             _baseBodySprite = LoadInterfaceSprite("body_real");
-        if (_baseFaceSprite == null)
-            _baseFaceSprite = LoadInterfaceSprite("head");
 
         // A안: 프리팹에서 지정한 베이스 이미지 스프라이트/색은 덮어쓰지 않는다.
         // (스프라이트가 비어 있을 때만 기본값을 채운다.)
@@ -1886,6 +1940,8 @@ void NormalizeCanvasTransform()
             _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.20f) : Color.white;
         }
 
+<<<<<<< HEAD
+=======
         if (_baseFaceImg != null && _baseFaceImg.sprite == null)
         {
             if (_baseFaceSprite != null)
@@ -1893,9 +1949,10 @@ void NormalizeCanvasTransform()
             _baseFaceImg.color = _baseFaceImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.16f) : Color.white;
         }
 
+>>>>>>> 262c602d2ef71374517c8a953fa724fe99705770
         Transform hint = FindChildRecursive(transform, "CharacterImageText");
         if (hint != null)
-            hint.gameObject.SetActive((_baseBodyImg == null || _baseBodyImg.sprite == null) && (_baseFaceImg == null || _baseFaceImg.sprite == null));
+            hint.gameObject.SetActive(_baseBodyImg == null || _baseBodyImg.sprite == null);
     }
 
     void HideCharacterPartLabels()

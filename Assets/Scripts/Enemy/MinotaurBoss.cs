@@ -92,7 +92,6 @@ public class MinotaurBoss : EnemyBase
     int designMatchUseCount;
     int lastReportedWave = -1;
     bool wave3IntroDone;
-    bool wave3Active;
     GameObject wave3RedOverlay;
     Image wave3RedImage;
     static readonly Dictionary<string, Sprite> mapIconCache = new Dictionary<string, Sprite>();
@@ -1121,7 +1120,6 @@ public class MinotaurBoss : EnemyBase
 
     IEnumerator Wave3IntroRoutine()
     {
-        wave3Active = true;
         Camera cam = Camera.main;
 
         if (playerController == null)

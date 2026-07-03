@@ -20,10 +20,6 @@ public class EnemyBase : MonoBehaviour
     [SerializeField, Range(0.03f, 0.35f)] float hitFeedbackDuration = 0.18f;
     [SerializeField, Min(0f)] float hitShakeDistance = 0.28f;
     [SerializeField] Color hitTint = new Color(1f, 0.28f, 0.24f, 1f);
-    [Header("Camera Shake")]
-    [SerializeField] bool shakeCameraOnHit = true;
-    [SerializeField, Range(0.02f, 0.35f)] float cameraShakeDuration = 0.12f;
-    [SerializeField, Min(0f)] float cameraShakeMagnitude = 0.10f;
     protected int currentHp;
     float fractionalDamageRemainder;
     public bool HasManagedProfile { get; private set; }

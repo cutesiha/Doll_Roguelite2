@@ -73,7 +73,6 @@ public class TutorialSceneController : MonoBehaviour
     TutorialStep step;
     GameObject gameplaySkipRoot;
     GameObject gameplaySkipConfirmRoot;
-    bool gameplaySkipConfirmVisible;
     bool paperReadyForClick;
     bool mapOpened;
     bool mapScrolled;
@@ -1123,7 +1122,6 @@ public class TutorialSceneController : MonoBehaviour
         {
             SoundManager.PlayClick(0f);
             gameplaySkipConfirmRoot.SetActive(false);
-            gameplaySkipConfirmVisible = false;
             GameSaveSystem.MarkTutorialDone();
             StartCoroutine(ExitToRoomRoutine());
         });
@@ -1134,7 +1132,6 @@ public class TutorialSceneController : MonoBehaviour
         {
             SoundManager.PlayClick(0f);
             gameplaySkipConfirmRoot.SetActive(false);
-            gameplaySkipConfirmVisible = false;
         });
 
         gameplaySkipConfirmRoot.SetActive(false);
@@ -1186,7 +1183,6 @@ public class TutorialSceneController : MonoBehaviour
         SoundManager.PlayClick(0f);
         gameplaySkipConfirmRoot.SetActive(true);
         gameplaySkipConfirmRoot.transform.SetAsLastSibling();
-        gameplaySkipConfirmVisible = true;
     }
 
     void HideGameplaySkipUI()
@@ -1195,7 +1191,6 @@ public class TutorialSceneController : MonoBehaviour
             gameplaySkipRoot.SetActive(false);
         if (gameplaySkipConfirmRoot != null)
             gameplaySkipConfirmRoot.SetActive(false);
-        gameplaySkipConfirmVisible = false;
     }
 
     void BuildDoor()
