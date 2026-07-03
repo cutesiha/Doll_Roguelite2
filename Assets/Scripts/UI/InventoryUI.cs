@@ -457,7 +457,9 @@ void Start()
             rect = go.AddComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = new Vector2(12f, 16f);
+        // 히트박스(part)가 (0,4)에서 (-6,-33)으로 옮겨진 만큼(-6,-37) 상쇄해
+        // 화면에 보이는 그림 위치는 원래 자리(12,20 상당)를 유지한다.
+        rect.anchoredPosition = new Vector2(18f, 53f);
         rect.sizeDelta = BodyVisualSize;
         rect.localScale = Vector3.one;
 
@@ -1942,8 +1944,6 @@ void NormalizeCanvasTransform()
             _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.20f) : Color.white;
         }
 
-<<<<<<< HEAD
-=======
         if (_baseFaceImg != null && _baseFaceImg.sprite == null)
         {
             if (_baseFaceSprite != null)
@@ -1951,7 +1951,6 @@ void NormalizeCanvasTransform()
             _baseFaceImg.color = _baseFaceImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.16f) : Color.white;
         }
 
->>>>>>> 04cee4019bfee1918c5a62c2215d7a6143948d30
         Transform hint = FindChildRecursive(transform, "CharacterImageText");
         if (hint != null)
             hint.gameObject.SetActive((_baseBodyImg == null || _baseBodyImg.sprite == null) && (_baseFaceImg == null || _baseFaceImg.sprite == null));
