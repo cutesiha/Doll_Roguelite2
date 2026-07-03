@@ -270,6 +270,9 @@ MonoBehaviour:
   hopFrequency: 11
   oneLegMinSpeedMultiplier: 0.35
   crawlFramesPerSecond: 6
+  twoLegsFootstepInterval: 0.34
+  oneLegFootstepInterval: 0.48
+  noLegsFootstepInterval: 0.62
   noLegArmOffset: {x: 0, y: 0}
   noLegEyeOffset: {x: 0, y: 0}
   crawlEyeHeightFrac: 0.32

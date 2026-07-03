@@ -11,6 +11,17 @@ public class SoundManager : MonoBehaviour
     public const string SlimeSfxPath = "Sounds/slime";
     public const string ClickSfxPath = "Sounds/click";
     public const string PunchSfxPath = "SoundEffects/punch";
+    public const string EnemyHitSfxPath = "SoundEffects/punch";
+    public const string FootstepTwoLegsSfxPath = "Sounds/footstep_two_legs";
+    public const string FootstepOneLegSfxPath = "Sounds/footstep_one_leg";
+    public const string FootstepNoLegsSfxPath = "Sounds/footstep_no_legs";
+    const string FootstepFallbackSfxPath = "Sounds/scticky";
+    public const string MinotaurSlamSfxPath = "Sounds/heavy_punch1";
+    public const string MinotaurFastBreathSfxPath = "Sounds/mino_heat";
+    public const string MinotaurPinStickSfxPath = "Sounds/short_punch1";
+    public const string WaveClearSfxPath = "Sounds/wave_clear";
+    const string WaveClearFallbackSfxPath = "Sounds/paper333";
+    public const string AfterVictoryBgmPath = "BGM/after_victory";
     public const string CoinPickupSfxPath = "SoundEffects/동전 먹을떄 효과음";
     public const string GemUseSfxPath = "SoundEffects/보석 효과음";
     public const float DefaultRepeatGuard = 0.08f;
@@ -26,6 +37,7 @@ public class SoundManager : MonoBehaviour
     [Header("Global")]
     [SerializeField, Range(0f, 2f)] float masterSfxVolume = 1f;
     [SerializeField] AudioSource sfxSource;
+    AudioSource footstepSource;
 
     [Header("Clips")]
     [SerializeField] AudioClip panelClip;
@@ -41,9 +53,29 @@ public class SoundManager : MonoBehaviour
     [SerializeField] AudioClip gemUseClip;
     [SerializeField, Range(0f, 3f)] float gemUseVolume = 1f;
     [SerializeField, Min(0f)] float gemUseDuration = 1.4f;
+    [SerializeField] AudioClip waveClearClip;
+    [SerializeField, Range(0f, 3f)] float waveClearVolume = 1f;
+    [SerializeField] AudioClip afterVictoryBgmClip;
+
+    [Header("Player Footsteps")]
+    [SerializeField] AudioClip twoLegsFootstepClip;
+    [SerializeField, Range(0f, 3f)] float twoLegsFootstepVolume = 0.65f;
+    [SerializeField] AudioClip oneLegFootstepClip;
+    [SerializeField, Range(0f, 3f)] float oneLegFootstepVolume = 0.75f;
+    [SerializeField] AudioClip noLegsFootstepClip;
+    [SerializeField, Range(0f, 3f)] float noLegsFootstepVolume = 0.85f;
+
+    [Header("Minotaur Boss Clips")]
+    [SerializeField] AudioClip minotaurSlamClip;
+    [SerializeField, Range(0f, 3f)] float minotaurSlamVolume = 1.15f;
+    [SerializeField] AudioClip minotaurFastBreathClip;
+    [SerializeField, Range(0f, 3f)] float minotaurFastBreathVolume = 1f;
+    [SerializeField] AudioClip minotaurPinStickClip;
+    [SerializeField, Range(0f, 3f)] float minotaurPinStickVolume = 0.95f;
 
     AudioSource gemAudioSource;
     Coroutine gemStopRoutine;
+    Coroutine bgmFadeRoutine;
 
     [Header("Combat Clips")]
     [SerializeField] AudioClip enemyHitClip;
@@ -53,6 +85,8 @@ public class SoundManager : MonoBehaviour
 
     AudioClip lastClip;
     float lastPlayTime = -999f;
+    AudioClip lastFootstepClip;
+    float lastFootstepPlayTime = -999f;
 
     void Awake()
     {
@@ -189,8 +223,9 @@ public class SoundManager : MonoBehaviour
     public static void PlayEnemyHit(float repeatGuard = DefaultRepeatGuard)
     {
         SoundManager manager = EnsureInstance();
-        if (manager.enemyHitClip != null)
-            manager.PlayManaged(manager.enemyHitClip, manager.enemyHitVolume, repeatGuard);
+        AudioClip clip = manager.GetEnemyHitClip();
+        if (clip != null)
+            manager.PlayManaged(clip, manager.enemyHitVolume, repeatGuard);
     }
 
     public static void PlayPlayerHit(float repeatGuard = DefaultRepeatGuard)
@@ -198,6 +233,56 @@ public class SoundManager : MonoBehaviour
         SoundManager manager = EnsureInstance();
         if (manager.playerHitClip != null)
             manager.PlayManaged(manager.playerHitClip, manager.playerHitVolume, repeatGuard);
+    }
+
+    public static void PlayPlayerFootstep(int legCount, float repeatGuard = DefaultRepeatGuard)
+    {
+        SoundManager manager = EnsureInstance();
+        AudioClip clip = manager.GetFootstepClip(legCount);
+        if (clip == null)
+            return;
+
+        manager.PlayFootstepManaged(clip, manager.GetFootstepVolume(legCount), repeatGuard);
+    }
+
+    public static void StopPlayerFootstep()
+    {
+        SoundManager manager = instance;
+        if (manager != null && manager.footstepSource != null)
+            manager.footstepSource.Stop();
+    }
+
+    public static void PlayWaveClear(float repeatGuard = 0.2f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetWaveClearClip(), manager.waveClearVolume, repeatGuard);
+    }
+
+    public static void PlayAfterVictoryBgmWithFade(float fadeOutDuration = 0.9f, float fadeInDuration = 1.0f)
+    {
+        SoundManager manager = EnsureInstance();
+        if (manager.bgmFadeRoutine != null)
+            manager.StopCoroutine(manager.bgmFadeRoutine);
+
+        manager.bgmFadeRoutine = manager.StartCoroutine(manager.AfterVictoryBgmFadeRoutine(fadeOutDuration, fadeInDuration));
+    }
+
+    public static void PlayMinotaurSlam(float repeatGuard = 0.04f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetMinotaurSlamClip(), manager.minotaurSlamVolume, repeatGuard);
+    }
+
+    public static void PlayMinotaurFastBreath(float repeatGuard = 0.25f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetMinotaurFastBreathClip(), manager.minotaurFastBreathVolume, repeatGuard);
+    }
+
+    public static void PlayMinotaurPinStick(float repeatGuard = 0.04f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetMinotaurPinStickClip(), manager.minotaurPinStickVolume, repeatGuard);
     }
 
     public static void PlaySfxResource(string resourcePath, string fallbackResourcePath = null, float repeatGuard = DefaultRepeatGuard, float volumeScale = 1f)
@@ -403,6 +488,67 @@ public class SoundManager : MonoBehaviour
         gemAudioSource.loop = false;
     }
 
+    System.Collections.IEnumerator AfterVictoryBgmFadeRoutine(float fadeOutDuration, float fadeInDuration)
+    {
+        AudioSource bgmSource = FindPreferredBgmSource();
+        if (bgmSource == null)
+            yield break;
+
+        float startVolume = bgmSource.volume;
+        float elapsed = 0f;
+        float safeFadeOut = Mathf.Max(0.01f, fadeOutDuration);
+        while (elapsed < safeFadeOut && bgmSource != null)
+        {
+            bgmSource.volume = Mathf.Lerp(startVolume, 0f, elapsed / safeFadeOut);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (bgmSource == null)
+            yield break;
+
+        bgmSource.Stop();
+        bgmSource.clip = GetAfterVictoryBgmClip();
+        bgmSource.loop = true;
+        bgmSource.volume = 0f;
+        if (bgmSource.clip != null)
+            bgmSource.Play();
+
+        float targetVolume = GetBgmVolume01() * BgmVolumeScale;
+        elapsed = 0f;
+        float safeFadeIn = Mathf.Max(0.01f, fadeInDuration);
+        while (elapsed < safeFadeIn && bgmSource != null)
+        {
+            bgmSource.volume = Mathf.Lerp(0f, targetVolume, elapsed / safeFadeIn);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (bgmSource != null)
+            bgmSource.volume = targetVolume;
+
+        bgmFadeRoutine = null;
+    }
+
+    AudioSource FindPreferredBgmSource()
+    {
+        GameObject namedBgm = GameObject.Find("BGM");
+        AudioSource source = namedBgm != null ? namedBgm.GetComponent<AudioSource>() : null;
+        if (source != null)
+            return source;
+
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < sources.Length; i++)
+            if (IsBgmSource(sources[i]))
+                return sources[i];
+
+        GameObject bgmObject = new GameObject("BGM");
+        source = bgmObject.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.loop = true;
+        return source;
+    }
+
     AudioClip GetCoinPickupClip()
     {
         if (coinPickupClip == null)
@@ -417,6 +563,30 @@ public class SoundManager : MonoBehaviour
             punchClip = LoadClipResource(PunchSfxPath);
 
         return punchClip;
+    }
+
+    AudioClip GetEnemyHitClip()
+    {
+        if (enemyHitClip == null)
+            enemyHitClip = LoadClipResource(EnemyHitSfxPath);
+
+        return enemyHitClip;
+    }
+
+    AudioClip GetWaveClearClip()
+    {
+        if (waveClearClip == null)
+            waveClearClip = LoadClipResource(WaveClearSfxPath, WaveClearFallbackSfxPath);
+
+        return waveClearClip;
+    }
+
+    AudioClip GetAfterVictoryBgmClip()
+    {
+        if (afterVictoryBgmClip == null)
+            afterVictoryBgmClip = LoadClipResource(AfterVictoryBgmPath);
+
+        return afterVictoryBgmClip;
     }
 
     AudioClip GetPanelClip()
@@ -443,6 +613,57 @@ public class SoundManager : MonoBehaviour
         return clickClip;
     }
 
+    AudioClip GetFootstepClip(int legCount)
+    {
+        if (legCount >= 2)
+        {
+            if (twoLegsFootstepClip == null)
+                twoLegsFootstepClip = LoadClipResource(FootstepTwoLegsSfxPath, FootstepFallbackSfxPath);
+            return twoLegsFootstepClip;
+        }
+
+        if (legCount == 1)
+        {
+            if (oneLegFootstepClip == null)
+                oneLegFootstepClip = LoadClipResource(FootstepOneLegSfxPath, FootstepFallbackSfxPath);
+            return oneLegFootstepClip;
+        }
+
+        if (noLegsFootstepClip == null)
+            noLegsFootstepClip = LoadClipResource(FootstepNoLegsSfxPath, FootstepFallbackSfxPath);
+        return noLegsFootstepClip;
+    }
+
+    float GetFootstepVolume(int legCount)
+    {
+        if (legCount >= 2)
+            return twoLegsFootstepVolume;
+        if (legCount == 1)
+            return oneLegFootstepVolume;
+        return noLegsFootstepVolume;
+    }
+
+    AudioClip GetMinotaurSlamClip()
+    {
+        if (minotaurSlamClip == null)
+            minotaurSlamClip = LoadClipResource(MinotaurSlamSfxPath);
+        return minotaurSlamClip;
+    }
+
+    AudioClip GetMinotaurFastBreathClip()
+    {
+        if (minotaurFastBreathClip == null)
+            minotaurFastBreathClip = LoadClipResource(MinotaurFastBreathSfxPath);
+        return minotaurFastBreathClip;
+    }
+
+    AudioClip GetMinotaurPinStickClip()
+    {
+        if (minotaurPinStickClip == null)
+            minotaurPinStickClip = LoadClipResource(MinotaurPinStickSfxPath);
+        return minotaurPinStickClip;
+    }
+
     void EnsureSource()
     {
         if (sfxSource == null)
@@ -454,9 +675,38 @@ public class SoundManager : MonoBehaviour
         sfxSource.playOnAwake = false;
     }
 
+    void EnsureFootstepSource()
+    {
+        if (footstepSource == null)
+        {
+            GameObject sourceObject = new GameObject("FootstepAudioSource");
+            sourceObject.transform.SetParent(transform, false);
+            footstepSource = sourceObject.AddComponent<AudioSource>();
+        }
+
+        footstepSource.playOnAwake = false;
+        footstepSource.loop = false;
+    }
+
     void PlayManaged(AudioClip clip, float clipVolume, float repeatGuard)
     {
         PlayInternal(clip, repeatGuard, clipVolume);
+    }
+
+    void PlayFootstepManaged(AudioClip clip, float clipVolume, float repeatGuard)
+    {
+        if (clip == null)
+            return;
+
+        EnsureFootstepSource();
+
+        if (clip == lastFootstepClip && Time.unscaledTime - lastFootstepPlayTime < repeatGuard)
+            return;
+
+        lastFootstepClip = clip;
+        lastFootstepPlayTime = Time.unscaledTime;
+        footstepSource.Stop();
+        footstepSource.PlayOneShot(clip, Mathf.Max(0f, clipVolume) * Mathf.Max(0f, masterSfxVolume));
     }
 
     void PlayInternal(AudioClip clip, float repeatGuard, float volumeScale)

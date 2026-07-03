@@ -64,6 +64,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField, Min(0f)] float hopFrequency = 6f;
     [SerializeField, Range(0.05f, 1f)] float oneLegMinSpeedMultiplier = 0.35f;
     [SerializeField, Min(1f)] float crawlFramesPerSecond = 6f;
+    [Header("Footstep Sound")]
+    [SerializeField, Min(0.05f)] float twoLegsFootstepInterval = 0.34f;
+    [SerializeField, Min(0.05f)] float oneLegFootstepInterval = 0.48f;
+    [SerializeField, Min(0.05f)] float noLegsFootstepInterval = 0.62f;
     // 양다리 없음(기어가기) 시 팔 위치 보정. 서있는 팔 스프라이트는 키 큰 프레임에 그려져 있어
     // 그대로 두면 짧은 noleg 몸통의 머리 쪽에 뜬다. 아래로 내려 몸통 하단 옆에 붙인다.
     [SerializeField] Vector2 noLegArmOffset = new Vector2(0f, -0.1f);
@@ -85,6 +89,8 @@ public class PlayerController : MonoBehaviour
     float facingLockTimer;
     float walkAnimationTime;
     float lastLocomotionSpeed;
+    float nextFootstepTime;
+    int lastOneLegHopSoundStep = -1;
     int lastWalkFrame = -1;
     int currentNoLegFrame;
     int currentNoLegFrameCount = 1;
@@ -252,6 +258,53 @@ public class PlayerController : MonoBehaviour
 
         lastLocomotionSpeed = speed; // 콩콩/기어가기 애니메이션 속도 연동용
         rb.MovePosition(rb.position + moveInput * speed * Time.fixedDeltaTime);
+        PlayFootstepIfMoving(speed, missingLegs);
+    }
+
+    void PlayFootstepIfMoving(float speed, int missingLegs)
+    {
+        if (moveInput.sqrMagnitude <= 0.001f || speed <= 0.01f || Time.timeScale <= 0f)
+        {
+            lastOneLegHopSoundStep = -1;
+            SoundManager.StopPlayerFootstep();
+            return;
+        }
+
+        if (Time.time < nextFootstepTime)
+            return;
+
+        int legCount = Mathf.Clamp(2 - missingLegs, 0, 2);
+        if (legCount == 1)
+        {
+            PlayOneLegHopFootstep();
+            return;
+        }
+
+        lastOneLegHopSoundStep = -1;
+
+        float interval = FootstepIntervalForLegCount(legCount);
+        nextFootstepTime = Time.time + interval / Mathf.Max(0.35f, LocomotionSpeedFactor());
+        SoundManager.PlayPlayerFootstep(legCount, 0.03f);
+    }
+
+    void PlayOneLegHopFootstep()
+    {
+        float hopPhase = walkAnimationTime * hopFrequency * LocomotionSpeedFactor();
+        int hopStep = Mathf.FloorToInt(hopPhase / Mathf.PI);
+        if (hopStep == lastOneLegHopSoundStep)
+            return;
+
+        lastOneLegHopSoundStep = hopStep;
+        SoundManager.PlayPlayerFootstep(1, 0f);
+    }
+
+    float FootstepIntervalForLegCount(int legCount)
+    {
+        if (legCount >= 2)
+            return twoLegsFootstepInterval;
+        if (legCount == 1)
+            return oneLegFootstepInterval;
+        return noLegsFootstepInterval;
     }
 
     // Temporary movement slow used by status effects such as the boss's stitch debuff.

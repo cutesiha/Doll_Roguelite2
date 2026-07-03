@@ -278,6 +278,7 @@ void Start()
         {
             _panel = panel.gameObject;
             _panelRect = panel as RectTransform;
+            CenterInventoryPanel();
         }
     }
 
@@ -1078,8 +1079,20 @@ void CaptureAuthoredPanelOpenState()
         if (_panelRect == null || _panelPositionCaptured)
             return;
 
+        CenterInventoryPanel();
         _panelShownPosition = _panelRect.anchoredPosition;
         _panelPositionCaptured = true;
+    }
+
+    void CenterInventoryPanel()
+    {
+        if (_panelRect == null)
+            return;
+
+        _panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        _panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        _panelRect.pivot = new Vector2(0.5f, 0.5f);
+        _panelRect.anchoredPosition = Vector2.zero;
     }
 
     void PlayPanelAnimation(bool show)

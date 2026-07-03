@@ -10267,16 +10267,31 @@ MonoBehaviour:
   slimeVolume: 1
   clickClip: {fileID: 0}
   clickVolume: 1.35
-  punchClip: {fileID: 0}
+  punchClip: {fileID: 8300000, guid: 5d7353b90ee7b6042926fc89c6265a55, type: 3}
   punchVolume: 1
   coinPickupClip: {fileID: 0}
   coinPickupVolume: 1
   gemUseClip: {fileID: 0}
   gemUseVolume: 1
   gemUseDuration: 1.4
+  waveClearClip: {fileID: 0}
+  waveClearVolume: 1
+  afterVictoryBgmClip: {fileID: 0}
+  twoLegsFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
+  twoLegsFootstepVolume: 1.23
+  oneLegFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
+  oneLegFootstepVolume: 1.23
+  noLegsFootstepClip: {fileID: 8300000, guid: 13a871d747201ea439960409e50727a5, type: 3}
+  noLegsFootstepVolume: 1.5
+  minotaurSlamClip: {fileID: 0}
+  minotaurSlamVolume: 1.15
+  minotaurFastBreathClip: {fileID: 0}
+  minotaurFastBreathVolume: 1
+  minotaurPinStickClip: {fileID: 0}
+  minotaurPinStickVolume: 0.95
   enemyHitClip: {fileID: 0}
   enemyHitVolume: 1
-  playerHitClip: {fileID: 0}
+  playerHitClip: {fileID: 8300000, guid: 42ded5264c9e97e419b436c34fcef5ac, type: 3}
   playerHitVolume: 1
 --- !u!4 &1993731298
 Transform:

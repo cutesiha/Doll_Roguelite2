@@ -165,10 +165,35 @@ public class MiddleBossController : MonoBehaviour
                 PlayerCameraFollow follow = cam.GetComponent<PlayerCameraFollow>();
                 if (follow != null)
                 {
-                    follow.ConfigureBounds(arenaSize, arenaCenter, targetSize, true);
+                    follow.ConfigureBounds(RestoredCameraBoundsSize(), RestoredCameraBoundsCenter(), targetSize, true);
                     follow.enabled = true;
                 }
             }));
+    }
+
+    Vector2 RestoredCameraBoundsSize()
+    {
+        SpriteRenderer background = FindStageBackgroundRenderer();
+        if (background != null)
+        {
+            Vector3 size = background.bounds.size;
+            if (size.x > 0.1f && size.y > 0.1f)
+                return new Vector2(size.x, size.y);
+        }
+
+        return new Vector2(38.4f, 21.6f);
+    }
+
+    Vector2 RestoredCameraBoundsCenter()
+    {
+        SpriteRenderer background = FindStageBackgroundRenderer();
+        return background != null ? (Vector2)background.bounds.center : Vector2.zero;
+    }
+
+    SpriteRenderer FindStageBackgroundRenderer()
+    {
+        StageBackgroundSprite background = FindFirstObjectByType<StageBackgroundSprite>();
+        return background != null ? background.GetComponent<SpriteRenderer>() : null;
     }
 
     IEnumerator SmoothCameraFrame(

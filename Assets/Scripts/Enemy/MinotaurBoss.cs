@@ -15,7 +15,7 @@ public class MinotaurBoss : EnemyBase
 {
     [Header("Minotaur")]
     [SerializeField] string spriteName = "mino_jjin";
-    [SerializeField, Min(1)] int bossHp = 100;
+    [SerializeField, Min(1)] int bossHp = 120;
     [SerializeField, Min(0.5f)] float bossScale = 3.0f;
 
     [Header("Breathing")]
@@ -23,26 +23,36 @@ public class MinotaurBoss : EnemyBase
 
     [Header("Timing")]
     [SerializeField, Min(0.1f)] float introDelay = 1.0f;
-    [SerializeField, Min(0.1f)] float betweenActions = 1.6f;
+    [SerializeField, Min(0.1f)] float betweenActions = 1.0f;
     [SerializeField, Min(0.1f)] float strikeTime = 0.35f;
     [SerializeField, Min(1f)] float solveTime = 8f;
 
     [Header("Room-wide Sewing Lines")]
     [SerializeField, Min(0.5f)] float sewingLineThickness = 2.9f;
     [SerializeField, Min(1f)] float diagonalLengthMultiplier = 1.2f;
-    [SerializeField, Min(0.1f)] float largeAttackWarningTime = 1f;
+    [SerializeField, Min(0.1f)] float largeAttackWarningTime = 1.15f;
 
     [Header("Mechanic Timing")]
-    [SerializeField, Min(1f)] float firstJudgementTime = 8f;
-    [SerializeField, Min(1f)] float repeatJudgementTime = 6f;
-    [SerializeField, Min(1f)] float designMatchTime = 6f;
-    [SerializeField, Min(0.1f)] float pinClosureTime = 2f;
+    [SerializeField, Min(1f)] float firstJudgementTime = 6f;
+    [SerializeField, Min(1f)] float repeatJudgementTime = 4f;
+    [SerializeField, Min(1f)] float designMatchTime = 4f;
+    [SerializeField, Min(0.1f)] float pinClosureTime = 0.55f;
+    [SerializeField, Min(0.1f)] float pinExplosionDelay = 0.85f;
     [SerializeField, Min(0.1f)] float successStunTime = 1.5f;
 
     [Header("Mechanic Layout")]
     [SerializeField] Vector2 judgementPaperOffset = new Vector2(0f, -6.4f);
     [SerializeField, Min(0.1f)] float judgementMapIconSize = 0.9f;
     [SerializeField, Min(0.1f)] float designMapIconSize = 2.5f;
+
+    [Header("Map Icon Sprites")]
+    [SerializeField] Sprite wholeDesignIcon;
+    [SerializeField] Sprite noLeftEyeIcon;
+    [SerializeField] Sprite noRightEyeIcon;
+    [SerializeField] Sprite noLeftArmIcon;
+    [SerializeField] Sprite noRightArmIcon;
+    [SerializeField] Sprite noLeftLegIcon;
+    [SerializeField] Sprite noRightLegIcon;
 
     [Header("Damage")]
     [SerializeField, Min(1)] int basicDamage = 18;
@@ -62,6 +72,10 @@ public class MinotaurBoss : EnemyBase
     [SerializeField, Min(0.02f)] float strikeShakeDuration = 0.6f;
     [SerializeField, Min(0f)] float strikeShakeMagnitude = 0.45f;
     [SerializeField, Min(1f)] float strikeShakeOscillations = 8f;
+
+    [Header("Middle Boss Ambience")]
+    [SerializeField] Color ambienceTint = new Color(0.72f, 0.58f, 1f, 1f);
+    [SerializeField, Range(0f, 1f)] float ambienceTintStrength = 0.12f;
 
     public System.Action Defeated;
 
@@ -120,6 +134,7 @@ public class MinotaurBoss : EnemyBase
             playerController = playerObject.GetComponent<PlayerController>();
         }
 
+        ApplyMiddleBossAmbienceTint();
         StartCoroutine(BossRoutine());
     }
 
@@ -134,6 +149,30 @@ public class MinotaurBoss : EnemyBase
         arenaSize = size;
     }
 
+    void ApplyMiddleBossAmbienceTint()
+    {
+        TintRenderer(bossRenderer);
+
+        if (player != null)
+        {
+            SpriteRenderer[] playerRenderers = player.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < playerRenderers.Length; i++)
+                TintRenderer(playerRenderers[i]);
+        }
+
+        StageBackgroundSprite background = FindFirstObjectByType<StageBackgroundSprite>();
+        if (background != null)
+            TintRenderer(background.GetComponent<SpriteRenderer>());
+    }
+
+    void TintRenderer(SpriteRenderer renderer)
+    {
+        if (renderer == null)
+            return;
+
+        renderer.color = Color.Lerp(renderer.color, ambienceTint, ambienceTintStrength);
+    }
+
     protected override void Update()
     {
         if (bossDefeated || stunned)
@@ -142,6 +181,7 @@ public class MinotaurBoss : EnemyBase
 
     protected override void OnDamaged()
     {
+        SoundManager.PlayEnemyHit(0f);
         base.OnDamaged();
         ReportHealth();
     }
@@ -160,6 +200,8 @@ public class MinotaurBoss : EnemyBase
     // req B3: 죽으면 즉시 사라지지 않고 살짝 페이드되며 주변에 파티클이 흩날린다.
     IEnumerator DeathFadeRoutine()
     {
+        SoundManager.PlayAfterVictoryBgmWithFade(0.9f, 1.0f);
+
         if (breathAnimator != null)
             breathAnimator.Stop();
         ClearOwnedTelegraphs();
@@ -213,14 +255,14 @@ public class MinotaurBoss : EnemyBase
 
     void ReportHealth()
     {
-        RunHudUI.SetBossHealth("미노타우로스", currentHp, maxHp);
+        RunHudUI.SetBossHealth("Minotaur", currentHp, maxHp);
     }
 
     int WaveByHp()
     {
         float ratio = (float)currentHp / Mathf.Max(1, maxHp);
         if (ratio >= 0.70f) return 1;
-        if (ratio >= 0.40f) return 2;
+        if (ratio >= 0.50f) return 2;
         return 3;
     }
 
@@ -250,9 +292,7 @@ public class MinotaurBoss : EnemyBase
 
             // req B1: 3웨이브부터 행동 사이 대기시간을 크게 단축.
             float gap = wave >= 3 ? betweenActions * 0.3f : betweenActions;
-            bool fast = wave >= 3;
-
-            yield return StartCoroutine(BasicAttackRoutine(fast));
+            yield return StartCoroutine(BasicAttackRoutine(wave));
             if (bossDefeated) yield break;
             yield return new WaitForSeconds(gap);
 
@@ -287,16 +327,45 @@ public class MinotaurBoss : EnemyBase
     // req3: X(0)·+(1) 확률을 높이고 단일 가로(2)/세로(3)는 낮춘다.
     int PickBasicShape()
     {
-        float r = Random.value;
-        if (r < 0.40f) return 0;    // X (40%)
-        if (r < 0.75f) return 1;    // + (35%)
-        if (r < 0.875f) return 2;   // 가로 단일 (12.5%)
-        return 3;                    // 세로 단일 (12.5%)
+        return Random.Range(0, 6);
     }
 
-    IEnumerator BasicAttackRoutine(bool fast = false)
+    IEnumerator BasicAttackRoutine(int wave)
     {
-        List<Band> bands = BuildBasicBands(PickBasicShape());
+        bool fast = wave >= 3;
+        int[] shapes = BasicAttackSequence(wave);
+        for (int i = 0; i < shapes.Length; i++)
+        {
+            yield return StartCoroutine(BasicAttackShapeRoutine(shapes[i], fast));
+            if (i + 1 < shapes.Length)
+                yield return new WaitForSeconds(fast ? 0.12f : 0.18f);
+        }
+    }
+
+    int[] BasicAttackSequence(int wave)
+    {
+        int count = wave >= 3 ? 3 : wave == 2 ? 2 : 1;
+        return RandomBasicShapes(count);
+    }
+
+    int[] RandomBasicShapes(int count)
+    {
+        List<int> pool = new List<int> { 0, 1, 2, 3, 4, 5 };
+        int take = Mathf.Clamp(count, 1, pool.Count);
+        int[] result = new int[take];
+        for (int i = 0; i < take; i++)
+        {
+            int idx = Random.Range(0, pool.Count);
+            result[i] = pool[idx];
+            pool.RemoveAt(idx);
+        }
+
+        return result;
+    }
+
+    IEnumerator BasicAttackShapeRoutine(int shape, bool fast = false)
+    {
+        List<Band> bands = BuildBasicBands(shape);
         List<GameObject> telegraphs = new List<GameObject>();
         for (int i = 0; i < bands.Count; i++)
             telegraphs.Add(TrackTelegraph(EnemyTelegraph.CreateBox("BossBandTelegraph", bands[i].center, bands[i].size, bands[i].angle, telegraphColor, 40)));
@@ -304,6 +373,8 @@ public class MinotaurBoss : EnemyBase
         // req3a: 강타 직전 빨간 경고를 점점 빠르게 "번쩍번쩍" 깜빡인다.
         // req B1: 3웨이브(fast)에선 경고 시간을 조금 줄여 기본공격을 아주 조금 빠르게.
         float warnTime = Mathf.Max(0.4f, largeAttackWarningTime) * (fast ? 0.8f : 1f);
+        if (shape >= 2)
+            warnTime += 0.15f;
         float warnElapsed = 0f;
         while (warnElapsed < warnTime)
         {
@@ -328,7 +399,7 @@ public class MinotaurBoss : EnemyBase
 
         // req3b: 강타(스트라이크 밴드)가 나타나는 바로 그 프레임에 화면을 흔든다(강타 후 지연 없음).
         CameraShake.ShakeHorizontal(strikeShakeDuration, strikeShakeMagnitude, strikeShakeOscillations);
-        SoundManager.PlayEnemyHit();
+        SoundManager.PlayMinotaurSlam();
 
         bool damaged = false;
         float elapsed = 0f;
@@ -360,9 +431,9 @@ public class MinotaurBoss : EnemyBase
         float fullH = arena.height;
 
         // req2: 폭 상한을 넓혀 더 두꺼운 밴드를 허용(직렬화된 sewingLineThickness 로 조절).
-        float thickness = Mathf.Clamp(sewingLineThickness, 0.5f, Mathf.Min(fullW, fullH) * 0.5f);
+        float thickness = Mathf.Clamp(sewingLineThickness * 1.18f, 0.5f, Mathf.Min(fullW, fullH) * 0.56f);
         // req3: 가로/세로 '단일' 공격은 폭을 훨씬 크게(피할 공간이 좁아지도록).
-        float singleThickness = Mathf.Clamp(sewingLineThickness * 2.2f, thickness, Mathf.Min(fullW, fullH) * 0.62f);
+        float singleThickness = Mathf.Clamp(sewingLineThickness * 1.65f, 0.5f, Mathf.Min(fullW, fullH) * 0.50f);
         float roomDiagonal = Mathf.Sqrt(fullW * fullW + fullH * fullH);
         float diagonal = roomDiagonal * Mathf.Max(1f, diagonalLengthMultiplier);
 
@@ -379,8 +450,14 @@ public class MinotaurBoss : EnemyBase
             case 2: // horizontal: left wall to right wall through the room centre
                 bands.Add(new Band { center = center, size = new Vector2(fullW, singleThickness), angle = 0f });
                 break;
-            default: // vertical: top wall to bottom wall through the room centre
+            case 3: // vertical: top wall to bottom wall through the room centre
                 bands.Add(new Band { center = center, size = new Vector2(singleThickness, fullH), angle = 0f });
+                break;
+            case 4: // single left diagonal
+                bands.Add(new Band { center = center, size = new Vector2(diagonal, singleThickness), angle = 45f });
+                break;
+            default: // single right diagonal
+                bands.Add(new Band { center = center, size = new Vector2(diagonal, singleThickness), angle = -45f });
                 break;
         }
 
@@ -460,7 +537,7 @@ public class MinotaurBoss : EnemyBase
             bool isX = marked.Contains(slots[i]);
             CreateJudgementMapIcon(paper.transform, slots[i], layout[i] + new Vector3(-0.55f * S, 0f, 0f), 32);
             if (isX)
-                BossVisuals.CreateXMark(paper.transform, layout[i] + new Vector3(0.55f * S, 0f, 0f), 1.0f * S, 33);
+                BossVisuals.CreateXMark(paper.transform, layout[i] + new Vector3(0.55f * S, 0f, 0f), 1.25f * S, 33);
             else
                 BossVisuals.CreateOkMark(paper.transform, layout[i] + new Vector3(0.55f * S, 0f, 0f), 1.0f * S, 33);
         }
@@ -678,10 +755,14 @@ public class MinotaurBoss : EnemyBase
         }
     }
 
-    static Sprite LoadMapIconSprite(string iconName)
+    Sprite LoadMapIconSprite(string iconName)
     {
         if (string.IsNullOrWhiteSpace(iconName))
             return null;
+
+        Sprite serialized = MapIconReference(iconName);
+        if (serialized != null)
+            return serialized;
 
         if (mapIconCache.TryGetValue(iconName, out Sprite cached))
             return cached;
@@ -695,23 +776,47 @@ public class MinotaurBoss : EnemyBase
         return sprite;
     }
 
+    Sprite MapIconReference(string iconName)
+    {
+        DoorSpriteCatalog catalog = DoorSpriteCatalog.Load();
+        switch (iconName)
+        {
+            case "startroom": return wholeDesignIcon != null ? wholeDesignIcon : catalog != null ? catalog.startRoomIcon : null;
+            case "nolefteye": return noLeftEyeIcon != null ? noLeftEyeIcon : catalog != null ? catalog.noLeftEyeIcon : null;
+            case "norighteye": return noRightEyeIcon != null ? noRightEyeIcon : catalog != null ? catalog.noRightEyeIcon : null;
+            case "noleftarm": return noLeftArmIcon != null ? noLeftArmIcon : catalog != null ? catalog.noLeftArmIcon : null;
+            case "norightarm": return noRightArmIcon != null ? noRightArmIcon : catalog != null ? catalog.noRightArmIcon : null;
+            case "noleftleg": return noLeftLegIcon != null ? noLeftLegIcon : catalog != null ? catalog.noLeftLegIcon : null;
+            case "norightleg": return noRightLegIcon != null ? noRightLegIcon : catalog != null ? catalog.noRightLegIcon : null;
+            default: return null;
+        }
+    }
+
     void ShowCoveredPart(BodySlot? slot)
     {
         ClearCoveredPart();
         if (slot == null)
             return;
 
-        // req: 미노타우로스 실제 생김새(눈=상단중앙, 손=양옆 중간, 발=하단)에 맞춰 X 위치 조정.
-        Vector3 local;
-        switch (slot.Value)
-        {
-            case BodySlot.ArmLeft: local = new Vector3(-0.42f, -0.05f, 0f); break;  // 왼손(화면 좌측)
-            case BodySlot.EyeLeft: local = new Vector3(-0.11f, 0.30f, 0f); break;   // 왼눈(상단 중앙)
-            default: local = new Vector3(-0.14f, -0.42f, 0f); break;                // 왼발(하단)
-        }
+        coveredPatch = TrackTelegraph(BossVisuals.CreateXMark(transform, CoveredPartXLocal(slot.Value), 1.55f, 77));
+    }
 
-        // req: X 표시 크기를 더 키운다(0.72 → 1.15).
-        coveredPatch = TrackTelegraph(BossVisuals.CreateXMark(transform, local, 1.15f, 77));
+    Vector3 CoveredPartXLocal(BodySlot slot)
+    {
+        switch (slot)
+        {
+            case BodySlot.ArmLeft:
+            case BodySlot.ArmRight:
+                return new Vector3(-0.62f, -0.02f, 0f);
+            case BodySlot.EyeLeft:
+            case BodySlot.EyeRight:
+                return new Vector3(-0.18f, 0.55f, 0f);
+            case BodySlot.LegLeft:
+            case BodySlot.LegRight:
+                return new Vector3(-0.24f, -0.78f, 0f);
+            default:
+                return new Vector3(-0.24f, -0.78f, 0f);
+        }
     }
 
     void ClearCoveredPart()
@@ -728,10 +833,10 @@ public class MinotaurBoss : EnemyBase
 
     IEnumerator SewingPinRoutine()
     {
-        Vector2 zoneSize = new Vector2(Random.Range(6f, 8f), Random.Range(4f, 5f));
+        Vector2 zoneSize = new Vector2(Random.Range(7.5f, 10f), Random.Range(5.2f, 6.4f));
         Vector2 zoneCenter = new Vector2(
-            arenaCenter.x + Random.Range(-3.5f, 3.5f),
-            arenaCenter.y - arenaSize.y * 0.18f + Random.Range(-0.6f, 0.6f));
+            arenaCenter.x + Random.Range(-4.6f, 4.6f),
+            arenaCenter.y - arenaSize.y * 0.18f + Random.Range(-1.0f, 1.0f));
 
         int pinCount = Random.Range(3, 5);
         Vector2[] corners = BuildPinPolygon(zoneCenter, zoneSize, pinCount);
@@ -741,14 +846,18 @@ public class MinotaurBoss : EnemyBase
         for (int i = 0; i < corners.Length; i += 2)
         {
             pins.Add(TrackTelegraph(BossVisuals.CreatePin("SewingPin_" + i, corners[i], 50)));
+            SoundManager.PlayMinotaurPinStick();
             if (i + 1 < corners.Length)
+            {
                 pins.Add(TrackTelegraph(BossVisuals.CreatePin("SewingPin_" + (i + 1), corners[i + 1], 50)));
+                SoundManager.PlayMinotaurPinStick();
+            }
             CameraShake.ShakeHorizontal(0.28f, 0.34f);
-            SoundManager.PlayEnemyHit();
             yield return new WaitForSeconds(0.28f);
         }
 
         List<GameObject> threads = new List<GameObject>();
+        Coroutine overlappingBasicAttack = StartCoroutine(BasicAttackShapeRoutine(Random.value < 0.5f ? 2 : 3, true));
         for (int i = 0; i < corners.Length; i++)
         {
             Vector2 a = corners[i];
@@ -757,11 +866,16 @@ public class MinotaurBoss : EnemyBase
             yield return new WaitForSeconds(0.18f);
         }
 
+        if (overlappingBasicAttack != null)
+            yield return overlappingBasicAttack;
+
         GameObject glow = TrackTelegraph(EnemyTelegraph.CreatePolygon("PinTrapGlow", corners, trapGlowColor, 49));
         float blinkElapsed = 0f;
-        while (blinkElapsed < pinClosureTime)
+        float explosionDelay = Mathf.Max(0.1f, pinExplosionDelay);
+        float blinkSpeed = 3.4f / Mathf.Max(0.35f, pinClosureTime);
+        while (blinkElapsed < explosionDelay)
         {
-            EnemyTelegraph.SetUniformAlpha(glow, Mathf.PingPong(blinkElapsed * 2.4f, 0.45f) + 0.12f);
+            EnemyTelegraph.SetUniformAlpha(glow, Mathf.PingPong(blinkElapsed * blinkSpeed, 0.45f) + 0.12f);
             blinkElapsed += Time.deltaTime;
             yield return null;
         }
@@ -1033,6 +1147,7 @@ public class MinotaurBoss : EnemyBase
         const float zoomBack = 0.75f;
 
         // 1) 미노 쪽으로 클로즈업 + 숨쉬기 가속 + 붉게 물듦
+        SoundManager.PlayMinotaurFastBreath();
         float e = 0f;
         while (e < zoomIn)
         {

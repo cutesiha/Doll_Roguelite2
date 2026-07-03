@@ -271,7 +271,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     [SerializeField] AtmospherePreset minotaur = new AtmospherePreset
     {
         colorFilter = new Color(0.60f, 0.42f, 0.98f, 1f),
-        tintStrength = 0.16f,
+        tintStrength = 0f,
         overlayAlpha = 0.025f,
         vignetteAlpha = 0.105f,
         bloomWashAlpha = 0.036f,

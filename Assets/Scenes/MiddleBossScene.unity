@@ -1381,6 +1381,10 @@ MonoBehaviour:
   blockedColor: {r: 0.65, g: 0.15, b: 0.15, a: 1}
   doorWorldScale: 1.8
   tooltipHeight: 2.25
+  proximityRadius: 2.6
+  nearHighlightColor: {r: 1, g: 0.8, b: 0.62, a: 1}
+  tintShopDoorBlue: 1
+  shopDoorTint: {r: 0.68, g: 0.84, b: 1, a: 1}
   doorSpriteOverride: {fileID: 0}
   roomIconSpriteOverride: {fileID: 0}
   tooltipSpriteOverride: {fileID: 0}
@@ -4780,6 +4784,135 @@ Material:
     - _UnderlayColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
+--- !u!1 &1842059230
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1842059232}
+  - component: {fileID: 1842059231}
+  m_Layer: 0
+  m_Name: BGM_afterVictory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!82 &1842059231
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1842059230}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: 68a1d232fb7b6b14d8f31dfa19418345, type: 3}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!4 &1842059232
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1842059230}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.14869, y: -3.91647, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!21 &1850481354
 Material:
   serializedVersion: 8
@@ -5866,16 +5999,31 @@ MonoBehaviour:
   slimeVolume: 1
   clickClip: {fileID: 0}
   clickVolume: 1.35
-  punchClip: {fileID: 0}
+  punchClip: {fileID: 8300000, guid: 5d7353b90ee7b6042926fc89c6265a55, type: 3}
   punchVolume: 1
   coinPickupClip: {fileID: 0}
   coinPickupVolume: 1
   gemUseClip: {fileID: 0}
   gemUseVolume: 1
   gemUseDuration: 1.4
-  enemyHitClip: {fileID: 0}
+  waveClearClip: {fileID: 0}
+  waveClearVolume: 1
+  afterVictoryBgmClip: {fileID: 0}
+  twoLegsFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
+  twoLegsFootstepVolume: 1.23
+  oneLegFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
+  oneLegFootstepVolume: 1.23
+  noLegsFootstepClip: {fileID: 8300000, guid: 13a871d747201ea439960409e50727a5, type: 3}
+  noLegsFootstepVolume: 1.5
+  minotaurSlamClip: {fileID: 8300000, guid: e477ace3816012644aea5d1518c0952e, type: 3}
+  minotaurSlamVolume: 0.96
+  minotaurFastBreathClip: {fileID: 8300000, guid: cd0e26e137d8c29448c4f560678e647a, type: 3}
+  minotaurFastBreathVolume: 1
+  minotaurPinStickClip: {fileID: 8300000, guid: b49be53eaf0ab6e4d99270b70a68f8c4, type: 3}
+  minotaurPinStickVolume: 0.95
+  enemyHitClip: {fileID: 8300000, guid: 415735aa5a06b1247a521f98673b4838, type: 3}
   enemyHitVolume: 1
-  playerHitClip: {fileID: 0}
+  playerHitClip: {fileID: 8300000, guid: 42ded5264c9e97e419b436c34fcef5ac, type: 3}
   playerHitVolume: 1
 --- !u!4 &1993731298
 Transform:
@@ -5987,6 +6135,7 @@ MonoBehaviour:
   spawnApproachDuration: 1.75
   spawnApproachSpeed: 0.45
   firstRoomButtonWeight: 5
+  commonEnemyWeight: 2
   doors:
   - {fileID: 517243970}
   doorLine: {x: 8, y: 4}
@@ -6252,7 +6401,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01b62b3ed42e1394b80cbe58008d0130, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MinotaurBoss
-  maxHp: 100
+  maxHp: 120
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 3100000013}
@@ -6265,24 +6414,32 @@ MonoBehaviour:
   cameraShakeDuration: 0.12
   cameraShakeMagnitude: 0.1
   spriteName: mino_jjin
-  bossHp: 100
+  bossHp: 120
   bossScale: 3
   breathAnimator: {fileID: 3100000017}
   introDelay: 1
-  betweenActions: 1.6
+  betweenActions: 1
   strikeTime: 0.35
   solveTime: 8
   sewingLineThickness: 4.5
   diagonalLengthMultiplier: 1.2
-  largeAttackWarningTime: 2
-  firstJudgementTime: 8
-  repeatJudgementTime: 6
-  designMatchTime: 6
-  pinClosureTime: 2
+  largeAttackWarningTime: 1.15
+  firstJudgementTime: 6
+  repeatJudgementTime: 4
+  designMatchTime: 4
+  pinClosureTime: 0.55
+  pinExplosionDelay: 0.85
   successStunTime: 1.5
   judgementPaperOffset: {x: 0, y: -7}
   judgementMapIconSize: 1.8
   designMapIconSize: 2.5
+  wholeDesignIcon: {fileID: 0}
+  noLeftEyeIcon: {fileID: 0}
+  noRightEyeIcon: {fileID: 0}
+  noLeftArmIcon: {fileID: 0}
+  noRightArmIcon: {fileID: 0}
+  noLeftLegIcon: {fileID: 0}
+  noRightLegIcon: {fileID: 0}
   basicDamage: 18
   judgementPartDamage: 80
   matchFailDamage: 34
@@ -6296,6 +6453,8 @@ MonoBehaviour:
   strikeShakeDuration: 0.6
   strikeShakeMagnitude: 0.45
   strikeShakeOscillations: 8
+  ambienceTint: {r: 0.72, g: 0.58, b: 1, a: 1}
+  ambienceTintStrength: 0.12
 --- !u!60 &3100000016
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -6548,6 +6707,7 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 1018022204}
+  - {fileID: 1842059232}
   - {fileID: 619394802}
   - {fileID: 161824398}
   - {fileID: 315278997}

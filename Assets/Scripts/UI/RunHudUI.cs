@@ -1802,6 +1802,8 @@ void Awake()
 
     public static void ShowWaveClear()
     {
+        SoundManager.PlayWaveClear();
+
         RunHudUI hud = ActiveInstance();
         if (hud != null)
             hud.PlayWaveClear();
