@@ -19,6 +19,10 @@ public class SoundManager : MonoBehaviour
     public const string MinotaurSlamSfxPath = "Sounds/heavy_punch1";
     public const string MinotaurFastBreathSfxPath = "Sounds/mino_heat";
     public const string MinotaurPinStickSfxPath = "Sounds/short_punch1";
+    public const string BookBossRageSfxPath = "Sounds/book_boss_rage";
+    public const string BookBossRainLoopSfxPath = "Sounds/book_boss_rain_loop";
+    public const string BookBossFloorSlamSfxPath = "Sounds/book_boss_floor_slam";
+    public const string BookBossPaperFlySfxPath = "Sounds/book_boss_paper_fly";
     public const string WaveClearSfxPath = "Sounds/wave_clear";
     const string WaveClearFallbackSfxPath = "Sounds/paper333";
     public const string AfterVictoryBgmPath = "BGM/after_victory";
@@ -73,7 +77,19 @@ public class SoundManager : MonoBehaviour
     [SerializeField] AudioClip minotaurPinStickClip;
     [SerializeField, Range(0f, 3f)] float minotaurPinStickVolume = 0.95f;
 
+    [Header("Book Boss Clips")]
+    [SerializeField] AudioClip bookBossRageClip;
+    [SerializeField, Range(0f, 3f)] float bookBossRageVolume = 1f;
+    [SerializeField] AudioClip bookBossRainLoopClip;
+    [SerializeField, Range(0f, 3f)] float bookBossRainLoopVolume = 0.55f;
+    [SerializeField] AudioClip bookBossFloorSlamClip;
+    [SerializeField, Range(0f, 3f)] float bookBossFloorSlamVolume = 1.05f;
+    [SerializeField] AudioClip bookBossPaperFlyClip;
+    [SerializeField, Range(0f, 3f)] float bookBossPaperFlyVolume = 0.85f;
+
     AudioSource gemAudioSource;
+    AudioSource bookBossRageSource;
+    AudioSource bookBossRainSource;
     Coroutine gemStopRoutine;
     Coroutine bgmFadeRoutine;
 
@@ -285,6 +301,44 @@ public class SoundManager : MonoBehaviour
         manager.PlayManaged(manager.GetMinotaurPinStickClip(), manager.minotaurPinStickVolume, repeatGuard);
     }
 
+    public static void PlayBookBossRage(float repeatGuard = 0.2f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayBookBossRageInternal(repeatGuard);
+    }
+
+    public static void StopBookBossRage()
+    {
+        SoundManager manager = instance;
+        if (manager != null && manager.bookBossRageSource != null)
+            manager.bookBossRageSource.Stop();
+    }
+
+    public static void StartBookBossRainLoop()
+    {
+        SoundManager manager = EnsureInstance();
+        manager.StartBookBossRainLoopInternal();
+    }
+
+    public static void StopBookBossRainLoop()
+    {
+        SoundManager manager = instance;
+        if (manager != null && manager.bookBossRainSource != null)
+            manager.bookBossRainSource.Stop();
+    }
+
+    public static void PlayBookBossFloorSlam(float repeatGuard = 0.04f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetBookBossFloorSlamClip(), manager.bookBossFloorSlamVolume, repeatGuard);
+    }
+
+    public static void PlayBookBossPaperFly(float repeatGuard = 0.02f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetBookBossPaperFlyClip(), manager.bookBossPaperFlyVolume, repeatGuard);
+    }
+
     public static void PlaySfxResource(string resourcePath, string fallbackResourcePath = null, float repeatGuard = DefaultRepeatGuard, float volumeScale = 1f)
     {
         PlaySfx(LoadClipResource(resourcePath, fallbackResourcePath), repeatGuard, volumeScale);
@@ -488,6 +542,62 @@ public class SoundManager : MonoBehaviour
         gemAudioSource.loop = false;
     }
 
+    void EnsureBookBossRainSource()
+    {
+        if (bookBossRainSource != null)
+            return;
+
+        GameObject sourceObject = new GameObject("BookBossRainAudioSource");
+        sourceObject.transform.SetParent(transform, false);
+        bookBossRainSource = sourceObject.AddComponent<AudioSource>();
+        bookBossRainSource.playOnAwake = false;
+        bookBossRainSource.loop = true;
+    }
+
+    void EnsureBookBossRageSource()
+    {
+        if (bookBossRageSource != null)
+            return;
+
+        GameObject sourceObject = new GameObject("BookBossRageAudioSource");
+        sourceObject.transform.SetParent(transform, false);
+        bookBossRageSource = sourceObject.AddComponent<AudioSource>();
+        bookBossRageSource.playOnAwake = false;
+        bookBossRageSource.loop = false;
+    }
+
+    void PlayBookBossRageInternal(float repeatGuard)
+    {
+        AudioClip clip = GetBookBossRageClip();
+        if (clip == null)
+            return;
+
+        EnsureBookBossRageSource();
+        if (clip == lastClip && Time.unscaledTime - lastPlayTime < repeatGuard)
+            return;
+
+        lastClip = clip;
+        lastPlayTime = Time.unscaledTime;
+        bookBossRageSource.Stop();
+        bookBossRageSource.clip = clip;
+        bookBossRageSource.volume = Mathf.Max(0f, bookBossRageVolume) * Mathf.Max(0f, masterSfxVolume);
+        bookBossRageSource.Play();
+    }
+
+    void StartBookBossRainLoopInternal()
+    {
+        AudioClip clip = GetBookBossRainLoopClip();
+        if (clip == null)
+            return;
+
+        EnsureBookBossRainSource();
+        bookBossRainSource.clip = clip;
+        bookBossRainSource.loop = true;
+        bookBossRainSource.volume = Mathf.Max(0f, bookBossRainLoopVolume) * Mathf.Max(0f, masterSfxVolume);
+        if (!bookBossRainSource.isPlaying)
+            bookBossRainSource.Play();
+    }
+
     System.Collections.IEnumerator AfterVictoryBgmFadeRoutine(float fadeOutDuration, float fadeInDuration)
     {
         AudioSource bgmSource = FindPreferredBgmSource();
@@ -662,6 +772,34 @@ public class SoundManager : MonoBehaviour
         if (minotaurPinStickClip == null)
             minotaurPinStickClip = LoadClipResource(MinotaurPinStickSfxPath);
         return minotaurPinStickClip;
+    }
+
+    AudioClip GetBookBossRageClip()
+    {
+        if (bookBossRageClip == null)
+            bookBossRageClip = LoadClipResource(BookBossRageSfxPath);
+        return bookBossRageClip;
+    }
+
+    AudioClip GetBookBossRainLoopClip()
+    {
+        if (bookBossRainLoopClip == null)
+            bookBossRainLoopClip = LoadClipResource(BookBossRainLoopSfxPath);
+        return bookBossRainLoopClip;
+    }
+
+    AudioClip GetBookBossFloorSlamClip()
+    {
+        if (bookBossFloorSlamClip == null)
+            bookBossFloorSlamClip = LoadClipResource(BookBossFloorSlamSfxPath);
+        return bookBossFloorSlamClip;
+    }
+
+    AudioClip GetBookBossPaperFlyClip()
+    {
+        if (bookBossPaperFlyClip == null)
+            bookBossPaperFlyClip = LoadClipResource(BookBossPaperFlySfxPath);
+        return bookBossPaperFlyClip;
     }
 
     void EnsureSource()

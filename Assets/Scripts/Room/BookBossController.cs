@@ -127,8 +127,11 @@ public class BookBossController : MonoBehaviour
     RainyScreenDistortion rainyScreenDistortion;
     float restoreCameraSize;
     Coroutine cameraZoomRoutine;
+    Color bodyBaseColor = Color.white;
+    bool bodyBaseColorCaptured;
     Canvas endingCanvas;
     RectTransform endingPanelRect;
+    CanvasGroup endingPanelGroup;
     GameObject endingSentenceAura;
     GameObject finalDoorAura;
     ParticleSystem endingSentenceParticles;
@@ -139,8 +142,10 @@ public class BookBossController : MonoBehaviour
     readonly List<string> endingWordPool = new List<string>();
     readonly List<EndingWordView> endingWordViews = new List<EndingWordView>();
     bool endingPanelOpen;
+    bool endingPanelClosing;
     bool endingSolved;
     bool finalDoorEntered;
+    Coroutine endingPanelMotionRoutine;
 
     class PoisonZone
     {
@@ -197,6 +202,8 @@ public class BookBossController : MonoBehaviour
     void OnDestroy()
     {
         SetRainyScreenDistortion(false);
+        SoundManager.StopBookBossRage();
+        SoundManager.StopBookBossRainLoop();
         if (wave3PulseOverlay != null)
         {
             Destroy(wave3PulseOverlay);
@@ -356,6 +363,7 @@ public class BookBossController : MonoBehaviour
         leftArm = ResolvePart(leftArm, BookPartType.LeftArm, armHp, "bookboss_leftarm", bodyCenter + new Vector2(-3.4f, -0.4f), 1.4f, 72, true);
         rightArm = ResolvePart(rightArm, BookPartType.RightArm, armHp, "bookboss_rightarm", bodyCenter + new Vector2(3.4f, -0.4f), 1.4f, 72, true);
         ConfigureBodyIdleAnimation();
+        CaptureBodyBaseColor();
 
         leftArm.Destroyed += OnArmDestroyed;
         rightArm.Destroyed += OnArmDestroyed;
@@ -651,7 +659,10 @@ public class BookBossController : MonoBehaviour
             }
 
             if (wave == 2 && letterFallLoop == null)
+            {
+                SoundManager.StartBookBossRainLoop();
                 letterFallLoop = StartCoroutine(LetterFallLoop());
+            }
 
             yield return StartCoroutine(BasicLetterAttack());
             if (CurrentWave() >= 3) continue;
@@ -993,6 +1004,7 @@ public class BookBossController : MonoBehaviour
         }
 
         text.color = new Color(0.34f, 0.13f, 0.07f, 1f);
+        SoundManager.PlayBookBossFloorSlam();
         CameraShake.Shake(floorSentenceImpactShakeDuration, floorSentenceImpactShakeMagnitude);
 
         text.ForceMeshUpdate();
@@ -1055,6 +1067,7 @@ public class BookBossController : MonoBehaviour
         Vector2 start = body.BasePosition;
         Vector2 target = player != null ? (Vector2)player.position : arenaCenter;
         yield return StartCoroutine(PaperScrapWarningRoutine(target));
+        SoundManager.PlayBookBossPaperFly(0f);
 
         GameObject scrap = new GameObject("PaperScrap");
         scrap.transform.position = start;
@@ -1122,6 +1135,7 @@ public class BookBossController : MonoBehaviour
 
     IEnumerator LetterFallLoop()
     {
+        SoundManager.StartBookBossRainLoop();
         if (rainWobbleLoop == null)
             rainWobbleLoop = StartCoroutine(RainWobbleLoop());
         SetRainyScreenDistortion(CurrentWave() == 2);
@@ -1140,6 +1154,7 @@ public class BookBossController : MonoBehaviour
         }
 
         SetRainyScreenDistortion(false);
+        SoundManager.StopBookBossRainLoop();
         letterFallLoop = null;
     }
 
@@ -1414,7 +1429,10 @@ public class BookBossController : MonoBehaviour
         if (wave3PulseLoop == null)
             wave3PulseLoop = StartCoroutine(Wave3PulseLoop());
         if (letterFallLoop == null)
+        {
+            SoundManager.StartBookBossRainLoop();
             letterFallLoop = StartCoroutine(LetterFallLoop());
+        }
 
         // the book writes the doll's ending on the floor
         floorEndingText = CreateWorldText(BookLetters.BookEnding, new Vector2(arenaCenter.x, arenaCenter.y - arenaSize.y * 0.5f + 1.6f), 1.3f, new Color(0.75f, 0.12f, 0.12f, 0.9f), 56);
@@ -1462,9 +1480,16 @@ public class BookBossController : MonoBehaviour
         }
 
         if (body != null)
+        {
+            SoundManager.PlayBookBossRage();
             yield return StartCoroutine(BookFrenzyTremble(1.25f));
+            SoundManager.StopBookBossRage();
+        }
         else
+        {
             yield return new WaitForSeconds(1.25f);
+            SoundManager.StopBookBossRage();
+        }
 
         if (cam != null)
         {
@@ -1488,7 +1513,7 @@ public class BookBossController : MonoBehaviour
         if (renderer == null)
             yield break;
 
-        Color baseColor = renderer.color;
+        Color baseColor = BodyBaseColor(renderer);
         Vector3 basePosition = body.transform.position;
         float elapsed = 0f;
         while (elapsed < duration && body != null)
@@ -1505,6 +1530,24 @@ public class BookBossController : MonoBehaviour
             body.transform.position = basePosition;
         if (renderer != null)
             renderer.color = baseColor;
+    }
+
+    void CaptureBodyBaseColor()
+    {
+        SpriteRenderer renderer = body != null ? body.GetComponent<SpriteRenderer>() : null;
+        if (renderer == null)
+            return;
+
+        bodyBaseColor = renderer.color;
+        bodyBaseColorCaptured = true;
+    }
+
+    Color BodyBaseColor(SpriteRenderer renderer)
+    {
+        if (!bodyBaseColorCaptured && renderer != null)
+            CaptureBodyBaseColor();
+
+        return bodyBaseColorCaptured ? bodyBaseColor : Color.white;
     }
 
     IEnumerator StrongShakeLoop()
@@ -1758,6 +1801,7 @@ public class BookBossController : MonoBehaviour
             StopCoroutine(letterFallLoop);
             letterFallLoop = null;
         }
+        SoundManager.StopBookBossRainLoop();
 
         StopWave3Pulse();
         if (darkenOverlay != null)
@@ -1808,10 +1852,16 @@ public class BookBossController : MonoBehaviour
         CameraShake.Shake(0.3f, 0.22f);
         SoundManager.PlayEnemyHit();
 
-        for (int i = 0; i < 38; i++)
+        for (int i = 0; i < 24; i++)
         {
             Vector2 dir = Random.insideUnitCircle.sqrMagnitude > 0.01f ? Random.insideUnitCircle.normalized : Vector2.up;
             StartCoroutine(ScatterScrap(center, dir));
+        }
+
+        for (int i = 0; i < 58; i++)
+        {
+            Vector2 dir = Random.insideUnitCircle.sqrMagnitude > 0.01f ? Random.insideUnitCircle.normalized : Vector2.up;
+            StartCoroutine(ScatterDeathDust(center + Random.insideUnitCircle * 2.2f, dir));
         }
 
         if (leftArm != null) Destroy(leftArm.gameObject);
@@ -1825,8 +1875,8 @@ public class BookBossController : MonoBehaviour
         {
             float t = elapsed / fade;
             renderer.color = Color.Lerp(start, new Color(1f, 0.82f, 0.72f, 0f), t);
-            if (elapsed > 0.15f && Random.value < 0.18f)
-                StartCoroutine(ScatterScrap(center + Random.insideUnitCircle * 1.2f, Random.insideUnitCircle.normalized));
+            if (elapsed > 0.15f && Random.value < 0.15f)
+                StartCoroutine(ScatterDeathDust(center + Random.insideUnitCircle * 2.5f, Random.insideUnitCircle.normalized));
             elapsed += Time.deltaTime;
             yield return null;
         }
@@ -1838,6 +1888,39 @@ public class BookBossController : MonoBehaviour
         bossDefeated = true;
         RunHudUI.HideBossParts();
         yield return new WaitForSeconds(0.35f);
+    }
+
+    IEnumerator ScatterDeathDust(Vector2 center, Vector2 dir)
+    {
+        GameObject dust = new GameObject("BookDeathDust");
+        dust.transform.position = center;
+        float size = Random.Range(0.08f, 0.22f);
+        dust.transform.localScale = new Vector3(size, size, 1f);
+
+        SpriteRenderer renderer = dust.AddComponent<SpriteRenderer>();
+        renderer.sprite = BossVisuals.CircleSprite();
+        renderer.color = new Color(1f, 0.66f, 0.34f, Random.Range(0.24f, 0.48f));
+        renderer.sortingOrder = 92;
+
+        float speed = Random.Range(0.55f, 1.65f);
+        float drift = Random.Range(0.10f, 0.34f);
+        float life = Random.Range(1.1f, 2.2f);
+        float elapsed = 0f;
+        while (elapsed < life && dust != null)
+        {
+            Vector2 softDir = dir + Vector2.up * drift;
+            dust.transform.position += (Vector3)(softDir * speed * Time.deltaTime);
+            dust.transform.localScale *= 1f + Time.deltaTime * 0.22f;
+            Color c = renderer.color;
+            c.a = Mathf.Lerp(c.a, 0f, elapsed / life);
+            renderer.color = c;
+            speed *= 0.985f;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (dust != null)
+            Destroy(dust);
     }
 
     void OpenEndingRewritePanel()
@@ -1856,15 +1939,22 @@ public class BookBossController : MonoBehaviour
         for (int i = 0; i < BookLetters.BookEndingFragments.Length; i++)
             endingSlots[i] = BookLetters.BookEndingFragments[i];
 
-        BuildEndingPanel();
+        BuildEndingPanel(true);
     }
 
-    void BuildEndingPanel()
+    void BuildEndingPanel(bool animateOpen = false)
     {
+        if (endingPanelMotionRoutine != null)
+        {
+            StopCoroutine(endingPanelMotionRoutine);
+            endingPanelMotionRoutine = null;
+        }
+
         if (endingCanvas != null)
             Destroy(endingCanvas.gameObject);
 
         endingWordViews.Clear();
+        endingPanelClosing = false;
         GameObject canvasGO = new GameObject("EndingRewriteCanvas");
         endingCanvas = canvasGO.AddComponent<Canvas>();
         endingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -1886,11 +1976,19 @@ public class BookBossController : MonoBehaviour
         EndingBackdropClick click = backdrop.AddComponent<EndingBackdropClick>();
         click.owner = this;
 
-        GameObject panel = CreateUIRect(root, "EndingPanel", new Vector2(0f, 70f), new Vector2(1360f, 650f), new Color(0.98f, 0.88f, 0.68f, 0.97f));
+        GameObject panel = CreateUIRect(root, "EndingPanel", Vector2.zero, new Vector2(1360f, 650f), new Color(0.98f, 0.88f, 0.68f, 0.97f));
         endingPanelRect = panel.GetComponent<RectTransform>();
+        endingPanelGroup = panel.AddComponent<CanvasGroup>();
         Outline panelOutline = panel.AddComponent<Outline>();
         panelOutline.effectColor = new Color(0.25f, 0.11f, 0.04f, 0.92f);
         panelOutline.effectDistance = new Vector2(4f, -4f);
+
+        RectTransform closeButton = CreateUIRect(endingPanelRect, "CloseButton", new Vector2(620f, 285f), new Vector2(58f, 58f), new Color(0.98f, 0.88f, 0.68f, 0.88f)).GetComponent<RectTransform>();
+        BuildUIDashedBox(closeButton, closeButton.sizeDelta, new Color(0.24f, 0.11f, 0.04f, 0.95f));
+        AddUIText(closeButton, "X", "X", Vector2.zero, new Vector2(44f, 44f), 34f, new Color(0.24f, 0.11f, 0.04f, 1f), FontStyles.Bold);
+        EndingCloseButton close = closeButton.gameObject.AddComponent<EndingCloseButton>();
+        close.owner = this;
+        close.image = closeButton.GetComponent<Image>();
 
         AddUIText(endingPanelRect, "Title", "결말을 다시 쓰세요", new Vector2(0f, 260f), new Vector2(900f, 70f), 44f, new Color(0.30f, 0.12f, 0.04f, 1f), FontStyles.Bold);
 
@@ -1922,6 +2020,13 @@ public class BookBossController : MonoBehaviour
 
         for (int i = 0; i < endingWordPool.Count; i++)
             CreateEndingWordView(pool, endingWordPool[i], -1, false);
+
+        if (animateOpen)
+        {
+            if (endingPanelMotionRoutine != null)
+                StopCoroutine(endingPanelMotionRoutine);
+            endingPanelMotionRoutine = StartCoroutine(EndingPanelOpenRoutine());
+        }
     }
 
     void CreateEndingWordView(RectTransform parent, string word, int slotIndex, bool locked)
@@ -2012,6 +2117,92 @@ public class BookBossController : MonoBehaviour
         CloseEndingPanel(false);
     }
 
+    IEnumerator EndingPanelOpenRoutine()
+    {
+        if (endingPanelRect == null)
+            yield break;
+
+        Vector2 start = new Vector2(0f, -120f);
+        Vector2 overshoot = new Vector2(0f, 34f);
+        Vector2 center = Vector2.zero;
+        endingPanelRect.anchoredPosition = start;
+        if (endingPanelGroup != null)
+            endingPanelGroup.alpha = 0f;
+
+        float elapsed = 0f;
+        while (elapsed < 0.28f && endingPanelRect != null)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / 0.28f);
+            endingPanelRect.anchoredPosition = Vector2.Lerp(start, overshoot, t);
+            if (endingPanelGroup != null)
+                endingPanelGroup.alpha = Mathf.Lerp(0f, 1f, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        elapsed = 0f;
+        while (elapsed < 0.22f && endingPanelRect != null)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / 0.22f);
+            endingPanelRect.anchoredPosition = Vector2.Lerp(overshoot, center, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (endingPanelRect != null)
+            endingPanelRect.anchoredPosition = center;
+        if (endingPanelGroup != null)
+            endingPanelGroup.alpha = 1f;
+        endingPanelMotionRoutine = null;
+    }
+
+    void RequestCloseEndingPanel(bool restoreHudWords)
+    {
+        if (!endingPanelOpen || endingPanelClosing)
+            return;
+
+        if (endingPanelMotionRoutine != null)
+            StopCoroutine(endingPanelMotionRoutine);
+
+        endingPanelMotionRoutine = StartCoroutine(EndingPanelCloseRoutine(restoreHudWords));
+    }
+
+    IEnumerator EndingPanelCloseRoutine(bool restoreHudWords)
+    {
+        endingPanelClosing = true;
+        if (endingPanelRect == null)
+        {
+            CloseEndingPanel(restoreHudWords);
+            yield break;
+        }
+
+        Vector2 center = endingPanelRect.anchoredPosition;
+        Vector2 up = center + new Vector2(0f, 32f);
+        Vector2 down = center + new Vector2(0f, -150f);
+
+        float elapsed = 0f;
+        while (elapsed < 0.14f && endingPanelRect != null)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / 0.14f);
+            endingPanelRect.anchoredPosition = Vector2.Lerp(center, up, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        elapsed = 0f;
+        while (elapsed < 0.26f && endingPanelRect != null)
+        {
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / 0.26f);
+            endingPanelRect.anchoredPosition = Vector2.Lerp(up, down, t);
+            if (endingPanelGroup != null)
+                endingPanelGroup.alpha = Mathf.Lerp(1f, 0f, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        CloseEndingPanel(restoreHudWords);
+    }
+
     void CloseEndingPanel(bool restoreHudWords)
     {
         if (endingCanvas != null)
@@ -2019,7 +2210,10 @@ public class BookBossController : MonoBehaviour
 
         endingCanvas = null;
         endingPanelRect = null;
+        endingPanelGroup = null;
         endingPanelOpen = false;
+        endingPanelClosing = false;
+        endingPanelMotionRoutine = null;
         endingWordViews.Clear();
 
         if (restoreHudWords)
@@ -2158,10 +2352,7 @@ public class BookBossController : MonoBehaviour
         shape.radius = 1.65f;
 
         ParticleSystem.VelocityOverLifetimeModule velocity = ps.velocityOverLifetime;
-        velocity.enabled = true;
-        velocity.space = ParticleSystemSimulationSpace.Local;
-        velocity.x = new ParticleSystem.MinMaxCurve(-0.10f, 0.10f);
-        velocity.y = new ParticleSystem.MinMaxCurve(0.02f, 0.16f);
+        velocity.enabled = false;
 
         ParticleSystemRenderer renderer = ps.GetComponent<ParticleSystemRenderer>();
         renderer.sortingOrder = order;
@@ -2450,7 +2641,10 @@ public class BookBossController : MonoBehaviour
     void StartBodyWave3HitFeedback()
     {
         if (bodyWave3HitRoutine != null)
+        {
             StopCoroutine(bodyWave3HitRoutine);
+            RestoreBodyHitFeedback();
+        }
 
         bodyWave3HitRoutine = StartCoroutine(BodyWave3HitFeedbackRoutine());
     }
@@ -2461,7 +2655,7 @@ public class BookBossController : MonoBehaviour
         if (body == null || renderer == null)
             yield break;
 
-        Color baseColor = renderer.color;
+        Color baseColor = BodyBaseColor(renderer);
         Vector3 basePosition = body.BasePosition;
         float duration = 0.38f;
         float elapsed = 0f;
@@ -2480,6 +2674,16 @@ public class BookBossController : MonoBehaviour
         if (renderer != null)
             renderer.color = baseColor;
         bodyWave3HitRoutine = null;
+    }
+
+    void RestoreBodyHitFeedback()
+    {
+        if (body != null)
+            body.transform.position = body.BasePosition;
+
+        SpriteRenderer renderer = body != null ? body.GetComponent<SpriteRenderer>() : null;
+        if (renderer != null)
+            renderer.color = BodyBaseColor(renderer);
     }
 
     IEnumerator Wave3PulseLoop()
@@ -2809,7 +3013,40 @@ public class BookBossController : MonoBehaviour
         public void OnPointerClick(PointerEventData eventData)
         {
             if (owner != null && eventData.pointerCurrentRaycast.gameObject == gameObject && !owner.endingSolved)
-                owner.CloseEndingPanel(true);
+                owner.RequestCloseEndingPanel(true);
+        }
+    }
+
+    public class EndingCloseButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+    {
+        public BookBossController owner;
+        public Image image;
+        Color baseColor;
+
+        void Awake()
+        {
+            if (image == null)
+                image = GetComponent<Image>();
+            if (image != null)
+                baseColor = image.color;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (owner != null && !owner.endingSolved)
+                owner.RequestCloseEndingPanel(true);
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (image != null)
+                image.color = new Color(0.56f, 0.31f, 0.16f, 0.92f);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            if (image != null)
+                image.color = baseColor;
         }
     }
 
