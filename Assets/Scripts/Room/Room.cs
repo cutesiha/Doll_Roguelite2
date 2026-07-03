@@ -20,6 +20,8 @@ public class Room : MonoBehaviour
     [SerializeField, Min(0f)] float spawnApproachDuration = 1.75f;
     [SerializeField, Min(0f)] float spawnApproachSpeed = 0.45f;
     [SerializeField, Min(1)] int firstRoomButtonWeight = 5;
+    [Tooltip("단추/바늘/리본 등 일반 적의 가중치(spool 은 1). 클수록 spool보다 더 자주 나온다.")]
+    [SerializeField, Min(1)] int commonEnemyWeight = 2;
 
     [SerializeField] GameObject[] doors;
     [SerializeField] Vector2 doorLine = new Vector2(8f, 4f);
@@ -392,18 +394,15 @@ public class Room : MonoBehaviour
             return null;
 
         int extraButtonWeight = IsFirstCombatRoom() ? Mathf.Max(1, firstRoomButtonWeight) - 1 : 0;
-        int totalWeight = sceneEnemyTemplates.Count;
+
+        int totalWeight = 0;
         for (int i = 0; i < sceneEnemyTemplates.Count; i++)
-            if (extraButtonWeight > 0 && IsButtonTemplate(sceneEnemyTemplates[i]))
-                totalWeight += extraButtonWeight;
+            totalWeight += TemplateWeight(sceneEnemyTemplates[i], extraButtonWeight);
 
         int roll = Random.Range(0, Mathf.Max(1, totalWeight));
         for (int i = 0; i < sceneEnemyTemplates.Count; i++)
         {
-            int weight = 1;
-            if (extraButtonWeight > 0 && IsButtonTemplate(sceneEnemyTemplates[i]))
-                weight += extraButtonWeight;
-
+            int weight = TemplateWeight(sceneEnemyTemplates[i], extraButtonWeight);
             if (roll < weight)
                 return sceneEnemyTemplates[i];
 
@@ -411,6 +410,15 @@ public class Room : MonoBehaviour
         }
 
         return sceneEnemyTemplates[Random.Range(0, sceneEnemyTemplates.Count)];
+    }
+
+    // spool 은 가중치 1, 단추/바늘/리본 등 일반 적은 commonEnemyWeight(기본 2) → spool보다 더 자주 뜬다.
+    int TemplateWeight(GameObject template, int extraButtonWeight)
+    {
+        int weight = IsSpoolTemplate(template) ? 1 : Mathf.Max(1, commonEnemyWeight);
+        if (extraButtonWeight > 0 && IsButtonTemplate(template))
+            weight += extraButtonWeight;
+        return weight;
     }
 
     bool IsFirstCombatRoom()
@@ -446,6 +454,9 @@ public class Room : MonoBehaviour
         List<Vector3> allPositions = new List<Vector3>(insidePositions);
         allPositions.AddRange(outsidePositions);
 
+        // spool 은 절대 멀리(화면 밖/구석)에 스폰되지 않도록, 플레이어에서 가까운 위치에 우선 배정한다.
+        AssignSpoolsToClosestPositions(templates, allPositions);
+
         for (int i = 0; i < allPositions.Count; i++)
         {
             GameObject template = i < templates.Count ? templates[i] : EnemyTemplate(wave);
@@ -464,6 +475,47 @@ public class Room : MonoBehaviour
                 enemy.StartSpawnApproach(approachDur, spawnApproachSpeed);
                 enemies.Add(enemy);
             }
+        }
+    }
+
+    // 위치 목록 중 플레이어에서 가까운 자리부터 spool 템플릿을 배정하고, 나머지(먼 자리 포함)는
+    // 비-spool 적이 채운다. templates 는 positions 와 인덱스로 짝지어져 있으므로 templates 를 재배열한다.
+    void AssignSpoolsToClosestPositions(List<GameObject> templates, List<Vector3> positions)
+    {
+        int count = Mathf.Min(templates.Count, positions.Count);
+        if (count <= 1)
+            return;
+
+        List<GameObject> spools = new List<GameObject>();
+        List<GameObject> others = new List<GameObject>();
+        for (int i = 0; i < count; i++)
+        {
+            if (IsSpoolTemplate(templates[i]))
+                spools.Add(templates[i]);
+            else
+                others.Add(templates[i]);
+        }
+
+        if (spools.Count == 0)
+            return;
+
+        GameObject player = GameObject.FindWithTag("Player");
+        Vector3 playerPos = player != null ? player.transform.position : Vector3.zero;
+
+        List<int> order = new List<int>(count);
+        for (int i = 0; i < count; i++)
+            order.Add(i);
+        order.Sort((a, b) =>
+            Vector2.Distance(positions[a], playerPos).CompareTo(Vector2.Distance(positions[b], playerPos)));
+
+        int si = 0, oi = 0;
+        for (int k = 0; k < count; k++)
+        {
+            int posIndex = order[k];
+            if (si < spools.Count)
+                templates[posIndex] = spools[si++];
+            else
+                templates[posIndex] = others[oi++];
         }
     }
 
@@ -544,12 +596,28 @@ public class Room : MonoBehaviour
                 templates.Add(buttonTemplate);
         }
 
+        if (guaranteedButtons == 0 && enemyPrefab == null)
+            AddVariedSceneTemplates(templates, count);
+
         while (templates.Count < count)
             templates.Add(EnemyTemplate(wave));
 
         EnforceSpoolLimit(templates);
         Shuffle(templates);
         return templates;
+    }
+
+    void AddVariedSceneTemplates(List<GameObject> templates, int count)
+    {
+        if (sceneEnemyTemplates.Count == 0)
+            return;
+
+        List<GameObject> pool = new List<GameObject>(sceneEnemyTemplates);
+        Shuffle(pool);
+
+        for (int i = 0; i < pool.Count && templates.Count < count; i++)
+            if (pool[i] != null)
+                templates.Add(pool[i]);
     }
 
     // 스폰 목록에서 spool 개수를 웨이브당/방 누적 한도로 제한하고, 초과분은 다른 적으로 교체한다.

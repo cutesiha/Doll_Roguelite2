@@ -114,7 +114,12 @@ public class BookBossPart : EnemyBase
     // Controller-driven HP loss for the invulnerable body (minion kills).
     public void ReduceHp(int amount)
     {
-        currentHp = Mathf.Clamp(currentHp - Mathf.Max(0, amount), 0, maxHp);
+        int damage = Mathf.Max(0, amount);
+        if (damage <= 0)
+            return;
+
+        currentHp = Mathf.Clamp(currentHp - damage, 0, maxHp);
+        PlayHitFeedback();
     }
 
     protected override void OnDamaged()

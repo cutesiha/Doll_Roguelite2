@@ -2882,6 +2882,10 @@ MonoBehaviour:
   blockedColor: {r: 0.65, g: 0.15, b: 0.15, a: 1}
   doorWorldScale: 1.8
   tooltipHeight: 2.25
+  proximityRadius: 2.6
+  nearHighlightColor: {r: 1, g: 0.8, b: 0.62, a: 1}
+  tintShopDoorBlue: 1
+  shopDoorTint: {r: 0.68, g: 0.84, b: 1, a: 1}
   doorSpriteOverride: {fileID: 0}
   roomIconSpriteOverride: {fileID: 0}
   tooltipSpriteOverride: {fileID: 0}
@@ -5489,8 +5493,8 @@ Transform:
   m_GameObject: {fileID: 1010383989}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.25, y: -2.975, z: 0}
-  m_LocalScale: {x: 0.28, y: 9.45, z: 1}
+  m_LocalPosition: {x: -5.25, y: -1.6046, z: 0}
+  m_LocalScale: {x: 0.28, y: 6.7095, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1317547998}
@@ -8014,6 +8018,10 @@ MonoBehaviour:
   blockedColor: {r: 0.72, g: 0.2, b: 0.18, a: 1}
   doorWorldScale: 1.8
   tooltipHeight: 2.25
+  proximityRadius: 2.6
+  nearHighlightColor: {r: 1, g: 0.8, b: 0.62, a: 1}
+  tintShopDoorBlue: 1
+  shopDoorTint: {r: 0.68, g: 0.84, b: 1, a: 1}
   doorSpriteOverride: {fileID: 0}
   roomIconSpriteOverride: {fileID: 0}
   tooltipSpriteOverride: {fileID: 0}
@@ -11502,6 +11510,13 @@ MonoBehaviour:
   slimeVolume: 1
   clickClip: {fileID: 0}
   clickVolume: 1.35
+  punchClip: {fileID: 0}
+  punchVolume: 1
+  coinPickupClip: {fileID: 0}
+  coinPickupVolume: 1
+  gemUseClip: {fileID: 0}
+  gemUseVolume: 1
+  gemUseDuration: 1.4
   enemyHitClip: {fileID: 0}
   enemyHitVolume: 1
   playerHitClip: {fileID: 0}
@@ -12050,6 +12065,7 @@ MonoBehaviour:
   spawnApproachDuration: 1.75
   spawnApproachSpeed: 0.45
   firstRoomButtonWeight: 5
+  commonEnemyWeight: 2
   doors:
   - {fileID: 517243970}
   doorLine: {x: 8, y: 4}

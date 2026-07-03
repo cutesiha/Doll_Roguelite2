@@ -28,6 +28,13 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] Button[]          _storageBtn  = new Button[InventoryManager.StorageSlotCount];
     [SerializeField] TextMeshProUGUI[] _storageName = new TextMeshProUGUI[InventoryManager.StorageSlotCount];
     [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[InventoryManager.StorageSlotCount];
+    // A안: 프리팹에서 지정한 슬롯 배경색/빈 슬롯 텍스트를 그대로 보존한다.
+    readonly Color[] _storageEmptyColor = new Color[InventoryManager.StorageSlotCount];
+    readonly string[] _storageEmptyName = new string[InventoryManager.StorageSlotCount];
+    // A안: Q 보석 칸의 프리팹 배경(스프라이트/색)을 기억해 비었을 때 되돌린다.
+    Sprite _qGemBaseSprite;
+    Color _qGemBaseColor = Color.white;
+    bool _qGemBaseCaptured;
 
     [Header("캐릭터 부위 (EyeLeft=0 ~ LegRight=5)")]
     [SerializeField] Image[]  _charImg = new Image[InventoryManager.BodySlotCount];
@@ -42,6 +49,9 @@ public class InventoryUI : MonoBehaviour
     [Header("부위 상태 텍스트 (0~5=슬롯, 6=몸)")]
     [SerializeField] TextMeshProUGUI[] _statName = new TextMeshProUGUI[7];
     [SerializeField] TextMeshProUGUI[] _statHp   = new TextMeshProUGUI[7];
+    // #3: 프리팹에서 지정한 HP dots(●) 색을 기억해 장착 상태에 그대로 쓴다.
+    readonly Color[] _statHpAuthoredColor = new Color[7];
+    bool _statHpColorsCaptured;
 
     [Header("재봉 상태")]
     [SerializeField] TextMeshProUGUI _sewingStatus;
@@ -58,8 +68,12 @@ public class InventoryUI : MonoBehaviour
     Coroutine _panelAnimationRoutine;
     Vector2 _panelShownPosition;
     bool _panelPositionCaptured;
+    bool _panelOpenStateCaptured;
+    bool _panelWasAuthoredOpen;
     const float PanelHiddenOffsetY = 980f;
     const float PanelOvershootY = 36f;
+    // #2: 제목 텍스트 박스를 아주 조금 아래로 내리는 오프셋(px). 더 내리려면 값을 더 음수로.
+    const float TitleBoxYOffset = -8f;
 
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color ClearColor = new Color(0f, 0f, 0f, 0f);
@@ -67,6 +81,8 @@ public class InventoryUI : MonoBehaviour
     static readonly Color CEmpty = new Color(0.17f, 0.15f, 0.13f, 0.20f);
     static readonly Color CTrash = new Color(0.55f, 0.12f, 0.10f, 0.55f);
     static readonly Color CUnequippedPart = new Color(0.04f, 0.035f, 0.03f, 0.48f);
+    static readonly Color CDarkBrown = new Color(0.22f, 0.12f, 0.06f, 1f);
+    static readonly Color CSoftDarkBrown = new Color(0.22f, 0.12f, 0.06f, 0.22f);
     static readonly string[] PartSpriteNames =
     {
         "eye_left",
@@ -87,14 +103,16 @@ public class InventoryUI : MonoBehaviour
     }
 
     // ── Unity 수명 ─────────────────────────────────────────────────────
-    void Awake()
+void Awake()
     {
         EnsurePanelReference();
+        CaptureAuthoredPanelOpenState();
         EnsureStorageSlots();
         EnsureSpecialSlots();
         EnsureCharacterSlots();
         EnsureCharacterBaseImages();
-        ForceClosePanelImmediate();
+        EnsureInventoryDecorations();
+        ApplyAuthoredPanelOpenState();
         NormalizeCanvasTransform();
         if (transform.parent == null)
             DontDestroyOnLoad(gameObject);
@@ -105,13 +123,13 @@ public class InventoryUI : MonoBehaviour
         DisableTextRaycasts();
     }
 
-    void Start()
+void Start()
     {
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.OnInventoryChanged += RefreshUI;
         if (ItemInventoryManager.Instance != null)
             ItemInventoryManager.Instance.Changed += RefreshUI;
-        ForceClosePanelImmediate();
+        ApplyAuthoredPanelOpenState();
         RefreshUI();
     }
 
@@ -320,6 +338,45 @@ public class InventoryUI : MonoBehaviour
         TryBindCharacterSlot(BodySlot.LegLeft, "EquipPart_LegLeft");
         TryBindCharacterSlot(BodySlot.LegRight, "EquipPart_LegRight");
         TryBindCharacterSlot(BodySlot.Body, "EquipPart_Body");
+
+        NormalizeCharacterSlotButtons();
+    }
+
+    // #2: 몸 슬롯 버튼도 다른 부위와 동일한 호버 틴트를 갖게 하고,
+    // #3: 클릭 후에도 남는 selected(어두운) 틴트를 마우스를 떼면 사라지도록 제거한다.
+    void NormalizeCharacterSlotButtons()
+    {
+        // 프리팹에 authored된 부위 버튼(눈/팔/다리)의 색상 블록을 기준으로 삼는다.
+        Button colorRef = null;
+        for (int i = 0; i < _charBtn.Length; i++)
+        {
+            if (i == (int)BodySlot.Body)
+                continue;
+            if (_charBtn[i] != null) { colorRef = _charBtn[i]; break; }
+        }
+
+        for (int i = 0; i < _charBtn.Length; i++)
+        {
+            if (_charBtn[i] == null)
+                continue;
+
+            // 몸 슬롯은 코드로 추가돼 기본색이므로 다른 부위 색을 그대로 복사한다.
+            if (colorRef != null && _charBtn[i] != colorRef)
+                _charBtn[i].colors = colorRef.colors;
+
+            ClearButtonSelectedTint(_charBtn[i]);
+        }
+    }
+
+    // 클릭 후 selected 상태로 남아 틴트가 유지되는 것을 막는다(selected = normal).
+    static void ClearButtonSelectedTint(Button button)
+    {
+        if (button == null)
+            return;
+
+        ColorBlock cb = button.colors;
+        cb.selectedColor = cb.normalColor;
+        button.colors = cb;
     }
 
     // 몸통(Body) 슬롯은 히트박스보다 스프라이트를 더 크게 보여주기 위해
@@ -453,30 +510,40 @@ public class InventoryUI : MonoBehaviour
 
     void ConfigureStorageSlot(GameObject slot, Transform parent, int index)
     {
+        bool existedInHierarchy = slot.transform.parent != null;
         slot.name = "StorageSlot_" + (index + 1);
         slot.transform.SetParent(parent, false);
         slot.SetActive(true);
 
         RectTransform rect = slot.GetComponent<RectTransform>();
-        if (rect == null)
+        bool createdRect = rect == null;
+        if (createdRect)
             rect = slot.AddComponent<RectTransform>();
 
         const float slotWidth = 148f;
         const float slotHeight = 92f;
         const float gapX = 16f;
         const float gapY = 14f;
-        int col = index % 3;
-        int row = index / 3;
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = new Vector2((col - 1) * (slotWidth + gapX), -96f - row * (slotHeight + gapY));
-        rect.sizeDelta = new Vector2(slotWidth, slotHeight);
-        rect.localScale = Vector3.one;
+        if (!existedInHierarchy || createdRect)
+        {
+            int col = index % 3;
+            int row = index / 3;
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2((col - 1) * (slotWidth + gapX), -96f - row * (slotHeight + gapY));
+            rect.sizeDelta = new Vector2(slotWidth, slotHeight);
+            rect.localScale = Vector3.one;
+        }
 
         Image image = slot.GetComponent<Image>();
-        if (image == null)
+        bool createdImage = image == null;
+        if (createdImage)
             image = slot.AddComponent<Image>();
-        image.color = CEmpty;
+        // A안: 이미지가 코드로 새로 붙었을 때만 CEmpty 기본색을 쓰고,
+        // 프리팹에서 손으로 지정한 슬롯 배경색/모양은 그대로 보존한다.
+        if (index >= 0 && index < _storageEmptyColor.Length)
+            _storageEmptyColor[index] = createdImage ? CEmpty : image.color;
+        image.color = createdImage ? CEmpty : image.color;
         image.raycastTarget = true;
         _storageImg[index] = image;
 
@@ -484,6 +551,8 @@ public class InventoryUI : MonoBehaviour
         if (button == null)
             button = slot.AddComponent<Button>();
         button.targetGraphic = image;
+        // #3: 클릭 후 어두운 틴트가 남지 않도록 selected = normal 로 맞춘다.
+        ClearButtonSelectedTint(button);
         _storageBtn[index] = button;
 
         InventoryStorageDragSource dragSource = slot.GetComponent<InventoryStorageDragSource>();
@@ -511,9 +580,15 @@ public class InventoryUI : MonoBehaviour
         // 월드 동전 프리팹(BodyPart 동전 더미) 표시용 — 비스듬히 쌓인 동전더미
         EnsureCoinPile(slot.transform, slotWidth, slotHeight);
 
-        EnsureStorageSlotLabel(slot.transform, "SlotLabel", "슬롯 " + (index + 1), 18f, new Vector2(0f, -6f), new Vector2(slotWidth, 24f), TextAlignmentOptions.Center);
+        // A안: "슬롯 N" 오버레이는 프리팹에 실제로 있을 때만 유지하고,
+        // 없으면 코드가 새로 만들지 않는다(사용자 디자인엔 없는 더미 라벨 제거).
+        if (slot.transform.Find("SlotLabel") != null)
+            EnsureStorageSlotLabel(slot.transform, "SlotLabel", "슬롯 " + (index + 1), 18f, new Vector2(0f, -6f), new Vector2(slotWidth, 24f), TextAlignmentOptions.Center);
         // task21: 아이콘을 키웠으므로 이름은 슬롯 하단으로 이동
         _storageName[index] = EnsureStorageSlotLabel(slot.transform, "SlotName", "빈 슬롯", 14f, new Vector2(0f, -68f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
+        // A안: 프리팹에서 지정한 빈 슬롯 이름을 기억해 RefreshStorage 에서 되돌릴 때 사용.
+        if (index >= 0 && index < _storageEmptyName.Length)
+            _storageEmptyName[index] = _storageName[index] != null ? _storageName[index].text : "빈 슬롯";
         // task20: 부위 저장 시 하단 체력 동그라미(●○) 표시 제거 — 라벨은 남기되 항상 비운다
         _storageHp[index] = EnsureStorageSlotLabel(slot.transform, "SlotHP", "", 16f, new Vector2(0f, -66f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
     }
@@ -668,31 +743,42 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string value, float fontSize, Vector2 position, Vector2 size, TextAlignmentOptions alignment)
+TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string value, float fontSize, Vector2 position, Vector2 size, TextAlignmentOptions alignment)
     {
         Transform existing = parent.Find(name);
         GameObject go = existing != null ? existing.gameObject : new GameObject(name);
         go.transform.SetParent(parent, false);
 
         RectTransform rect = go.GetComponent<RectTransform>();
-        if (rect == null)
+        bool createdRect = rect == null;
+        if (createdRect)
             rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
-        rect.localScale = Vector3.one;
+        if (existing == null || createdRect)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+            rect.localScale = Vector3.one;
+        }
 
         TextMeshProUGUI label = go.GetComponent<TextMeshProUGUI>();
-        if (label == null)
+        bool createdLabel = label == null;
+        if (createdLabel)
             label = go.AddComponent<TextMeshProUGUI>();
-        label.font = UIThinDungFont.Get();
-        label.text = value;
-        label.fontSize = fontSize;
-        label.alignment = alignment;
-        label.color = TextColorForStorage(name);
+
         label.raycastTarget = false;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
+        // A안: 프리팹에서 직접 편집한 라벨(텍스트/폰트/색/정렬)은 그대로 두고,
+        // 코드가 새로 만든 라벨에만 기본값을 채운다.
+        if (createdLabel)
+        {
+            label.text = value;
+            label.font = UIThinDungFont.Get();
+            label.fontSize = fontSize;
+            label.alignment = alignment;
+            label.color = TextColorForStorage(name);
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+        }
         return label;
     }
 
@@ -711,7 +797,9 @@ public class InventoryUI : MonoBehaviour
         // 버리는 칸 (왼쪽) — 아이템을 끌어다 놓으면 월드에 다시 떨어뜨린다.
         GameObject trash = EnsureSpecialSlotRoot(parent, "TrashSlot", new Vector2(-82f, y), new Vector2(slotWidth, slotHeight));
         _trashImg = trash.GetComponent<Image>();
-        _trashImg.color = CTrash;
+        // A안: 프리팹에서 이미지를 지정했으면 CTrash 틴트로 덮지 않는다.
+        if (_trashImg.sprite == null)
+            _trashImg.color = CTrash;
         _trashImg.raycastTarget = true;
         if (trash.GetComponent<InventoryTrashDropTarget>() == null)
             trash.AddComponent<InventoryTrashDropTarget>();
@@ -721,6 +809,13 @@ public class InventoryUI : MonoBehaviour
         // Q 보석 칸 (오른쪽) — 기존 Q 소모품 시스템(ItemInventoryManager)을 표시·사용.
         GameObject qgem = EnsureSpecialSlotRoot(parent, "QGemSlot", new Vector2(82f, y), new Vector2(slotWidth, slotHeight));
         _qGemImg = qgem.GetComponent<Image>();
+        // A안: 프리팹에서 지정한 빈 칸 배경(스프라이트/색)을 기억해 둔다.
+        if (!_qGemBaseCaptured)
+        {
+            _qGemBaseSprite = _qGemImg.sprite;
+            _qGemBaseColor = _qGemImg.color;
+            _qGemBaseCaptured = true;
+        }
         _qGemImg.preserveAspect = true;
         _qGemImg.type = Image.Type.Simple;
         _qGemImg.raycastTarget = true;
@@ -728,6 +823,7 @@ public class InventoryUI : MonoBehaviour
         if (_qGemBtn == null)
             _qGemBtn = qgem.AddComponent<Button>();
         _qGemBtn.targetGraphic = _qGemImg;
+        ClearButtonSelectedTint(_qGemBtn);
         _qGemBtn.onClick.RemoveListener(UseQGem);
         _qGemBtn.onClick.AddListener(UseQGem);
         if (qgem.GetComponent<ItemConsumableDragSource>() == null)
@@ -746,13 +842,17 @@ public class InventoryUI : MonoBehaviour
         go.SetActive(true);
 
         RectTransform rect = go.GetComponent<RectTransform>();
-        if (rect == null)
+        bool createdRect = rect == null;
+        if (createdRect)
             rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = anchoredPosition;
-        rect.sizeDelta = size;
-        rect.localScale = Vector3.one;
+        if (existing == null || createdRect)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
+            rect.localScale = Vector3.one;
+        }
 
         Image image = go.GetComponent<Image>();
         if (image == null)
@@ -761,21 +861,190 @@ public class InventoryUI : MonoBehaviour
         return go;
     }
 
+    void EnsureInventoryDecorations()
+    {
+        EnsureBodyStatusDashedBorders();
+        EnsureInventoryTitleBackground();
+    }
+
+    void EnsureBodyStatusDashedBorders()
+    {
+        HashSet<RectTransform> decorated = new HashSet<RectTransform>();
+        AddStatusBorders(_statName, decorated);
+        AddStatusBorders(_statHp, decorated);
+    }
+
+    void AddStatusBorders(TextMeshProUGUI[] labels, HashSet<RectTransform> decorated)
+    {
+        if (labels == null)
+            return;
+
+        for (int i = 0; i < labels.Length; i++)
+        {
+            if (labels[i] == null)
+                continue;
+
+            RectTransform target = labels[i].transform.parent as RectTransform;
+            if (target == null)
+                target = labels[i].rectTransform;
+
+            if (target == null || !decorated.Add(target))
+                continue;
+
+            EnsureDashedBorder(target, "BodyStatusDashedBorder", CSlotRectSize(target), 14f, 8f, 3f, CDarkBrown);
+        }
+    }
+
+    void EnsureInventoryTitleBackground()
+    {
+        Transform title = FindChildRecursive(transform, "Title");
+        if (title == null)
+            title = FindChildRecursive(transform, "InventoryTitle");
+        if (title == null)
+            title = FindChildRecursive(transform, "TitleText");
+        if (title == null)
+            return;
+
+        RectTransform titleRect = title as RectTransform;
+        if (titleRect == null)
+            titleRect = title.GetComponent<RectTransform>();
+        if (titleRect == null)
+            return;
+
+        Transform existing = title.parent.Find("TitleBackgroundBox");
+        GameObject box = existing != null ? existing.gameObject : new GameObject("TitleBackgroundBox");
+        box.transform.SetParent(title.parent, false);
+        box.transform.SetSiblingIndex(Mathf.Max(0, title.GetSiblingIndex()));
+
+        RectTransform boxRect = box.GetComponent<RectTransform>();
+        bool createdRect = boxRect == null;
+        if (createdRect)
+            boxRect = box.AddComponent<RectTransform>();
+
+        // #4: 제목 RectTransform이 가로로 stretch돼 있어 그 폭(패널 전체)을 쓰면
+        // 파선 박스가 지나치게 넓어진다. 실제 글자 폭(preferredWidth)에 맞춘다.
+        TextMeshProUGUI titleLabel = title.GetComponent<TextMeshProUGUI>();
+        float textWidth = titleLabel != null && titleLabel.preferredWidth > 1f
+            ? titleLabel.preferredWidth
+            : CSlotRectSize(titleRect).x;
+        float textHeight = titleLabel != null && titleLabel.preferredHeight > 1f
+            ? titleLabel.preferredHeight
+            : CSlotRectSize(titleRect).y;
+        Vector2 boxSize = new Vector2(textWidth + 36f, textHeight + 18f);
+
+        // 가로 중앙 고정 앵커로 바꿔 sizeDelta 를 절대 폭으로 사용(제목 중앙 위치는 유지).
+        boxRect.anchorMin = new Vector2(0.5f, titleRect.anchorMax.y);
+        boxRect.anchorMax = new Vector2(0.5f, titleRect.anchorMax.y);
+        boxRect.pivot = titleRect.pivot;
+        // #2: 제목 텍스트 박스를 아주 조금 아래로 내린다.
+        boxRect.anchoredPosition = titleRect.anchoredPosition + new Vector2(0f, TitleBoxYOffset);
+        boxRect.sizeDelta = boxSize;
+
+        Image background = box.GetComponent<Image>();
+        if (background == null)
+            background = box.AddComponent<Image>();
+        background.color = CSoftDarkBrown;
+        background.raycastTarget = false;
+
+        // rect.size 가 아직 갱신 안 됐을 수 있어 계산한 boxSize 를 직접 넘긴다.
+        EnsureDashedBorder(boxRect, "TitleDashedBorder", boxSize, 18f, 9f, 3f, CDarkBrown);
+        title.SetAsLastSibling();
+    }
+
+    static Vector2 CSlotRectSize(RectTransform rect)
+    {
+        if (rect == null)
+            return Vector2.zero;
+
+        Vector2 size = rect.rect.size;
+        if (size.x <= 0.01f || size.y <= 0.01f)
+            size = rect.sizeDelta;
+        size.x = Mathf.Max(24f, Mathf.Abs(size.x));
+        size.y = Mathf.Max(18f, Mathf.Abs(size.y));
+        return size;
+    }
+
+    static void EnsureDashedBorder(RectTransform parent, string rootName, Vector2 size, float dashLength, float gap, float thickness, Color color)
+    {
+        if (parent == null)
+            return;
+
+        Transform existing = parent.Find(rootName);
+        GameObject root = existing != null ? existing.gameObject : new GameObject(rootName);
+        root.transform.SetParent(parent, false);
+        root.transform.SetAsLastSibling();
+
+        RectTransform rootRect = root.GetComponent<RectTransform>();
+        if (rootRect == null)
+            rootRect = root.AddComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+
+        EnsureDashedLine(rootRect, "Top", new Vector2(-size.x * 0.5f, size.y * 0.5f), Vector2.right, size.x, dashLength, gap, thickness, color);
+        EnsureDashedLine(rootRect, "Bottom", new Vector2(-size.x * 0.5f, -size.y * 0.5f), Vector2.right, size.x, dashLength, gap, thickness, color);
+        EnsureDashedLine(rootRect, "Left", new Vector2(-size.x * 0.5f, -size.y * 0.5f), Vector2.up, size.y, dashLength, gap, thickness, color);
+        EnsureDashedLine(rootRect, "Right", new Vector2(size.x * 0.5f, -size.y * 0.5f), Vector2.up, size.y, dashLength, gap, thickness, color);
+    }
+
+    static void EnsureDashedLine(RectTransform parent, string edgeName, Vector2 start, Vector2 direction, float length, float dash, float gap, float thickness, Color color)
+    {
+        Transform old = parent.Find(edgeName);
+        if (old != null)
+        {
+            if (Application.isPlaying)
+                Destroy(old.gameObject);
+            else
+                DestroyImmediate(old.gameObject);
+        }
+
+        GameObject edge = new GameObject(edgeName);
+        edge.transform.SetParent(parent, false);
+
+        for (float offset = 0f; offset < length; offset += dash + gap)
+        {
+            float segment = Mathf.Min(dash, length - offset);
+            GameObject piece = new GameObject("Dash");
+            piece.transform.SetParent(edge.transform, false);
+            RectTransform rect = piece.AddComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = start + direction * (offset + segment * 0.5f);
+            rect.sizeDelta = Mathf.Abs(direction.x) > 0.5f
+                ? new Vector2(segment, thickness)
+                : new Vector2(thickness, segment);
+
+            Image image = piece.AddComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+        }
+    }
+
     void RefreshSpecialSlots()
     {
-        if (_trashImg != null)
+        // A안: 프리팹에서 이미지를 지정한 버리기 칸은 CTrash 틴트로 덮지 않는다.
+        if (_trashImg != null && _trashImg.sprite == null)
             _trashImg.color = CTrash;
 
         if (_qGemImg == null)
             return;
 
         ItemData consumable = ItemInventoryManager.Instance != null ? ItemInventoryManager.Instance.Consumable : null;
-        SetImageSpriteSafely(_qGemImg, consumable != null ? consumable.Sprite : null);
+        if (consumable != null)
+        {
+            SetImageSpriteSafely(_qGemImg, consumable.Sprite);
+            _qGemImg.color = _qGemImg.sprite != null ? Color.white : CSlot;
+        }
+        else
+        {
+            // 소모품이 없으면 프리팹에서 지정한 빈 칸 배경을 그대로 보여준다.
+            SetImageSpriteSafely(_qGemImg, _qGemBaseSprite);
+            _qGemImg.color = _qGemBaseColor;
+        }
         _qGemImg.preserveAspect = true;
         _qGemImg.type = Image.Type.Simple;
-        _qGemImg.color = consumable != null
-            ? (_qGemImg.sprite != null ? Color.white : CSlot)
-            : CEmpty;
 
         if (_qGemName != null)
             _qGemName.text = consumable != null ? consumable.ItemName : "없음";
@@ -820,6 +1089,38 @@ public class InventoryUI : MonoBehaviour
         SetToggleHotspotVisible(false);
         RunUiPauseManager.SetPaused("Inventory", false);
     }
+
+void CaptureAuthoredPanelOpenState()
+    {
+        EnsurePanelReference();
+        if (_panelOpenStateCaptured)
+            return;
+
+        _panelWasAuthoredOpen = _panel != null && _panel.activeSelf;
+        _panelOpenStateCaptured = true;
+    }
+
+    void ApplyAuthoredPanelOpenState()
+    {
+        EnsurePanelReference();
+        CapturePanelShownPosition();
+        if (_panel == null)
+        {
+            SetToggleHotspotVisible(false);
+            RunUiPauseManager.SetPaused("Inventory", false);
+            return;
+        }
+
+        if (_panelRect != null)
+            _panelRect.anchoredPosition = _panelShownPosition;
+
+        // 씬/방 이동 시 인벤토리는 항상 닫힌 상태로 시작한다.
+        // (프리팹엔 편집 편의를 위해 열린 상태로 authored 되어 있어도 무시)
+        _panel.SetActive(false);
+        SetToggleHotspotVisible(false);
+        RunUiPauseManager.SetPaused("Inventory", false);
+    }
+
 
     void CapturePanelShownPosition()
     {
@@ -890,34 +1191,42 @@ public class InventoryUI : MonoBehaviour
         _panelRect.anchoredPosition = to;
     }
 
-    void NormalizeCanvasTransform()
+void NormalizeCanvasTransform()
     {
         bool isTopLevelCanvas = transform.parent == null;
         if (isTopLevelCanvas)
             transform.localScale = Vector3.one;
 
         Canvas canvas = GetComponent<Canvas>();
-        if (canvas == null)
+        bool addedCanvas = canvas == null;
+        if (addedCanvas)
             canvas = gameObject.AddComponent<Canvas>();
 
         if (canvas != null)
         {
             canvas.enabled = true;
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.overrideSorting = true;
-            canvas.sortingOrder = 500;
+            if (isTopLevelCanvas || addedCanvas)
+            {
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.overrideSorting = true;
+                canvas.sortingOrder = 500;
+            }
         }
 
         CanvasScaler scaler = GetComponent<CanvasScaler>();
-        if (scaler == null)
+        bool addedScaler = scaler == null;
+        if (addedScaler)
             scaler = gameObject.AddComponent<CanvasScaler>();
 
         if (scaler != null)
         {
             scaler.enabled = true;
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            if (isTopLevelCanvas || addedScaler)
+            {
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight = 0.5f;
+            }
         }
 
         GraphicRaycaster raycaster = GetComponent<GraphicRaycaster>();
@@ -1030,8 +1339,10 @@ public class InventoryUI : MonoBehaviour
             // task4: 배경 Image는 빈/찬 색상만; 실제 스프라이트는 ItemIcon 자식에 표시
             if (_storageImg[i] != null)
             {
-                SetImageSpriteSafely(_storageImg[i], null); // 배경은 스프라이트 없음
-                _storageImg[i].color = p != null ? new Color(0.12f, 0.09f, 0.06f, 0.35f) : CEmpty;
+                // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
+                // A안: 빈 슬롯은 프리팹에서 지정한 배경색을 그대로 보여준다.
+                Color emptyColor = i < _storageEmptyColor.Length ? _storageEmptyColor[i] : CEmpty;
+                _storageImg[i].color = p != null ? new Color(0.12f, 0.09f, 0.06f, 0.35f) : emptyColor;
                 ApplyAlphaHitTest(_storageImg[i], 0f);
             }
 
@@ -1063,7 +1374,7 @@ public class InventoryUI : MonoBehaviour
 
             if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
                 _storageBtn[i].targetGraphic = _storageImg[i];
-            if (_storageName[i] != null) _storageName[i].text = p != null ? p.DisplayName() : "빈 슬롯";
+            if (_storageName[i] != null) _storageName[i].text = p != null ? p.DisplayName() : (i < _storageEmptyName.Length ? _storageEmptyName[i] : "빈 슬롯");
             // task20: 보관 슬롯에 저장된 부위의 체력 동그라미 표시 안 함
             if (_storageHp[i]   != null) _storageHp[i].text  = "";
         }
@@ -1088,7 +1399,7 @@ public class InventoryUI : MonoBehaviour
                 if (_storageImg[i] != null)
                 {
                     _storageImg[i].color = new Color(0.12f, 0.09f, 0.06f, 0.35f);
-                    SetImageSpriteSafely(_storageImg[i], null);
+                    // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
                 }
                 Image icon = GetSlotItemIcon(_storageImg[i]);
                 if (icon != null)
@@ -1120,7 +1431,7 @@ public class InventoryUI : MonoBehaviour
                 if (_storageImg[i] != null)
                 {
                     _storageImg[i].color = new Color(0.18f, 0.13f, 0.04f, 0.45f);
-                    SetImageSpriteSafely(_storageImg[i], null);
+                    // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
                 }
                 Image icon = GetSlotItemIcon(_storageImg[i]);
                 if (icon != null) icon.color = Color.clear;
@@ -1176,6 +1487,14 @@ public class InventoryUI : MonoBehaviour
         }
 
         // 우측 상태
+        // #3: 코드가 색을 덮기 전에 프리팹에서 지정한 HP dots 색을 한 번 캡처한다.
+        if (!_statHpColorsCaptured)
+        {
+            for (int i = 0; i < _statHp.Length && i < _statHpAuthoredColor.Length; i++)
+                _statHpAuthoredColor[i] = _statHp[i] != null ? _statHp[i].color : new Color(0.88f, 0.48f, 0.24f, 1f);
+            _statHpColorsCaptured = true;
+        }
+
         int statCount = Mathf.Min(inv.equipped.Length, _statName.Length, _statHp.Length);
         for (int i = 0; i < statCount; i++)
         {
@@ -1184,8 +1503,9 @@ public class InventoryUI : MonoBehaviour
             if (_statHp[i]   != null)
             {
                 _statHp[i].text  = p != null ? Dots(p) : new string('○', 5);
+                // 장착 상태: 프리팹에서 지정한 색 유지 / 미장착: 어둡게.
                 _statHp[i].color = p != null
-                    ? new Color(0.88f, 0.48f, 0.24f, 1f)
+                    ? (i < _statHpAuthoredColor.Length ? _statHpAuthoredColor[i] : new Color(0.88f, 0.48f, 0.24f, 1f))
                     : new Color(0.17f, 0.15f, 0.13f, 0.42f);
             }
         }
@@ -1575,38 +1895,21 @@ public class InventoryUI : MonoBehaviour
 
     Image EnsureBaseImage(Transform parent, string objectName, Vector2 anchoredPosition, Vector2 size, Color placeholderColor)
     {
+        // A안: 프리팹에 실제로 배치한 베이스 이미지에만 바인딩하고,
+        // 없는 것은 런타임에 새로 만들지 않는다(캐릭터 위 유령 이미지 방지).
         Transform existing = parent.Find(objectName);
-        GameObject go = existing != null ? existing.gameObject : new GameObject(objectName);
-        go.transform.SetParent(parent, false);
-        bool isNew = existing == null;
+        if (existing == null)
+            return null;
 
-        RectTransform rect = go.GetComponent<RectTransform>();
-        if (rect == null)
-        {
-            rect = go.AddComponent<RectTransform>();
-            isNew = true;
-        }
-
-        if (isNew)
-        {
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = anchoredPosition;
-            rect.sizeDelta = size;
-            rect.localScale = Vector3.one;
-        }
+        GameObject go = existing.gameObject;
 
         Image image = go.GetComponent<Image>();
         if (image == null)
-        {
             image = go.AddComponent<Image>();
-            isNew = true;
-        }
 
         image.raycastTarget = false;
-        image.preserveAspect = true;
-        if (isNew || image.sprite == null)
-            image.color = image.sprite == null ? placeholderColor : Color.white;
+        if (image.sprite == null)
+            image.color = placeholderColor;
         return image;
     }
 
@@ -1615,13 +1918,25 @@ public class InventoryUI : MonoBehaviour
         if (_baseBodySprite == null)
             _baseBodySprite = LoadInterfaceSprite("body_real");
 
-        if (_baseBodyImg != null)
+        // A안: 프리팹에서 지정한 베이스 이미지 스프라이트/색은 덮어쓰지 않는다.
+        // (스프라이트가 비어 있을 때만 기본값을 채운다.)
+        if (_baseBodyImg != null && _baseBodyImg.sprite == null)
         {
             if (_baseBodySprite != null)
                 _baseBodyImg.sprite = _baseBodySprite;
             _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.20f) : Color.white;
         }
 
+<<<<<<< HEAD
+=======
+        if (_baseFaceImg != null && _baseFaceImg.sprite == null)
+        {
+            if (_baseFaceSprite != null)
+                _baseFaceImg.sprite = _baseFaceSprite;
+            _baseFaceImg.color = _baseFaceImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.16f) : Color.white;
+        }
+
+>>>>>>> 262c602d2ef71374517c8a953fa724fe99705770
         Transform hint = FindChildRecursive(transform, "CharacterImageText");
         if (hint != null)
             hint.gameObject.SetActive(_baseBodyImg == null || _baseBodyImg.sprite == null);

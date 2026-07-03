@@ -1381,6 +1381,10 @@ MonoBehaviour:
   blockedColor: {r: 0.65, g: 0.15, b: 0.15, a: 1}
   doorWorldScale: 1.8
   tooltipHeight: 2.25
+  proximityRadius: 2.6
+  nearHighlightColor: {r: 1, g: 0.8, b: 0.62, a: 1}
+  tintShopDoorBlue: 1
+  shopDoorTint: {r: 0.68, g: 0.84, b: 1, a: 1}
   doorSpriteOverride: {fileID: 0}
   roomIconSpriteOverride: {fileID: 0}
   tooltipSpriteOverride: {fileID: 0}
@@ -5866,6 +5870,13 @@ MonoBehaviour:
   slimeVolume: 1
   clickClip: {fileID: 0}
   clickVolume: 1.35
+  punchClip: {fileID: 0}
+  punchVolume: 1
+  coinPickupClip: {fileID: 0}
+  coinPickupVolume: 1
+  gemUseClip: {fileID: 0}
+  gemUseVolume: 1
+  gemUseDuration: 1.4
   enemyHitClip: {fileID: 0}
   enemyHitVolume: 1
   playerHitClip: {fileID: 0}
@@ -6070,18 +6081,41 @@ MonoBehaviour:
   poisonTickDamage: 1
   floorSentenceFontSize: 300
   floorSentenceWorldScale: 0.05
-  floorSentenceMinCount: 5
-  floorSentenceMaxCount: 8
+  floorSentenceMinCount: 3
+  floorSentenceMaxCount: 5
   floorSentenceSpawnDelay: 0.14
-  floorSentenceWarningTime: 0.55
-  floorSentenceActiveTime: 2.4
+  floorSentenceWarningTime: 1.1
+  floorSentenceActiveTime: 1.55
+  floorSentenceToPaperDelay: 1.1
   floorSentenceImpactShakeDuration: 0.18
   floorSentenceImpactShakeMagnitude: 0.18
-  paperScrapSpeed: 7.2
+  floorSentencePlayerSafeRadius: 3.2
+  paperScrapSpeed: 10.2
   paperScrapMaxTime: 2.8
-  paperScrapWarningTime: 0.7
+  paperScrapWarningTime: 1.75
   paperScrapWarningRadius: 1.05
   paperScrapVisualSize: {x: 0.82, y: 1.05}
+  wave2FloorSentenceRestRange: {x: 1.6, y: 2.2}
+  inkRainIntervalRange: {x: 0.65, y: 0.95}
+  inkRainBurstCountRange: {x: 2, y: 4}
+  inkRainWarningTime: 0.85
+  inkRainWarningRadius: 0.8
+  inkRainWarningColor: {r: 0.38, g: 0.58, b: 1, a: 0.72}
+  wave3IntroLockDuration: 2.8
+  wave3IntroCameraSize: 4.2
+  wave3ShakeMagnitude: 0.14
+  wave3ShakeInterval: 0.28
+  wave3MaxMinions: 5
+  wave3MinionSpawnInterval: {x: 2.4, y: 3.4}
+  wave3MinionSpawnWarningTime: 1.05
+  wave3MinionSpawnWarningRadius: 1.15
+  wave3AttackInitialDelay: 2.3
+  wave3BasicLetterExtraDelay: 1.25
+  wordFragmentBossColliderClearance: 0.9
+  enableRainyScreenDistortion: 1
+  distortionStrength: 0.018
+  distortionSpeed: 0.22
+  distortionScale: 5.5
   body: {fileID: 3200000014}
   leftArm: {fileID: 3200000024}
   rightArm: {fileID: 3200000034}

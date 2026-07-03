@@ -34,6 +34,27 @@ public class InteractableHighlight : MonoBehaviour
             activateDistance = distance;
     }
 
+    // 글로우 크기(배율)와 색을 조정한다. 문처럼 더 넓고 밝게 표현하고 싶을 때 사용.
+    // Build 전에 호출하면 값이 적용되고, Build 후에 호출하면 즉시 반영한다. 스파클 개수는 그대로.
+    public void ConfigureGlow(float sizeMultiplier, Color color)
+    {
+        glowSizeMultiplier = Mathf.Max(0.1f, sizeMultiplier);
+        glowColor = color;
+
+        if (glowRenderer != null)
+        {
+            Vector3 center = targetRenderer != null ? targetRenderer.bounds.center : transform.position;
+            float objectSize = targetRenderer != null
+                ? Mathf.Max(targetRenderer.bounds.size.x, targetRenderer.bounds.size.y)
+                : 1.6f;
+            if (objectSize <= 0.01f)
+                objectSize = 1.6f;
+
+            glowRenderer.transform.position = center;
+            SetWorldDiameter(glowRenderer.transform, objectSize * glowSizeMultiplier);
+        }
+    }
+
     void Start()
     {
         Build();

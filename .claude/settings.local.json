@@ -20,7 +20,8 @@
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); \\(Get-Command node\\).Source)",
       "PowerShell(Get-Process -Id 3332)",
       "mcp__unity__get_scene_info",
-      "Bash(xargs grep -l \"a97c105638bdf8b4a8650670310a4cd3\")"
+      "Bash(xargs grep -l \"a97c105638bdf8b4a8650670310a4cd3\")",
+      "mcp__UnityMCP__refresh_unity"
     ]
   }
 }
