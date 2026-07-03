@@ -1940,16 +1940,6 @@ void NormalizeCanvasTransform()
             _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.20f) : Color.white;
         }
 
-<<<<<<< HEAD
-=======
-        if (_baseFaceImg != null && _baseFaceImg.sprite == null)
-        {
-            if (_baseFaceSprite != null)
-                _baseFaceImg.sprite = _baseFaceSprite;
-            _baseFaceImg.color = _baseFaceImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.16f) : Color.white;
-        }
-
->>>>>>> 262c602d2ef71374517c8a953fa724fe99705770
         Transform hint = FindChildRecursive(transform, "CharacterImageText");
         if (hint != null)
             hint.gameObject.SetActive(_baseBodyImg == null || _baseBodyImg.sprite == null);
