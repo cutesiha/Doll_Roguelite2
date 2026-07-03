@@ -398,7 +398,6 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void PlayHitFeedback()
     {
-        SoundManager.PlayEnemyHit();
         // 플레이어가 적을 때릴 때는 화면을 흔들지 않는다.
         // (화면 흔들림은 플레이어가 피격당할 때만 — PlayerDamageReceiver.ShakeCamera)
 
