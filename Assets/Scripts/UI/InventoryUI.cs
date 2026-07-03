@@ -44,7 +44,9 @@ public class InventoryUI : MonoBehaviour
 
     [Header("Character Base Images")]
     [SerializeField] Sprite _baseBodySprite;
+    [SerializeField] Sprite _baseFaceSprite;
     [SerializeField] Image _baseBodyImg;
+    [SerializeField] Image _baseFaceImg;
 
     [Header("부위 상태 텍스트 (0~5=슬롯, 6=몸)")]
     [SerializeField] TextMeshProUGUI[] _statName = new TextMeshProUGUI[7];
@@ -1901,6 +1903,7 @@ void NormalizeCanvasTransform()
             return;
 
         _baseBodyImg = EnsureBaseImage(frame, "BodyBaseImage", new Vector2(0f, -38f), new Vector2(250f, 340f), new Color(0.17f, 0.15f, 0.13f, 0.20f));
+        _baseFaceImg = EnsureBaseImage(frame, "FaceBaseImage", new Vector2(0f, 118f), new Vector2(190f, 170f), new Color(0.17f, 0.15f, 0.13f, 0.16f));
 
         HideCharacterPartLabels();
         ApplyCharacterBaseSprites();
@@ -1930,6 +1933,8 @@ void NormalizeCanvasTransform()
     {
         if (_baseBodySprite == null)
             _baseBodySprite = LoadInterfaceSprite("body_real");
+        if (_baseFaceSprite == null)
+            _baseFaceSprite = LoadInterfaceSprite("head");
 
         // A안: 프리팹에서 지정한 베이스 이미지 스프라이트/색은 덮어쓰지 않는다.
         // (스프라이트가 비어 있을 때만 기본값을 채운다.)
@@ -1940,8 +1945,6 @@ void NormalizeCanvasTransform()
             _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.20f) : Color.white;
         }
 
-<<<<<<< HEAD
-=======
         if (_baseFaceImg != null && _baseFaceImg.sprite == null)
         {
             if (_baseFaceSprite != null)
@@ -1949,10 +1952,9 @@ void NormalizeCanvasTransform()
             _baseFaceImg.color = _baseFaceImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.16f) : Color.white;
         }
 
->>>>>>> 262c602d2ef71374517c8a953fa724fe99705770
         Transform hint = FindChildRecursive(transform, "CharacterImageText");
         if (hint != null)
-            hint.gameObject.SetActive(_baseBodyImg == null || _baseBodyImg.sprite == null);
+            hint.gameObject.SetActive((_baseBodyImg == null || _baseBodyImg.sprite == null) && (_baseFaceImg == null || _baseFaceImg.sprite == null));
     }
 
     void HideCharacterPartLabels()

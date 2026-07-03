@@ -98,6 +98,11 @@ public class BookBossPart : EnemyBase
 
     public Vector2 BasePosition => baseLocalPosition;
 
+    public void SetDamageable(bool damageable)
+    {
+        Damageable = damageable;
+    }
+
     public void SetBobOffset(float yOffset)
     {
         transform.position = baseLocalPosition + new Vector3(0f, yOffset, 0f);

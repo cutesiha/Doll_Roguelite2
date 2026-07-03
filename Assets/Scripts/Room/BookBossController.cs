@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -71,6 +73,7 @@ public class BookBossController : MonoBehaviour
     [SerializeField, Min(0.1f)] float wave3MinionSpawnWarningRadius = 1.15f;
     [SerializeField, Min(0f)] float wave3AttackInitialDelay = 2.3f;
     [SerializeField, Min(0f)] float wave3BasicLetterExtraDelay = 1.25f;
+    [SerializeField, Min(0.1f)] float wave3MinionScale = 1.85f;
 
     [Header("Word Fragment Drop")]
     [SerializeField, Min(0f)] float wordFragmentBossColliderClearance = 0.9f;
@@ -98,6 +101,7 @@ public class BookBossController : MonoBehaviour
     PlayerDamageReceiver receiver;
 
     readonly List<string> collectedWords = new List<string>();
+    readonly HashSet<string> droppedWords = new HashSet<string>();
     readonly List<EnemyBase> minions = new List<EnemyBase>();
     readonly HashSet<int> creditedMinionDeaths = new HashSet<int>();
     readonly List<PoisonZone> poisonZones = new List<PoisonZone>();
@@ -119,9 +123,24 @@ public class BookBossController : MonoBehaviour
     Coroutine rainWobbleLoop;
     Coroutine wave3PulseLoop;
     Coroutine bodyWave3HitRoutine;
+    bool bookProximityHintShown;
     RainyScreenDistortion rainyScreenDistortion;
     float restoreCameraSize;
     Coroutine cameraZoomRoutine;
+    Canvas endingCanvas;
+    RectTransform endingPanelRect;
+    GameObject endingSentenceAura;
+    GameObject finalDoorAura;
+    ParticleSystem endingSentenceParticles;
+    ParticleSystem finalDoorParticles;
+    TextMeshPro endingPromptText;
+    TextMeshPro floorEndingInteractText;
+    readonly string[] endingSlots = new string[5];
+    readonly List<string> endingWordPool = new List<string>();
+    readonly List<EndingWordView> endingWordViews = new List<EndingWordView>();
+    bool endingPanelOpen;
+    bool endingSolved;
+    bool finalDoorEntered;
 
     class PoisonZone
     {
@@ -171,6 +190,7 @@ public class BookBossController : MonoBehaviour
 
         SpawnParts();
         RunHudUI.SetWaveHudVisible(false);
+        StartCoroutine(BookProximityHintLoop());
         StartCoroutine(BossRoutine());
     }
 
@@ -341,6 +361,8 @@ public class BookBossController : MonoBehaviour
         rightArm.Destroyed += OnArmDestroyed;
         leftArm.Damaged += OnArmDamaged;
         rightArm.Damaged += OnArmDamaged;
+        if (body != null)
+            body.Damaged += OnBodyDamaged;
     }
 
     BookBossPart ResolvePart(BookBossPart placedPart, BookPartType type, int hp, string spriteName, Vector2 fallbackCenter, float fallbackScale, int sortingOrder, bool damageable)
@@ -399,6 +421,19 @@ public class BookBossController : MonoBehaviour
         if (arm.PartType == BookPartType.LeftArm) leftDead = true;
         if (arm.PartType == BookPartType.RightArm) rightDead = true;
         CameraShake.Shake(0.3f, 0.34f);
+
+        if (leftDead && rightDead)
+        {
+            if (body != null)
+                body.SetDamageable(true);
+            DropRemainingLetters();
+        }
+    }
+
+    void OnBodyDamaged(BookBossPart part)
+    {
+        if (CurrentWave() == 3)
+            StartBodyWave3HitFeedback();
     }
 
     void OnArmDamaged(BookBossPart arm)
@@ -417,9 +452,35 @@ public class BookBossController : MonoBehaviour
 
     void DropLetter(BookBossPart sourcePart)
     {
-        string word = BookLetters.Fragments[Random.Range(0, BookLetters.Fragments.Length)];
+        string word = NextUndroppedLetter();
         Vector2 pos = LetterDropPosition(sourcePart);
+        droppedWords.Add(word);
         LetterPickup.Spawn(word, pos, OnWordCollected);
+    }
+
+    string NextUndroppedLetter()
+    {
+        for (int i = 0; i < BookLetters.Fragments.Length; i++)
+            if (!droppedWords.Contains(BookLetters.Fragments[i]))
+                return BookLetters.Fragments[i];
+
+        return BookLetters.Fragments[Random.Range(0, BookLetters.Fragments.Length)];
+    }
+
+    void DropRemainingLetters()
+    {
+        for (int i = 0; i < BookLetters.Fragments.Length; i++)
+        {
+            string word = BookLetters.Fragments[i];
+            if (droppedWords.Contains(word))
+                continue;
+
+            BookBossPart source = i % 2 == 0 ? leftArm : rightArm;
+            Vector2 pos = LetterDropPosition(source);
+            pos += Random.insideUnitCircle * 0.55f;
+            droppedWords.Add(word);
+            LetterPickup.Spawn(word, pos, OnWordCollected);
+        }
     }
 
     Vector2 LetterDropPosition(BookBossPart sourcePart)
@@ -576,6 +637,7 @@ public class BookBossController : MonoBehaviour
     {
         RunHudUI.SetCollectedWords(collectedWords);
         yield return StartCoroutine(UnfoldIntro());
+        yield return StartCoroutine(ShowScreenHint("바닥의 문장을 피하세요!", new Vector2(280f, -154f), 2.4f));
 
         while (!endingStarted && !bossDefeated)
         {
@@ -627,6 +689,89 @@ public class BookBossController : MonoBehaviour
         }
         body.transform.localScale = baseScale;
         SoundManager.PlayPanel();
+    }
+
+    IEnumerator BookProximityHintLoop()
+    {
+        while (!bookProximityHintShown && !bossDefeated)
+        {
+            if (player != null && body != null && Vector2.Distance(player.position, body.BasePosition) <= 4.2f)
+            {
+                bookProximityHintShown = true;
+                yield return StartCoroutine(ShowWorldBalloonHint(
+                    "책 괴물의 팔을 공격하여\n글자 조각을 획득하세요.",
+                    body.BasePosition + new Vector2(0f, 2.4f),
+                    2.8f));
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
+    IEnumerator ShowScreenHint(string message, Vector2 anchoredPosition, float duration)
+    {
+        GameObject canvasObject = new GameObject("BookBossScreenHint");
+        Canvas canvas = canvasObject.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 950;
+        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        canvasObject.AddComponent<GraphicRaycaster>();
+
+        GameObject textObject = new GameObject("HintText");
+        textObject.transform.SetParent(canvasObject.transform, false);
+        TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
+        text.text = message;
+        text.font = UIThinDungFont.Get();
+        text.fontSize = 34f;
+        text.fontStyle = FontStyles.Bold;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = new Color(1f, 0.86f, 0.52f, 0f);
+        text.raycastTarget = false;
+        RectTransform rect = text.rectTransform;
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = new Vector2(520f, 62f);
+
+        float elapsed = 0f;
+        while (elapsed < duration && text != null)
+        {
+            float blink = 0.55f + 0.45f * Mathf.Sin(elapsed * 12f);
+            float fade = Mathf.Clamp01(Mathf.Min(elapsed / 0.35f, (duration - elapsed) / 0.45f));
+            text.color = new Color(1f, Mathf.Lerp(0.72f, 0.95f, blink), 0.42f, fade);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (canvasObject != null)
+            Destroy(canvasObject);
+    }
+
+    IEnumerator ShowWorldBalloonHint(string message, Vector2 position, float duration)
+    {
+        TextMeshPro text = CreateWorldText(message, position, 0.78f, new Color(1f, 0.84f, 0.56f, 1f), 95);
+        if (text == null)
+            yield break;
+
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontStyle = FontStyles.Bold;
+        text.rectTransform.sizeDelta = new Vector2(8f, 2.4f);
+
+        float elapsed = 0f;
+        while (elapsed < duration && text != null)
+        {
+            float fade = Mathf.Clamp01(Mathf.Min(elapsed / 0.25f, (duration - elapsed) / 0.45f));
+            text.color = new Color(1f, 0.84f, 0.56f, fade);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (text != null)
+            Destroy(text.gameObject);
     }
 
     // ---- pattern 1: typed sentences --------------------------------------
@@ -1476,7 +1621,7 @@ public class BookBossController : MonoBehaviour
     {
         GameObject go = new GameObject("BookMinion");
         go.transform.position = position;
-        go.transform.localScale = Vector3.one * 1.18f;
+        go.transform.localScale = Vector3.one * Mathf.Max(0.1f, wave3MinionScale);
         SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
         Rigidbody2D rb = go.AddComponent<Rigidbody2D>();
         rb.gravityScale = 0f;
@@ -1498,11 +1643,42 @@ public class BookBossController : MonoBehaviour
 
         renderer.sortingOrder = 6;
         EnemyManager.Instance?.ConfigureEnemy(enemy, true);
+        ForceVisibleMinion(go);
+        StartCoroutine(ForceVisibleMinionNextFrame(go));
         enemy.OnDied += OnMinionDied;
         StartCoroutine(TrackMinionDeath(enemy, enemy.GetInstanceID()));
         enemy.StartSpawnApproach(1.2f, 1.2f);
         minions.Add(enemy);
         EnemyManager.Instance?.RegisterSpawnedEnemy(enemy);
+    }
+
+    void ForceVisibleMinion(GameObject root)
+    {
+        if (root == null)
+            return;
+
+        SpriteRenderer[] renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            SpriteRenderer renderer = renderers[i];
+            if (renderer == null)
+                continue;
+
+            Color color = renderer.color;
+            if (color.a < 0.98f)
+                color.a = 1f;
+            renderer.color = color;
+            renderer.enabled = true;
+            renderer.sortingOrder = Mathf.Max(renderer.sortingOrder, 6);
+            if (renderer.sharedMaterial == null || renderer.sharedMaterial.shader == null)
+                renderer.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+        }
+    }
+
+    IEnumerator ForceVisibleMinionNextFrame(GameObject root)
+    {
+        yield return null;
+        ForceVisibleMinion(root);
     }
 
     void OnMinionDied(EnemyBase enemy)
@@ -1541,6 +1717,9 @@ public class BookBossController : MonoBehaviour
 
     IEnumerator EndingSequence()
     {
+        yield return StartCoroutine(RewriteEndingSequence());
+        yield break;
+
         // stop chaos
         ClearMinions();
         if (letterFallLoop != null)
@@ -1569,6 +1748,533 @@ public class BookBossController : MonoBehaviour
         if (hint != null) Destroy(hint.gameObject);
 
         yield return StartCoroutine(CutsceneRoutine());
+    }
+
+    IEnumerator RewriteEndingSequence()
+    {
+        ClearMinions();
+        if (letterFallLoop != null)
+        {
+            StopCoroutine(letterFallLoop);
+            letterFallLoop = null;
+        }
+
+        StopWave3Pulse();
+        if (darkenOverlay != null)
+            Destroy(darkenOverlay);
+
+        if (playerController != null)
+            playerController.ApplyTemporarySpeedMultiplier(1f, 0f);
+
+        Vector2 endingPos = body != null ? body.BasePosition : arenaCenter;
+        yield return StartCoroutine(FadeOutBossBodyWithScraps(endingPos));
+
+        if (floorEndingText != null)
+            Destroy(floorEndingText.gameObject);
+
+        floorEndingText = CreateWorldText(BookLetters.BookEnding, endingPos + new Vector2(0f, -0.35f), 2.15f, new Color(0.45f, 0.20f, 0.08f, 1f), 92);
+        floorEndingText.fontStyle = FontStyles.Bold;
+        floorEndingText.rectTransform.sizeDelta = new Vector2(18f, 3.4f);
+        BuildWorldEndingDashedBox(floorEndingText.transform.position, new Vector2(16.5f, 2.4f));
+
+        endingSentenceAura = CreateSoftAura(endingPos, new Color(1f, 0.68f, 0.38f, 0.26f), 5.4f, 88);
+        endingSentenceParticles = CreateSoftParticles("EndingSentenceParticles", endingPos, new Color(1f, 0.73f, 0.48f, 0.72f), 40, 0.22f, 0.35f, 93);
+        endingPromptText = CreateWorldText("[E] 결말 다시 쓰기", endingPos + new Vector2(0f, 1.9f), 1.0f, new Color(1f, 0.86f, 0.55f, 0f), 94);
+
+        while (!endingSolved)
+        {
+            float distance = player != null ? Vector2.Distance(player.position, endingPos) : 999f;
+            bool near = distance <= 3.2f;
+            SetAuraVisible(endingSentenceAura, endingSentenceParticles, near);
+            if (endingPromptText != null)
+            {
+                Color c = endingPromptText.color;
+                c.a = Mathf.MoveTowards(c.a, near ? 1f : 0f, Time.deltaTime * 4f);
+                endingPromptText.color = c;
+            }
+
+            Keyboard keyboard = Keyboard.current;
+            if (near && keyboard != null && keyboard.eKey.wasPressedThisFrame && !endingPanelOpen)
+                OpenEndingRewritePanel();
+
+            yield return null;
+        }
+
+        yield return StartCoroutine(RevealFinalDoorRoutine(endingPos + new Vector2(0f, -2.9f)));
+    }
+
+    IEnumerator FadeOutBossBodyWithScraps(Vector2 center)
+    {
+        CameraShake.Shake(0.3f, 0.22f);
+        SoundManager.PlayEnemyHit();
+
+        for (int i = 0; i < 38; i++)
+        {
+            Vector2 dir = Random.insideUnitCircle.sqrMagnitude > 0.01f ? Random.insideUnitCircle.normalized : Vector2.up;
+            StartCoroutine(ScatterScrap(center, dir));
+        }
+
+        if (leftArm != null) Destroy(leftArm.gameObject);
+        if (rightArm != null) Destroy(rightArm.gameObject);
+
+        SpriteRenderer renderer = body != null ? body.GetComponent<SpriteRenderer>() : null;
+        float fade = 1.45f;
+        float elapsed = 0f;
+        Color start = renderer != null ? renderer.color : Color.white;
+        while (elapsed < fade && renderer != null)
+        {
+            float t = elapsed / fade;
+            renderer.color = Color.Lerp(start, new Color(1f, 0.82f, 0.72f, 0f), t);
+            if (elapsed > 0.15f && Random.value < 0.18f)
+                StartCoroutine(ScatterScrap(center + Random.insideUnitCircle * 1.2f, Random.insideUnitCircle.normalized));
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (body != null)
+            Destroy(body.gameObject);
+
+        body = null;
+        bossDefeated = true;
+        RunHudUI.HideBossParts();
+        yield return new WaitForSeconds(0.35f);
+    }
+
+    void OpenEndingRewritePanel()
+    {
+        if (endingPanelOpen)
+            return;
+
+        EnsureRuntimeEventSystem();
+        endingPanelOpen = true;
+        RunHudUI.SetCollectedWords(new List<string>());
+
+        endingWordPool.Clear();
+        for (int i = 0; i < BookLetters.Fragments.Length; i++)
+            AddEndingPoolWord(BookLetters.Fragments[i]);
+
+        for (int i = 0; i < BookLetters.BookEndingFragments.Length; i++)
+            endingSlots[i] = BookLetters.BookEndingFragments[i];
+
+        BuildEndingPanel();
+    }
+
+    void BuildEndingPanel()
+    {
+        if (endingCanvas != null)
+            Destroy(endingCanvas.gameObject);
+
+        endingWordViews.Clear();
+        GameObject canvasGO = new GameObject("EndingRewriteCanvas");
+        endingCanvas = canvasGO.AddComponent<Canvas>();
+        endingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        endingCanvas.overrideSorting = true;
+        endingCanvas.sortingOrder = 260;
+        canvasGO.AddComponent<GraphicRaycaster>();
+
+        CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+        RectTransform root = canvasGO.GetComponent<RectTransform>();
+        GameObject backdrop = CreateUIRect(root, "Backdrop", Vector2.zero, Vector2.zero, new Color(0f, 0f, 0f, 0.18f));
+        RectTransform backdropRect = backdrop.GetComponent<RectTransform>();
+        backdropRect.anchorMin = Vector2.zero;
+        backdropRect.anchorMax = Vector2.one;
+        backdropRect.offsetMin = Vector2.zero;
+        backdropRect.offsetMax = Vector2.zero;
+        EndingBackdropClick click = backdrop.AddComponent<EndingBackdropClick>();
+        click.owner = this;
+
+        GameObject panel = CreateUIRect(root, "EndingPanel", new Vector2(0f, 70f), new Vector2(1360f, 650f), new Color(0.98f, 0.88f, 0.68f, 0.97f));
+        endingPanelRect = panel.GetComponent<RectTransform>();
+        Outline panelOutline = panel.AddComponent<Outline>();
+        panelOutline.effectColor = new Color(0.25f, 0.11f, 0.04f, 0.92f);
+        panelOutline.effectDistance = new Vector2(4f, -4f);
+
+        AddUIText(endingPanelRect, "Title", "결말을 다시 쓰세요", new Vector2(0f, 260f), new Vector2(900f, 70f), 44f, new Color(0.30f, 0.12f, 0.04f, 1f), FontStyles.Bold);
+
+        RectTransform sentenceFrame = CreateUIRect(endingPanelRect, "SentenceFrame", new Vector2(0f, 125f), new Vector2(1140f, 150f), new Color(1f, 0.95f, 0.80f, 0.82f)).GetComponent<RectTransform>();
+        BuildUIDashedBox(sentenceFrame, new Vector2(1140f, 150f), new Color(0.24f, 0.11f, 0.04f, 0.95f));
+
+        float startX = -430f;
+        for (int i = 0; i < endingSlots.Length; i++)
+        {
+            RectTransform slot = CreateUIRect(sentenceFrame, "EndingSlot_" + i, new Vector2(startX + i * 215f, 0f), new Vector2(i == 3 ? 250f : 190f, 82f), i == 0 ? new Color(0.86f, 0.74f, 0.54f, 0.88f) : new Color(1f, 0.89f, 0.62f, 0.88f)).GetComponent<RectTransform>();
+            BuildUIDashedBox(slot, slot.sizeDelta, new Color(0.35f, 0.17f, 0.06f, 0.90f));
+            EndingWordDropSlot drop = slot.gameObject.AddComponent<EndingWordDropSlot>();
+            drop.owner = this;
+            drop.slotIndex = i;
+            if (!string.IsNullOrEmpty(endingSlots[i]))
+                CreateEndingWordView(slot, endingSlots[i], i, i == 0);
+        }
+
+        AddUIText(endingPanelRect, "PoolTitle", "모은 글자 조각", new Vector2(0f, -20f), new Vector2(900f, 60f), 34f, new Color(0.34f, 0.14f, 0.04f, 1f), FontStyles.Bold);
+        RectTransform pool = CreateUIRect(endingPanelRect, "WordPool", new Vector2(0f, -170f), new Vector2(1120f, 210f), new Color(0.52f, 0.28f, 0.12f, 0.16f)).GetComponent<RectTransform>();
+        EndingWordPoolDrop poolDrop = pool.gameObject.AddComponent<EndingWordPoolDrop>();
+        poolDrop.owner = this;
+
+        GridLayoutGroup grid = pool.gameObject.AddComponent<GridLayoutGroup>();
+        grid.cellSize = new Vector2(200f, 62f);
+        grid.spacing = new Vector2(16f, 14f);
+        grid.padding = new RectOffset(22, 22, 22, 22);
+        grid.childAlignment = TextAnchor.MiddleCenter;
+
+        for (int i = 0; i < endingWordPool.Count; i++)
+            CreateEndingWordView(pool, endingWordPool[i], -1, false);
+    }
+
+    void CreateEndingWordView(RectTransform parent, string word, int slotIndex, bool locked)
+    {
+        GameObject chip = CreateUIRect(parent, "Word_" + word, Vector2.zero, new Vector2(190f, 62f), locked ? new Color(0.66f, 0.51f, 0.34f, 0.90f) : new Color(1f, 0.78f, 0.46f, 0.96f));
+        TextMeshProUGUI label = AddUIText(chip.GetComponent<RectTransform>(), "Label", DisplayEndingWord(word, slotIndex), Vector2.zero, new Vector2(190f, 62f), 33f, new Color(0.24f, 0.09f, 0.03f, 1f), FontStyles.Bold);
+        EndingWordView view = chip.AddComponent<EndingWordView>();
+        view.owner = this;
+        view.word = word;
+        view.slotIndex = slotIndex;
+        view.lockedWord = locked;
+        view.image = chip.GetComponent<Image>();
+        view.label = label;
+        endingWordViews.Add(view);
+    }
+
+    void PlaceEndingWord(EndingWordView view, int targetSlot)
+    {
+        if (view == null || view.lockedWord || targetSlot <= 0 || targetSlot >= endingSlots.Length)
+            return;
+
+        string incoming = view.word;
+        if (view.slotIndex >= 0)
+            endingSlots[view.slotIndex] = string.Empty;
+        else
+            endingWordPool.Remove(incoming);
+
+        string displaced = endingSlots[targetSlot];
+        if (!string.IsNullOrEmpty(displaced))
+            AddEndingPoolWord(displaced);
+
+        endingSlots[targetSlot] = incoming;
+        BuildEndingPanel();
+        CheckEndingSolved();
+    }
+
+    void ReturnEndingWordToPool(EndingWordView view)
+    {
+        if (view == null || view.lockedWord || view.slotIndex <= 0)
+            return;
+
+        string word = endingSlots[view.slotIndex];
+        endingSlots[view.slotIndex] = string.Empty;
+        AddEndingPoolWord(word);
+        BuildEndingPanel();
+    }
+
+    void CheckEndingSolved()
+    {
+        bool solved =
+            endingSlots[0] == "인형은" &&
+            endingSlots[1] == "공방을" &&
+            endingSlots[2] == "떠나" &&
+            endingSlots[3] == "바깥세상을" &&
+            (endingSlots[4] == "보았다" || endingSlots[4] == "보았다.");
+
+        if (solved && !endingSolved)
+            StartCoroutine(EndingSolvedRoutine());
+    }
+
+    IEnumerator EndingSolvedRoutine()
+    {
+        endingSolved = true;
+        if (endingPanelRect != null)
+        {
+            Vector2 start = endingPanelRect.anchoredPosition;
+            Vector2 up = start + new Vector2(0f, 34f);
+            float elapsed = 0f;
+            while (elapsed < 0.18f && endingPanelRect != null)
+            {
+                endingPanelRect.anchoredPosition = Vector2.Lerp(start, up, elapsed / 0.18f);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            elapsed = 0f;
+            while (elapsed < 0.22f && endingPanelRect != null)
+            {
+                endingPanelRect.anchoredPosition = Vector2.Lerp(up, start, elapsed / 0.22f);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        if (floorEndingText != null)
+            floorEndingText.text = BookLetters.TrueEnding;
+
+        CloseEndingPanel(false);
+    }
+
+    void CloseEndingPanel(bool restoreHudWords)
+    {
+        if (endingCanvas != null)
+            Destroy(endingCanvas.gameObject);
+
+        endingCanvas = null;
+        endingPanelRect = null;
+        endingPanelOpen = false;
+        endingWordViews.Clear();
+
+        if (restoreHudWords)
+            RunHudUI.SetCollectedWords(collectedWords);
+    }
+
+    IEnumerator RevealFinalDoorRoutine(Vector2 doorPos)
+    {
+        if (endingPromptText != null)
+            Destroy(endingPromptText.gameObject);
+
+        SetAuraVisible(endingSentenceAura, endingSentenceParticles, false);
+        RunHudUI.SetCollectedWords(collectedWords);
+        CameraShake.Shake(1.8f, 0.12f);
+
+        GameObject door = new GameObject("FinalEndingDoor");
+        door.transform.position = new Vector3(doorPos.x, doorPos.y, 0f);
+        door.transform.localScale = new Vector3(2.2f, 3.2f, 1f);
+        SpriteRenderer renderer = door.AddComponent<SpriteRenderer>();
+        renderer.sprite = SquareSprite();
+        renderer.color = new Color(1f, 0.92f, 0.76f, 0f);
+        renderer.sortingOrder = 91;
+
+        finalDoorAura = CreateSoftAura(doorPos, new Color(1f, 0.72f, 0.42f, 0.28f), 4.6f, 89);
+        finalDoorParticles = CreateSoftParticles("FinalDoorParticles", doorPos, new Color(1f, 0.78f, 0.50f, 0.8f), 34, 0.18f, 0.28f, 94);
+        TextMeshPro enterPrompt = CreateWorldText("[Enter] 바깥세상으로", doorPos + new Vector2(0f, 2.25f), 0.95f, new Color(1f, 0.88f, 0.56f, 0f), 96);
+
+        float elapsed = 0f;
+        while (elapsed < 2.4f && renderer != null)
+        {
+            Color c = renderer.color;
+            c.a = Mathf.Lerp(0f, 0.92f, elapsed / 2.4f);
+            renderer.color = c;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        while (!finalDoorEntered)
+        {
+            float distance = player != null ? Vector2.Distance(player.position, doorPos) : 999f;
+            bool near = distance <= 2.6f;
+            SetAuraVisible(finalDoorAura, finalDoorParticles, near);
+            if (enterPrompt != null)
+            {
+                Color c = enterPrompt.color;
+                c.a = Mathf.MoveTowards(c.a, near ? 1f : 0f, Time.deltaTime * 4f);
+                enterPrompt.color = c;
+            }
+
+            Keyboard keyboard = Keyboard.current;
+            if (near && keyboard != null && keyboard.enterKey.wasPressedThisFrame)
+                finalDoorEntered = true;
+
+            yield return null;
+        }
+
+        yield return StartCoroutine(WhiteOutEndingRoutine());
+    }
+
+    IEnumerator WhiteOutEndingRoutine()
+    {
+        EnsureRuntimeEventSystem();
+        GameObject canvasGO = new GameObject("EndingWhiteOutCanvas");
+        Canvas canvas = canvasGO.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = 400;
+        CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+        RectTransform root = canvasGO.GetComponent<RectTransform>();
+        GameObject white = CreateUIRect(root, "WhiteFlash", Vector2.zero, new Vector2(80f, 80f), Color.white);
+        RectTransform rect = white.GetComponent<RectTransform>();
+        Image image = white.GetComponent<Image>();
+        float elapsed = 0f;
+        while (elapsed < 0.45f)
+        {
+            float t = elapsed / 0.45f;
+            float size = Mathf.Lerp(80f, 2600f, t * t);
+            rect.sizeDelta = new Vector2(size, size);
+            image.color = new Color(1f, 1f, 1f, Mathf.Lerp(0.15f, 1f, t));
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    void AddEndingPoolWord(string word)
+    {
+        if (string.IsNullOrEmpty(word))
+            return;
+        if (!endingWordPool.Contains(word))
+            endingWordPool.Add(word);
+    }
+
+    string DisplayEndingWord(string word, int slotIndex)
+    {
+        if (string.IsNullOrEmpty(word))
+            return "";
+        if (slotIndex == 4 && word == "보았다")
+            return "보았다.";
+        return word;
+    }
+
+    GameObject BuildWorldEndingDashedBox(Vector2 center, Vector2 size)
+    {
+        return BuildDashedBox(center, size, new Color(0.27f, 0.12f, 0.04f, 0.94f), 91);
+    }
+
+    GameObject CreateSoftAura(Vector2 center, Color color, float diameter, int order)
+    {
+        GameObject root = new GameObject("SoftAura");
+        root.transform.position = new Vector3(center.x, center.y, -0.15f);
+        SpriteRenderer renderer = BossVisuals.CreateCircle(root.transform, "Glow", Vector3.zero, diameter, color, order);
+        renderer.enabled = false;
+        return root;
+    }
+
+    ParticleSystem CreateSoftParticles(string name, Vector2 center, Color color, int count, float size, float speed, int order)
+    {
+        GameObject go = new GameObject(name);
+        go.transform.position = new Vector3(center.x, center.y, -0.1f);
+        ParticleSystem ps = go.AddComponent<ParticleSystem>();
+        ParticleSystem.MainModule main = ps.main;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(1.4f, 2.6f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(speed * 0.45f, speed);
+        main.startSize = new ParticleSystem.MinMaxCurve(size * 0.55f, size);
+        main.startColor = color;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        ParticleSystem.EmissionModule emission = ps.emission;
+        emission.rateOverTime = count;
+
+        ParticleSystem.ShapeModule shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Circle;
+        shape.radius = 1.65f;
+
+        ParticleSystem.VelocityOverLifetimeModule velocity = ps.velocityOverLifetime;
+        velocity.enabled = true;
+        velocity.space = ParticleSystemSimulationSpace.Local;
+        velocity.x = new ParticleSystem.MinMaxCurve(-0.10f, 0.10f);
+        velocity.y = new ParticleSystem.MinMaxCurve(0.02f, 0.16f);
+
+        ParticleSystemRenderer renderer = ps.GetComponent<ParticleSystemRenderer>();
+        renderer.sortingOrder = order;
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        return ps;
+    }
+
+    void SetAuraVisible(GameObject aura, ParticleSystem particles, bool visible)
+    {
+        if (aura != null)
+        {
+            SpriteRenderer renderer = aura.GetComponentInChildren<SpriteRenderer>();
+            if (renderer != null)
+                renderer.enabled = visible;
+        }
+
+        if (particles != null)
+        {
+            if (visible && !particles.isPlaying)
+                particles.Play();
+            else if (!visible && particles.isPlaying)
+                particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+    }
+
+    GameObject CreateUIRect(Transform parent, string name, Vector2 anchoredPosition, Vector2 size, Color color)
+    {
+        GameObject go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        RectTransform rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = size;
+        Image image = go.AddComponent<Image>();
+        image.sprite = SquareSprite();
+        image.color = color;
+        return go;
+    }
+
+    TextMeshProUGUI AddUIText(RectTransform parent, string name, string content, Vector2 anchoredPosition, Vector2 size, float fontSize, Color color, FontStyles style)
+    {
+        GameObject go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        RectTransform rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = size;
+
+        TextMeshProUGUI text = go.AddComponent<TextMeshProUGUI>();
+        text.text = content;
+        text.font = UIThinDungFont.Get();
+        text.fontSize = fontSize;
+        text.fontStyle = style;
+        text.color = color;
+        text.alignment = TextAlignmentOptions.Center;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = Mathf.Max(16f, fontSize * 0.58f);
+        text.fontSizeMax = fontSize;
+        text.raycastTarget = false;
+        return text;
+    }
+
+    void BuildUIDashedBox(RectTransform parent, Vector2 size, Color color)
+    {
+        float dash = 28f;
+        float gap = 16f;
+        float halfX = size.x * 0.5f;
+        float halfY = size.y * 0.5f;
+        BuildUIDashedLine(parent, new Vector2(-halfX, halfY), new Vector2(halfX, halfY), dash, gap, color);
+        BuildUIDashedLine(parent, new Vector2(-halfX, -halfY), new Vector2(halfX, -halfY), dash, gap, color);
+        BuildUIDashedLine(parent, new Vector2(-halfX, -halfY), new Vector2(-halfX, halfY), dash, gap, color);
+        BuildUIDashedLine(parent, new Vector2(halfX, -halfY), new Vector2(halfX, halfY), dash, gap, color);
+    }
+
+    void BuildUIDashedLine(RectTransform parent, Vector2 start, Vector2 end, float dash, float gap, Color color)
+    {
+        Vector2 delta = end - start;
+        float length = delta.magnitude;
+        if (length <= 0.01f)
+            return;
+
+        Vector2 dir = delta / length;
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        float offset = 0f;
+        int index = 0;
+        while (offset < length)
+        {
+            float segment = Mathf.Min(dash, length - offset);
+            Vector2 pos = start + dir * (offset + segment * 0.5f);
+            GameObject go = CreateUIRect(parent, "Dash_" + index, pos, new Vector2(segment, 5f), color);
+            go.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, angle);
+            offset += dash + gap;
+            index++;
+        }
+    }
+
+    void EnsureRuntimeEventSystem()
+    {
+        EventSystem eventSystem = FindFirstObjectByType<EventSystem>();
+        if (eventSystem == null)
+        {
+            GameObject go = new GameObject("EventSystem");
+            go.AddComponent<EventSystem>();
+            go.AddComponent<InputSystemUIInputModule>();
+        }
+        else if (eventSystem.GetComponent<InputSystemUIInputModule>() == null)
+        {
+            eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
+        }
     }
 
     IEnumerator CutsceneRoutine()
@@ -2012,7 +2718,8 @@ public class BookBossController : MonoBehaviour
         if (bossDefeated)
             return;
 
-        string[] names = { "몸통(책)", "왼팔", "오른팔" };
+        bool bodyLocked = !(leftDead && rightDead);
+        string[] names = { bodyLocked ? "몸통(책) 잠김" : "몸통(책)", "왼팔", "오른팔" };
         int[] cur =
         {
             body != null ? body.CurrentHp : 0,
@@ -2025,7 +2732,8 @@ public class BookBossController : MonoBehaviour
             leftArm != null ? leftArm.MaxHp : armHp,
             rightArm != null ? rightArm.MaxHp : armHp
         };
-        RunHudUI.SetBossParts(names, cur, max);
+        bool[] locked = { bodyLocked, false, false };
+        RunHudUI.SetBossParts(names, cur, max, locked);
     }
 
     void ClearMinions()
@@ -2092,6 +2800,155 @@ public class BookBossController : MonoBehaviour
         texture.Apply();
         squareSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
         return squareSprite;
+    }
+
+    public class EndingBackdropClick : MonoBehaviour, IPointerClickHandler
+    {
+        public BookBossController owner;
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (owner != null && eventData.pointerCurrentRaycast.gameObject == gameObject && !owner.endingSolved)
+                owner.CloseEndingPanel(true);
+        }
+    }
+
+    public class EndingWordDropSlot : MonoBehaviour, IDropHandler
+    {
+        public BookBossController owner;
+        public int slotIndex;
+
+        public void OnDrop(PointerEventData eventData)
+        {
+            EndingWordView view = eventData.pointerDrag != null ? eventData.pointerDrag.GetComponent<EndingWordView>() : null;
+            if (owner != null && view != null)
+            {
+                view.consumedByDrop = true;
+                owner.PlaceEndingWord(view, slotIndex);
+            }
+        }
+    }
+
+    public class EndingWordPoolDrop : MonoBehaviour, IDropHandler
+    {
+        public BookBossController owner;
+
+        public void OnDrop(PointerEventData eventData)
+        {
+            EndingWordView view = eventData.pointerDrag != null ? eventData.pointerDrag.GetComponent<EndingWordView>() : null;
+            if (owner != null && view != null)
+            {
+                view.consumedByDrop = true;
+                owner.ReturnEndingWordToPool(view);
+            }
+        }
+    }
+
+    public class EndingWordView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+    {
+        public BookBossController owner;
+        public string word;
+        public int slotIndex = -1;
+        public bool lockedWord;
+        public bool consumedByDrop;
+        public Image image;
+        public TextMeshProUGUI label;
+        RectTransform rect;
+        CanvasGroup canvasGroup;
+        Transform startParent;
+        int startSibling;
+        Vector2 startAnchoredPosition;
+        Color baseColor;
+        Coroutine bounceRoutine;
+
+        void Awake()
+        {
+            rect = GetComponent<RectTransform>();
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            if (image != null)
+                baseColor = image.color;
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            if (lockedWord || owner == null || owner.endingCanvas == null)
+                return;
+
+            consumedByDrop = false;
+            startParent = transform.parent;
+            startSibling = transform.GetSiblingIndex();
+            startAnchoredPosition = rect.anchoredPosition;
+            transform.SetParent(owner.endingCanvas.transform, true);
+            transform.SetAsLastSibling();
+            canvasGroup.blocksRaycasts = false;
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            if (lockedWord || rect == null)
+                return;
+
+            rect.position = eventData.position;
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            if (lockedWord)
+                return;
+
+            canvasGroup.blocksRaycasts = true;
+            if (!consumedByDrop && startParent != null)
+            {
+                transform.SetParent(startParent, false);
+                transform.SetSiblingIndex(startSibling);
+                rect.anchoredPosition = startAnchoredPosition;
+            }
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (lockedWord || image == null)
+                return;
+            image.color = new Color(1f, 0.90f, 0.58f, 1f);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            if (image != null)
+                image.color = baseColor;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (lockedWord || owner == null)
+                return;
+
+            if (bounceRoutine != null)
+                owner.StopCoroutine(bounceRoutine);
+            bounceRoutine = owner.StartCoroutine(BounceRoutine());
+        }
+
+        IEnumerator BounceRoutine()
+        {
+            Vector3 start = transform.localScale;
+            Vector3 big = start * 1.14f;
+            float elapsed = 0f;
+            while (elapsed < 0.08f)
+            {
+                transform.localScale = Vector3.Lerp(start, big, elapsed / 0.08f);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            elapsed = 0f;
+            while (elapsed < 0.14f)
+            {
+                transform.localScale = Vector3.Lerp(big, start, elapsed / 0.14f);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            transform.localScale = start;
+        }
     }
 
     static Sprite LoadEnemySprite(string spriteName)

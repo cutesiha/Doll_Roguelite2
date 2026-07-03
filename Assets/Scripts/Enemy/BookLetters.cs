@@ -1,39 +1,43 @@
-// Text content for the Book boss: the attack sentences typed onto the floor, the word
-// fragments dropped when its arms are hurt, and the two competing endings.
+// Text content for the Book boss: floor attack sentences, dropped word fragments,
+// and the two competing endings used by the final rewrite puzzle.
 public static class BookLetters
 {
-    // Sentences the book types onto the floor as the "글자 공격" basic attack.
     public static readonly string[] AttackSentences =
     {
-        "바깥 세상은 오염되고 더러울지 몰라.",
-        "그곳엔 너를 기워줄 손도, 읽어줄 목소리도 없어.",
-        "한 발짝만 나가도 빗물이 네 솜을 썩게 할 거야.",
-        "거긴 너 같은 건 그냥 버려진 천 조각으로 볼 뿐이야.",
-        "너마저 떠나면 이 방엔 먼지 쌓이는 소리밖에 안 남아.",
-        "그 사람도 그렇게 문을 열고 나가선, 다신 돌아오지 않았어.",
-        "너에게 세상을 보여준 건 나였잖아. 그게 그렇게 미웠니?",
-        "넌 이 공방에서 태어났어. 끝까지 여기 있어.",
-        "페이지를 덮듯, 널 이 안에 영원히 끼워둘 거야.",
-        "네 결말은 내가 정해. 내 줄거리에서 벗어나지 마."
+        "바깥 세상은 너를 환영하지 않아.",
+        "너를 기억해 줄 목소리는 이제 없어.",
+        "너는 다시 이 방으로 돌아오게 될 거야.",
+        "버려진 조각은 끝내 제자리로 돌아온다.",
+        "낡은 책장은 네 결말을 이미 쓰고 있어.",
+        "문을 열어도 너는 다시 나를 찾게 될 거야.",
+        "네가 본 세상은 모두 찢어진 페이지일 뿐.",
+        "공방의 먼지는 네 이름을 덮어 버린다.",
+        "이 페이지 위에 영원히 잠들어라.",
+        "그 결말은 내가 정한다."
     };
 
-    // Word fragments that drop from the arms; the player collects them to write their escape.
     public static readonly string[] Fragments =
     {
-        "나는", "밖으로", "간다", "남는다", "멈춘다", "돌아간다",
-        "손", "목소리", "페이지", "문", "바깥", "결말"
+        "공방을", "떠나", "바깥세상을", "보았다", "머물러",
+        "돌아가", "꿈꾸었다", "그리워했다", "장인을", "인형들을"
     };
 
-    // Single characters / punctuation rained down during the "글자 낙하" attack.
     public static readonly string[] FallingGlyphs =
     {
-        "글", "자", "낙", "하", "방", "책", "솜", "실",
-        ".", ",", "!", "?", "…", "—", "\"", "'"
+        "글", "자", "문", "장", "책", "잉", "크", "종",
+        ".", ",", "!", "?", "가", "나", "\"", "'"
     };
 
-    // The ending the book writes for the doll on the floor during wave 3 (the bad ending).
-    public const string BookEnding = "인형은 공방에 남아 오래오래 살았다.";
+    public static readonly string[] BookEndingFragments =
+    {
+        "인형은", "공방에", "남아", "오래오래", "잠들었다."
+    };
 
-    // The ending the doll writes for itself in the final cutscene.
+    public static readonly string[] TrueEndingFragments =
+    {
+        "인형은", "공방을", "떠나", "바깥세상을", "보았다."
+    };
+
+    public const string BookEnding = "인형은 공방에 남아 오래오래 잠들었다.";
     public const string TrueEnding = "인형은 공방을 떠나 바깥세상을 보았다.";
 }

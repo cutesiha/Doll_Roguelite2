@@ -39,7 +39,7 @@ public class LetterPickup : MonoBehaviour
         glow.transform.localPosition = new Vector3(0f, 0f, 0.03f);
         glowRenderer = glow.AddComponent<SpriteRenderer>();
         glowRenderer.sprite = BossVisuals.CircleSprite();
-        glowRenderer.color = new Color(1f, 0.82f, 0.28f, 0.0f);
+        glowRenderer.color = new Color(1f, 0.64f, 0.38f, 0.0f);
         glowRenderer.sortingOrder = 72;
 
         GameObject panel = new GameObject("RoundedTextPanel");
@@ -190,18 +190,18 @@ public class LetterPickup : MonoBehaviour
         }
 
         if (glowRenderer != null)
-            glowRenderer.color = new Color(1f, 0.82f, 0.28f, Mathf.Lerp(0.08f, 0.38f, closeness));
+            glowRenderer.color = new Color(1f, 0.68f, 0.44f, Mathf.Lerp(0.12f, 0.54f, closeness));
 
         if (panelRenderer != null)
             panelRenderer.color = Color.Lerp(
                 new Color(0.18f, 0.09f, 0.055f, 0.86f),
-                new Color(0.38f, 0.18f, 0.08f, 0.94f),
+                new Color(0.48f, 0.22f, 0.10f, 0.96f),
                 closeness);
 
         if (sparkleParticles != null)
         {
             ParticleSystem.EmissionModule emission = sparkleParticles.emission;
-            emission.rateOverTime = Mathf.Lerp(5f, 22f, closeness);
+            emission.rateOverTime = Mathf.Lerp(8f, 34f, closeness);
         }
     }
 
@@ -214,11 +214,11 @@ public class LetterPickup : MonoBehaviour
 
         ParticleSystem.MainModule main = sparkleParticles.main;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.55f, 1.1f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(0.08f, 0.34f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.18f);
-        main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.82f, 0.34f, 0.62f));
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.08f, 0.38f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.10f, 0.24f);
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.66f, 0.42f, 0.78f));
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 36;
+        main.maxParticles = 58;
 
         ParticleSystem.EmissionModule emission = sparkleParticles.emission;
         emission.rateOverTime = 5f;

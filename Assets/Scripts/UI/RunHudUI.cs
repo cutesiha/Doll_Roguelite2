@@ -1361,6 +1361,11 @@ void Awake()
 
     void ApplyBossParts(string[] names, int[] current, int[] max)
     {
+        ApplyBossParts(names, current, max, null);
+    }
+
+    void ApplyBossParts(string[] names, int[] current, int[] max, bool[] locked)
+    {
         EnsureBossPartsHud();
         if (bossPartsHud == null)
             return;
@@ -1381,16 +1386,25 @@ void Awake()
             int safeMax = Mathf.Max(1, max[i]);
             int safeCurrent = Mathf.Clamp(current[i], 0, safeMax);
             float ratio = (float)safeCurrent / safeMax;
+            bool isLocked = locked != null && i < locked.Length && locked[i];
 
             if (bossPartFills[i] != null)
             {
                 bossPartFills[i].rectTransform.sizeDelta = new Vector2(BossPartTrackWidth * ratio, BossPartTrackHeight);
-                bossPartFills[i].color = safeCurrent <= 0 ? new Color(0.3f, 0.3f, 0.3f, 1f) : BossPartColors[i];
+                bossPartFills[i].color = isLocked
+                    ? new Color(0.22f, 0.18f, 0.16f, 1f)
+                    : safeCurrent <= 0 ? new Color(0.3f, 0.3f, 0.3f, 1f) : BossPartColors[i];
             }
             if (bossPartNames[i] != null)
+            {
                 bossPartNames[i].text = names[i];
+                bossPartNames[i].color = isLocked ? new Color(1f, 0.72f, 0.38f, 1f) : Color.white;
+            }
             if (bossPartHpTexts[i] != null)
-                bossPartHpTexts[i].text = safeCurrent + " / " + safeMax;
+            {
+                bossPartHpTexts[i].text = isLocked ? "LOCKED" : safeCurrent + " / " + safeMax;
+                bossPartHpTexts[i].color = isLocked ? new Color(1f, 0.72f, 0.38f, 1f) : Color.white;
+            }
         }
     }
 
@@ -1869,6 +1883,13 @@ void Awake()
         RunHudUI hud = ActiveInstance();
         if (hud != null)
             hud.ApplyBossParts(names, current, max);
+    }
+
+    public static void SetBossParts(string[] names, int[] current, int[] max, bool[] locked)
+    {
+        RunHudUI hud = ActiveInstance();
+        if (hud != null)
+            hud.ApplyBossParts(names, current, max, locked);
     }
 
     public static void HideBossParts()
