@@ -202,11 +202,8 @@ public class RunHudUI : MonoBehaviour
         return sceneName == "StartScene";
     }
 
-    void Awake()
+void Awake()
     {
-        if (Application.isPlaying && transform.parent != null)
-            transform.SetParent(null, false);
-
         EnsureRootCanvasComponents(false);
 
         if (Application.isPlaying)
@@ -217,8 +214,8 @@ public class RunHudUI : MonoBehaviour
                 return;
             }
 
+            // RoomScene에서 편집한 HUD 계층을 그대로 확인할 수 있게 현재 씬 소속으로 유지한다.
             instance = this;
-            DontDestroyOnLoad(gameObject);
         }
 
         EnsureEventSystem();
@@ -226,9 +223,7 @@ public class RunHudUI : MonoBehaviour
         CloseMapImmediate();
         ShowPendingControlHintsIfNeeded();
 
-        // InventoryCanvas 가 비활성 상태이면 지금 활성화해서 Awake/Start 를 씬 로드 시점에 실행.
-        // 이렇게 하지 않으면 OpenPanel() 안에서 SetActive(true) 를 호출할 때 Start() 가
-        // 다음 프레임에 실행되어 ForceClosePanelImmediate() 가 패널을 다시 닫아버린다.
+        // InventoryCanvas가 비활성 상태면 OpenPanel 직후 Start가 늦게 실행되어 다시 닫히는 문제를 막는다.
         InventoryUI inventoryUI = GetComponentInChildren<InventoryUI>(true);
         if (inventoryUI != null && !inventoryUI.gameObject.activeSelf)
             inventoryUI.gameObject.SetActive(true);

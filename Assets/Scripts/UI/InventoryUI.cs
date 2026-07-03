@@ -28,6 +28,13 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] Button[]          _storageBtn  = new Button[InventoryManager.StorageSlotCount];
     [SerializeField] TextMeshProUGUI[] _storageName = new TextMeshProUGUI[InventoryManager.StorageSlotCount];
     [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[InventoryManager.StorageSlotCount];
+    // A안: 프리팹에서 지정한 슬롯 배경색/빈 슬롯 텍스트를 그대로 보존한다.
+    readonly Color[] _storageEmptyColor = new Color[InventoryManager.StorageSlotCount];
+    readonly string[] _storageEmptyName = new string[InventoryManager.StorageSlotCount];
+    // A안: Q 보석 칸의 프리팹 배경(스프라이트/색)을 기억해 비었을 때 되돌린다.
+    Sprite _qGemBaseSprite;
+    Color _qGemBaseColor = Color.white;
+    bool _qGemBaseCaptured;
 
     [Header("캐릭터 부위 (EyeLeft=0 ~ LegRight=5)")]
     [SerializeField] Image[]  _charImg = new Image[InventoryManager.BodySlotCount];
@@ -325,6 +332,45 @@ void Start()
         TryBindCharacterSlot(BodySlot.LegLeft, "EquipPart_LegLeft");
         TryBindCharacterSlot(BodySlot.LegRight, "EquipPart_LegRight");
         TryBindCharacterSlot(BodySlot.Body, "EquipPart_Body");
+
+        NormalizeCharacterSlotButtons();
+    }
+
+    // #2: 몸 슬롯 버튼도 다른 부위와 동일한 호버 틴트를 갖게 하고,
+    // #3: 클릭 후에도 남는 selected(어두운) 틴트를 마우스를 떼면 사라지도록 제거한다.
+    void NormalizeCharacterSlotButtons()
+    {
+        // 프리팹에 authored된 부위 버튼(눈/팔/다리)의 색상 블록을 기준으로 삼는다.
+        Button colorRef = null;
+        for (int i = 0; i < _charBtn.Length; i++)
+        {
+            if (i == (int)BodySlot.Body)
+                continue;
+            if (_charBtn[i] != null) { colorRef = _charBtn[i]; break; }
+        }
+
+        for (int i = 0; i < _charBtn.Length; i++)
+        {
+            if (_charBtn[i] == null)
+                continue;
+
+            // 몸 슬롯은 코드로 추가돼 기본색이므로 다른 부위 색을 그대로 복사한다.
+            if (colorRef != null && _charBtn[i] != colorRef)
+                _charBtn[i].colors = colorRef.colors;
+
+            ClearButtonSelectedTint(_charBtn[i]);
+        }
+    }
+
+    // 클릭 후 selected 상태로 남아 틴트가 유지되는 것을 막는다(selected = normal).
+    static void ClearButtonSelectedTint(Button button)
+    {
+        if (button == null)
+            return;
+
+        ColorBlock cb = button.colors;
+        cb.selectedColor = cb.normalColor;
+        button.colors = cb;
     }
 
     void TryBindCharacterSlot(BodySlot slot, string objectName)
@@ -435,9 +481,14 @@ void Start()
         }
 
         Image image = slot.GetComponent<Image>();
-        if (image == null)
+        bool createdImage = image == null;
+        if (createdImage)
             image = slot.AddComponent<Image>();
-        image.color = CEmpty;
+        // A안: 이미지가 코드로 새로 붙었을 때만 CEmpty 기본색을 쓰고,
+        // 프리팹에서 손으로 지정한 슬롯 배경색/모양은 그대로 보존한다.
+        if (index >= 0 && index < _storageEmptyColor.Length)
+            _storageEmptyColor[index] = createdImage ? CEmpty : image.color;
+        image.color = createdImage ? CEmpty : image.color;
         image.raycastTarget = true;
         _storageImg[index] = image;
 
@@ -445,6 +496,8 @@ void Start()
         if (button == null)
             button = slot.AddComponent<Button>();
         button.targetGraphic = image;
+        // #3: 클릭 후 어두운 틴트가 남지 않도록 selected = normal 로 맞춘다.
+        ClearButtonSelectedTint(button);
         _storageBtn[index] = button;
 
         InventoryStorageDragSource dragSource = slot.GetComponent<InventoryStorageDragSource>();
@@ -472,9 +525,15 @@ void Start()
         // 월드 동전 프리팹(BodyPart 동전 더미) 표시용 — 비스듬히 쌓인 동전더미
         EnsureCoinPile(slot.transform, slotWidth, slotHeight);
 
-        EnsureStorageSlotLabel(slot.transform, "SlotLabel", "슬롯 " + (index + 1), 18f, new Vector2(0f, -6f), new Vector2(slotWidth, 24f), TextAlignmentOptions.Center);
+        // A안: "슬롯 N" 오버레이는 프리팹에 실제로 있을 때만 유지하고,
+        // 없으면 코드가 새로 만들지 않는다(사용자 디자인엔 없는 더미 라벨 제거).
+        if (slot.transform.Find("SlotLabel") != null)
+            EnsureStorageSlotLabel(slot.transform, "SlotLabel", "슬롯 " + (index + 1), 18f, new Vector2(0f, -6f), new Vector2(slotWidth, 24f), TextAlignmentOptions.Center);
         // task21: 아이콘을 키웠으므로 이름은 슬롯 하단으로 이동
         _storageName[index] = EnsureStorageSlotLabel(slot.transform, "SlotName", "빈 슬롯", 14f, new Vector2(0f, -68f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
+        // A안: 프리팹에서 지정한 빈 슬롯 이름을 기억해 RefreshStorage 에서 되돌릴 때 사용.
+        if (index >= 0 && index < _storageEmptyName.Length)
+            _storageEmptyName[index] = _storageName[index] != null ? _storageName[index].text : "빈 슬롯";
         // task20: 부위 저장 시 하단 체력 동그라미(●○) 표시 제거 — 라벨은 남기되 항상 비운다
         _storageHp[index] = EnsureStorageSlotLabel(slot.transform, "SlotHP", "", 16f, new Vector2(0f, -66f), new Vector2(slotWidth - 12f, 24f), TextAlignmentOptions.Center);
     }
@@ -653,10 +712,12 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
         if (createdLabel)
             label = go.AddComponent<TextMeshProUGUI>();
 
-        label.text = value;
         label.raycastTarget = false;
+        // A안: 프리팹에서 직접 편집한 라벨(텍스트/폰트/색/정렬)은 그대로 두고,
+        // 코드가 새로 만든 라벨에만 기본값을 채운다.
         if (createdLabel)
         {
+            label.text = value;
             label.font = UIThinDungFont.Get();
             label.fontSize = fontSize;
             label.alignment = alignment;
@@ -681,7 +742,9 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
         // 버리는 칸 (왼쪽) — 아이템을 끌어다 놓으면 월드에 다시 떨어뜨린다.
         GameObject trash = EnsureSpecialSlotRoot(parent, "TrashSlot", new Vector2(-82f, y), new Vector2(slotWidth, slotHeight));
         _trashImg = trash.GetComponent<Image>();
-        _trashImg.color = CTrash;
+        // A안: 프리팹에서 이미지를 지정했으면 CTrash 틴트로 덮지 않는다.
+        if (_trashImg.sprite == null)
+            _trashImg.color = CTrash;
         _trashImg.raycastTarget = true;
         if (trash.GetComponent<InventoryTrashDropTarget>() == null)
             trash.AddComponent<InventoryTrashDropTarget>();
@@ -691,6 +754,13 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
         // Q 보석 칸 (오른쪽) — 기존 Q 소모품 시스템(ItemInventoryManager)을 표시·사용.
         GameObject qgem = EnsureSpecialSlotRoot(parent, "QGemSlot", new Vector2(82f, y), new Vector2(slotWidth, slotHeight));
         _qGemImg = qgem.GetComponent<Image>();
+        // A안: 프리팹에서 지정한 빈 칸 배경(스프라이트/색)을 기억해 둔다.
+        if (!_qGemBaseCaptured)
+        {
+            _qGemBaseSprite = _qGemImg.sprite;
+            _qGemBaseColor = _qGemImg.color;
+            _qGemBaseCaptured = true;
+        }
         _qGemImg.preserveAspect = true;
         _qGemImg.type = Image.Type.Simple;
         _qGemImg.raycastTarget = true;
@@ -698,6 +768,7 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
         if (_qGemBtn == null)
             _qGemBtn = qgem.AddComponent<Button>();
         _qGemBtn.targetGraphic = _qGemImg;
+        ClearButtonSelectedTint(_qGemBtn);
         _qGemBtn.onClick.RemoveListener(UseQGem);
         _qGemBtn.onClick.AddListener(UseQGem);
         if (qgem.GetComponent<ItemConsumableDragSource>() == null)
@@ -794,15 +865,24 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
         bool createdRect = boxRect == null;
         if (createdRect)
             boxRect = box.AddComponent<RectTransform>();
-        if (createdRect || existing == null)
-        {
-            boxRect.anchorMin = titleRect.anchorMin;
-            boxRect.anchorMax = titleRect.anchorMax;
-            boxRect.pivot = titleRect.pivot;
-            boxRect.anchoredPosition = titleRect.anchoredPosition;
-            Vector2 titleSize = CSlotRectSize(titleRect);
-            boxRect.sizeDelta = new Vector2(titleSize.x + 36f, titleSize.y + 18f);
-        }
+
+        // #4: 제목 RectTransform이 가로로 stretch돼 있어 그 폭(패널 전체)을 쓰면
+        // 파선 박스가 지나치게 넓어진다. 실제 글자 폭(preferredWidth)에 맞춘다.
+        TextMeshProUGUI titleLabel = title.GetComponent<TextMeshProUGUI>();
+        float textWidth = titleLabel != null && titleLabel.preferredWidth > 1f
+            ? titleLabel.preferredWidth
+            : CSlotRectSize(titleRect).x;
+        float textHeight = titleLabel != null && titleLabel.preferredHeight > 1f
+            ? titleLabel.preferredHeight
+            : CSlotRectSize(titleRect).y;
+        Vector2 boxSize = new Vector2(textWidth + 36f, textHeight + 18f);
+
+        // 가로 중앙 고정 앵커로 바꿔 sizeDelta 를 절대 폭으로 사용(제목 중앙 위치는 유지).
+        boxRect.anchorMin = new Vector2(0.5f, titleRect.anchorMax.y);
+        boxRect.anchorMax = new Vector2(0.5f, titleRect.anchorMax.y);
+        boxRect.pivot = titleRect.pivot;
+        boxRect.anchoredPosition = titleRect.anchoredPosition;
+        boxRect.sizeDelta = boxSize;
 
         Image background = box.GetComponent<Image>();
         if (background == null)
@@ -810,7 +890,8 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
         background.color = CSoftDarkBrown;
         background.raycastTarget = false;
 
-        EnsureDashedBorder(boxRect, "TitleDashedBorder", CSlotRectSize(boxRect), 18f, 9f, 3f, CDarkBrown);
+        // rect.size 가 아직 갱신 안 됐을 수 있어 계산한 boxSize 를 직접 넘긴다.
+        EnsureDashedBorder(boxRect, "TitleDashedBorder", boxSize, 18f, 9f, 3f, CDarkBrown);
         title.SetAsLastSibling();
     }
 
@@ -887,19 +968,27 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
 
     void RefreshSpecialSlots()
     {
-        if (_trashImg != null)
+        // A안: 프리팹에서 이미지를 지정한 버리기 칸은 CTrash 틴트로 덮지 않는다.
+        if (_trashImg != null && _trashImg.sprite == null)
             _trashImg.color = CTrash;
 
         if (_qGemImg == null)
             return;
 
         ItemData consumable = ItemInventoryManager.Instance != null ? ItemInventoryManager.Instance.Consumable : null;
-        SetImageSpriteSafely(_qGemImg, consumable != null ? consumable.Sprite : null);
+        if (consumable != null)
+        {
+            SetImageSpriteSafely(_qGemImg, consumable.Sprite);
+            _qGemImg.color = _qGemImg.sprite != null ? Color.white : CSlot;
+        }
+        else
+        {
+            // 소모품이 없으면 프리팹에서 지정한 빈 칸 배경을 그대로 보여준다.
+            SetImageSpriteSafely(_qGemImg, _qGemBaseSprite);
+            _qGemImg.color = _qGemBaseColor;
+        }
         _qGemImg.preserveAspect = true;
         _qGemImg.type = Image.Type.Simple;
-        _qGemImg.color = consumable != null
-            ? (_qGemImg.sprite != null ? Color.white : CSlot)
-            : CEmpty;
 
         if (_qGemName != null)
             _qGemName.text = consumable != null ? consumable.ItemName : "없음";
@@ -1192,8 +1281,10 @@ void NormalizeCanvasTransform()
             // task4: 배경 Image는 빈/찬 색상만; 실제 스프라이트는 ItemIcon 자식에 표시
             if (_storageImg[i] != null)
             {
-                // 슬롯 배경 sprite는 에디터 지정값을 유지한다. 
-                _storageImg[i].color = p != null ? new Color(0.12f, 0.09f, 0.06f, 0.35f) : CEmpty;
+                // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
+                // A안: 빈 슬롯은 프리팹에서 지정한 배경색을 그대로 보여준다.
+                Color emptyColor = i < _storageEmptyColor.Length ? _storageEmptyColor[i] : CEmpty;
+                _storageImg[i].color = p != null ? new Color(0.12f, 0.09f, 0.06f, 0.35f) : emptyColor;
                 ApplyAlphaHitTest(_storageImg[i], 0f);
             }
 
@@ -1225,7 +1316,7 @@ void NormalizeCanvasTransform()
 
             if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
                 _storageBtn[i].targetGraphic = _storageImg[i];
-            if (_storageName[i] != null) _storageName[i].text = p != null ? p.DisplayName() : "빈 슬롯";
+            if (_storageName[i] != null) _storageName[i].text = p != null ? p.DisplayName() : (i < _storageEmptyName.Length ? _storageEmptyName[i] : "빈 슬롯");
             // task20: 보관 슬롯에 저장된 부위의 체력 동그라미 표시 안 함
             if (_storageHp[i]   != null) _storageHp[i].text  = "";
         }
@@ -1731,38 +1822,21 @@ void NormalizeCanvasTransform()
 
     Image EnsureBaseImage(Transform parent, string objectName, Vector2 anchoredPosition, Vector2 size, Color placeholderColor)
     {
+        // A안: 프리팹에 실제로 배치한 베이스 이미지에만 바인딩하고,
+        // 없는 것은 런타임에 새로 만들지 않는다(캐릭터 위 유령 이미지 방지).
         Transform existing = parent.Find(objectName);
-        GameObject go = existing != null ? existing.gameObject : new GameObject(objectName);
-        go.transform.SetParent(parent, false);
-        bool isNew = existing == null;
+        if (existing == null)
+            return null;
 
-        RectTransform rect = go.GetComponent<RectTransform>();
-        if (rect == null)
-        {
-            rect = go.AddComponent<RectTransform>();
-            isNew = true;
-        }
-
-        if (isNew)
-        {
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = anchoredPosition;
-            rect.sizeDelta = size;
-            rect.localScale = Vector3.one;
-        }
+        GameObject go = existing.gameObject;
 
         Image image = go.GetComponent<Image>();
         if (image == null)
-        {
             image = go.AddComponent<Image>();
-            isNew = true;
-        }
 
         image.raycastTarget = false;
-        image.preserveAspect = true;
-        if (isNew || image.sprite == null)
-            image.color = image.sprite == null ? placeholderColor : Color.white;
+        if (image.sprite == null)
+            image.color = placeholderColor;
         return image;
     }
 
@@ -1773,14 +1847,16 @@ void NormalizeCanvasTransform()
         if (_baseFaceSprite == null)
             _baseFaceSprite = LoadInterfaceSprite("head");
 
-        if (_baseBodyImg != null)
+        // A안: 프리팹에서 지정한 베이스 이미지 스프라이트/색은 덮어쓰지 않는다.
+        // (스프라이트가 비어 있을 때만 기본값을 채운다.)
+        if (_baseBodyImg != null && _baseBodyImg.sprite == null)
         {
             if (_baseBodySprite != null)
                 _baseBodyImg.sprite = _baseBodySprite;
             _baseBodyImg.color = _baseBodyImg.sprite == null ? new Color(0.17f, 0.15f, 0.13f, 0.20f) : Color.white;
         }
 
-        if (_baseFaceImg != null)
+        if (_baseFaceImg != null && _baseFaceImg.sprite == null)
         {
             if (_baseFaceSprite != null)
                 _baseFaceImg.sprite = _baseFaceSprite;
