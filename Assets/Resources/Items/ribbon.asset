@@ -30,6 +30,8 @@ MonoBehaviour:
     duration: 0
   sprite: {fileID: 21300000, guid: 5a4ca94c2e2941f4299caf782e96be8e, type: 3}
   projectileSprite: {fileID: 0}
+  equippedSpriteLeft: {fileID: 21300000, guid: 43004368eec1116499d54536f6506b13, type: 3}
+  equippedSpriteRight: {fileID: 21300000, guid: e40314eccba73b7409f65d8879c7969d, type: 3}
   placeholderShape: 2
   placeholderColor: {r: 0.95, g: 0.36, b: 0.55, a: 1}
   worldScale: 2.8498912
