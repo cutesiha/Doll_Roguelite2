@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -96,6 +97,9 @@ public class TutorialOpeningCutscene : MonoBehaviour
         if (!isPlaying)
             return;
 
+        if (WasAdvancePressed())
+            OnPageClicked();
+
         float bob = Mathf.Sin(Time.unscaledTime * 2.5f);
         if (continueIndicator != null)
             continueIndicator.anchoredPosition = continueBasePosition + Vector2.up * (bob * 7f);
@@ -169,9 +173,15 @@ public class TutorialOpeningCutscene : MonoBehaviour
         continueIndicator.anchoredPosition = continueBasePosition;
 
         Color dotColor = new Color(0.30f, 0.11f, 0.05f, 0.84f);
-        CreateDot(root.transform, "DotTop", new Vector2(-13f, 14f), 18f, dotColor);
-        CreateDot(root.transform, "DotBottom", new Vector2(-13f, -14f), 18f, dotColor);
-        CreateDot(root.transform, "DotPoint", new Vector2(16f, 0f), 18f, dotColor);
+        CreateOutlinedDot(root.transform, "DotTop", new Vector2(-13f, 14f), 24f, dotColor);
+        CreateOutlinedDot(root.transform, "DotBottom", new Vector2(-13f, -14f), 24f, dotColor);
+        CreateOutlinedDot(root.transform, "DotPoint", new Vector2(18f, 0f), 24f, dotColor);
+    }
+
+    void CreateOutlinedDot(Transform parent, string objectName, Vector2 position, float size, Color color)
+    {
+        CreateDot(parent, objectName + "_Outline", position, size + 10f, new Color(1f, 0.94f, 0.78f, 0.95f));
+        CreateDot(parent, objectName, position, size, color);
     }
 
     void CreateDot(Transform parent, string objectName, Vector2 position, float size, Color color)
@@ -187,30 +197,42 @@ public class TutorialOpeningCutscene : MonoBehaviour
         skipRect = skipRoot.AddComponent<RectTransform>();
         skipRect.anchorMin = skipRect.anchorMax = new Vector2(1f, 1f);
         skipRect.pivot = new Vector2(0.5f, 0.5f);
-        skipRect.sizeDelta = new Vector2(170f, 74f);
-        skipBasePosition = new Vector2(-92f, -58f);
+        skipRect.sizeDelta = new Vector2(210f, 86f);
+        skipBasePosition = new Vector2(-128f, -72f);
         skipRect.anchoredPosition = skipBasePosition;
 
-        TextMeshProUGUI label = skipRoot.AddComponent<TextMeshProUGUI>();
+        Image background = skipRoot.AddComponent<Image>();
+        background.sprite = null;
+        background.color = new Color(1f, 0.94f, 0.78f, 0.92f);
+        background.raycastTarget = true;
+        Outline outline = skipRoot.AddComponent<Outline>();
+        outline.effectColor = new Color(0.11f, 0.04f, 0.02f, 0.95f);
+        outline.effectDistance = new Vector2(4f, -4f);
+
+        GameObject labelObject = new GameObject("SkipLabel");
+        labelObject.transform.SetParent(skipRoot.transform, false);
+        RectTransform labelRect = labelObject.AddComponent<RectTransform>();
+        Stretch(labelRect);
+        TextMeshProUGUI label = labelObject.AddComponent<TextMeshProUGUI>();
         label.font = UIThinDungFont.Get();
-        label.text = "skip";
-        label.fontSize = 44f;
+        label.text = "SKIP";
+        label.fontSize = 46f;
         label.fontStyle = FontStyles.Bold;
         label.alignment = TextAlignmentOptions.Center;
-        label.color = new Color(0.30f, 0.11f, 0.05f, 0.82f);
-        label.outlineWidth = 0.16f;
-        label.outlineColor = new Color(0.18f, 0.055f, 0.025f, 0.74f);
-        label.raycastTarget = true;
+        label.color = new Color(0.12f, 0.035f, 0.015f, 1f);
+        label.outlineWidth = 0.18f;
+        label.outlineColor = new Color(1f, 0.96f, 0.82f, 0.9f);
+        label.raycastTarget = false;
         label.textWrappingMode = TextWrappingModes.NoWrap;
 
         Button button = skipRoot.AddComponent<Button>();
-        button.targetGraphic = label;
+        button.targetGraphic = background;
         button.transition = Selectable.Transition.ColorTint;
         ColorBlock colors = button.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(0.62f, 0.62f, 0.62f, 1f);
+        colors.highlightedColor = new Color(1f, 0.86f, 0.52f, 1f);
         colors.selectedColor = colors.highlightedColor;
-        colors.pressedColor = new Color(0.48f, 0.48f, 0.48f, 1f);
+        colors.pressedColor = new Color(0.95f, 0.67f, 0.28f, 1f);
         colors.fadeDuration = 0.10f;
         button.colors = colors;
         button.onClick.AddListener(ShowSkipConfirmation);
@@ -384,6 +406,17 @@ public class TutorialOpeningCutscene : MonoBehaviour
             StartCoroutine(TurnPage());
         else
             StartCoroutine(CloseAndOpenEyes());
+    }
+
+    static bool WasAdvancePressed()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
+            return false;
+
+        return keyboard.spaceKey.wasPressedThisFrame
+            || keyboard.enterKey.wasPressedThisFrame
+            || keyboard.numpadEnterKey.wasPressedThisFrame;
     }
 
     IEnumerator TurnPage()

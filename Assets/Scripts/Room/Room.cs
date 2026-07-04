@@ -5,11 +5,13 @@ using UnityEngine.SceneManagement;
 
 public class Room : MonoBehaviour
 {
-    const int EnemiesInsidePerWave = 3;
-    const int EnemiesOutsidePerWave = 1;
+    const int BaseEnemiesInsidePerWave = 4;
+    const int BaseEnemiesOutsidePerWave = 2;
 
     [SerializeField] EnemyBase enemyPrefab;
     [SerializeField] int waveCount = 3;
+    [SerializeField, Min(0)] int extraEnemyEveryLayers = 2;
+    [SerializeField, Min(0)] int maxExtraEnemiesPerWave = 3;
     [SerializeField] int spawnBlinkCount = 6;
     [SerializeField] float spawnBlinkInterval = 0.12f;
     [SerializeField] float nextWaveDelay = 0.75f;
@@ -65,7 +67,7 @@ public class Room : MonoBehaviour
         if (useWaves)
             yield return null;
 
-        int totalWaves = useWaves ? Mathf.Max(1, waveCount) : 1;
+        int totalWaves = useWaves ? EffectiveWaveCount() : 1;
         for (int wave = 1; wave <= totalWaves; wave++)
         {
             if (useWaves)
@@ -435,19 +437,21 @@ public class Room : MonoBehaviour
     {
         enemies.Clear();
 
-        int totalCount = EnemiesInsidePerWave + EnemiesOutsidePerWave;
+        int insideCount = EffectiveEnemiesInsidePerWave();
+        int outsideCount = EffectiveEnemiesOutsidePerWave();
+        int totalCount = insideCount + outsideCount;
         List<GameObject> templates = BuildWaveTemplates(wave, totalCount);
         GameObject markerTemplate = templates.Count > 0 ? templates[0] : EnemyTemplate(wave);
 
         Vector2 markerSize = GetEnemyMarkerSize(markerTemplate);
 
-        List<Vector3> insidePositions = new List<Vector3>(EnemiesInsidePerWave);
-        for (int i = 0; i < EnemiesInsidePerWave; i++)
+        List<Vector3> insidePositions = new List<Vector3>(insideCount);
+        for (int i = 0; i < insideCount; i++)
             insidePositions.Add(randomizeEnemyPositions ? RandomPos(markerSize) : markerTemplate.transform.position);
 
-        List<Vector3> outsidePositions = new List<Vector3>(EnemiesOutsidePerWave);
-        for (int i = 0; i < EnemiesOutsidePerWave; i++)
-            outsidePositions.Add(RandomPosOutsideScreen());
+        List<Vector3> outsidePositions = new List<Vector3>(outsideCount);
+        for (int i = 0; i < outsideCount; i++)
+            outsidePositions.Add(RandomPosOutsideScreen(markerSize));
 
         yield return StartCoroutine(BlinkSpawnPositions(insidePositions, markerSize));
 
@@ -471,8 +475,8 @@ public class Room : MonoBehaviour
             if (enemy != null)
             {
                 EnemyManager.Instance?.ConfigureEnemy(enemy, true);
-                float approachDur = i >= EnemiesInsidePerWave ? spawnApproachDuration * 2.5f : spawnApproachDuration;
-                enemy.StartSpawnApproach(approachDur, spawnApproachSpeed);
+                float approachDur = i >= insideCount ? spawnApproachDuration * 2.5f : spawnApproachDuration;
+                enemy.StartSpawnApproach(approachDur, EffectiveSpawnApproachSpeed());
                 enemies.Add(enemy);
             }
         }
@@ -519,7 +523,7 @@ public class Room : MonoBehaviour
         }
     }
 
-    Vector3 RandomPosOutsideScreen()
+    Vector3 RandomPosOutsideScreen(Vector2 enemySize)
     {
         Camera cam = Camera.main;
         if (cam == null || !cam.orthographic)
@@ -530,7 +534,7 @@ public class Room : MonoBehaviour
         Vector3 center = cam.transform.position;
         const float offscreenMargin = 2.5f;
 
-        if (TryGetRoomInnerRect(Vector2.one, out Rect innerRect))
+        if (TryGetRoomInnerRect(enemySize, out Rect innerRect))
         {
             Vector2[] farCandidates =
             {
@@ -583,6 +587,38 @@ public class Room : MonoBehaviour
         }
 
         return new Vector3(x, y, 0f);
+    }
+
+    int EffectiveWaveCount()
+    {
+        return Mathf.Max(1, waveCount + 1 + Mathf.Clamp(RoomLayer() / 4, 0, 1));
+    }
+
+    int EffectiveEnemiesInsidePerWave()
+    {
+        return BaseEnemiesInsidePerWave + ExtraEnemiesForLayer();
+    }
+
+    int EffectiveEnemiesOutsidePerWave()
+    {
+        return BaseEnemiesOutsidePerWave + Mathf.Clamp(ExtraEnemiesForLayer() / 2, 0, 2);
+    }
+
+    int ExtraEnemiesForLayer()
+    {
+        int every = Mathf.Max(1, extraEnemyEveryLayers);
+        return Mathf.Clamp(Mathf.Max(0, RoomLayer() - 1) / every, 0, maxExtraEnemiesPerWave);
+    }
+
+    float EffectiveSpawnApproachSpeed()
+    {
+        return spawnApproachSpeed * (1.35f + RoomLayer() * 0.05f);
+    }
+
+    static int RoomLayer()
+    {
+        MapNode node = MapRunState.PendingNode != null ? MapRunState.PendingNode : MapRunState.CurrentNode;
+        return node != null ? Mathf.Max(1, node.layer) : 1;
     }
 
     List<GameObject> BuildWaveTemplates(int wave, int count)

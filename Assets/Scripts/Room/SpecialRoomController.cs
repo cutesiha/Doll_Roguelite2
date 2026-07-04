@@ -389,7 +389,7 @@ public class SpecialRoomController : MonoBehaviour
         string result;
         if (option == 0)
         {
-            PlayerManager.Instance?.Heal(999);
+            InventoryManager.Instance?.RepairAllParts();
             result = "체력을 회복했습니다";
         }
         else if (option == 1)

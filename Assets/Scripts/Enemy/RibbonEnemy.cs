@@ -76,6 +76,15 @@ public class RibbonEnemy : EnemyBase
             moveSpeed = Mathf.Max(0f, profile.moveSpeed);
     }
 
+    public override void ApplyCombatScaling(float speedMultiplier, float cooldownMultiplier, int extraDamage)
+    {
+        moveSpeed *= Mathf.Max(0.1f, speedMultiplier);
+        attackCooldownRange = ScaleRange(attackCooldownRange, cooldownMultiplier, 0.55f);
+        telegraphDuration = Mathf.Max(0.35f, telegraphDuration * Mathf.Lerp(1f, cooldownMultiplier, 0.45f));
+        fanDamage += Mathf.Max(0, extraDamage);
+        bindDamage += Mathf.Max(0, extraDamage);
+    }
+
     void FixedUpdate()
     {
         if (player == null || isAttacking)
@@ -326,6 +335,14 @@ public class RibbonEnemy : EnemyBase
         float min = Mathf.Max(0.1f, attackCooldownRange.x);
         float max = Mathf.Max(min, attackCooldownRange.y);
         nextAttackTime = Time.time + Random.Range(min, max);
+    }
+
+    static Vector2 ScaleRange(Vector2 range, float multiplier, float minValue)
+    {
+        float safe = Mathf.Max(0.1f, multiplier);
+        float min = Mathf.Max(minValue, range.x * safe);
+        float max = Mathf.Max(min, range.y * safe);
+        return new Vector2(min, max);
     }
 
     void EnsureCollider()

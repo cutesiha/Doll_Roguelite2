@@ -23,7 +23,6 @@ public class PlayerItemEffects : MonoBehaviour
     float moveSpeedBonus;
     float leftArmDamageBonus;
     float rightArmDamageBonus;
-    int maxHealthModifier;
     ItemData leftArmItem;
     ItemData rightArmItem;
     ItemData legItem;
@@ -91,8 +90,6 @@ public class PlayerItemEffects : MonoBehaviour
         moveSpeedBonus = inventory.RoomMoveSpeedBonus;
         leftArmDamageBonus = inventory.RoomArmDamageBonus;
         rightArmDamageBonus = inventory.RoomArmDamageBonus;
-        maxHealthModifier = 0;
-
         AccumulateEquippedEffects(leftEyeItem);
         AccumulateEquippedEffects(rightEyeItem);
         AccumulateEquippedEffects(leftArmItem);
@@ -103,8 +100,6 @@ public class PlayerItemEffects : MonoBehaviour
         if (controller == null)
             controller = GetComponent<PlayerController>();
         controller?.SetItemMoveSpeedBonus(moveSpeedBonus);
-
-        PlayerManager.Instance?.SetItemMaxHpModifier(maxHealthModifier);
 
         Camera camera = Camera.main;
         if (camera != null)
@@ -222,9 +217,6 @@ public class PlayerItemEffects : MonoBehaviour
                 case ItemEffectType.BothArmDamage:
                     leftArmDamageBonus += effect.value;
                     rightArmDamageBonus += effect.value;
-                    break;
-                case ItemEffectType.MaxHealth:
-                    maxHealthModifier += Mathf.RoundToInt(effect.value);
                     break;
             }
         }

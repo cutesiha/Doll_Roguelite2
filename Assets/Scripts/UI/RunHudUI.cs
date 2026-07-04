@@ -97,7 +97,6 @@ public class RunHudUI : MonoBehaviour
     GameObject menuControlHint;
     readonly List<Image> waveDots = new List<Image>();
     readonly List<HudPipGroup> hudPipGroups = new List<HudPipGroup>();
-    HudPipGroup bodyPips;
     Coroutine waveClearRoutine;
     // task8: 장착 아이템 표시 패널
     EquippedItemHudPanel equippedItemPanel;
@@ -120,7 +119,6 @@ public class RunHudUI : MonoBehaviour
     static readonly Color MutedTextColor = new Color(0.35f, 0.31f, 0.28f, 1f);
     static readonly Color AccentColor = new Color(0.88f, 0.48f, 0.24f, 1f);
     static readonly Color EmptyPipColor = new Color(0.17f, 0.15f, 0.13f, 0.28f);
-    static readonly Color BodyDangerColor = new Color(0.84f, 0.22f, 0.24f, 1f);
     static readonly Color MapBrown = new Color(0.27f, 0.16f, 0.09f, 1f);
     static readonly Color HiddenMapNodeColor = new Color(0.29f, 0.25f, 0.22f, 1f);
 
@@ -265,7 +263,6 @@ void Awake()
         }
 
         hudPipGroups.Clear();
-        bodyPips = null;
         mapButton = null;
         inventoryButton = null;
         menuButton = null;
@@ -696,7 +693,7 @@ void Awake()
     {
         return FindChildRecursive(transform, "BodyPipHud") != null
             && FindChildRecursive(transform, "EyesRow_L_Pip_0") != null
-            && FindChildRecursive(transform, "BodyRow_Body_Pip_0") != null;
+            && FindChildRecursive(transform, "LegsRow_R_Pip_0") != null;
     }
 
     void BindExistingWaveUi()
@@ -720,7 +717,6 @@ void Awake()
     void BindExistingPipGroups()
     {
         hudPipGroups.Clear();
-        bodyPips = null;
 
         AddExistingPipGroup(BodySlot.EyeLeft, "EyesRow_L_Pip_", 2);
         AddExistingPipGroup(BodySlot.EyeRight, "EyesRow_R_Pip_", 2);
@@ -728,7 +724,9 @@ void Awake()
         AddExistingPipGroup(BodySlot.ArmRight, "ArmsRow_R_Pip_", 3);
         AddExistingPipGroup(BodySlot.LegLeft, "LegsRow_L_Pip_", 3);
         AddExistingPipGroup(BodySlot.LegRight, "LegsRow_R_Pip_", 3);
-        bodyPips = AddExistingPipGroup(null, "BodyRow_Body_Pip_", 5);
+        Transform bodyRow = FindChildRecursive(transform, "BodyRow");
+        if (bodyRow != null)
+            bodyRow.gameObject.SetActive(false);
     }
 
     HudPipGroup AddExistingPipGroup(BodySlot? slot, string prefix, int count)
@@ -867,7 +865,6 @@ void Awake()
         BuildPartRow(group.transform, "EyesRow", HudPartIcon.Eye, BodySlot.EyeLeft, 2, BodySlot.EyeRight, 2, new Vector2(rowX, -10f), false);
         BuildPartRow(group.transform, "ArmsRow", HudPartIcon.Arm, BodySlot.ArmLeft, 3, BodySlot.ArmRight, 3, new Vector2(rowX, -46f), false);
         BuildPartRow(group.transform, "LegsRow", HudPartIcon.Leg, BodySlot.LegLeft, 3, BodySlot.LegRight, 3, new Vector2(rowX, -82f), false);
-        BuildPartRow(group.transform, "BodyRow", HudPartIcon.Body, null, 0, null, 5, new Vector2(rowX, -118f), true);
     }
 
 // task8: HP 섹션 아래에 장착된 Q보석 아이템 표시 패널
@@ -960,9 +957,6 @@ void Awake()
         float rowWidth = 34f + (pipWidth + pipGap) * totalPips + (leftCount > 0 ? separatorGap + 7f : 0f) + 24f;
         GameObject row = Rect(parent, name, Anchor.TopLeft, offset, new Vector2(rowWidth, 38f));
 
-        if (bodyRow)
-            BuildBodyDangerFrame(row.transform, new Vector2(35f, -3f), new Vector2((pipWidth + pipGap) * rightCount - pipGap + 16f, 40f));
-
         BuildPartIcon(row.transform, icon, new Vector2(0f, -2f));
 
         float x = 48f;
@@ -981,9 +975,6 @@ void Awake()
         Image[] rightPips = BuildPips(row.transform, name + (bodyRow ? "_Body" : "_R"), rightCount, new Vector2(x, -4f), new Vector2(pipWidth, pipHeight), pipGap);
         HudPipGroup rightGroup = new HudPipGroup(rightSlot, rightPips, rightCount);
         hudPipGroups.Add(rightGroup);
-
-        if (bodyRow)
-            bodyPips = rightGroup;
     }
 
     Image[] BuildPips(Transform parent, string prefix, int count, Vector2 start, Vector2 size, float gap)
@@ -1004,14 +995,6 @@ void Awake()
         }
 
         return pips;
-    }
-
-    void BuildBodyDangerFrame(Transform parent, Vector2 position, Vector2 size)
-    {
-        AddLine(parent, "BodyFrame_T", position, new Vector2(size.x, 3f), BodyDangerColor);
-        AddLine(parent, "BodyFrame_B", new Vector2(position.x, position.y - size.y), new Vector2(size.x, 3f), BodyDangerColor);
-        AddLine(parent, "BodyFrame_L", position, new Vector2(3f, size.y), BodyDangerColor);
-        AddLine(parent, "BodyFrame_R", new Vector2(position.x + size.x, position.y), new Vector2(3f, size.y), BodyDangerColor);
     }
 
     void BuildPartIcon(Transform parent, HudPartIcon icon, Vector2 offset)
@@ -1976,18 +1959,6 @@ void Awake()
     {
         for (int i = 0; i < hudPipGroups.Count; i++)
             UpdatePipGroup(hudPipGroups[i]);
-
-        if (bodyPips != null)
-        {
-            BodyState state = BodyConditionUtility.CurrentState();
-            PlayerManager pm = PlayerManager.Instance;
-            int remaining;
-            if (pm != null)
-                remaining = HpToPips(pm.CurrentHp, pm.MaxHp, bodyPips.maxPips);
-            else
-                remaining = state == null || state.body ? bodyPips.maxPips : 0;
-            ApplyPipColors(bodyPips.pips, remaining, bodyPips.maxPips);
-        }
 
     }
 

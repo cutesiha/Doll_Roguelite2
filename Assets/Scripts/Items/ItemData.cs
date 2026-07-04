@@ -57,7 +57,7 @@ public enum ItemEffectType
     LeftArmDamage,
     RightArmDamage,
     BothArmDamage,
-    MaxHealth,
+    DeprecatedBodyHealthSlot,
     InventoryCapacity,
     VerticalViewFlip,
     PixelatedView,

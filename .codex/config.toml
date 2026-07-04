@@ -1,2 +1,8 @@
 [mcp_servers.UnityMCP]
 url = "http://127.0.0.1:8080/mcp"
+
+[mcp_servers.UnityMCP.tools.read_console]
+approval_mode = "approve"
+
+[mcp_servers.UnityMCP.tools.manage_build]
+approval_mode = "approve"

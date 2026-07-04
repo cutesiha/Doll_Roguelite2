@@ -337,8 +337,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8a8720917cc9f74d8d23f5a37e33d1f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerManager
-  maxHp: 10
-  currentHp: 10
   moveSpeed: 5
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
@@ -861,6 +859,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 282552176641931579, guid: 3fced79a5d71d2e4aba06b7739ae38bb, type: 3}
+      propertyPath: m_Size.x
+      value: 0.32632944
+      objectReference: {fileID: 0}
+    - target: {fileID: 282552176641931579, guid: 3fced79a5d71d2e4aba06b7739ae38bb, type: 3}
+      propertyPath: m_Size.y
+      value: 0.09111309
+      objectReference: {fileID: 0}
+    - target: {fileID: 282552176641931579, guid: 3fced79a5d71d2e4aba06b7739ae38bb, type: 3}
+      propertyPath: m_Offset.x
+      value: 0.000108495355
+      objectReference: {fileID: 0}
+    - target: {fileID: 282552176641931579, guid: 3fced79a5d71d2e4aba06b7739ae38bb, type: 3}
+      propertyPath: m_Offset.y
+      value: -0.4330411
+      objectReference: {fileID: 0}
     - target: {fileID: 2101329610117043889, guid: 3fced79a5d71d2e4aba06b7739ae38bb, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.15
@@ -4924,8 +4938,15 @@ MonoBehaviour:
   bookBossRageVolume: 1.23
   bookBossRainLoopClip: {fileID: 8300000, guid: f1f821df3788d3a448987ece12431efd, type: 3}
   bookBossRainLoopVolume: 0.96
+  bookBossSirenLoopClip: {fileID: 8300000, guid: cdaf2aef2546f144f825e1b3d49b7a7d, type: 3}
+  bookBossSirenLoopVolume: 0.7
+  bookBossInkDropClip1: {fileID: 8300000, guid: aff3f06f3ebb929459f30e1ef5af1cf5, type: 3}
+  bookBossInkDropClip2: {fileID: 8300000, guid: 117a0cc190494d54ebca8a9c996ae58c, type: 3}
+  bookBossInkDropClip3: {fileID: 8300000, guid: 9f8ccc0b7e8d8bf49a8a64b0524a8dfc, type: 3}
+  bookBossInkDropClip4: {fileID: 8300000, guid: 4e3a7239c2d7e5041ab07540f9fc0d47, type: 3}
+  bookBossInkDropVolume: 1.32
   bookBossFloorSlamClip: {fileID: 8300000, guid: e477ace3816012644aea5d1518c0952e, type: 3}
-  bookBossFloorSlamVolume: 0.58
+  bookBossFloorSlamVolume: 0.35
   bookBossPaperFlyClip: {fileID: 8300000, guid: 1287e4fd7a2b2b4498e3272b0c0afcfc, type: 3}
   bookBossPaperFlyVolume: 1.04
   enemyHitClip: {fileID: 0}
@@ -5094,6 +5115,135 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 112, y: 96}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1872858350
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1872858352}
+  - component: {fileID: 1872858351}
+  m_Layer: 0
+  m_Name: BGM_afterVictory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!82 &1872858351
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1872858350}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!4 &1872858352
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1872858350}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.14869, y: -3.91647, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1888502915
 GameObject:
   m_ObjectHideFlags: 0
@@ -5983,6 +6133,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Room
   enemyPrefab: {fileID: 0}
   waveCount: 3
+  extraEnemyEveryLayers: 2
+  maxExtraEnemiesPerWave: 3
   spawnBlinkCount: 6
   spawnBlinkInterval: 0.12
   nextWaveDelay: 0.75
@@ -6076,7 +6228,7 @@ MonoBehaviour:
   cameraFramePadding: 2
   fallbackRestoreCameraSize: 6.2
   cameraZoomDuration: 1.15
-  armHp: 28
+  armHp: 50
   bodyHp: 120
   minionKillBodyDamage: 10
   letterDamage: 14
@@ -6084,7 +6236,6 @@ MonoBehaviour:
   poisonTickDamage: 1
   floorSentenceFontSize: 300
   floorSentenceWorldScale: 0.05
-  floorSentenceSizeMultiplier: 3
   floorSentenceMinCount: 3
   floorSentenceMaxCount: 5
   floorSentenceSpawnDelay: 0.14
@@ -6104,7 +6255,9 @@ MonoBehaviour:
   inkRainBurstCountRange: {x: 2, y: 4}
   inkRainWarningTime: 0.85
   inkRainWarningRadius: 0.8
-  inkRainWarningColor: {r: 0.38, g: 0.58, b: 1, a: 0.72}
+  inkRainStainLifetime: 7
+  inkRainDamageCooldown: 1.25
+  inkRainStainHitboxSize: {x: 1.35, y: 0.9}
   wave3IntroLockDuration: 2.8
   wave3IntroCameraSize: 4.2
   wave3ShakeMagnitude: 0.14
@@ -6114,7 +6267,9 @@ MonoBehaviour:
   wave3MinionSpawnWarningTime: 1.05
   wave3MinionSpawnWarningRadius: 1.15
   wave3AttackInitialDelay: 2.3
-  wave3BasicLetterExtraDelay: 1.25
+  wave3BasicLetterExtraDelay: 0.08
+  wave3AttackRestRange: {x: 0.85, y: 1.35}
+  wave3FloorSentenceChance: 0.78
   wave3MinionScale: 1.85
   wordFragmentBossColliderClearance: 0.9
   enableRainyScreenDistortion: 1
@@ -7416,6 +7571,7 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 1018022204}
+  - {fileID: 1872858352}
   - {fileID: 619394802}
   - {fileID: 161824398}
   - {fileID: 315278997}

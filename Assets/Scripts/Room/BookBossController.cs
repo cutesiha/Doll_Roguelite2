@@ -25,7 +25,7 @@ public class BookBossController : MonoBehaviour
     [SerializeField, Min(0f)] float cameraFramePadding = 2.0f;
     [SerializeField, Min(0.1f)] float fallbackRestoreCameraSize = 6.2f;
     [SerializeField, Min(0.1f)] float cameraZoomDuration = 1.15f;
-    [SerializeField] int armHp = 28;
+    [SerializeField] int armHp = 50;
     [SerializeField] int bodyHp = 120;
     [SerializeField] int minionKillBodyDamage = 10;
 
@@ -60,7 +60,9 @@ public class BookBossController : MonoBehaviour
     [SerializeField] Vector2Int inkRainBurstCountRange = new Vector2Int(2, 4);
     [SerializeField, Min(0.1f)] float inkRainWarningTime = 0.85f;
     [SerializeField, Min(0.1f)] float inkRainWarningRadius = 0.8f;
-    [SerializeField] Color inkRainWarningColor = new Color(0.38f, 0.58f, 1f, 0.72f);
+    [SerializeField, Min(0.1f)] float inkRainStainLifetime = 7f;
+    [SerializeField, Min(0.1f)] float inkRainDamageCooldown = 1.25f;
+    [SerializeField] Vector2 inkRainStainHitboxSize = new Vector2(1.35f, 0.9f);
 
     [Header("Wave 3 Frenzy")]
     [SerializeField, Min(0.1f)] float wave3IntroLockDuration = 2.8f;
@@ -72,7 +74,9 @@ public class BookBossController : MonoBehaviour
     [SerializeField, Min(0.1f)] float wave3MinionSpawnWarningTime = 1.05f;
     [SerializeField, Min(0.1f)] float wave3MinionSpawnWarningRadius = 1.15f;
     [SerializeField, Min(0f)] float wave3AttackInitialDelay = 2.3f;
-    [SerializeField, Min(0f)] float wave3BasicLetterExtraDelay = 1.25f;
+    [SerializeField, Min(0f)] float wave3BasicLetterExtraDelay = 0.08f;
+    [SerializeField] Vector2 wave3AttackRestRange = new Vector2(0.35f, 0.65f);
+    [SerializeField, Range(0f, 1f)] float wave3FloorSentenceChance = 1f;
     [SerializeField, Min(0.1f)] float wave3MinionScale = 1.85f;
 
     [Header("Word Fragment Drop")]
@@ -151,9 +155,13 @@ public class BookBossController : MonoBehaviour
     {
         public Vector2 center;
         public float radius;
+        public Vector2 rectHalfExtents;
         public float endTime;     // float.MaxValue = persistent
         public GameObject visual;
         public string cause;
+        public bool useFloorHitbox;
+        public int damage;
+        public float tickCooldown;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -204,6 +212,7 @@ public class BookBossController : MonoBehaviour
         SetRainyScreenDistortion(false);
         SoundManager.StopBookBossRage();
         SoundManager.StopBookBossRainLoop();
+        SoundManager.StopBookBossSirenLoop();
         if (wave3PulseOverlay != null)
         {
             Destroy(wave3PulseOverlay);
@@ -660,7 +669,6 @@ public class BookBossController : MonoBehaviour
 
             if (wave == 2 && letterFallLoop == null)
             {
-                SoundManager.StartBookBossRainLoop();
                 letterFallLoop = StartCoroutine(LetterFallLoop());
             }
 
@@ -793,7 +801,7 @@ public class BookBossController : MonoBehaviour
 
         int minCount = Mathf.Max(1, floorSentenceMinCount);
         int maxCount = Mathf.Max(minCount, floorSentenceMaxCount);
-        int sentenceCount = Random.Range(minCount, maxCount + 1);
+        int sentenceCount = Random.Range(minCount, maxCount + 1) + 1;
         string[] sentences = new string[sentenceCount];
         for (int i = 0; i < sentenceCount; i++)
             sentences[i] = BookLetters.AttackSentences[Random.Range(0, BookLetters.AttackSentences.Length)];
@@ -1005,7 +1013,7 @@ public class BookBossController : MonoBehaviour
 
         text.color = new Color(0.34f, 0.13f, 0.07f, 1f);
         SoundManager.PlayBookBossFloorSlam();
-        CameraShake.Shake(floorSentenceImpactShakeDuration, floorSentenceImpactShakeMagnitude);
+        CameraShake.Shake(floorSentenceImpactShakeDuration * 1.12f, floorSentenceImpactShakeMagnitude * 1.28f);
 
         text.ForceMeshUpdate();
         Vector2 textWorldCenter = text.transform.TransformPoint(text.textBounds.center);
@@ -1135,7 +1143,6 @@ public class BookBossController : MonoBehaviour
 
     IEnumerator LetterFallLoop()
     {
-        SoundManager.StartBookBossRainLoop();
         if (rainWobbleLoop == null)
             rainWobbleLoop = StartCoroutine(RainWobbleLoop());
         SetRainyScreenDistortion(CurrentWave() == 2);
@@ -1167,9 +1174,9 @@ public class BookBossController : MonoBehaviour
         float topY = rainBounds.yMax + 1.6f;
         Vector2 target = new Vector2(x, groundY);
 
-        yield return StartCoroutine(InkRainWarningRoutine(target));
+        yield return StartCoroutine(InkRainWarningRoutine(target, glyph));
 
-        TextMeshPro text = CreateWorldText(glyph, new Vector2(x, topY), 2.2f, new Color(0.1f, 0.08f, 0.08f, 1f), 60);
+        TextMeshPro text = CreateWorldText(glyph, new Vector2(x, topY), 2.2f, InkRainColor(1f), 60);
         text.fontStyle = FontStyles.Bold;
 
         float fallDuration = 0.7f;
@@ -1183,6 +1190,7 @@ public class BookBossController : MonoBehaviour
         }
 
         CameraShake.Shake(0.16f, 0.11f);
+        SoundManager.PlayBookBossInkDrop(0f);
         StartCoroutine(GlyphSplashRoutine(target));
 
         // ink stain: small persistent poison
@@ -1190,7 +1198,7 @@ public class BookBossController : MonoBehaviour
         stain.transform.position = new Vector3(x, groundY, 0f);
         SpriteRenderer stainRenderer = stain.AddComponent<SpriteRenderer>();
         stainRenderer.sprite = BossVisuals.CircleSprite();
-        stainRenderer.color = new Color(0.06f, 0.05f, 0.08f, 0.7f);
+        stainRenderer.color = InkRainColor(0.68f);
         stainRenderer.sortingOrder = 52;
         stain.transform.localScale = new Vector3(1.5f, 1.0f, 1f);
         AddPoisonZone(new Vector2(x, groundY), 0.8f, Time.time + 12f, stain, "잉크 얼룩");
@@ -1248,37 +1256,41 @@ public class BookBossController : MonoBehaviour
             Destroy(warning);
     }
 
-    IEnumerator InkRainWarningRoutine(Vector2 target)
+    IEnumerator InkRainWarningRoutine(Vector2 target, string glyph)
     {
-        GameObject warning = CreateDashedCircle("InkRainWarning", target, inkRainWarningRadius, inkRainWarningColor, 57);
-        SpriteRenderer[] renderers = warning.GetComponentsInChildren<SpriteRenderer>();
-        Color[] baseColors = new Color[renderers.Length];
-        for (int i = 0; i < renderers.Length; i++)
-            baseColors[i] = renderers[i].color;
+        TextMeshPro warning = CreateWorldText(glyph, target, 2.35f, InkRainColor(0.32f), 57);
+        warning.gameObject.name = "InkRainWarningGlyph";
+        warning.fontStyle = FontStyles.Bold;
 
         float duration = Mathf.Max(0.1f, inkRainWarningTime);
         float elapsed = 0f;
         while (elapsed < duration && warning != null)
         {
             float t = elapsed / duration;
-            float pulse = 0.5f + 0.5f * Mathf.Sin(elapsed * 10f);
-            float breathe = Mathf.SmoothStep(0f, 1f, Mathf.PingPong(t * 1.6f, 1f));
-            warning.transform.localScale = Vector3.one * Mathf.Lerp(0.88f, 1.08f, breathe);
-
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                if (renderers[i] == null) continue;
-                Color c = baseColors[i];
-                c.a = Mathf.Lerp(0.22f, 0.82f, pulse);
-                renderers[i].color = c;
-            }
+            float pulse = 0.5f + 0.5f * Mathf.Sin(elapsed * 13f);
+            float grow = Mathf.SmoothStep(0f, 1f, t);
+            float radiusScale = Mathf.Max(0.1f, inkRainWarningRadius);
+            warning.transform.localScale = Vector3.one * Mathf.Lerp(0.72f * radiusScale, 1.16f * radiusScale, grow);
+            warning.color = InkRainColor(Mathf.Lerp(0.24f, 0.78f, pulse));
 
             elapsed += Time.deltaTime;
             yield return null;
         }
 
         if (warning != null)
-            Destroy(warning);
+            Destroy(warning.gameObject);
+    }
+
+    static Color InkRainColor(float alpha)
+    {
+        return new Color(0.075f, 0.06f, 0.085f, alpha);
+    }
+
+    Vector2 InkRainHalfExtents()
+    {
+        return new Vector2(
+            Mathf.Max(0.1f, inkRainStainHitboxSize.x) * 0.5f,
+            Mathf.Max(0.1f, inkRainStainHitboxSize.y) * 0.5f);
     }
 
     float RandomRest(Vector2 range)
@@ -1357,15 +1369,22 @@ public class BookBossController : MonoBehaviour
 
     IEnumerator GlyphSplashRoutine(Vector2 center)
     {
-        int droplets = Random.Range(7, 11);
+        int droplets = Random.Range(14, 20);
         for (int i = 0; i < droplets; i++)
         {
             float angle = Random.Range(0f, Mathf.PI * 2f);
             Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            StartCoroutine(SplashDroplet(center, direction, Random.Range(0.35f, 0.75f)));
+            StartCoroutine(SplashDroplet(center, direction, Random.Range(0.45f, 1.15f)));
         }
 
-        GameObject ring = CreateDashedCircle("GlyphSplashRing", center, 0.34f, new Color(0.58f, 0.72f, 1f, 0.55f), 61);
+        for (int i = 0; i < 5; i++)
+        {
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * Random.Range(0.06f, 0.24f);
+            StartCoroutine(SplashDroplet(center + offset, offset.sqrMagnitude > 0.001f ? offset.normalized : Random.insideUnitCircle.normalized, Random.Range(0.18f, 0.42f), true));
+        }
+
+        GameObject ring = CreateDashedCircle("GlyphSplashRing", center, 0.48f, InkRainColor(0.72f), 61);
         float elapsed = 0f;
         while (elapsed < 0.28f && ring != null)
         {
@@ -1386,28 +1405,28 @@ public class BookBossController : MonoBehaviour
             Destroy(ring);
     }
 
-    IEnumerator SplashDroplet(Vector2 center, Vector2 direction, float distance)
+    IEnumerator SplashDroplet(Vector2 center, Vector2 direction, float distance, bool blot = false)
     {
         GameObject droplet = new GameObject("GlyphSplashDroplet");
         droplet.transform.position = new Vector3(center.x, center.y, -0.09f);
-        droplet.transform.localScale = Vector3.one * Random.Range(0.08f, 0.16f);
+        droplet.transform.localScale = Vector3.one * (blot ? Random.Range(0.16f, 0.28f) : Random.Range(0.11f, 0.23f));
         SpriteRenderer renderer = droplet.AddComponent<SpriteRenderer>();
         renderer.sprite = BossVisuals.CircleSprite();
-        renderer.color = new Color(0.48f, 0.62f, 0.95f, 0.75f);
+        renderer.color = InkRainColor(blot ? 0.88f : 0.94f);
         renderer.sortingOrder = 62;
 
         Vector2 start = center;
         Vector2 end = center + direction.normalized * distance;
-        float duration = 0.32f;
+        float duration = blot ? 0.42f : 0.36f;
         float elapsed = 0f;
         while (elapsed < duration && droplet != null)
         {
             float t = elapsed / duration;
             Vector2 pos = Vector2.Lerp(start, end, t);
-            pos.y += Mathf.Sin(t * Mathf.PI) * 0.25f;
+            pos.y += Mathf.Sin(t * Mathf.PI) * (blot ? 0.08f : 0.25f);
             droplet.transform.position = new Vector3(pos.x, pos.y, -0.09f);
             Color c = renderer.color;
-            c.a = Mathf.Lerp(0.75f, 0f, t);
+            c.a = Mathf.Lerp(blot ? 0.88f : 0.94f, 0f, t);
             renderer.color = c;
             elapsed += Time.deltaTime;
             yield return null;
@@ -1428,9 +1447,9 @@ public class BookBossController : MonoBehaviour
         strongShake = true;
         if (wave3PulseLoop == null)
             wave3PulseLoop = StartCoroutine(Wave3PulseLoop());
+        SoundManager.StartBookBossSirenLoop();
         if (letterFallLoop == null)
         {
-            SoundManager.StartBookBossRainLoop();
             letterFallLoop = StartCoroutine(LetterFallLoop());
         }
 
@@ -1447,6 +1466,7 @@ public class BookBossController : MonoBehaviour
 
         endingStarted = true;
         strongShake = false;
+        SoundManager.StopBookBossSirenLoop();
         StopWave3Pulse();
         yield return StartCoroutine(EndingSequence());
     }
@@ -1646,17 +1666,21 @@ public class BookBossController : MonoBehaviour
         yield return new WaitForSeconds(wave3AttackInitialDelay);
         while (strongShake && !endingStarted && !bossDefeated)
         {
-            yield return new WaitForSeconds(Random.Range(2.5f, 4f));
+            yield return new WaitForSeconds(RandomRest(wave3AttackRestRange));
             if (endingStarted) break;
-            if (Random.value < 0.5f)
-                yield return StartCoroutine(PaperAttack());
-            else
+            Coroutine paper = StartCoroutine(PaperAttack());
+
+            if (Random.value <= Mathf.Clamp01(wave3FloorSentenceChance))
             {
-                yield return new WaitForSeconds(wave3BasicLetterExtraDelay);
+                yield return new WaitForSeconds(Mathf.Min(wave3BasicLetterExtraDelay, 0.08f));
                 if (endingStarted || bossDefeated || !strongShake)
                     break;
+
                 yield return StartCoroutine(BasicLetterAttack());
             }
+
+            if (paper != null)
+                yield return paper;
         }
     }
 
@@ -1802,6 +1826,7 @@ public class BookBossController : MonoBehaviour
             letterFallLoop = null;
         }
         SoundManager.StopBookBossRainLoop();
+        SoundManager.StopBookBossSirenLoop();
 
         StopWave3Pulse();
         if (darkenOverlay != null)
@@ -1886,6 +1911,8 @@ public class BookBossController : MonoBehaviour
 
         body = null;
         bossDefeated = true;
+        SoundManager.StopBookBossSirenLoop();
+        SoundManager.PlayAfterVictoryBgmWithFade();
         RunHudUI.HideBossParts();
         yield return new WaitForSeconds(0.35f);
     }
@@ -2573,6 +2600,8 @@ public class BookBossController : MonoBehaviour
         }
 
         bossDefeated = true;
+        SoundManager.StopBookBossSirenLoop();
+        SoundManager.PlayAfterVictoryBgmWithFade();
         RunHudUI.HideBossParts();
 
         yield return new WaitForSeconds(0.8f);
@@ -2819,18 +2848,49 @@ public class BookBossController : MonoBehaviour
 
         for (int i = 0; i < poisonZones.Count; i++)
         {
-            if (Vector2.Distance(player.position, poisonZones[i].center) <= poisonZones[i].radius)
+            PoisonZone zone = poisonZones[i];
+            if (PoisonZoneHitsPlayer(zone))
             {
-                DamagePlayer(poisonTickDamage, 0.5f, poisonZones[i].cause);
-                nextPoisonTick = Time.time + 0.5f;
+                int damage = zone.damage > 0 ? zone.damage : poisonTickDamage;
+                float cooldown = zone.tickCooldown > 0f ? zone.tickCooldown : 0.5f;
+                DamagePlayer(damage, cooldown, zone.cause);
+                nextPoisonTick = Time.time + cooldown;
                 break;
             }
         }
     }
 
+    bool PoisonZoneHitsPlayer(PoisonZone zone)
+    {
+        if (zone == null)
+            return false;
+
+        if (zone.useFloorHitbox)
+        {
+            if (receiver == null)
+                receiver = FindFirstObjectByType<PlayerDamageReceiver>();
+
+            return receiver != null && receiver.FloorAttackHitsRect(zone.center, zone.rectHalfExtents);
+        }
+
+        return player != null && Vector2.Distance(player.position, zone.center) <= zone.radius;
+    }
+
     void AddPoisonZone(Vector2 center, float radius, float endTime, GameObject visual, string cause = "독 구역")
     {
-        poisonZones.Add(new PoisonZone { center = center, radius = radius, endTime = endTime, visual = visual, cause = cause });
+        bool inkStain = visual != null && visual.name == "InkStain";
+        poisonZones.Add(new PoisonZone
+        {
+            center = center,
+            radius = radius,
+            rectHalfExtents = inkStain ? InkRainHalfExtents() : Vector2.zero,
+            endTime = inkStain ? Mathf.Min(endTime, Time.time + Mathf.Max(0.1f, inkRainStainLifetime)) : endTime,
+            visual = visual,
+            cause = inkStain ? "Ink Rain" : cause,
+            useFloorHitbox = inkStain,
+            damage = inkStain ? poisonTickDamage : -1,
+            tickCooldown = inkStain ? Mathf.Max(0.1f, inkRainDamageCooldown) : -1f
+        });
 
         // cap persistent stains so the floor doesn't fill up
         int persistent = 0;
