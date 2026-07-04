@@ -41,6 +41,10 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] Button[] _charBtn = new Button[InventoryManager.BodySlotCount];
     [SerializeField, Range(0f, 1f)] float partAlphaHitThreshold = 0.1f;
     readonly GameObject[] _charLockBadge = new GameObject[InventoryManager.BodySlotCount];
+    // 신규 아이템 시스템으로 부위를 장착하기 전, 원래(기본) 스프라이트를 기억해뒀다가
+    // 장착 해제 시 되돌린다. 처음 바인딩될 때 딱 한 번만 캡처한다.
+    readonly Sprite[] _charBaseSprite = new Sprite[InventoryManager.BodySlotCount];
+    readonly bool[] _charBaseCaptured = new bool[InventoryManager.BodySlotCount];
 
     [Header("Character Base Images")]
     [SerializeField] Sprite _baseBodySprite;
@@ -420,6 +424,13 @@ void Start()
         }
 
         _charImg[index] = image;
+
+        // A안: 신규 아이템 시스템이 장착 스프라이트로 덮어쓰기 전, 원래(기본) 스프라이트를 기억해둔다.
+        if (!_charBaseCaptured[index])
+        {
+            _charBaseSprite[index] = image != null ? image.sprite : null;
+            _charBaseCaptured[index] = true;
+        }
 
         Button button = part.GetComponent<Button>();
         if (button == null)
@@ -1342,6 +1353,7 @@ void NormalizeCanvasTransform()
             {
                 dragSource.SetItemData(null);
                 dragSource.SetItemStorageIndex(-1);
+                dragSource.SetCoinStackIndex(-1);
             }
 
             InventoryItemTooltip tooltip = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryItemTooltip>() : null;
@@ -1397,72 +1409,108 @@ void NormalizeCanvasTransform()
         }
 
         // ─ 빈 슬롯에 ItemInventoryManager 아이템 + 동전 스택 표시 ─
+        // 사용자가 드래그해서 특정 칸에 고정(pin)한 아이템/동전더미는 그 칸에 그대로 표시하고,
+        // 고정되지 않은 나머지는 남은 빈 칸에 앞에서부터 순서대로 채운다.
         var itemInv = ItemInventoryManager.Instance;
-        int itemIndex = 0;
-        int coinIndex = 0;
         int itemStorageCount = itemInv != null ? itemInv.Storage.Count : 0;
         int coinStackCount   = itemInv != null ? itemInv.CoinStacks.Count : 0;
 
+        bool[] slotTaken = new bool[storageCount];
         for (int i = 0; i < storageCount; i++)
+            slotTaken[i] = inv.storage[i] != null; // 레거시 BodyPart가 이미 차지한 칸
+
+        void DisplayItemInSlot(int slotIdx, int listIdx, ItemData item)
         {
-            if (inv.storage[i] != null)
-                continue; // BodyPart가 이미 사용 중
+            if (_storageImg[slotIdx] != null)
+                _storageImg[slotIdx].color = new Color(0.12f, 0.09f, 0.06f, 0.35f);
 
-            if (itemIndex < itemStorageCount)
+            Image icon = GetSlotItemIcon(_storageImg[slotIdx]);
+            if (icon != null)
             {
-                // task4: ItemData 아이템 표시
-                int usedItemIndex = itemIndex;
-                ItemData item = itemInv.Storage[itemIndex++];
-                if (_storageImg[i] != null)
-                {
-                    _storageImg[i].color = new Color(0.12f, 0.09f, 0.06f, 0.35f);
-                    // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
-                }
-                Image icon = GetSlotItemIcon(_storageImg[i]);
-                if (icon != null)
-                {
-                    icon.sprite = item.Sprite;
-                    icon.color  = item.Sprite != null ? Color.white : new Color(0.88f, 0.48f, 0.24f, 0.8f);
-                    if (item.Sprite != null) FitSlotIcon(icon);
-                    else (icon.transform as RectTransform).sizeDelta = Vector2.zero;
-                }
-                SetCoinGrid(_storageImg[i], 0, null);
-                if (_storageName[i] != null) _storageName[i].text = item.ItemName;
-                if (_storageHp[i]   != null) _storageHp[i].text  = "";
-
-                InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
-                if (dragSource != null)
-                {
-                    dragSource.SetItemData(item);
-                    dragSource.SetItemStorageIndex(usedItemIndex);
-                }
-
-                InventoryItemTooltip tooltip = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryItemTooltip>() : null;
-                if (tooltip != null)
-                    tooltip.SetItemData(item);
+                icon.sprite = item.Sprite;
+                icon.color  = item.Sprite != null ? Color.white : new Color(0.88f, 0.48f, 0.24f, 0.8f);
+                if (item.Sprite != null) FitSlotIcon(icon);
+                else (icon.transform as RectTransform).sizeDelta = Vector2.zero;
             }
-            else if (coinIndex < coinStackCount)
-            {
-                // task7: 동전 3x3 표시
-                int count = itemInv.CoinStacks[coinIndex++];
-                if (_storageImg[i] != null)
-                {
-                    _storageImg[i].color = new Color(0.18f, 0.13f, 0.04f, 0.45f);
-                    // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
-                }
-                Image icon = GetSlotItemIcon(_storageImg[i]);
-                if (icon != null) icon.color = Color.clear;
+            SetCoinGrid(_storageImg[slotIdx], 0, null);
+            if (_storageName[slotIdx] != null) _storageName[slotIdx].text = item.ItemName;
+            if (_storageHp[slotIdx]   != null) _storageHp[slotIdx].text  = "";
 
-                SetCoinGrid(_storageImg[i], count, itemInv.CoinItemRef);
-                if (_storageName[i] != null) _storageName[i].text = "동전 ×" + count;
-                if (_storageHp[i]   != null) _storageHp[i].text  = "";
-            }
-            else
+            InventoryStorageDragSource dragSource = _storageImg[slotIdx] != null ? _storageImg[slotIdx].GetComponent<InventoryStorageDragSource>() : null;
+            if (dragSource != null)
             {
-                // 완전히 빈 칸: 여기로 아이템을 드롭하면 보관함 리스트 맨 뒤로 옮긴다.
-                InventoryStorageDragSource dragSource = _storageImg[i] != null ? _storageImg[i].GetComponent<InventoryStorageDragSource>() : null;
-                if (dragSource != null)
-                    dragSource.SetItemStorageIndex(itemStorageCount);
+                dragSource.SetItemData(item);
+                dragSource.SetItemStorageIndex(listIdx);
+            }
+
+            InventoryItemTooltip tooltip = _storageImg[slotIdx] != null ? _storageImg[slotIdx].GetComponent<InventoryItemTooltip>() : null;
+            if (tooltip != null)
+                tooltip.SetItemData(item);
+        }
+
+        void DisplayCoinStackInSlot(int slotIdx, int listIdx, int count)
+        {
+            if (_storageImg[slotIdx] != null)
+                _storageImg[slotIdx].color = new Color(0.18f, 0.13f, 0.04f, 0.45f);
+
+            Image icon = GetSlotItemIcon(_storageImg[slotIdx]);
+            if (icon != null) icon.color = Color.clear;
+
+            SetCoinGrid(_storageImg[slotIdx], count, itemInv.CoinItemRef);
+            if (_storageName[slotIdx] != null) _storageName[slotIdx].text = "동전 ×" + count;
+            if (_storageHp[slotIdx]   != null) _storageHp[slotIdx].text  = "";
+
+            InventoryStorageDragSource dragSource = _storageImg[slotIdx] != null ? _storageImg[slotIdx].GetComponent<InventoryStorageDragSource>() : null;
+            if (dragSource != null)
+                dragSource.SetCoinStackIndex(listIdx);
+        }
+
+        bool[] itemPlaced = new bool[itemStorageCount];
+        bool[] coinPlaced = new bool[coinStackCount];
+
+        if (itemInv != null)
+        {
+            // 1) 특정 칸에 고정된 아이템/동전더미를 먼저 그 칸에 배치한다.
+            for (int k = 0; k < itemStorageCount; k++)
+            {
+                int pin = itemInv.GetItemSlotPin(k);
+                if (pin < 0 || pin >= storageCount || slotTaken[pin])
+                    continue;
+                DisplayItemInSlot(pin, k, itemInv.Storage[k]);
+                slotTaken[pin] = true;
+                itemPlaced[k] = true;
+            }
+            for (int k = 0; k < coinStackCount; k++)
+            {
+                int pin = itemInv.GetCoinStackSlotPin(k);
+                if (pin < 0 || pin >= storageCount || slotTaken[pin])
+                    continue;
+                DisplayCoinStackInSlot(pin, k, itemInv.CoinStacks[k]);
+                slotTaken[pin] = true;
+                coinPlaced[k] = true;
+            }
+
+            // 2) 고정되지 않은 나머지는 남은 빈 칸에 순서대로 채운다.
+            int nextFree = 0;
+            bool FindNextFree()
+            {
+                while (nextFree < storageCount && slotTaken[nextFree]) nextFree++;
+                return nextFree < storageCount;
+            }
+
+            for (int k = 0; k < itemStorageCount; k++)
+            {
+                if (itemPlaced[k] || !FindNextFree())
+                    continue;
+                DisplayItemInSlot(nextFree, k, itemInv.Storage[k]);
+                slotTaken[nextFree] = true;
+            }
+            for (int k = 0; k < coinStackCount; k++)
+            {
+                if (coinPlaced[k] || !FindNextFree())
+                    continue;
+                DisplayCoinStackInSlot(nextFree, k, itemInv.CoinStacks[k]);
+                slotTaken[nextFree] = true;
             }
         }
 
@@ -1491,6 +1539,9 @@ void NormalizeCanvasTransform()
                 }
                 else
                 {
+                    // 신규 아이템 시스템으로 장착된 게 없으면 기본 스프라이트로 되돌린다.
+                    // (그렇지 않으면 장착 해제 후에도 마지막으로 장착했던 아이템 그림이 남아있게 된다.)
+                    SetImageSpriteSafely(_charImg[i], i < _charBaseSprite.Length ? _charBaseSprite[i] : null);
                     // 기존 BodyPart 상태. 팔·다리·눈과 동일하게, 장착되어 있으면 원래 색,
                     // 장착 해제되어 있으면 어둡게 틴트한다.
                     _charImg[i].color = p != null ? Color.white : CUnequippedPart;
@@ -1734,6 +1785,28 @@ void NormalizeCanvasTransform()
         int index = (int)slot;
         if (_charImg != null && index >= 0 && index < _charImg.Length && _charImg[index] != null && _charImg[index].sprite != null)
             return _charImg[index].sprite;
+
+        return GetPartSprite(slot);
+    }
+
+    // DisplaySpriteForSlot과 달리 "지금 장착되어 보이는 그림"이 아니라, 이 부위가 원래(기본) 가진
+    // 고유 그림을 반환한다. 레거시 기본 파츠를 보관함으로 치울 때 아이콘으로 써야 다른 아이템의
+    // 그림을 잘못 물려받지 않는다.
+    public Sprite BaseSpriteForSlot(BodySlot slot)
+    {
+        int index = (int)slot;
+        return _charBaseSprite != null && index >= 0 && index < _charBaseSprite.Length ? _charBaseSprite[index] : null;
+    }
+
+    public static Sprite FindBaseSpriteForSlot(BodySlot slot)
+    {
+        InventoryUI[] inventories = FindObjectsByType<InventoryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < inventories.Length; i++)
+        {
+            Sprite sprite = inventories[i].BaseSpriteForSlot(slot);
+            if (sprite != null)
+                return sprite;
+        }
 
         return GetPartSprite(slot);
     }
