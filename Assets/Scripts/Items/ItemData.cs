@@ -73,7 +73,8 @@ public enum ItemEffectType
     CoinOnKill,
     RoomMoveSpeed,
     DamageAllParts,
-    NextRoomShield
+    NextRoomShield,
+    StarBurst
 }
 
 [Serializable]
@@ -120,6 +121,9 @@ public class ItemData : ScriptableObject
     [SerializeField] Sprite sprite;
     [Tooltip("투사체 공격(열쇠고리/못 등)일 때 날아가는 오브젝트에 쓸 전용 스프라이트. 비어있으면 색칠된 도형으로 대체.")]
     [SerializeField] Sprite projectileSprite;
+    [Tooltip("한 번에 여러 개의 서로 다른 모양 투사체를 쏘는 공격(별 등)의 2번째/3번째 투사체 스프라이트. 비어있으면 projectileSprite를 대신 쓴다.")]
+    [SerializeField] Sprite projectileSprite2;
+    [SerializeField] Sprite projectileSprite3;
     [Tooltip("Arm/Leg/Eye 부위의 왼쪽 슬롯(ArmLeft/LegLeft/EyeLeft)에 장착됐을 때 캐릭터에 표시할 전용 스프라이트. 비어있으면 sprite를 그대로 사용.")]
     [SerializeField] Sprite equippedSpriteLeft;
     [Tooltip("Arm/Leg/Eye 부위의 오른쪽 슬롯(ArmRight/LegRight/EyeRight)에 장착됐을 때 캐릭터에 표시할 전용 스프라이트. 비어있으면 sprite를 그대로 사용.")]
@@ -146,6 +150,8 @@ public class ItemData : ScriptableObject
     public IReadOnlyList<ItemEffectData> Effects => effects;
     public Sprite Sprite => sprite;
     public Sprite ProjectileSprite => projectileSprite;
+    public Sprite ProjectileSprite2 => projectileSprite2 != null ? projectileSprite2 : projectileSprite;
+    public Sprite ProjectileSprite3 => projectileSprite3 != null ? projectileSprite3 : projectileSprite;
     public Sprite EquippedSpriteLeft => equippedSpriteLeft;
     public Sprite EquippedSpriteRight => equippedSpriteRight;
     public ItemPlaceholderShape PlaceholderShape => placeholderShape;

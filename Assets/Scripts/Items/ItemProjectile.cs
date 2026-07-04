@@ -9,6 +9,7 @@ public class ItemProjectile : MonoBehaviour
     float lifetime;
     float radius;
     bool piercing;
+    float spinDegreesPerSecond;
     readonly HashSet<EnemyBase> hitEnemies = new();
 
     public static ItemProjectile Spawn(
@@ -22,7 +23,8 @@ public class ItemProjectile : MonoBehaviour
         Color color,
         ItemPlaceholderShape shape = ItemPlaceholderShape.Circle,
         Sprite spriteOverride = null,
-        float spriteForwardOffsetDegrees = 0f)
+        float spriteForwardOffsetDegrees = 0f,
+        float spinDegreesPerSecond = 0f)
     {
         GameObject go = new GameObject("ItemProjectile");
         go.transform.position = position;
@@ -51,6 +53,7 @@ public class ItemProjectile : MonoBehaviour
         projectile.lifetime = Mathf.Max(0.05f, lifetime);
         projectile.radius = Mathf.Max(0.03f, radius);
         projectile.piercing = piercing;
+        projectile.spinDegreesPerSecond = spinDegreesPerSecond;
         float travelAngle = Mathf.Atan2(projectile.direction.y, projectile.direction.x) * Mathf.Rad2Deg;
         go.transform.rotation = Quaternion.Euler(0f, 0f, travelAngle + spriteForwardOffsetDegrees);
         return projectile;
@@ -61,6 +64,9 @@ public class ItemProjectile : MonoBehaviour
         float step = speed * Time.deltaTime;
         transform.position += (Vector3)(direction * step);
         lifetime -= Time.deltaTime;
+
+        if (spinDegreesPerSecond != 0f)
+            transform.Rotate(0f, 0f, spinDegreesPerSecond * Time.deltaTime);
 
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius);
         for (int i = 0; i < hits.Length; i++)

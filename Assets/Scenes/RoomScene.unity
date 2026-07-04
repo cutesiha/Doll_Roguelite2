@@ -1903,9 +1903,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   ribbonSprite: {fileID: 21300000, guid: 1baa6fe0b430373439a349cea731628c, type: 3}
   fallbackSpriteName: ri1
   walkBoingSpeed: 2.4
@@ -4457,9 +4454,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   idleSprite: {fileID: 21300000, guid: 3637f4cf1971d914ba9794c2c5954acc, type: 3}
   fallbackSpriteName: sp_another2
   breathingAmplitude: 0.055
@@ -5646,9 +5640,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   moveSpeed: 1
   useButtonSlam: 1
   slamCooldownRange: {x: 3, y: 5}
@@ -6060,9 +6051,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   idleSprite: {fileID: 21300000, guid: 5791e5fa846e04545b11f4e0119b5967, type: 3}
   fallbackSpriteName: sp1
   breathingAmplitude: 0.055
@@ -7046,9 +7034,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.18
   hitShakeDistance: 0.12
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.12
-  cameraShakeMagnitude: 0.1
   moveSpeed: 0.65
   fallbackSpriteName: pixil-frame-0 (22)
 --- !u!50 &1377652414
@@ -7921,9 +7906,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   moveSpeed: 1
   useButtonSlam: 1
   slamCooldownRange: {x: 3, y: 5}
@@ -8330,9 +8312,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   frame1: {fileID: 21300000, guid: 0a1622cb7a4528746a8f514fbbb9b57f, type: 3}
   frame2: {fileID: 21300000, guid: 328c183fa2a25f54f9cca4d6893fe053, type: 3}
   frame3: {fileID: 21300000, guid: 47f0e78acfb71ed46b1b55b6de653060, type: 3}
@@ -10289,6 +10268,14 @@ MonoBehaviour:
   minotaurFastBreathVolume: 1
   minotaurPinStickClip: {fileID: 0}
   minotaurPinStickVolume: 0.95
+  bookBossRageClip: {fileID: 0}
+  bookBossRageVolume: 1
+  bookBossRainLoopClip: {fileID: 0}
+  bookBossRainLoopVolume: 0.55
+  bookBossFloorSlamClip: {fileID: 0}
+  bookBossFloorSlamVolume: 1.05
+  bookBossPaperFlyClip: {fileID: 0}
+  bookBossPaperFlyVolume: 0.85
   enemyHitClip: {fileID: 0}
   enemyHitVolume: 1
   playerHitClip: {fileID: 8300000, guid: 42ded5264c9e97e419b436c34fcef5ac, type: 3}
