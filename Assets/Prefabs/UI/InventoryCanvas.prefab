@@ -667,7 +667,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -90.51, y: -204.92403}
+  m_AnchoredPosition: {x: -90.51, y: -149.92}
   m_SizeDelta: {x: 181.02, y: 202.362}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4622888695303044361
@@ -3587,7 +3587,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -4204,7 +4204,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -4765,7 +4765,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -6955,7 +6955,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -7846,7 +7846,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -7956,7 +7956,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 69, y: -197.92403}
+  m_AnchoredPosition: {x: 69, y: -142.92}
   m_SizeDelta: {x: 151.2854, y: 188.3668}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7626143758348037130
@@ -12090,7 +12090,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -17497,7 +17497,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -19181,7 +19181,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -19455,7 +19455,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uBE48 \uC2AC\uB86F"
+  m_text: ' '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
   m_sharedMaterial: {fileID: -4406321571434836347, guid: 65dd30e96c4a25c4da2df38e971f3725, type: 2}
@@ -19824,7 +19824,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &9109178172206814858
 MonoBehaviour:
   m_ObjectHideFlags: 0

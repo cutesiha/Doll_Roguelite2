@@ -33,3 +33,4 @@ MonoBehaviour:
   placeholderShape: 0
   placeholderColor: {r: 0.82, g: 0.42, b: 0.45, a: 1}
   worldScale: 1.8999275
+  equippedScale: 0.4

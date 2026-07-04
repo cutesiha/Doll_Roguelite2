@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3997157333533642a0af80c934f3a01, type: 3}
+  m_Name: star
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: star
+  itemName: "별"
+  description: "짧은 사거리로 별 투사체 3개가
+    부채꼴로 퍼져나가는 샷건형 공격"
+  category: 1
+  itemType: 0
+  equipLocation: 2
+  acquisitionLocations: 2
+  consumable: 0
+  value: 2
+  secondaryValue: 0
+  duration: 0
+  shopPrice: 27
+  effects:
+  - effectType: 22
+    value: 2
+    duration: 0.5
+  sprite: {fileID: 21300000, guid: 28a9f279dc87f9d48baa467baaa0a987, type: 3}
+  projectileSprite: {fileID: 3460760415368841694, guid: 9206db1efff153342be4b298faf6ed6e, type: 3}
+  projectileSprite2: {fileID: -5059478602742788135, guid: b8911cca83d283943b47f1e83bb1b68f, type: 3}
+  projectileSprite3: {fileID: 7226891485257912663, guid: 38b9b6c0d1762364b956dab57bb551ba, type: 3}
+  equippedSpriteLeft: {fileID: 21300000, guid: c7031e4c2d73fc9498cad53c380dfcc1, type: 3}
+  equippedSpriteRight: {fileID: 21300000, guid: 751731c1684d25b4a961f5204dc3d989, type: 3}
+  placeholderShape: 3
+  placeholderColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  worldScale: 2.8498912
+  equippedScale: 1

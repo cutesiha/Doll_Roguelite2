@@ -7,7 +7,8 @@ public enum ArmWeaponKind
     Fist,
     Axe,
     Keyring,
-    Nail
+    Nail,
+    Star
 }
 
 [DisallowMultipleComponent]
@@ -141,6 +142,8 @@ public class PlayerItemEffects : MonoBehaviour
             return ArmWeaponKind.Keyring;
         if (arm.HasEffect(ItemEffectType.NailProjectile))
             return ArmWeaponKind.Nail;
+        if (arm.HasEffect(ItemEffectType.StarBurst))
+            return ArmWeaponKind.Star;
         return ArmWeaponKind.Fist;
     }
 
@@ -185,6 +188,23 @@ public class PlayerItemEffects : MonoBehaviour
         {
             int damage = Mathf.Max(1, Mathf.RoundToInt(ModifiedAttackDamage(leftArm, Mathf.Max(1f, nail.value))));
             ItemProjectile.Spawn(origin, direction, 12f, damage, 1.4f, 0.11f, false, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, arm.ProjectileSprite);
+            return true;
+        }
+
+        ItemEffectData star = arm.GetEffect(ItemEffectType.StarBurst);
+        if (star != null)
+        {
+            // 샷건처럼 짧은 사거리로 3방향(부채꼴)에 퍼지는 별 투사체 3개. 계속 회전하며 날아간다.
+            int damage = Mathf.Max(1, Mathf.RoundToInt(ModifiedAttackDamage(leftArm, Mathf.Max(1f, star.value))));
+            float lifetime = star.duration > 0f ? star.duration : 0.5f;
+            const float spreadDegrees = 15f;
+            const float spinDegreesPerSecond = 540f;
+            Sprite[] sprites = { arm.ProjectileSprite, arm.ProjectileSprite2, arm.ProjectileSprite3 };
+            for (int i = -1; i <= 1; i++)
+            {
+                Vector2 spreadDir = Quaternion.Euler(0f, 0f, i * spreadDegrees) * direction;
+                ItemProjectile.Spawn(origin, spreadDir, 9f, damage, lifetime, 0.16f, false, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, sprites[i + 1], 0f, spinDegreesPerSecond);
+            }
             return true;
         }
 

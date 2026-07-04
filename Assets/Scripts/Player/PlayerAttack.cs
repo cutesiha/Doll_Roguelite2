@@ -39,6 +39,7 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] Sprite axeWeaponSprite;
     [SerializeField] Sprite keyringWeaponSprite;
     [SerializeField] Sprite nailWeaponSprite;
+    [SerializeField] Sprite starWeaponSprite;
     [SerializeField] Transform leftAttackStart;
     [SerializeField] Transform rightAttackStart;
     [SerializeField] bool useFixedBodyAttackOrigin = true;
@@ -411,6 +412,16 @@ public class PlayerAttack : MonoBehaviour
                     fistScaleMultiplier = 0.8f,
                     tint = nailWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
                     spriteOverride = nailWeaponSprite,
+                };
+            case ArmWeaponKind.Star:
+                return new ArmAttackStyle
+                {
+                    durationScale = 0.55f,
+                    arcHeightScale = 0.4f,
+                    rotationScale = 0.5f,
+                    fistScaleMultiplier = 0.8f,
+                    tint = starWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
+                    spriteOverride = starWeaponSprite,
                 };
             default:
                 return new ArmAttackStyle
