@@ -17,7 +17,7 @@ public class OffscreenEnemyIndicators : MonoBehaviour
     static Sprite arrowSprite;
 
     const float RefreshInterval = 0.3f;
-    static readonly Color BarColor = new Color(0.86f, 0.26f, 0.22f, 0.5f); // 연한 붉은색
+    static readonly Color BarColor = new Color(0.92f, 0.08f, 0.055f, 0.38f); // soft red
     const int SortingOrder = 500;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -114,7 +114,7 @@ public class OffscreenEnemyIndicators : MonoBehaviour
         {
             GameObject go = new GameObject("OffscreenEnemyArrow_" + pool.Count);
             go.transform.SetParent(transform, false);
-            go.transform.localScale = new Vector3(1.25f, 0.55f, 1f);
+            go.transform.localScale = new Vector3(0.82f, 0.62f, 1f);
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = ArrowSprite();
             sr.color = BarColor;
@@ -145,7 +145,7 @@ public class OffscreenEnemyIndicators : MonoBehaviour
         if (arrowSprite != null)
             return arrowSprite;
 
-        const int w = 64;
+        const int w = 42;
         const int h = 24;
         Texture2D texture = new Texture2D(w, h, TextureFormat.RGBA32, false);
         texture.name = "OffscreenEnemyArrow";
@@ -154,22 +154,22 @@ public class OffscreenEnemyIndicators : MonoBehaviour
 
         Color clear = new Color(1f, 1f, 1f, 0f);
         Color solid = Color.white;
-        int shaftEnd = 40;          // 막대 부분 끝
-        int shaftHalf = 5;          // 막대 반두께(픽셀)
+        int bodyEnd = 18;
+        int bodyHalf = 3;
         float centerY = (h - 1) * 0.5f;
 
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
             {
-                bool inShaft = x <= shaftEnd && Mathf.Abs(y - centerY) <= shaftHalf;
-
-                // 화살촉: shaftEnd~w 구간에서 삼각형으로 좁아짐
-                float headT = Mathf.InverseLerp(shaftEnd, w - 1, x);
+                bool inBody = x <= bodyEnd && x >= 6 && Mathf.Abs(y - centerY) <= bodyHalf;
+                float headT = Mathf.InverseLerp(bodyEnd, w - 1, x);
                 float headHalf = Mathf.Lerp(h * 0.5f, 0f, headT);
-                bool inHead = x > shaftEnd && Mathf.Abs(y - centerY) <= headHalf;
+                bool inHead = x > bodyEnd && Mathf.Abs(y - centerY) <= headHalf;
+                bool inTailA = x < 12 && Mathf.Abs((y - centerY) - (12 - x) * 0.45f) <= 2.1f;
+                bool inTailB = x < 12 && Mathf.Abs((y - centerY) + (12 - x) * 0.45f) <= 2.1f;
 
-                texture.SetPixel(x, y, inShaft || inHead ? solid : clear);
+                texture.SetPixel(x, y, inBody || inHead || inTailA || inTailB ? solid : clear);
             }
         }
 
@@ -177,5 +177,157 @@ public class OffscreenEnemyIndicators : MonoBehaviour
         arrowSprite = Sprite.Create(texture, new Rect(0f, 0f, w, h), new Vector2(0.5f, 0.5f), w);
         arrowSprite.name = texture.name;
         return arrowSprite;
+    }
+}
+
+public class FarEnemyArrowIndicator : MonoBehaviour
+{
+    [SerializeField, Min(0.1f)] float showDistance = 9.0f;
+    [SerializeField, Min(0.1f)] float playerOffset = 1.18f;
+    [SerializeField, Min(0f)] float verticalOffset = 0.58f;
+    [SerializeField, Range(0f, 1f)] float arrowAlpha = 0.52f;
+    [SerializeField] Color arrowColor = new Color(0.9f, 0.08f, 0.055f, 0.52f);
+
+    Transform player;
+    Transform arrowRoot;
+    SpriteRenderer[] renderers;
+    static Sprite squareSprite;
+
+    public static FarEnemyArrowIndicator Ensure()
+    {
+        FarEnemyArrowIndicator existing = FindFirstObjectByType<FarEnemyArrowIndicator>();
+        if (existing != null)
+            return existing;
+
+        GameObject go = new GameObject("FarEnemyArrowIndicator");
+        return go.AddComponent<FarEnemyArrowIndicator>();
+    }
+
+    void Awake()
+    {
+        BuildArrow();
+        SetVisible(false);
+    }
+
+    void Update()
+    {
+        if (player == null)
+        {
+            GameObject playerObject = GameObject.FindWithTag("Player");
+            player = playerObject != null ? playerObject.transform : null;
+        }
+
+        if (player == null)
+        {
+            SetVisible(false);
+            return;
+        }
+
+        EnemyBase target = FindFarthestEnemy(out float distance);
+        if (target == null || distance < showDistance)
+        {
+            SetVisible(false);
+            return;
+        }
+
+        Vector2 fromPlayer = target.transform.position - player.position;
+        if (fromPlayer.sqrMagnitude <= 0.0001f)
+        {
+            SetVisible(false);
+            return;
+        }
+
+        Vector2 direction = fromPlayer.normalized;
+        float bob = Mathf.Sin(Time.time * 6.4f) * 0.055f;
+        arrowRoot.position = (Vector2)player.position + direction * (playerOffset + bob) + Vector2.up * verticalOffset;
+        arrowRoot.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
+        arrowRoot.localScale = Vector3.one * Mathf.Lerp(0.9f, 1.04f, 0.5f + 0.5f * Mathf.Sin(Time.time * 5.2f));
+        SetVisible(true);
+    }
+
+    EnemyBase FindFarthestEnemy(out float farthestDistance)
+    {
+        farthestDistance = 0f;
+        EnemyBase best = null;
+        EnemyBase[] enemies = FindObjectsByType<EnemyBase>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < enemies.Length; i++)
+        {
+            EnemyBase enemy = enemies[i];
+            if (enemy == null || enemy.transform == player)
+                continue;
+
+            float distance = Vector2.Distance(player.position, enemy.transform.position);
+            if (distance > farthestDistance)
+            {
+                farthestDistance = distance;
+                best = enemy;
+            }
+        }
+
+        return best;
+    }
+
+    void BuildArrow()
+    {
+        GameObject root = new GameObject("FarEnemyArrow");
+        root.transform.SetParent(transform, false);
+        arrowRoot = root.transform;
+
+        AddArrowPart("Core", new Vector2(-0.12f, 0f), new Vector2(0.34f, 0.14f), 0f);
+        AddArrowPart("HeadA", new Vector2(0.16f, 0.12f), new Vector2(0.42f, 0.15f), -38f);
+        AddArrowPart("HeadB", new Vector2(0.16f, -0.12f), new Vector2(0.42f, 0.15f), 38f);
+        renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
+    }
+
+    void AddArrowPart(string objectName, Vector2 localPosition, Vector2 scale, float angle)
+    {
+        GameObject go = new GameObject(objectName);
+        go.transform.SetParent(arrowRoot, false);
+        go.transform.localPosition = localPosition;
+        go.transform.localScale = new Vector3(scale.x, scale.y, 1f);
+        go.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
+
+        SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
+        renderer.sprite = SquareSprite();
+        renderer.color = arrowColor;
+        renderer.sortingOrder = 219;
+    }
+
+    void SetVisible(bool visible)
+    {
+        if (arrowRoot == null)
+            return;
+
+        if (arrowRoot.gameObject.activeSelf != visible)
+            arrowRoot.gameObject.SetActive(visible);
+
+        if (!visible || renderers == null)
+            return;
+
+        float pulse = Mathf.Lerp(0.36f, arrowAlpha, 0.5f + 0.5f * Mathf.Sin(Time.time * 7.5f));
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] == null) continue;
+            Color c = arrowColor;
+            c.a = pulse;
+            renderers[i].color = c;
+        }
+    }
+
+    static Sprite SquareSprite()
+    {
+        if (squareSprite != null)
+            return squareSprite;
+
+        Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
+        {
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp
+        };
+        texture.SetPixel(0, 0, Color.white);
+        texture.Apply();
+        squareSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
+        squareSprite.name = "FarEnemyArrowSquare";
+        return squareSprite;
     }
 }

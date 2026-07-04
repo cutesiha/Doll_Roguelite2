@@ -341,7 +341,7 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
   attackCooldown: 0.3
-  attackDistance: 2
+  attackDistance: 1.65
   attackDistanceBonus: 0.4
   verticalAttackDistanceBonus: 0.12
   attackSize: {x: 1, y: 1}
@@ -4939,12 +4939,12 @@ MonoBehaviour:
   bookBossRainLoopClip: {fileID: 8300000, guid: f1f821df3788d3a448987ece12431efd, type: 3}
   bookBossRainLoopVolume: 0.96
   bookBossSirenLoopClip: {fileID: 8300000, guid: cdaf2aef2546f144f825e1b3d49b7a7d, type: 3}
-  bookBossSirenLoopVolume: 0.7
+  bookBossSirenLoopVolume: 0.32
   bookBossInkDropClip1: {fileID: 8300000, guid: aff3f06f3ebb929459f30e1ef5af1cf5, type: 3}
   bookBossInkDropClip2: {fileID: 8300000, guid: 117a0cc190494d54ebca8a9c996ae58c, type: 3}
   bookBossInkDropClip3: {fileID: 8300000, guid: 9f8ccc0b7e8d8bf49a8a64b0524a8dfc, type: 3}
   bookBossInkDropClip4: {fileID: 8300000, guid: 4e3a7239c2d7e5041ab07540f9fc0d47, type: 3}
-  bookBossInkDropVolume: 1.32
+  bookBossInkDropVolume: 1.16
   bookBossFloorSlamClip: {fileID: 8300000, guid: e477ace3816012644aea5d1518c0952e, type: 3}
   bookBossFloorSlamVolume: 0.35
   bookBossPaperFlyClip: {fileID: 8300000, guid: 1287e4fd7a2b2b4498e3272b0c0afcfc, type: 3}
@@ -5143,11 +5143,11 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_Resource: {fileID: 8300000, guid: ac3948b569c3b6e42ab76c1f393b6cb9, type: 3}
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -6236,21 +6236,23 @@ MonoBehaviour:
   poisonTickDamage: 1
   floorSentenceFontSize: 300
   floorSentenceWorldScale: 0.05
-  floorSentenceMinCount: 3
-  floorSentenceMaxCount: 5
-  floorSentenceSpawnDelay: 0.14
-  floorSentenceWarningTime: 1.1
-  floorSentenceActiveTime: 1.55
-  floorSentenceToPaperDelay: 1.1
+  floorSentenceMinCount: 4
+  floorSentenceMaxCount: 6
+  floorSentenceSpawnDelay: 0.08
+  floorSentenceWarningTime: 0.95
+  floorSentenceActiveTime: 1.35
+  floorSentenceToPaperDelay: 0.35
   floorSentenceImpactShakeDuration: 0.18
   floorSentenceImpactShakeMagnitude: 0.18
   floorSentencePlayerSafeRadius: 3.2
-  paperScrapSpeed: 10.2
+  paperScrapSpeed: 13.8
   paperScrapMaxTime: 2.8
   paperScrapWarningTime: 1.75
   paperScrapWarningRadius: 1.05
   paperScrapVisualSize: {x: 0.82, y: 1.05}
-  wave2FloorSentenceRestRange: {x: 1.6, y: 2.2}
+  wave1PaperAttackRestRange: {x: 1.6, y: 2.6}
+  wave1PaperAttackInitialDelay: 0.75
+  wave2FloorSentenceRestRange: {x: 0.45, y: 0.75}
   inkRainIntervalRange: {x: 0.65, y: 0.95}
   inkRainBurstCountRange: {x: 2, y: 4}
   inkRainWarningTime: 0.85
@@ -6266,10 +6268,10 @@ MonoBehaviour:
   wave3MinionSpawnInterval: {x: 2.4, y: 3.4}
   wave3MinionSpawnWarningTime: 1.05
   wave3MinionSpawnWarningRadius: 1.15
-  wave3AttackInitialDelay: 2.3
-  wave3BasicLetterExtraDelay: 0.08
-  wave3AttackRestRange: {x: 0.85, y: 1.35}
-  wave3FloorSentenceChance: 0.78
+  wave3AttackInitialDelay: 1.4
+  wave3BasicLetterExtraDelay: 0.02
+  wave3AttackRestRange: {x: 0.22, y: 0.42}
+  wave3FloorSentenceChance: 1
   wave3MinionScale: 1.85
   wordFragmentBossColliderClearance: 0.9
   enableRainyScreenDistortion: 1
@@ -6670,7 +6672,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0da158e273e2a9240b88b016120298dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BookBossPart
-  maxHp: 28
+  maxHp: 50
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 3200000023}
@@ -7192,7 +7194,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0da158e273e2a9240b88b016120298dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BookBossPart
-  maxHp: 28
+  maxHp: 50
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 3200000033}

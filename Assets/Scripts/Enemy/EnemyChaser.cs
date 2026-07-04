@@ -66,7 +66,7 @@ public class EnemyChaser : EnemyBase
         if (TryMoveSpawnApproach()) return;
 
         Vector2 dir = ((Vector2)player.position - rb.position).normalized;
-        rb.MovePosition(rb.position + dir * moveSpeed * Time.fixedDeltaTime);
+        MoveEnemyBody(rb, rb.position + dir * moveSpeed * Time.fixedDeltaTime);
     }
 
     protected override void Update()
@@ -84,7 +84,7 @@ public class EnemyChaser : EnemyBase
     {
         isSlamming = true;
         Vector3 baseScale = transform.localScale;
-        Vector2 targetPosition = player != null ? (Vector2)player.position : rb.position;
+        Vector2 targetPosition = player != null ? ResolveEnemyPosition((Vector2)player.position) : rb.position;
         float impactRadius = EffectiveSlamRadius();
 
         GameObject telegraph = TrackTelegraph(EnemyTelegraph.CreateCircle("ButtonSlamTelegraph", targetPosition, impactRadius, slamTelegraphColor, 70));
@@ -115,6 +115,8 @@ public class EnemyChaser : EnemyBase
 
         // 착지: 슬램 데미지 적용 후 접촉 데미지 복구
         SuppressContactDamage = false;
+        SoundManager.PlayButtonEnemyLanding(0.03f);
+        CameraShake.ShakeHorizontal(0.12f, 0.045f, 3.5f);
         DealSlamDamage(targetPosition, impactRadius);
 
         for (int i = 0; i < cols.Length; i++)

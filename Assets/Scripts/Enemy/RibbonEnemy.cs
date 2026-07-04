@@ -23,9 +23,9 @@ public class RibbonEnemy : EnemyBase
     [SerializeField, Min(0.5f)] float preferredDistance = 3.8f;
     [SerializeField] Vector2 attackCooldownRange = new Vector2(2.2f, 3.4f);
     [SerializeField, Min(0.1f)] float telegraphDuration = 0.65f;
-    [SerializeField, Min(0.5f)] float fanRadius = 3.2f;
+    [SerializeField, Min(0.5f)] float fanRadius = 3.8f;
     [SerializeField, Range(10f, 170f)] float fanAngle = 70f;
-    [SerializeField, Min(0.5f)] float bindLength = 6.2f;
+    [SerializeField, Min(0.5f)] float bindLength = 7.2f;
     [SerializeField, Min(0.05f)] float bindWidth = 0.45f;
     [SerializeField, Min(0f)] float bindDuration = 1f;
     [SerializeField, Min(1)] int fanDamage = 22;
@@ -78,8 +78,8 @@ public class RibbonEnemy : EnemyBase
 
     public override void ApplyCombatScaling(float speedMultiplier, float cooldownMultiplier, int extraDamage)
     {
-        moveSpeed *= Mathf.Max(0.1f, speedMultiplier);
-        attackCooldownRange = ScaleRange(attackCooldownRange, cooldownMultiplier, 0.55f);
+        moveSpeed *= Mathf.Max(0.1f, speedMultiplier) * 1.06f;
+        attackCooldownRange = ScaleRange(attackCooldownRange, cooldownMultiplier * 0.92f, 0.48f);
         telegraphDuration = Mathf.Max(0.35f, telegraphDuration * Mathf.Lerp(1f, cooldownMultiplier, 0.45f));
         fanDamage += Mathf.Max(0, extraDamage);
         bindDamage += Mathf.Max(0, extraDamage);
@@ -99,7 +99,7 @@ public class RibbonEnemy : EnemyBase
         float distance = toPlayer.magnitude;
         Vector2 direction = distance > preferredDistance ? toPlayer.normalized : -toPlayer.normalized;
         float distanceBias = Mathf.Abs(distance - preferredDistance) < 0.35f ? 0f : 1f;
-        rb.MovePosition(rb.position + direction * moveSpeed * distanceBias * Time.fixedDeltaTime);
+        MoveEnemyBody(rb, rb.position + direction * moveSpeed * distanceBias * Time.fixedDeltaTime);
     }
 
     protected override void Update()
@@ -138,6 +138,7 @@ public class RibbonEnemy : EnemyBase
         }
         GameObject strike = TrackTelegraph(EnemyTelegraph.CreateFilledFan("RibbonFanStrike", origin, direction, fanRadius, fanAngle, ribbonStrikeColor, 73));
         EnemyTelegraph.SetRevealFraction(strike, 0f);
+        SoundManager.PlayRibbonEnemyAttack(0.05f);
         yield return StartCoroutine(FanSwingRoutine(direction, strike));
 
         PlayerDamageReceiver receiver = FindFirstObjectByType<PlayerDamageReceiver>();
@@ -177,6 +178,7 @@ public class RibbonEnemy : EnemyBase
         Vector2 end = start + direction * bindLength;
         GameObject strike = TrackTelegraph(EnemyTelegraph.CreateFilledStrip("RibbonBindStrike", start, end, bindWidth, ribbonStrikeColor, 73, 14));
         EnemyTelegraph.SetRevealFraction(strike, 0f);
+        SoundManager.PlayRibbonEnemyAttack(0.05f);
         yield return StartCoroutine(BindThrustRoutine(direction, strike));
 
         PlayerDamageReceiver receiver = FindFirstObjectByType<PlayerDamageReceiver>();

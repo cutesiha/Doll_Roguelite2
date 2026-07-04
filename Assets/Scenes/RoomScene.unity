@@ -950,7 +950,7 @@ MonoBehaviour:
   - profileName: d1
     enemyType: 0
     maxHp: 5
-    moveSpeed: 1
+    moveSpeed: 1.22
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames:
@@ -961,7 +961,7 @@ MonoBehaviour:
   - profileName: d2
     enemyType: 0
     maxHp: 5
-    moveSpeed: 1.15
+    moveSpeed: 1.38
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames:
@@ -972,7 +972,7 @@ MonoBehaviour:
   - profileName: d3
     enemyType: 0
     maxHp: 5
-    moveSpeed: 0.9
+    moveSpeed: 1.12
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames:
@@ -983,14 +983,14 @@ MonoBehaviour:
   - profileName: Needle
     enemyType: 1
     maxHp: 4
-    moveSpeed: 0.75
+    moveSpeed: 0.92
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames: []
   - profileName: Ribbon
     enemyType: 2
     maxHp: 4
-    moveSpeed: 0.85
+    moveSpeed: 1.02
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames: []
@@ -1004,7 +1004,7 @@ MonoBehaviour:
   - profileName: SmallButton
     enemyType: 4
     maxHp: 1
-    moveSpeed: 0.65
+    moveSpeed: 0.86
     framesPerSecond: 8
     tint: {r: 1, g: 1, b: 1, a: 1}
     animationFrames: []
@@ -1910,15 +1910,15 @@ MonoBehaviour:
   walkSquashAmount: 0.2
   walkReboundAmount: 0.09
   attackWindupDuration: 0.22
-  fanSwingDuration: 0.28
-  bindThrustDuration: 0.24
-  moveSpeed: 0.85
+  fanSwingDuration: 0.25
+  bindThrustDuration: 0.21
+  moveSpeed: 1.02
   preferredDistance: 3.8
-  attackCooldownRange: {x: 2.2, y: 3.4}
+  attackCooldownRange: {x: 1.9, y: 3.0}
   telegraphDuration: 0.65
-  fanRadius: 3.2
+  fanRadius: 3.8
   fanAngle: 70
-  bindLength: 6.2
+  bindLength: 7.2
   bindWidth: 0.45
   bindDuration: 1
   fanDamage: 22
@@ -4458,10 +4458,10 @@ MonoBehaviour:
   fallbackSpriteName: sp_another2
   breathingAmplitude: 0.055
   breathingFrequency: 1.15
-  threadCooldownRange: {x: 3, y: 4.5}
+  threadCooldownRange: {x: 2.7, y: 4.1}
   prepareDuration: 0.55
   threadWarningDuration: 1.15
-  threadGrowDuration: 0.55
+  threadGrowDuration: 0.5
   strandCount: 8
   strandLength: 6
   strandWidth: 0.16
@@ -5640,9 +5640,9 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  moveSpeed: 1
+  moveSpeed: 1.22
   useButtonSlam: 1
-  slamCooldownRange: {x: 3, y: 5}
+  slamCooldownRange: {x: 2.7, y: 4.5}
   slamTelegraphDuration: 0.85
   slamRadius: 0.75
   slamDamage: 28
@@ -6055,10 +6055,10 @@ MonoBehaviour:
   fallbackSpriteName: sp1
   breathingAmplitude: 0.055
   breathingFrequency: 1.15
-  threadCooldownRange: {x: 3, y: 4.5}
+  threadCooldownRange: {x: 2.7, y: 4.1}
   prepareDuration: 0.55
   threadWarningDuration: 1.15
-  threadGrowDuration: 0.55
+  threadGrowDuration: 0.5
   strandCount: 8
   strandLength: 6
   strandWidth: 0.16
@@ -7034,7 +7034,7 @@ MonoBehaviour:
   hitFeedbackDuration: 0.18
   hitShakeDistance: 0.12
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  moveSpeed: 0.65
+  moveSpeed: 0.86
   fallbackSpriteName: pixil-frame-0 (22)
 --- !u!50 &1377652414
 Rigidbody2D:
@@ -7906,9 +7906,9 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  moveSpeed: 1
+  moveSpeed: 1.22
   useButtonSlam: 1
-  slamCooldownRange: {x: 3, y: 5}
+  slamCooldownRange: {x: 2.7, y: 4.5}
   slamTelegraphDuration: 0.85
   slamRadius: 0.75
   slamDamage: 28
@@ -8317,11 +8317,11 @@ MonoBehaviour:
   frame3: {fileID: 21300000, guid: 47f0e78acfb71ed46b1b55b6de653060, type: 3}
   walkFramesPerSecond: 8
   chaseSpeed: 0.75
-  dashCooldownRange: {x: 2.6, y: 3.8}
+  dashCooldownRange: {x: 2.3, y: 3.4}
   warningDuration: 1.2
   dashDistance: 11
   dashWidth: 1.05
-  dashSpeed: 18
+  dashSpeed: 19.5
   dashDamage: 30
   dashTelegraphColor: {r: 1, g: 0.08, b: 0.08, a: 0.28}
 --- !u!50 &1755960908

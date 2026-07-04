@@ -452,10 +452,83 @@ public class EnemyBase : MonoBehaviour
             return true;
 
         Vector2 next = current + direction * spawnApproachSpeed * Time.fixedDeltaTime;
-        if (spawnApproachBody != null)
-            spawnApproachBody.MovePosition(next);
+        MoveEnemyBody(spawnApproachBody, next);
+
+        return true;
+    }
+
+    protected void MoveEnemyBody(Rigidbody2D body, Vector2 targetPosition)
+    {
+        Vector2 current = body != null ? body.position : (Vector2)transform.position;
+        Vector2 resolved = ResolveEnemyPosition(current, targetPosition);
+
+        if (body != null)
+            body.MovePosition(resolved);
         else
-            transform.position = new Vector3(next.x, next.y, transform.position.z);
+            transform.position = new Vector3(resolved.x, resolved.y, transform.position.z);
+    }
+
+    protected Vector2 ResolveEnemyPosition(Vector2 targetPosition)
+    {
+        Vector2 current = GetComponent<Rigidbody2D>() != null
+            ? GetComponent<Rigidbody2D>().position
+            : (Vector2)transform.position;
+        return ResolveEnemyPosition(current, targetPosition);
+    }
+
+    Vector2 ResolveEnemyPosition(Vector2 current, Vector2 targetPosition)
+    {
+        if (CanOccupyEnemyPosition(targetPosition))
+            return targetPosition;
+
+        Vector2 slideX = new Vector2(targetPosition.x, current.y);
+        if (CanOccupyEnemyPosition(slideX))
+            return slideX;
+
+        Vector2 slideY = new Vector2(current.x, targetPosition.y);
+        if (CanOccupyEnemyPosition(slideY))
+            return slideY;
+
+        return current;
+    }
+
+    bool CanOccupyEnemyPosition(Vector2 position)
+    {
+        Collider2D ownCollider = GetComponent<Collider2D>();
+        if (ownCollider == null || !ownCollider.enabled)
+            return true;
+
+        Vector2 offset = (Vector2)ownCollider.bounds.center - (Vector2)transform.position;
+        Vector2 size = ownCollider.bounds.size;
+        if (size.x <= 0.01f || size.y <= 0.01f)
+            size = Vector2.one * 0.5f;
+
+        Collider2D[] hits = Physics2D.OverlapBoxAll(position + offset, size * 0.92f, transform.eulerAngles.z);
+        for (int i = 0; i < hits.Length; i++)
+            if (IsBlockingMovementCollider(hits[i]))
+                return false;
+
+        return true;
+    }
+
+    bool IsBlockingMovementCollider(Collider2D other)
+    {
+        if (other == null || !other.enabled || other.isTrigger)
+            return false;
+
+        if (other.transform == transform || other.transform.IsChildOf(transform) || transform.IsChildOf(other.transform))
+            return false;
+
+        GameObject go = other.gameObject;
+        if (go.CompareTag("Player")
+            || go.GetComponentInParent<PlayerController>() != null
+            || go.GetComponentInParent<PlayerDamageReceiver>() != null
+            || go.GetComponentInParent<EnemyBase>() != null)
+            return false;
+
+        string objectName = go.name;
+        if (objectName.Contains("Floor_Background") || objectName.Contains("SpawnBlink"))
+            return false;
 
         return true;
     }

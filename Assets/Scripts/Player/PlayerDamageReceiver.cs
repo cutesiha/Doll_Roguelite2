@@ -73,7 +73,6 @@ public class PlayerDamageReceiver : MonoBehaviour
     void Awake()
     {
         ResolveReferences();
-        EnsurePlayerCollider();
         HideDropSizeAnchors();
     }
 
@@ -661,21 +660,5 @@ public class PlayerDamageReceiver : MonoBehaviour
     void EnsurePlayerCollider()
     {
         ResolveReferences();
-        if (playerCollider != null)
-            return;
-
-        BoxCollider2D box = gameObject.AddComponent<BoxCollider2D>();
-        if (bodyRenderer != null && bodyRenderer.sprite != null)
-        {
-            Bounds bounds = bodyRenderer.sprite.bounds;
-            box.offset = (Vector2)bodyRenderer.transform.localPosition + (Vector2)bounds.center;
-            box.size = new Vector2(Mathf.Max(0.1f, bounds.size.x), Mathf.Max(0.1f, bounds.size.y));
-        }
-        else
-        {
-            box.size = Vector2.one;
-        }
-
-        playerCollider = box;
     }
 }

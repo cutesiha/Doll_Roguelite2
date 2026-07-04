@@ -24,6 +24,10 @@ public class SoundManager : MonoBehaviour
     public const string BookBossSirenLoopSfxPath = "Sounds/book_boss_siren_loop";
     public const string BookBossFloorSlamSfxPath = "Sounds/book_boss_floor_slam";
     public const string BookBossPaperFlySfxPath = "Sounds/book_boss_paper_fly";
+    public const string ButtonEnemyLandingSfxPath = "Sounds/button_enemy_landing";
+    public const string NeedleEnemyDashSfxPath = "Sounds/needle_enemy_dash";
+    public const string SpoolEnemyThreadSfxPath = "Sounds/spool_enemy_thread";
+    public const string RibbonEnemyAttackSfxPath = "Sounds/ribbon_enemy_attack";
     static readonly string[] BookBossInkDropSfxPaths =
     {
         "Sounds/book_boss_ink_drop_1",
@@ -33,7 +37,8 @@ public class SoundManager : MonoBehaviour
     };
     public const string WaveClearSfxPath = "Sounds/wave_clear";
     const string WaveClearFallbackSfxPath = "Sounds/paper333";
-    public const string AfterVictoryBgmPath = "BGM/after_victory";
+    public const string AfterVictoryBgmPath = "BGM/Book_aftervictory";
+    const string AfterVictoryBgmFallbackPath = "BGM/after_victory";
     public const string CoinPickupSfxPath = "SoundEffects/동전 먹을떄 효과음";
     public const string GemUseSfxPath = "SoundEffects/보석 효과음";
     public const float DefaultRepeatGuard = 0.08f;
@@ -114,6 +119,16 @@ public class SoundManager : MonoBehaviour
     [SerializeField, Range(0f, 3f)] float enemyHitVolume = 1f;
     [SerializeField] AudioClip playerHitClip;
     [SerializeField, Range(0f, 3f)] float playerHitVolume = 1f;
+
+    [Header("Enemy Action Clips")]
+    [SerializeField] AudioClip buttonEnemyLandingClip;
+    [SerializeField, Range(0f, 3f)] float buttonEnemyLandingVolume = 0.85f;
+    [SerializeField] AudioClip needleEnemyDashClip;
+    [SerializeField, Range(0f, 3f)] float needleEnemyDashVolume = 0.8f;
+    [SerializeField] AudioClip spoolEnemyThreadClip;
+    [SerializeField, Range(0f, 3f)] float spoolEnemyThreadVolume = 0.82f;
+    [SerializeField] AudioClip ribbonEnemyAttackClip;
+    [SerializeField, Range(0f, 3f)] float ribbonEnemyAttackVolume = 0.78f;
 
     AudioClip lastClip;
     float lastPlayTime = -999f;
@@ -374,6 +389,30 @@ public class SoundManager : MonoBehaviour
     {
         SoundManager manager = EnsureInstance();
         manager.PlayManaged(manager.GetBookBossPaperFlyClip(), manager.bookBossPaperFlyVolume, repeatGuard);
+    }
+
+    public static void PlayButtonEnemyLanding(float repeatGuard = 0.04f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetButtonEnemyLandingClip(), manager.buttonEnemyLandingVolume, repeatGuard);
+    }
+
+    public static void PlayNeedleEnemyDash(float repeatGuard = 0.05f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetNeedleEnemyDashClip(), manager.needleEnemyDashVolume, repeatGuard);
+    }
+
+    public static void PlaySpoolEnemyThread(float repeatGuard = 0.08f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetSpoolEnemyThreadClip(), manager.spoolEnemyThreadVolume, repeatGuard);
+    }
+
+    public static void PlayRibbonEnemyAttack(float repeatGuard = 0.06f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetRibbonEnemyAttackClip(), manager.ribbonEnemyAttackVolume, repeatGuard);
     }
 
     public static void PlaySfxResource(string resourcePath, string fallbackResourcePath = null, float repeatGuard = DefaultRepeatGuard, float volumeScale = 1f)
@@ -664,43 +703,68 @@ public class SoundManager : MonoBehaviour
     System.Collections.IEnumerator AfterVictoryBgmFadeRoutine(float fadeOutDuration, float fadeInDuration)
     {
         AudioSource bgmSource = FindPreferredBgmSource();
-        if (bgmSource == null)
+        AudioSource victorySource = FindNamedAudioSource("BGM_afterVictory");
+        if (victorySource == null)
+            victorySource = bgmSource;
+        if (victorySource == null)
             yield break;
 
-        float startVolume = bgmSource.volume;
+        AudioClip victoryClip = victorySource.clip != null ? victorySource.clip : GetAfterVictoryBgmClip();
+        victorySource.playOnAwake = false;
+        victorySource.loop = true;
+        victorySource.Stop();
+        victorySource.volume = 0f;
+
+        float startVolume = bgmSource != null && bgmSource != victorySource ? bgmSource.volume : 0f;
         float elapsed = 0f;
         float safeFadeOut = Mathf.Max(0.01f, fadeOutDuration);
-        while (elapsed < safeFadeOut && bgmSource != null)
+        while (elapsed < safeFadeOut && bgmSource != null && bgmSource != victorySource)
         {
             bgmSource.volume = Mathf.Lerp(startVolume, 0f, elapsed / safeFadeOut);
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 
-        if (bgmSource == null)
-            yield break;
+        StopOtherBgmSources(victorySource);
 
-        bgmSource.Stop();
-        bgmSource.clip = GetAfterVictoryBgmClip();
-        bgmSource.loop = true;
-        bgmSource.volume = 0f;
-        if (bgmSource.clip != null)
-            bgmSource.Play();
+        victorySource.clip = victoryClip;
+        if (victorySource.clip != null)
+            victorySource.Play();
 
         float targetVolume = GetBgmVolume01() * BgmVolumeScale;
         elapsed = 0f;
         float safeFadeIn = Mathf.Max(0.01f, fadeInDuration);
-        while (elapsed < safeFadeIn && bgmSource != null)
+        while (elapsed < safeFadeIn && victorySource != null)
         {
-            bgmSource.volume = Mathf.Lerp(0f, targetVolume, elapsed / safeFadeIn);
+            victorySource.volume = Mathf.Lerp(0f, targetVolume, elapsed / safeFadeIn);
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 
-        if (bgmSource != null)
-            bgmSource.volume = targetVolume;
+        if (victorySource != null)
+            victorySource.volume = targetVolume;
 
         bgmFadeRoutine = null;
+    }
+
+    AudioSource FindNamedAudioSource(string objectName)
+    {
+        GameObject found = GameObject.Find(objectName);
+        return found != null ? found.GetComponent<AudioSource>() : null;
+    }
+
+    void StopOtherBgmSources(AudioSource keepSource)
+    {
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < sources.Length; i++)
+        {
+            AudioSource source = sources[i];
+            if (source == null || source == keepSource || !IsBgmSource(source))
+                continue;
+
+            source.Stop();
+            source.playOnAwake = false;
+        }
     }
 
     AudioSource FindPreferredBgmSource()
@@ -757,7 +821,7 @@ public class SoundManager : MonoBehaviour
     AudioClip GetAfterVictoryBgmClip()
     {
         if (afterVictoryBgmClip == null)
-            afterVictoryBgmClip = LoadClipResource(AfterVictoryBgmPath);
+            afterVictoryBgmClip = LoadClipResource(AfterVictoryBgmPath, AfterVictoryBgmFallbackPath);
 
         return afterVictoryBgmClip;
     }
@@ -891,6 +955,34 @@ public class SoundManager : MonoBehaviour
         if (bookBossPaperFlyClip == null)
             bookBossPaperFlyClip = LoadClipResource(BookBossPaperFlySfxPath);
         return bookBossPaperFlyClip;
+    }
+
+    AudioClip GetButtonEnemyLandingClip()
+    {
+        if (buttonEnemyLandingClip == null)
+            buttonEnemyLandingClip = LoadClipResource(ButtonEnemyLandingSfxPath);
+        return buttonEnemyLandingClip;
+    }
+
+    AudioClip GetNeedleEnemyDashClip()
+    {
+        if (needleEnemyDashClip == null)
+            needleEnemyDashClip = LoadClipResource(NeedleEnemyDashSfxPath);
+        return needleEnemyDashClip;
+    }
+
+    AudioClip GetSpoolEnemyThreadClip()
+    {
+        if (spoolEnemyThreadClip == null)
+            spoolEnemyThreadClip = LoadClipResource(SpoolEnemyThreadSfxPath);
+        return spoolEnemyThreadClip;
+    }
+
+    AudioClip GetRibbonEnemyAttackClip()
+    {
+        if (ribbonEnemyAttackClip == null)
+            ribbonEnemyAttackClip = LoadClipResource(RibbonEnemyAttackSfxPath);
+        return ribbonEnemyAttackClip;
     }
 
     void EnsureSource()

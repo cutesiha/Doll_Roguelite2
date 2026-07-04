@@ -88,7 +88,7 @@ public class SmallButtonEnemy : EnemyBase
         {
             float t = Mathf.Clamp01((Time.time - popStartedAt) / Mathf.Max(0.01f, popDuration));
             float eased = 1f - Mathf.Pow(1f - t, 3f);
-            rb.MovePosition(Vector2.Lerp(popStart, popEnd, eased));
+            MoveEnemyBody(rb, Vector2.Lerp(popStart, popEnd, eased));
             if (t >= 1f)
                 isPopping = false;
 
@@ -101,7 +101,7 @@ public class SmallButtonEnemy : EnemyBase
             return;
 
         Vector2 direction = ((Vector2)player.position - rb.position).normalized;
-        rb.MovePosition(rb.position + direction * moveSpeed * Time.fixedDeltaTime);
+        MoveEnemyBody(rb, rb.position + direction * moveSpeed * Time.fixedDeltaTime);
     }
 
     public void PopOut(Vector2 direction, float distance, float duration)

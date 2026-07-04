@@ -65,7 +65,10 @@ public class Room : MonoBehaviour
 
         bool useWaves = IsRoomScene();
         if (useWaves)
+        {
+            FarEnemyArrowIndicator.Ensure();
             yield return null;
+        }
 
         int totalWaves = useWaves ? EffectiveWaveCount() : 1;
         for (int wave = 1; wave <= totalWaves; wave++)
@@ -110,7 +113,7 @@ public class Room : MonoBehaviour
                     Random.Range(cameraRect.yMin, cameraRect.yMax),
                     0f);
 
-                if (IsValidSpawnPosition(position, hasPlayerExclusion, playerExclusionRect))
+                if (IsValidSpawnPosition(position, enemySize, hasPlayerExclusion, playerExclusionRect))
                     return position;
             }
 
@@ -126,7 +129,7 @@ public class Room : MonoBehaviour
                 Random.Range(-spawnRange.y, spawnRange.y),
                 0f);
 
-            if (IsValidSpawnPosition(position, hasPlayerExclusion, playerExclusionRect))
+            if (IsValidSpawnPosition(position, enemySize, hasPlayerExclusion, playerExclusionRect))
                 return position;
         }
 
@@ -135,9 +138,12 @@ public class Room : MonoBehaviour
             : Vector3.zero;
     }
 
-    bool IsValidSpawnPosition(Vector3 position, bool hasPlayerExclusion, Rect playerExclusionRect)
+    bool IsValidSpawnPosition(Vector3 position, Vector2 enemySize, bool hasPlayerExclusion, Rect playerExclusionRect)
     {
         if (hasPlayerExclusion && playerExclusionRect.Contains(position))
+            return false;
+
+        if (SpawnOverlapsBlockingCollider(position, enemySize))
             return false;
 
         if (minSpawnDistanceFromPlayer <= 0f)
@@ -148,6 +154,35 @@ public class Room : MonoBehaviour
             return true;
 
         return Vector2.Distance(position, player.transform.position) >= minSpawnDistanceFromPlayer;
+    }
+
+    bool SpawnOverlapsBlockingCollider(Vector3 position, Vector2 enemySize)
+    {
+        Vector2 size = new Vector2(
+            Mathf.Max(0.35f, enemySize.x),
+            Mathf.Max(0.35f, enemySize.y));
+        Collider2D[] hits = Physics2D.OverlapBoxAll(position, size * 0.96f, 0f);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider2D hit = hits[i];
+            if (hit == null || !hit.enabled || hit.isTrigger)
+                continue;
+
+            GameObject go = hit.gameObject;
+            if (go.CompareTag("Player")
+                || go.GetComponentInParent<PlayerController>() != null
+                || go.GetComponentInParent<PlayerDamageReceiver>() != null
+                || go.GetComponentInParent<EnemyBase>() != null)
+                continue;
+
+            string objectName = go.name;
+            if (objectName.Contains("Floor_Background") || objectName.Contains("SpawnBlink"))
+                continue;
+
+            return true;
+        }
+
+        return false;
     }
 
     bool TryGetPlayerExclusionRect(Vector2 enemySize, out Rect rect)
@@ -591,7 +626,7 @@ public class Room : MonoBehaviour
 
     int EffectiveWaveCount()
     {
-        return Mathf.Max(1, waveCount + 1 + Mathf.Clamp(RoomLayer() / 4, 0, 1));
+        return Mathf.Max(1, waveCount);
     }
 
     int EffectiveEnemiesInsidePerWave()
