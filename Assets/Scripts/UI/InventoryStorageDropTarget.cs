@@ -47,20 +47,13 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
         {
             if (storageSource.DraggedItemData != null)
             {
-                // ItemInventoryManager(신규 아이템 시스템) 보관함 안에서 이동/교환.
-                // 대상 칸이 레거시 BodyPart로 차 있으면 서로 다른 시스템이라 건드리지 않는다.
-                if (InventoryManager.Instance.storage[storageIndex] != null)
-                    return;
+                HandleEntryDrop(ItemInventoryManager.StorageEntryKind.Item, storageSource.ItemStorageIndex, storageSource.StorageIndex);
+                return;
+            }
 
-                var itemInv = ItemInventoryManager.Instance;
-                if (itemInv == null)
-                    return;
-
-                InventoryStorageDragSource targetSource = GetComponent<InventoryStorageDragSource>();
-                int toIndex = targetSource != null ? targetSource.ItemStorageIndex : -1;
-
-                if (itemInv.TryMoveOrSwapStorage(storageSource.ItemStorageIndex, toIndex))
-                    SoundManager.PlayClick();
+            if (storageSource.CoinStackIndex >= 0)
+            {
+                HandleEntryDrop(ItemInventoryManager.StorageEntryKind.CoinStack, storageSource.CoinStackIndex, storageSource.StorageIndex);
                 return;
             }
 
@@ -84,5 +77,33 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
             if (itemInv != null && itemInv.TryUnequipBodyPartToStorage(equippedSource.BodySlot))
                 SoundManager.PlayClick();
         }
+    }
+
+    // 신규 아이템 시스템(ItemInventoryManager) 아이템/동전더미를 이 물리 슬롯에 고정시킨다.
+    // 이 슬롯에 이미 다른 아이템/동전더미가 표시 중이면 서로 자리를 맞바꾼다.
+    void HandleEntryDrop(ItemInventoryManager.StorageEntryKind kind, int index, int fromPhysicalSlot)
+    {
+        // 대상 칸이 레거시 BodyPart로 차 있으면 서로 다른 시스템이라 건드리지 않는다.
+        if (InventoryManager.Instance.storage[storageIndex] != null)
+            return;
+
+        var itemInv = ItemInventoryManager.Instance;
+        if (itemInv == null)
+            return;
+
+        InventoryStorageDragSource targetSource = GetComponent<InventoryStorageDragSource>();
+        int occupantItemIndex = targetSource != null ? targetSource.ItemStorageIndex : -1;
+        int occupantCoinIndex = targetSource != null ? targetSource.CoinStackIndex : -1;
+        bool hasOccupant = occupantItemIndex >= 0 || occupantCoinIndex >= 0;
+        ItemInventoryManager.StorageEntryKind occupantKind = occupantItemIndex >= 0
+            ? ItemInventoryManager.StorageEntryKind.Item
+            : ItemInventoryManager.StorageEntryKind.CoinStack;
+        int occupantIndex = occupantItemIndex >= 0 ? occupantItemIndex : occupantCoinIndex;
+
+        if (hasOccupant && occupantKind == kind && occupantIndex == index)
+            return; // 자기 자신 위에 드롭
+
+        if (itemInv.PinEntryToPhysicalSlot(kind, index, fromPhysicalSlot, storageIndex, occupantKind, occupantIndex, hasOccupant))
+            SoundManager.PlayClick();
     }
 }

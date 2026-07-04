@@ -10,12 +10,15 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
     Canvas rootCanvas;
     ItemData itemData;
     int itemStorageIndex = -1;
+    int coinStackIndex = -1;
 
     public int StorageIndex => storageIndex;
     public ItemData DraggedItemData => itemData;
     // ItemInventoryManager.Storage 안에서 이 슬롯이 가리키는 실제 리스트 인덱스.
     // 레거시 BodyPart 칸/동전 더미 칸이면 -1 (이 슬롯 기준 이동/교환 대상 아님).
     public int ItemStorageIndex => itemStorageIndex;
+    // ItemInventoryManager.CoinStacks 안에서 이 슬롯이 가리키는 실제 리스트 인덱스. 없으면 -1.
+    public int CoinStackIndex => coinStackIndex;
 
     public void SetStorageIndex(int index)
     {
@@ -32,12 +35,17 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         itemStorageIndex = index;
     }
 
+    public void SetCoinStackIndex(int index)
+    {
+        coinStackIndex = index;
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
         var inv = InventoryManager.Instance;
         bool hasBodyPart = inv != null && storageIndex >= 0 && storageIndex < inv.storage.Length && inv.storage[storageIndex] != null;
 
-        if (!hasBodyPart && itemData == null)
+        if (!hasBodyPart && itemData == null && coinStackIndex < 0)
             return;
 
         rootCanvas = GetComponentInParent<Canvas>();
@@ -66,9 +74,14 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
                 ? itemIconImage.sprite
                 : (part.icon != null ? part.icon : InventoryUI.FindDisplaySpriteForSlot(part.slot));
         }
+        else if (itemData != null)
+        {
+            image.sprite = itemData.Sprite;
+        }
         else
         {
-            image.sprite = itemData != null ? itemData.Sprite : null;
+            var itemInv = ItemInventoryManager.Instance;
+            image.sprite = itemInv != null ? itemInv.CoinItemRef?.Sprite : null;
         }
 
         CanvasGroup group = go.AddComponent<CanvasGroup>();

@@ -429,6 +429,13 @@ public class InventoryManager : MonoBehaviour
         return -1;
     }
 
+    // ItemInventoryManager(신규 아이템 시스템)가 레거시 부위를 보관함으로 밀어낼 자리가
+    // 있는지 미리 확인할 때 사용한다.
+    public bool HasFreeStorageSlot()
+    {
+        return FreeStorageIndex() >= 0;
+    }
+
     // 주운 동전(들)을 여유 있는 기존 동전 더미에 나눠 합치고, 남으면 빈 칸에 새 더미로 놓는다.
     // coin.count 가 1보다 커도(예: 버렸던 동전 더미를 다시 주울 때) 개수를 잃지 않고 전부 반영한다.
     bool TryAddCoin(BodyPart coin)

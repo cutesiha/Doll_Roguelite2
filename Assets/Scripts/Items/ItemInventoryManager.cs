@@ -27,6 +27,13 @@ public class ItemInventoryManager : MonoBehaviour
     // 동전 ItemData 참조 (3x3 표시용)
     ItemData coinItemRef;
 
+    // storage/coinStacks와 1:1 대응하는 "고정 물리 슬롯" 정보.
+    // -1 = 고정 안 됨(자동으로 앞에서부터 채움), 그 외 = 사용자가 드래그해서 고정한 UI 슬롯 번호.
+    readonly List<int> storageSlot = new();
+    readonly List<int> coinStackSlot = new();
+
+    public enum StorageEntryKind { Item, CoinStack }
+
     ItemSystemSettings settings;
     ItemData consumable;
     ItemData shield;
@@ -51,6 +58,75 @@ public class ItemInventoryManager : MonoBehaviour
     public IReadOnlyList<int> CoinStacks => coinStacks;
     // task7: 동전 아이템 데이터 참조
     public ItemData CoinItemRef => coinItemRef;
+
+    // storage/coinStacks 리스트에 안전하게 넣고 빼기 위한 래퍼.
+    // storageSlot/coinStackSlot 배열이 항상 같은 길이를 유지하도록 여기서만 Add/Remove 한다.
+    void AddToStorage(ItemData item)
+    {
+        storage.Add(item);
+        storageSlot.Add(-1);
+    }
+
+    void RemoveStorageAt(int index)
+    {
+        storage.RemoveAt(index);
+        storageSlot.RemoveAt(index);
+    }
+
+    bool RemoveStorageItem(ItemData item)
+    {
+        int idx = storage.IndexOf(item);
+        if (idx < 0)
+            return false;
+        RemoveStorageAt(idx);
+        return true;
+    }
+
+    void AddCoinStack(int amount)
+    {
+        coinStacks.Add(amount);
+        coinStackSlot.Add(-1);
+    }
+
+    void RemoveCoinStackAt(int index)
+    {
+        coinStacks.RemoveAt(index);
+        coinStackSlot.RemoveAt(index);
+    }
+
+    public int GetItemSlotPin(int index) => (index >= 0 && index < storageSlot.Count) ? storageSlot[index] : -1;
+    public int GetCoinStackSlotPin(int index) => (index >= 0 && index < coinStackSlot.Count) ? coinStackSlot[index] : -1;
+
+    bool SetEntryPin(StorageEntryKind kind, int index, int physicalSlot)
+    {
+        if (kind == StorageEntryKind.Item)
+        {
+            if (index < 0 || index >= storageSlot.Count) return false;
+            storageSlot[index] = physicalSlot;
+            return true;
+        }
+
+        if (index < 0 || index >= coinStackSlot.Count) return false;
+        coinStackSlot[index] = physicalSlot;
+        return true;
+    }
+
+    // 보관함 안의 아이템/동전더미를 특정 UI 물리 슬롯에 고정시킨다.
+    // 그 슬롯에 이미 다른 아이템/동전더미가 있으면(hasOccupant) 서로 자리를 맞바꾼다.
+    public bool PinEntryToPhysicalSlot(
+        StorageEntryKind kind, int index, int fromPhysicalSlot, int toPhysicalSlot,
+        StorageEntryKind occupantKind, int occupantIndex, bool hasOccupant)
+    {
+        if (!SetEntryPin(kind, index, toPhysicalSlot))
+            return false;
+
+        if (hasOccupant)
+            SetEntryPin(occupantKind, occupantIndex, fromPhysicalSlot);
+
+        NotifyChanged();
+        return true;
+    }
+
     // task3: 신체부위 장착 아이템
     public ItemData GetEquippedByBodySlot(BodySlot slot)
     {
@@ -159,7 +235,7 @@ public class ItemInventoryManager : MonoBehaviour
             }
             while (remaining > 0)
             {
-                coinStacks.Add(Mathf.Min(9, remaining));
+                AddCoinStack(Mathf.Min(9, remaining));
                 remaining -= 9;
             }
             message = item.ItemName + " 획득";
@@ -174,7 +250,7 @@ public class ItemInventoryManager : MonoBehaviour
                 message = "인벤토리가 가득 참";
                 return false;
             }
-            storage.Add(item);
+            AddToStorage(item);
             message = item.ItemName + "을(를) 인벤토리에 넣었습니다. Q 보석 칸에 끌어다 놓아 장착하세요.";
             NotifyChanged();
             return true;
@@ -201,7 +277,7 @@ public class ItemInventoryManager : MonoBehaviour
                 message = "인벤토리가 가득 참";
                 return false;
             }
-            storage.Add(item);
+            AddToStorage(item);
             message = item.ItemName + "을(를) 인벤토리에 넣었습니다.";
             NotifyChanged();
             return true;
@@ -213,7 +289,7 @@ public class ItemInventoryManager : MonoBehaviour
             return false;
         }
 
-        storage.Add(item);
+        AddToStorage(item);
         message = item.ItemName + "을(를) 인벤토리에 넣었습니다.";
         NotifyChanged();
         return true;
@@ -240,7 +316,7 @@ public class ItemInventoryManager : MonoBehaviour
             }
             while (remaining > 0)
             {
-                coinStacks.Add(Mathf.Min(9, remaining));
+                AddCoinStack(Mathf.Min(9, remaining));
                 remaining -= 9;
             }
             message = item.ItemName + " 획득";
@@ -254,7 +330,7 @@ public class ItemInventoryManager : MonoBehaviour
             return false;
         }
 
-        storage.Add(item);
+        AddToStorage(item);
         message = item.ItemName + "을(를) 보관함에 넣었습니다.";
         NotifyChanged();
         return true;
@@ -346,10 +422,10 @@ public class ItemInventoryManager : MonoBehaviour
         if (index < 0)
             return false;
 
-        storage.RemoveAt(index);
+        RemoveStorageAt(index);
 
         if (consumable != null)
-            storage.Add(consumable);
+            AddToStorage(consumable);
 
         consumable = item;
         Announce(item.ItemName + " Q 슬롯 장착");
@@ -361,34 +437,10 @@ public class ItemInventoryManager : MonoBehaviour
     {
         if (item == null)
             return false;
-        bool removed = storage.Remove(item);
+        bool removed = RemoveStorageItem(item);
         if (removed)
             NotifyChanged();
         return removed;
-    }
-
-    // 보관함 안에서 아이템을 다른 칸으로 옮긴다. 대상 칸에 아이템이 있으면 서로 교환하고,
-    // 빈 칸(리스트 범위 밖)이면 그 자리로(사실상 맨 뒤로) 옮긴다.
-    public bool TryMoveOrSwapStorage(int fromIndex, int toIndex)
-    {
-        if (fromIndex < 0 || fromIndex >= storage.Count)
-            return false;
-        if (toIndex < 0 || fromIndex == toIndex)
-            return false;
-
-        if (toIndex >= storage.Count)
-        {
-            ItemData moved = storage[fromIndex];
-            storage.RemoveAt(fromIndex);
-            storage.Add(moved);
-        }
-        else
-        {
-            (storage[fromIndex], storage[toIndex]) = (storage[toIndex], storage[fromIndex]);
-        }
-
-        NotifyChanged();
-        return true;
     }
 
     public ItemData RemoveConsumable()
@@ -423,13 +475,35 @@ public class ItemInventoryManager : MonoBehaviour
         if (idx < 0)
             return false;
 
-        storage.RemoveAt(idx);
+        // 이 부위에 레거시 시스템(BodyPart)으로 이미 장착된 기본 파츠가 있으면 보관함으로 되돌린다.
+        // 게임 시작 시 모든 부위에는 이 레거시 파츠가 기본으로 채워져 있어서, 여기서 치우지 않으면
+        // 나중에 신규 아이템을 뺄 때 드롭 처리가 이 파츠를 대신 해제해버리는 문제가 생긴다.
+        InventoryManager legacyInv = InventoryManager.Instance;
+        int legacyIdx = (int)targetSlot;
+        bool hasLegacyPart = legacyInv != null && legacyIdx >= 0 && legacyIdx < legacyInv.equipped.Length && legacyInv.equipped[legacyIdx] != null;
+        if (hasLegacyPart && (legacyInv.IsSlotLocked(targetSlot) || !legacyInv.HasFreeStorageSlot()))
+            return false; // 잠긴 슬롯이거나 보관함이 가득 차서 기존 파츠를 치울 수 없음
 
-        // 기존 장착 아이템이 있으면 보관함으로
+        RemoveStorageAt(idx);
+
+        if (hasLegacyPart)
+        {
+            BodyPart legacyPart = legacyInv.RemoveEquipped(targetSlot);
+            if (legacyPart != null)
+            {
+                // icon이 비어 있으면(기본 파츠) 방금 장착한 아이템 그림을 잘못 물려받지 않도록
+                // 이 부위 고유의 기본 그림을 미리 박아둔다.
+                if (legacyPart.icon == null)
+                    legacyPart.icon = InventoryUI.FindBaseSpriteForSlot(targetSlot);
+                legacyInv.TryAddPart(legacyPart, false);
+            }
+        }
+
+        // 기존 장착 아이템(신규 시스템)이 있으면 보관함으로
         if (equippedByBodySlot.TryGetValue(targetSlot, out ItemData old) && old != null)
         {
             if (storage.Count < Capacity)
-                storage.Add(old);
+                AddToStorage(old);
         }
 
         equippedByBodySlot[targetSlot] = item;
@@ -471,7 +545,7 @@ public class ItemInventoryManager : MonoBehaviour
         if (storage.Count >= Capacity)
             return false;
 
-        storage.Add(item);
+        AddToStorage(item);
         equippedByBodySlot.Remove(slot);
         SyncEquippedLocationFromSlots(item.EquipLocation);
         NotifyChanged();
@@ -496,7 +570,7 @@ public class ItemInventoryManager : MonoBehaviour
             coinStacks[i] -= take;
             amount -= take;
             if (coinStacks[i] == 0)
-                coinStacks.RemoveAt(i);
+                RemoveCoinStackAt(i);
         }
         if (amount > 0)
             coins = Mathf.Max(0, coins - amount);
@@ -560,7 +634,7 @@ public class ItemInventoryManager : MonoBehaviour
         }
 
         if (old != null)
-            storage.Add(old);
+            AddToStorage(old);
         equipped[location] = item;
         message = item.ItemName + " 자동 장착";
         if (old != null)
@@ -580,7 +654,7 @@ public class ItemInventoryManager : MonoBehaviour
                 message = "인벤토리가 가득 참";
                 return false;
             }
-            storage.Add(slot);
+            AddToStorage(slot);
         }
 
         slot = item;
@@ -714,7 +788,7 @@ public class ItemInventoryManager : MonoBehaviour
             ItemData item = storage[i];
             if (item == null || item.Type != ItemType.GemConsumable)
                 continue;
-            storage.RemoveAt(i);
+            RemoveStorageAt(i);
             consumable = item;
             return;
         }
@@ -727,7 +801,7 @@ public class ItemInventoryManager : MonoBehaviour
             ItemData item = storage[i];
             if (item == null || item.Type != ItemType.Shield)
                 continue;
-            storage.RemoveAt(i);
+            RemoveStorageAt(i);
             shield = item;
             shieldWaitingForNextRoom = true;
             shieldEquippedSceneHandle = SceneManager.GetActiveScene().handle;
