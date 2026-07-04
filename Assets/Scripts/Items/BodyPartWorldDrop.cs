@@ -17,7 +17,7 @@ public class BodyPartWorldDrop : MonoBehaviour
 
         GameObject go = new GameObject("DroppedItem_" + part.DisplayName());
         go.transform.position = position;
-        go.transform.localScale = Vector3.one * 0.9f;
+        go.transform.localScale = Vector3.one * 0.248f;
 
         SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
         renderer.sprite = sprite;

@@ -1529,9 +1529,13 @@ void NormalizeCanvasTransform()
 
                 if (bodyItem != null)
                 {
-                    // ItemData 신체부위 아이템이 장착됨
-                    SetImageSpriteSafely(_charImg[i], bodyItem.Sprite);
-                    _charImg[i].color = bodyItem.Sprite != null ? Color.white : CSlot;
+                    // ItemData 신체부위 아이템이 장착됨. 왼쪽/오른쪽 전용 그림이 있으면 그걸 우선 사용.
+                    Sprite equipSprite = bodyItem.GetEquippedSprite(bodySlot);
+                    SetImageSpriteSafely(_charImg[i], equipSprite);
+                    _charImg[i].color = equipSprite != null ? Color.white : CSlot;
+                    // 특히 Body는 히트박스보다 훨씬 큰 고정 박스(BodyVisual)에 그려서,
+                    // 작은 인벤토리 아이콘을 그대로 쓰면 지나치게 커 보인다. 아이템별 배율로 보정.
+                    _charImg[i].rectTransform.localScale = Vector3.one * bodyItem.EquippedScale;
                 }
                 else
                 {
@@ -1541,6 +1545,7 @@ void NormalizeCanvasTransform()
                     // 기존 BodyPart 상태. 팔·다리·눈과 동일하게, 장착되어 있으면 원래 색,
                     // 장착 해제되어 있으면 어둡게 틴트한다.
                     _charImg[i].color = p != null ? Color.white : CUnequippedPart;
+                    _charImg[i].rectTransform.localScale = Vector3.one;
                 }
                 // Body는 _charImg가 히트박스가 아닌 확대 표시용 자식(BodyVisual)을 가리키므로
                 // 여기서 알파 히트테스트를 적용하면 안 된다(실제 히트박스는 항상 클릭 가능한 상태로 둔다).
