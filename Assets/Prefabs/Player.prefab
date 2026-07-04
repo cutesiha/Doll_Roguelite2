@@ -427,12 +427,13 @@ MonoBehaviour:
   enemyLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  bodyMaxHp: 100
-  bodyCurrentHp: 100
   hitFeedbackDuration: 0.16
   hitShakeDistance: 0.055
   hitScaleMultiplier: 1.08
   hitTint: {r: 0.97, g: 0.64, b: 0.55, a: 1}
+  deathFallDuration: 0.75
+  deathFallDistance: 0.42
+  deathFallAngle: -82
   shakeCameraOnHit: 1
   cameraShakeDuration: 0.12
   cameraShakeMagnitude: 0.11

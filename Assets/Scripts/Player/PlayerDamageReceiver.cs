@@ -14,15 +14,16 @@ public class PlayerDamageReceiver : MonoBehaviour
     [SerializeField, Min(0.05f)] float damageCooldown = 0.65f;
     [SerializeField] LayerMask enemyLayers = ~0;
 
-    [Header("Body HP")]
-    [SerializeField, Min(1)] int bodyMaxHp = 100;
-    [SerializeField, Min(0)] int bodyCurrentHp = 100;
-
     [Header("Hit Feedback")]
     [SerializeField, Range(0.05f, 0.45f)] float hitFeedbackDuration = 0.16f;
     [SerializeField, Min(0f)] float hitShakeDistance = 0.055f;
     [SerializeField, Min(1f)] float hitScaleMultiplier = 1.08f;
     [SerializeField] Color hitTint = new Color(0.97f, 0.64f, 0.55f, 1f);
+
+    [Header("Death Animation")]
+    [SerializeField, Min(0.1f)] float deathFallDuration = 0.75f;
+    [SerializeField, Min(0f)] float deathFallDistance = 0.42f;
+    [SerializeField] float deathFallAngle = -82f;
 
     [Header("Camera Shake")]
     [SerializeField] bool shakeCameraOnHit = true;
@@ -66,7 +67,6 @@ public class PlayerDamageReceiver : MonoBehaviour
     Coroutine invincibilityRoutine;
     float nextDamageTime;
     float invincibleUntil;
-    bool bodyDropped;
     bool isDead;
     bool hpLossDisabled;
 
@@ -75,7 +75,6 @@ public class PlayerDamageReceiver : MonoBehaviour
         ResolveReferences();
         EnsurePlayerCollider();
         HideDropSizeAnchors();
-        bodyCurrentHp = Mathf.Clamp(bodyCurrentHp, 0, bodyMaxHp);
     }
 
     // Size anchors are visual tuning guides shown only in the editor; hide their
@@ -99,8 +98,6 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     void OnValidate()
     {
-        bodyMaxHp = Mathf.Max(1, bodyMaxHp);
-        bodyCurrentHp = Mathf.Clamp(bodyCurrentHp, 0, bodyMaxHp);
         contactDamage = Mathf.Max(1, contactDamage);
         damageCooldown = Mathf.Max(0.05f, damageCooldown);
     }
@@ -239,13 +236,14 @@ public class PlayerDamageReceiver : MonoBehaviour
             return;
 
         isDead = true;
-        DisablePlayerAfterDeath();
-        StartCoroutine(LoadStartSceneRoutine());
+        StartCoroutine(DeathRoutine());
     }
 
-    IEnumerator LoadStartSceneRoutine()
+    IEnumerator DeathRoutine()
     {
-        yield return new WaitForSeconds(0.8f);
+        DisablePlayerAfterDeath();
+        yield return StartCoroutine(PlayerFallRoutine());
+
         RunHudUI hud = FindFirstObjectByType<RunHudUI>();
         if (hud != null)
             Destroy(hud.gameObject);
@@ -271,10 +269,49 @@ public class PlayerDamageReceiver : MonoBehaviour
         if (rb != null)
             rb.linearVelocity = Vector2.zero;
 
-        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>();
+    }
+
+    IEnumerator PlayerFallRoutine()
+    {
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
+        Color[] baseColors = new Color[renderers.Length];
         for (int i = 0; i < renderers.Length; i++)
-            if (renderers[i] != null)
-                renderers[i].enabled = false;
+            baseColors[i] = renderers[i] != null ? renderers[i].color : Color.white;
+
+        Vector3 startPosition = transform.position;
+        Vector3 endPosition = startPosition + Vector3.down * deathFallDistance;
+        Quaternion startRotation = transform.rotation;
+        Quaternion endRotation = startRotation * Quaternion.Euler(0f, 0f, deathFallAngle);
+        Vector3 startScale = transform.localScale;
+        Vector3 endScale = new Vector3(startScale.x * 1.08f, startScale.y * 0.58f, startScale.z);
+        float duration = Mathf.Max(0.1f, deathFallDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = t * t * (3f - 2f * t);
+            transform.position = Vector3.Lerp(startPosition, endPosition, eased);
+            transform.rotation = Quaternion.Slerp(startRotation, endRotation, eased);
+            transform.localScale = Vector3.Lerp(startScale, endScale, Mathf.Sin(eased * Mathf.PI * 0.5f));
+
+            float alpha = Mathf.Lerp(1f, 0.35f, Mathf.Clamp01((t - 0.45f) / 0.55f));
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] == null)
+                    continue;
+
+                Color color = baseColors[i];
+                color.a *= alpha;
+                renderers[i].color = color;
+                renderers[i].enabled = true;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(0.28f);
     }
 
     void ShakeCamera()

@@ -73,7 +73,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Vector2 noLegArmOffset = new Vector2(0f, -0.1f);
     // 양다리 없음(기어가기) 시 검은 눈 소켓 위치 보정. 크롤 전용 배치는 몸통 스프라이트 bounds 기준으로
     // 계산하고, 이 오프셋으로 미세 조정한다(서있는 프레임 좌표는 키 낮은 noleg에 안 맞음).
-    [SerializeField] Vector2 noLegEyeOffset = Vector2.zero;
+    [SerializeField] Vector2 noLegEyeOffset = new Vector2(0f, -0.08f);
     [SerializeField] float crawlEyeHeightFrac = 0.32f;   // 몸통 중심 위로 눈 높이(halfHeight 비율)
     [SerializeField] float crawlEyeSpacingFrac = 0.30f;  // 좌우 눈 간격(halfWidth 비율)
 
@@ -762,26 +762,28 @@ public class PlayerController : MonoBehaviour
         Vector2 c = b.center;
         float halfW = b.extents.x;
         float halfH = b.extents.y;
-        float frontEyeY = c.y + halfH * crawlEyeHeightFrac + noLegEyeOffset.y;
+        float effectiveEyeHeightFrac = Mathf.Clamp(crawlEyeHeightFrac, 0.05f, 0.22f);
+        Vector2 eyeOffset = noLegEyeOffset + Vector2.down * (halfH * 0.12f);
+        float frontEyeY = c.y + halfH * effectiveEyeHeightFrac + eyeOffset.y;
         float frontDx = halfW * crawlEyeSpacingFrac;
         // 사이드뷰는 얼굴이 옆을 향하므로 눈이 더 낮고 바라보는 쪽으로 치우친다.
-        float sideEyeY = c.y + halfH * crawlEyeHeightFrac * 0.45f + noLegEyeOffset.y;
+        float sideEyeY = c.y + halfH * effectiveEyeHeightFrac * 0.45f + eyeOffset.y;
         float sideDx = halfW * crawlEyeSpacingFrac * 1.5f;
         Vector2 scale = new Vector2(0.7f, 0.7f);
 
         switch (facingDirection)
         {
             case FacingDirection.Left:
-                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(c.x - sideDx + noLegEyeOffset.x, sideEyeY), scale);
+                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(c.x - sideDx + eyeOffset.x, sideEyeY), scale);
                 SetRendererVisible(rightEyeSocketRenderer, false);
                 break;
             case FacingDirection.Right:
                 SetRendererVisible(leftEyeSocketRenderer, false);
-                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(c.x + sideDx + noLegEyeOffset.x, sideEyeY), scale);
+                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(c.x + sideDx + eyeOffset.x, sideEyeY), scale);
                 break;
             default: // Down (정면)
-                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(c.x - frontDx + noLegEyeOffset.x, frontEyeY), scale);
-                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(c.x + frontDx + noLegEyeOffset.x, frontEyeY), scale);
+                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(c.x - frontDx + eyeOffset.x, frontEyeY), scale);
+                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(c.x + frontDx + eyeOffset.x, frontEyeY), scale);
                 break;
         }
     }

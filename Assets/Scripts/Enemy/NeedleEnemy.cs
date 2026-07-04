@@ -63,6 +63,14 @@ public class NeedleEnemy : EnemyBase
             chaseSpeed = Mathf.Max(0f, profile.moveSpeed);
     }
 
+    public override void ApplyCombatScaling(float speedMultiplier, float cooldownMultiplier, int extraDamage)
+    {
+        chaseSpeed *= Mathf.Max(0.1f, speedMultiplier);
+        dashCooldownRange = ScaleRange(dashCooldownRange, cooldownMultiplier, 0.55f);
+        warningDuration = Mathf.Max(0.55f, warningDuration * Mathf.Lerp(1f, cooldownMultiplier, 0.45f));
+        dashDamage += Mathf.Max(0, extraDamage);
+    }
+
     void FixedUpdate()
     {
         if (player == null || isBusy)
@@ -201,6 +209,14 @@ public class NeedleEnemy : EnemyBase
         float min = Mathf.Max(0.1f, dashCooldownRange.x);
         float max = Mathf.Max(min, dashCooldownRange.y);
         nextDashTime = Time.time + Random.Range(min, max);
+    }
+
+    static Vector2 ScaleRange(Vector2 range, float multiplier, float minValue)
+    {
+        float safe = Mathf.Max(0.1f, multiplier);
+        float min = Mathf.Max(minValue, range.x * safe);
+        float max = Mathf.Max(min, range.y * safe);
+        return new Vector2(min, max);
     }
 
     void EnsureCollider()

@@ -47,6 +47,9 @@ public class SmallButtonEnemy : EnemyBase
         if (sprite == null)
             sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + fallbackSpriteName + ".png");
 #endif
+        if (sprite == null)
+            sprite = FallbackEnemySprite();
+
         if (sprite != null)
             renderer.sprite = sprite;
     }
@@ -63,6 +66,11 @@ public class SmallButtonEnemy : EnemyBase
         ApplyProfileStats(profile);
         if (profile != null)
             moveSpeed = Mathf.Max(0f, profile.moveSpeed);
+    }
+
+    public override void ApplyCombatScaling(float speedMultiplier, float cooldownMultiplier, int extraDamage)
+    {
+        moveSpeed *= Mathf.Max(0.1f, speedMultiplier);
     }
 
     void EnsureCollider()

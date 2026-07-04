@@ -147,7 +147,6 @@ public class TutorialSceneController : MonoBehaviour
             SetGameplayInputEnabled(true);
         }
 
-        BuildGameplaySkipUI();
         ShowOnly(movePrompt);
         step = TutorialStep.Move;
     }

@@ -21,8 +21,16 @@ public class SoundManager : MonoBehaviour
     public const string MinotaurPinStickSfxPath = "Sounds/short_punch1";
     public const string BookBossRageSfxPath = "Sounds/book_boss_rage";
     public const string BookBossRainLoopSfxPath = "Sounds/book_boss_rain_loop";
+    public const string BookBossSirenLoopSfxPath = "Sounds/book_boss_siren_loop";
     public const string BookBossFloorSlamSfxPath = "Sounds/book_boss_floor_slam";
     public const string BookBossPaperFlySfxPath = "Sounds/book_boss_paper_fly";
+    static readonly string[] BookBossInkDropSfxPaths =
+    {
+        "Sounds/book_boss_ink_drop_1",
+        "Sounds/book_boss_ink_drop_2",
+        "Sounds/book_boss_ink_drop_3",
+        "Sounds/book_boss_ink_drop_4"
+    };
     public const string WaveClearSfxPath = "Sounds/wave_clear";
     const string WaveClearFallbackSfxPath = "Sounds/paper333";
     public const string AfterVictoryBgmPath = "BGM/after_victory";
@@ -82,6 +90,13 @@ public class SoundManager : MonoBehaviour
     [SerializeField, Range(0f, 3f)] float bookBossRageVolume = 1f;
     [SerializeField] AudioClip bookBossRainLoopClip;
     [SerializeField, Range(0f, 3f)] float bookBossRainLoopVolume = 0.55f;
+    [SerializeField] AudioClip bookBossSirenLoopClip;
+    [SerializeField, Range(0f, 3f)] float bookBossSirenLoopVolume = 0.7f;
+    [SerializeField] AudioClip bookBossInkDropClip1;
+    [SerializeField] AudioClip bookBossInkDropClip2;
+    [SerializeField] AudioClip bookBossInkDropClip3;
+    [SerializeField] AudioClip bookBossInkDropClip4;
+    [SerializeField, Range(0f, 3f)] float bookBossInkDropVolume = 0.95f;
     [SerializeField] AudioClip bookBossFloorSlamClip;
     [SerializeField, Range(0f, 3f)] float bookBossFloorSlamVolume = 1.05f;
     [SerializeField] AudioClip bookBossPaperFlyClip;
@@ -90,6 +105,7 @@ public class SoundManager : MonoBehaviour
     AudioSource gemAudioSource;
     AudioSource bookBossRageSource;
     AudioSource bookBossRainSource;
+    AudioSource bookBossSirenSource;
     Coroutine gemStopRoutine;
     Coroutine bgmFadeRoutine;
 
@@ -327,6 +343,27 @@ public class SoundManager : MonoBehaviour
             manager.bookBossRainSource.Stop();
     }
 
+    public static void StartBookBossSirenLoop()
+    {
+        SoundManager manager = EnsureInstance();
+        manager.StartBookBossSirenLoopInternal();
+    }
+
+    public static void StopBookBossSirenLoop()
+    {
+        SoundManager manager = instance;
+        if (manager != null && manager.bookBossSirenSource != null)
+            manager.bookBossSirenSource.Stop();
+    }
+
+    public static void PlayBookBossInkDrop(float repeatGuard = 0.01f)
+    {
+        SoundManager manager = EnsureInstance();
+        AudioClip clip = manager.GetRandomBookBossInkDropClip();
+        if (clip != null)
+            manager.PlayManaged(clip, manager.bookBossInkDropVolume, repeatGuard);
+    }
+
     public static void PlayBookBossFloorSlam(float repeatGuard = 0.04f)
     {
         SoundManager manager = EnsureInstance();
@@ -554,6 +591,18 @@ public class SoundManager : MonoBehaviour
         bookBossRainSource.loop = true;
     }
 
+    void EnsureBookBossSirenSource()
+    {
+        if (bookBossSirenSource != null)
+            return;
+
+        GameObject sourceObject = new GameObject("BookBossSirenAudioSource");
+        sourceObject.transform.SetParent(transform, false);
+        bookBossSirenSource = sourceObject.AddComponent<AudioSource>();
+        bookBossSirenSource.playOnAwake = false;
+        bookBossSirenSource.loop = true;
+    }
+
     void EnsureBookBossRageSource()
     {
         if (bookBossRageSource != null)
@@ -596,6 +645,20 @@ public class SoundManager : MonoBehaviour
         bookBossRainSource.volume = Mathf.Max(0f, bookBossRainLoopVolume) * Mathf.Max(0f, masterSfxVolume);
         if (!bookBossRainSource.isPlaying)
             bookBossRainSource.Play();
+    }
+
+    void StartBookBossSirenLoopInternal()
+    {
+        AudioClip clip = GetBookBossSirenLoopClip();
+        if (clip == null)
+            return;
+
+        EnsureBookBossSirenSource();
+        bookBossSirenSource.clip = clip;
+        bookBossSirenSource.loop = true;
+        bookBossSirenSource.volume = Mathf.Max(0f, bookBossSirenLoopVolume) * Mathf.Max(0f, masterSfxVolume);
+        if (!bookBossSirenSource.isPlaying)
+            bookBossSirenSource.Play();
     }
 
     System.Collections.IEnumerator AfterVictoryBgmFadeRoutine(float fadeOutDuration, float fadeInDuration)
@@ -786,6 +849,34 @@ public class SoundManager : MonoBehaviour
         if (bookBossRainLoopClip == null)
             bookBossRainLoopClip = LoadClipResource(BookBossRainLoopSfxPath);
         return bookBossRainLoopClip;
+    }
+
+    AudioClip GetBookBossSirenLoopClip()
+    {
+        if (bookBossSirenLoopClip == null)
+            bookBossSirenLoopClip = LoadClipResource(BookBossSirenLoopSfxPath);
+        return bookBossSirenLoopClip;
+    }
+
+    AudioClip GetRandomBookBossInkDropClip()
+    {
+        AudioClip[] clips =
+        {
+            bookBossInkDropClip1 != null ? bookBossInkDropClip1 : LoadClipResource(BookBossInkDropSfxPaths[0]),
+            bookBossInkDropClip2 != null ? bookBossInkDropClip2 : LoadClipResource(BookBossInkDropSfxPaths[1]),
+            bookBossInkDropClip3 != null ? bookBossInkDropClip3 : LoadClipResource(BookBossInkDropSfxPaths[2]),
+            bookBossInkDropClip4 != null ? bookBossInkDropClip4 : LoadClipResource(BookBossInkDropSfxPaths[3])
+        };
+
+        int start = Random.Range(0, clips.Length);
+        for (int i = 0; i < clips.Length; i++)
+        {
+            int index = (start + i) % clips.Length;
+            if (clips[index] != null)
+                return clips[index];
+        }
+
+        return null;
     }
 
     AudioClip GetBookBossFloorSlamClip()

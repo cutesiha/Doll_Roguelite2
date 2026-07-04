@@ -5,10 +5,6 @@ public class PlayerManager : MonoBehaviour
 {
     public static PlayerManager Instance { get; private set; }
 
-    [Header("Health")]
-    [SerializeField, Min(1)] int maxHp = 3;     // 몸 체력 (부위 3개 떨어진 뒤 닳음)
-    [SerializeField, Min(0)] int currentHp = 3;
-
     [Header("Movement")]
     [SerializeField, Min(0f)] float moveSpeed = 5f;
     [SerializeField, Range(0f, 1f)] float missingLegSpeedMultiplier = 0.5f;
@@ -22,10 +18,6 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] Vector2 attackSize = new Vector2(1f, 1f);
     [SerializeField, Range(0.05f, 0.5f)] float attackDuration = 0.12f;
     [SerializeField] Vector2 fistScale = new Vector2(1.65f, 1.65f);
-    int itemMaxHpModifier;
-
-    public int MaxHp => Mathf.Max(1, maxHp + itemMaxHpModifier);
-    public int CurrentHp => currentHp;
     public float MoveSpeed => moveSpeed;
     public float MissingLegSpeedMultiplier => missingLegSpeedMultiplier;
     public int AttackDamage => attackDamage;
@@ -51,7 +43,6 @@ public class PlayerManager : MonoBehaviour
         }
 
         Instance = this;
-        currentHp = Mathf.Clamp(currentHp, 0, maxHp);
         ApplyToExistingPlayer();
     }
 
@@ -62,8 +53,6 @@ public class PlayerManager : MonoBehaviour
 
     void OnValidate()
     {
-        maxHp = Mathf.Max(1, maxHp);
-        currentHp = Mathf.Clamp(currentHp, 0, maxHp);
         moveSpeed = Mathf.Max(0f, moveSpeed);
         attackDamage = Mathf.Max(0, attackDamage);
         attackCooldown = Mathf.Max(0f, attackCooldown);
@@ -124,30 +113,4 @@ public class PlayerManager : MonoBehaviour
             player.AddComponent<PlayerDamageReceiver>();
     }
 
-    public void Heal(int amount)
-    {
-        if (amount <= 0)
-            return;
-
-        currentHp = Mathf.Min(MaxHp, currentHp + amount);
-    }
-
-    public void TakeDamage(int amount)
-    {
-        if (amount <= 0)
-            return;
-
-        currentHp = Mathf.Max(0, currentHp - amount);
-    }
-
-    public void SetCurrentHp(int value)
-    {
-        currentHp = Mathf.Clamp(value, 0, MaxHp);
-    }
-
-    public void SetItemMaxHpModifier(int modifier)
-    {
-        itemMaxHpModifier = modifier;
-        currentHp = Mathf.Clamp(currentHp, 0, MaxHp);
-    }
 }

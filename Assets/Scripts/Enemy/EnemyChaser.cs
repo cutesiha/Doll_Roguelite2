@@ -50,6 +50,15 @@ public class EnemyChaser : EnemyBase
             moveSpeed = Mathf.Max(0f, profile.moveSpeed);
     }
 
+    public override void ApplyCombatScaling(float speedMultiplier, float cooldownMultiplier, int extraDamage)
+    {
+        moveSpeed *= Mathf.Max(0.1f, speedMultiplier);
+        slamCooldownRange = ScaleRange(slamCooldownRange, cooldownMultiplier, 0.6f);
+        slamTelegraphDuration = Mathf.Max(0.55f, slamTelegraphDuration * Mathf.Lerp(1f, cooldownMultiplier, 0.45f));
+        slamDamage += Mathf.Max(0, extraDamage);
+        slamEdgeDamage += Mathf.Max(0, extraDamage);
+    }
+
     void FixedUpdate()
     {
         if (player == null) return;
@@ -192,6 +201,14 @@ public class EnemyChaser : EnemyBase
         float min = Mathf.Max(0.1f, slamCooldownRange.x);
         float max = Mathf.Max(min, slamCooldownRange.y);
         nextSlamTime = Time.time + Random.Range(min, max);
+    }
+
+    static Vector2 ScaleRange(Vector2 range, float multiplier, float minValue)
+    {
+        float safe = Mathf.Max(0.1f, multiplier);
+        float min = Mathf.Max(minValue, range.x * safe);
+        float max = Mathf.Max(min, range.y * safe);
+        return new Vector2(min, max);
     }
 
 }

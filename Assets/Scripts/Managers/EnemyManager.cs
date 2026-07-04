@@ -32,6 +32,13 @@ public class EnemyManager : MonoBehaviour
     System.Action onRoomCleared;
     int nextProfileIndex;
 
+    const float BaseRoomHpMultiplier = 1.75f;
+    const float HpMultiplierPerRoomLayer = 0.35f;
+    const float BaseRoomSpeedMultiplier = 1.24f;
+    const float SpeedMultiplierPerRoomLayer = 0.06f;
+    const float BaseAttackCooldownMultiplier = 0.68f;
+    const float AttackCooldownMultiplierPerLayer = 0.03f;
+
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
@@ -47,10 +54,14 @@ public class EnemyManager : MonoBehaviour
             return true;
 
         EnemyProfile profile = SelectProfile(enemy.Kind);
+        if (profile == null && force)
+            profile = DefaultProfileFor(enemy.Kind);
+
         if (profile == null)
             return false;
 
-        enemy.ApplyProfile(profile);
+        enemy.ApplyProfile(ScaledProfile(profile));
+        enemy.ApplyCombatScaling(CurrentRoomSpeedMultiplier(), CurrentRoomAttackCooldownMultiplier(), CurrentRoomExtraAttackDamage());
 
         // task22: 중간보스 방 이후의 잡몹은 체력을 50% 올린다.
         if (MapRunState.HasPassedMiddleBoss())
@@ -109,5 +120,75 @@ public class EnemyManager : MonoBehaviour
         EnemyProfile profile = profileMatches[nextProfileIndex % profileMatches.Count];
         nextProfileIndex++;
         return profile;
+    }
+
+    EnemyProfile ScaledProfile(EnemyProfile source)
+    {
+        if (source == null)
+            return null;
+
+        return new EnemyProfile
+        {
+            profileName = source.profileName,
+            enemyType = source.enemyType,
+            maxHp = Mathf.Max(1, Mathf.CeilToInt(source.maxHp * CurrentRoomHealthMultiplier())),
+            moveSpeed = Mathf.Max(0f, source.moveSpeed),
+            framesPerSecond = source.framesPerSecond,
+            tint = source.tint,
+            animationFrames = source.animationFrames
+        };
+    }
+
+    static int RoomLayer()
+    {
+        return CurrentRoomLayer();
+    }
+
+    public static int CurrentRoomLayer()
+    {
+        MapNode node = MapRunState.PendingNode != null ? MapRunState.PendingNode : MapRunState.CurrentNode;
+        return node != null ? Mathf.Max(1, node.layer) : 1;
+    }
+
+    public static float CurrentRoomHealthMultiplier()
+    {
+        int level = Mathf.Max(0, CurrentRoomLayer() - 1);
+        return BaseRoomHpMultiplier + level * HpMultiplierPerRoomLayer;
+    }
+
+    public static float CurrentRoomSpeedMultiplier()
+    {
+        int level = Mathf.Max(0, CurrentRoomLayer() - 1);
+        return BaseRoomSpeedMultiplier + level * SpeedMultiplierPerRoomLayer;
+    }
+
+    public static float CurrentRoomAttackCooldownMultiplier()
+    {
+        int level = Mathf.Max(0, CurrentRoomLayer() - 1);
+        return Mathf.Max(0.45f, BaseAttackCooldownMultiplier - level * AttackCooldownMultiplierPerLayer);
+    }
+
+    public static int CurrentRoomExtraAttackDamage()
+    {
+        return Mathf.Max(0, CurrentRoomLayer() - 1) * 2;
+    }
+
+    static EnemyProfile DefaultProfileFor(EnemyKind kind)
+    {
+        switch (kind)
+        {
+            case EnemyKind.Chaser:
+                return new EnemyProfile { profileName = "DefaultChaser", enemyType = kind, maxHp = 2, moveSpeed = 1f };
+            case EnemyKind.Needle:
+                return new EnemyProfile { profileName = "DefaultNeedle", enemyType = kind, maxHp = 3, moveSpeed = 0.75f };
+            case EnemyKind.Ribbon:
+                return new EnemyProfile { profileName = "DefaultRibbon", enemyType = kind, maxHp = 3, moveSpeed = 0.85f };
+            case EnemyKind.Spool:
+                return new EnemyProfile { profileName = "DefaultSpool", enemyType = kind, maxHp = 4, moveSpeed = 0f };
+            case EnemyKind.SmallButton:
+                return new EnemyProfile { profileName = "DefaultSmallButton", enemyType = kind, maxHp = 2, moveSpeed = 1f };
+            default:
+                return null;
+        }
     }
 }

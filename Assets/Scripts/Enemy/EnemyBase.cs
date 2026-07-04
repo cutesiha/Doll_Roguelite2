@@ -47,6 +47,7 @@ public class EnemyBase : MonoBehaviour
     Rigidbody2D spawnApproachBody;
     float spawnApproachEndsAt;
     float spawnApproachSpeed;
+    static Sprite fallbackEnemySprite;
 
     protected virtual void Awake()
     {
@@ -57,6 +58,7 @@ public class EnemyBase : MonoBehaviour
         {
             animationFrames = LoadRandomEnemyFrames();
             ApplyAnimationFrame(0);
+            EnsureVisibleFallbackSprite();
             spriteRenderer.color = Color.white;
             spriteBaseColor = Color.white;
             EnsureHitCollider();
@@ -301,6 +303,10 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
+    public virtual void ApplyCombatScaling(float speedMultiplier, float cooldownMultiplier, int extraDamage)
+    {
+    }
+
     Sprite[] LoadRandomEnemyFrames()
     {
         string[] spriteNames = { "d1", "d2", "d3" };
@@ -338,6 +344,69 @@ public class EnemyBase : MonoBehaviour
             .ThenBy(sprite => sprite.rect.y)
             .ThenBy(sprite => sprite.name)
             .ToArray();
+    }
+
+    void EnsureVisibleFallbackSprite()
+    {
+        if (spriteRenderer == null || spriteRenderer.sprite != null)
+            return;
+
+        spriteRenderer.sprite = FallbackEnemySprite();
+    }
+
+    protected static Sprite FallbackEnemySprite()
+    {
+        if (fallbackEnemySprite != null)
+            return fallbackEnemySprite;
+
+        const int width = 40;
+        const int height = 46;
+        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+        {
+            name = "FallbackEnemySprite",
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        Color cloth = new Color(0.72f, 0.62f, 0.56f, 1f);
+        Color edge = new Color(0.25f, 0.17f, 0.14f, 1f);
+        Color eye = new Color(0.08f, 0.06f, 0.05f, 1f);
+        Color stitch = new Color(0.90f, 0.42f, 0.25f, 1f);
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float nx = (x - width * 0.5f) / (width * 0.5f);
+                float ny = (y - height * 0.48f) / (height * 0.5f);
+                bool body = nx * nx * 0.9f + ny * ny * 1.15f <= 0.72f;
+                bool head = Mathf.Pow((x - 20f) / 14f, 2f) + Mathf.Pow((y - 31f) / 12f, 2f) <= 1f;
+                bool arm = (x < 8 || x > 31) && y >= 13 && y <= 28;
+                bool leg = (x >= 12 && x <= 17 || x >= 23 && x <= 28) && y >= 2 && y <= 13;
+                bool shape = body || head || arm || leg;
+                texture.SetPixel(x, y, shape ? cloth : clear);
+            }
+        }
+
+        DrawRect(texture, 15, 30, 4, 4, eye);
+        DrawRect(texture, 23, 30, 4, 4, eye);
+        DrawRect(texture, 18, 23, 5, 2, stitch);
+        DrawRect(texture, 13, 14, 14, 2, edge);
+        DrawRect(texture, 19, 12, 2, 12, edge);
+
+        texture.Apply();
+        fallbackEnemySprite = Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.12f), 32f);
+        fallbackEnemySprite.name = "FallbackEnemySprite";
+        return fallbackEnemySprite;
+    }
+
+    static void DrawRect(Texture2D texture, int startX, int startY, int width, int height, Color color)
+    {
+        for (int y = startY; y < startY + height; y++)
+            for (int x = startX; x < startX + width; x++)
+                if (x >= 0 && x < texture.width && y >= 0 && y < texture.height)
+                    texture.SetPixel(x, y, color);
     }
 
     public virtual void TakeDamage(int damage)

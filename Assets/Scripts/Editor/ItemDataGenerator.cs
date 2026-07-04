@@ -43,12 +43,11 @@ public static class ItemDataGenerator
             E(ItemEffectType.KeyringProjectile, 3f));
         SetProjectileSprite("keyring", "Assets/Sprites/Item/Itemeffect/열쇠 나가는거.png");
 
-        Create("knitted_body", "뜨개질 몸", "인벤토리를 4x4(16칸)로 확장하지만 최대 체력 -1",
+        Create("knitted_body", "뜨개질 몸", "인벤토리를 4x4(16칸)로 확장",
             ItemCategory.BodyRoom, ItemType.BodyPart, ItemEquipLocation.Body,
-            ItemAcquisitionLocation.BodyRoom, false, 16f, -1f, 0f, 24,
+            ItemAcquisitionLocation.BodyRoom, false, 16f, 0f, 0f, 24,
             ItemPlaceholderShape.Square, new Color(0.82f, 0.42f, 0.45f, 1f),
-            E(ItemEffectType.InventoryCapacity, 16f),
-            E(ItemEffectType.MaxHealth, -1f));
+            E(ItemEffectType.InventoryCapacity, 16f));
 
         Create("round_pin", "원형 시침핀", "피격 시 사방으로 시침핀이 발사되며 각각 데미지 5.00",
             ItemCategory.MiddleBossRoom, ItemType.BodyPart, ItemEquipLocation.Body,
@@ -87,11 +86,10 @@ public static class ItemDataGenerator
             E(ItemEffectType.NailProjectile, 5f));
         SetProjectileSprite("wood_plank", "Assets/Sprites/Item/Itemeffect/못.png");
 
-        Create("wooden_leg", "목제 다리", "최대 체력 +2, 이동속도 -0.30",
+        Create("wooden_leg", "목제 다리", "이동속도 -0.30",
             ItemCategory.ChallengeRoom, ItemType.BodyPart, ItemEquipLocation.Leg,
-            ItemAcquisitionLocation.ChallengeRoom, false, 2f, -0.3f, 0f, 25,
+            ItemAcquisitionLocation.ChallengeRoom, false, -0.3f, 0f, 0f, 25,
             ItemPlaceholderShape.Square, new Color(0.50f, 0.28f, 0.12f, 1f),
-            E(ItemEffectType.MaxHealth, 2f),
             E(ItemEffectType.MoveSpeed, -0.3f));
 
         Create("flag", "깃발", "인벤토리 2x2(4칸), 이동속도 +1.00, 오른팔 공격력 +2.00",
