@@ -261,7 +261,14 @@ public class InventoryManager : MonoBehaviour
     public bool IsEquipped(BodySlot slot)
     {
         int index = (int)slot;
-        return index >= 0 && index < equipped.Length && equipped[index] != null;
+        if (index >= 0 && index < equipped.Length && equipped[index] != null)
+            return true;
+
+        // 신규 아이템 시스템(도끼/열쇠/별 등)으로 이 부위에 뭔가 장착돼 있어도 팔/다리가
+        // "존재"하는 것으로 친다. TryEquipBodyPartFromStorage가 레거시 파츠를 보관함으로
+        // 옮기면서 equipped[slot]이 비기 때문에, 여기서 보정 안 하면 팔이 사라진 것처럼
+        // 처리돼(공격 불가, 스프라이트 숨김) 버린다.
+        return ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.GetEquippedByBodySlot(slot) != null;
     }
 
     public BodyPart GetEquippedPart(BodySlot slot)

@@ -298,6 +298,7 @@ MonoBehaviour:
   axeWeaponSprite: {fileID: 0}
   keyringWeaponSprite: {fileID: 0}
   nailWeaponSprite: {fileID: 0}
+  starWeaponSprite: {fileID: 0}
   leftAttackStart: {fileID: 0}
   rightAttackStart: {fileID: 0}
   useFixedBodyAttackOrigin: 0
