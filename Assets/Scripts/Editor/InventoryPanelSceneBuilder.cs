@@ -103,7 +103,6 @@ public static class InventoryPanelSceneBuilder
     [MenuItem("Game/Inventory/Patch Character Base Images")]
     public static void PatchCharacterBaseImages()
     {
-        PatchCharacterBaseImages("Assets/Resources/InventoryCanvas.prefab");
         PatchCharacterBaseImages("Assets/Prefabs/UI/InventoryCanvas.prefab");
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();

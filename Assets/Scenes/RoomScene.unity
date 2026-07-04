@@ -1036,8 +1036,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8a8720917cc9f74d8d23f5a37e33d1f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerManager
-  maxHp: 3
-  currentHp: 3
   moveSpeed: 5
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
@@ -4051,6 +4049,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 434357072}
     m_Modifications:
+    - target: {fileID: 5297638450544646420, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 62
+      objectReference: {fileID: 0}
+    - target: {fileID: 5297638450544646420, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 134
+      objectReference: {fileID: 0}
+    - target: {fileID: 5297638450544646420, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5297638450544646420, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -33
+      objectReference: {fileID: 0}
     - target: {fileID: 5928265361328853105, guid: 9e64ba549fa5d3f4d88e7005cef715aa, type: 3}
       propertyPath: m_AnchoredPosition.x
       value: -1
@@ -10272,6 +10286,13 @@ MonoBehaviour:
   bookBossRageVolume: 1
   bookBossRainLoopClip: {fileID: 0}
   bookBossRainLoopVolume: 0.55
+  bookBossSirenLoopClip: {fileID: 0}
+  bookBossSirenLoopVolume: 0.7
+  bookBossInkDropClip1: {fileID: 0}
+  bookBossInkDropClip2: {fileID: 0}
+  bookBossInkDropClip3: {fileID: 0}
+  bookBossInkDropClip4: {fileID: 0}
+  bookBossInkDropVolume: 0.95
   bookBossFloorSlamClip: {fileID: 0}
   bookBossFloorSlamVolume: 1.05
   bookBossPaperFlyClip: {fileID: 0}
@@ -10562,6 +10583,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Room
   enemyPrefab: {fileID: 0}
   waveCount: 3
+  extraEnemyEveryLayers: 2
+  maxExtraEnemiesPerWave: 3
   spawnBlinkCount: 6
   spawnBlinkInterval: 0.12
   nextWaveDelay: 0.75

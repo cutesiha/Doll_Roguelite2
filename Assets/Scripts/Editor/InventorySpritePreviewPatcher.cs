@@ -4,14 +4,12 @@ using UnityEngine.UI;
 
 public static class InventorySpritePreviewPatcher
 {
-    const string ResourcesPrefabPath = "Assets/Resources/InventoryCanvas.prefab";
     const string UiPrefabPath = "Assets/Prefabs/UI/InventoryCanvas.prefab";
     const string RunHudPrefabPath = "Assets/Prefabs/UI/RunHudCanvas.prefab";
 
     [MenuItem("Game/Inventory/Assign Character Preview Sprites")]
     public static void AssignCharacterPreviewSprites()
     {
-        AssignCharacterPreviewSprites(ResourcesPrefabPath);
         AssignCharacterPreviewSprites(UiPrefabPath);
         AssignCharacterPreviewSprites(RunHudPrefabPath);
         AssetDatabase.SaveAssets();

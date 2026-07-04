@@ -689,9 +689,23 @@ public class TutorialSceneController : MonoBehaviour
         runHud = FindFirstObjectByType<RunHudUI>(FindObjectsInactive.Include);
         if (runHud == null)
         {
-            GameObject hud = new GameObject("RunHudCanvas");
-            hud.AddComponent<RectTransform>();
-            runHud = hud.AddComponent<RunHudUI>();
+            // RunHudUI.EnsureRunHudForScene()과 동일한 경로로 생성한다.
+            // 다른 씬처럼 Resources 프리팹을 먼저 시도해야 폰트/스프라이트가 채워진
+            // 정상 HUD가 만들어진다 (Awake 시점엔 RunHudUI의 자체 부트스트랩보다
+            // 이 메서드가 먼저 실행되어, 빈 폴백만 타면 빌드에서 HUD가 깨진다).
+            RunHudUI prefab = Resources.Load<RunHudUI>("RunHudCanvas");
+            if (prefab != null)
+            {
+                GameObject hudInstance = Instantiate(prefab.gameObject);
+                hudInstance.name = "RunHudCanvas";
+                runHud = hudInstance.GetComponent<RunHudUI>();
+            }
+            else
+            {
+                GameObject hud = new GameObject("RunHudCanvas");
+                hud.AddComponent<RectTransform>();
+                runHud = hud.AddComponent<RunHudUI>();
+            }
         }
 
         if (runHud == null)
