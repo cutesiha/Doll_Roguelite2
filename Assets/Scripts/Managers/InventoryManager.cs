@@ -282,26 +282,47 @@ public class InventoryManager : MonoBehaviour
 
     public bool TryDamageEquippedPart(BodySlot slot, int damage, out BodyPart brokenPart)
     {
+        return TryDamageEquippedPart(slot, damage, out brokenPart, out _);
+    }
+
+    // brokenItemData: 레거시 파츠가 아니라 신규 아이템 시스템 장착물이 이 데미지로 파괴됐을 때
+    // 그 아이템 데이터(월드 드롭 연출에 필요). 안 부서졌거나 레거시 파츠였으면 null.
+    public bool TryDamageEquippedPart(BodySlot slot, int damage, out BodyPart brokenPart, out ItemData brokenItemData)
+    {
         brokenPart = null;
+        brokenItemData = null;
         if (damage <= 0)
             return false;
 
         BodyPart part = GetEquippedPart(slot);
-        if (part == null)
-            return false;
-
-        part.maxHp = Mathf.Max(1, part.maxHp);
-        part.currentHp = Mathf.Clamp(part.currentHp - damage, 0, part.maxHp);
-
-        if (part.currentHp <= 0)
+        if (part != null)
         {
-            brokenPart = part;
-            equipped[(int)slot] = null;
+            part.maxHp = Mathf.Max(1, part.maxHp);
+            part.currentHp = Mathf.Clamp(part.currentHp - damage, 0, part.maxHp);
+
+            if (part.currentHp <= 0)
+            {
+                brokenPart = part;
+                equipped[(int)slot] = null;
+            }
+
+            SyncBodyState();
+            OnInventoryChanged?.Invoke();
+            return true;
         }
 
-        SyncBodyState();
-        OnInventoryChanged?.Invoke();
-        return true;
+        // 레거시 파츠가 없으면 신규 아이템 시스템(ItemInventoryManager) 장착물에 데미지를 적용한다.
+        // (그렇지 않으면 신규 아이템이 장착된 부위는 데미지가 아예 안 먹거나, 모든 부위가
+        // 신규 아이템뿐일 때 "장착된 부위 없음"으로 오인돼 즉사 처리되는 버그가 생긴다.)
+        if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryDamageEquippedItem(slot, damage, out ItemData brokenItem))
+        {
+            brokenItemData = brokenItem;
+            SyncBodyState();
+            OnInventoryChanged?.Invoke();
+            return true;
+        }
+
+        return false;
     }
 
     public BodyState GetBodyStateSnapshot()

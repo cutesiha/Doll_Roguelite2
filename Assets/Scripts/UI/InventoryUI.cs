@@ -636,14 +636,34 @@ void Start()
         go.AddComponent<InventoryBoingEffect>();
     }
 
-    // 아이콘을 슬롯 박스에 맞춰 비율 유지 (SetNativeSize 대체 — 너무 커지지 않도록)
+    // 아이콘을 슬롯 박스 가득 채움 (SetNativeSize 대체 — 너무 커지지 않도록).
+    // 스프라이트의 "실제 그려진 영역"(textureRect, 알파 트림 기준)이 캔버스 전체보다 훨씬
+    // 작은 경우(예: body_real처럼 400x500 캔버스에 실제 그림은 가운데 122x147만 차지)를
+    // 보정해서, 그림 자체가 슬롯을 가득 채우도록 축/별로 스케일을 계산한다. 정사각형이 아닌
+    // 원본(예: 48x32)도 이 계산으로 자연스럽게 정사각 슬롯을 꽉 채우게 된다 — 캔버스의
+    // 투명한 여백만 박스 밖으로 넘칠 뿐이라 시각적으로는 문제없다.
     static void FitSlotIcon(Image icon)
     {
-        if (icon == null) return;
-        icon.preserveAspect = true;
+        if (icon == null || icon.sprite == null) return;
+        icon.preserveAspect = false;
         icon.type = Image.Type.Simple;
         RectTransform rt = icon.transform as RectTransform;
-        if (rt != null) rt.sizeDelta = new Vector2(SlotIconBox, SlotIconBox);
+        if (rt == null) return;
+
+        Rect content = icon.sprite.textureRect;
+        Rect full = icon.sprite.rect;
+        float scaleX = content.width  > 0.01f ? SlotIconBox / content.width  : 1f;
+        float scaleY = content.height > 0.01f ? SlotIconBox / content.height : 1f;
+        Vector2 size = new Vector2(full.width * scaleX, full.height * scaleY);
+
+        // 여백이 극단적으로 커서 슬롯 박스를 훨씬 넘어서면(이웃 슬롯 아이콘과 겹칠 수 있음)
+        // 종횡비는 유지한 채 상한선까지만 균일하게 줄인다.
+        const float MaxIconBox = SlotIconBox * 1.4f;
+        float overflow = Mathf.Max(size.x, size.y) / MaxIconBox;
+        if (overflow > 1f)
+            size /= overflow;
+
+        rt.sizeDelta = size;
     }
 
     // task7: 동전 3x3 그리드 컨테이너
@@ -1476,7 +1496,7 @@ void NormalizeCanvasTransform()
                 int pin = itemInv.GetItemSlotPin(k);
                 if (pin < 0 || pin >= storageCount || slotTaken[pin])
                     continue;
-                DisplayItemInSlot(pin, k, itemInv.Storage[k]);
+                DisplayItemInSlot(pin, k, itemInv.Storage[k].data);
                 slotTaken[pin] = true;
                 itemPlaced[k] = true;
             }
@@ -1502,7 +1522,7 @@ void NormalizeCanvasTransform()
             {
                 if (itemPlaced[k] || !FindNextFree())
                     continue;
-                DisplayItemInSlot(nextFree, k, itemInv.Storage[k]);
+                DisplayItemInSlot(nextFree, k, itemInv.Storage[k].data);
                 slotTaken[nextFree] = true;
             }
             for (int k = 0; k < coinStackCount; k++)
@@ -1569,12 +1589,19 @@ void NormalizeCanvasTransform()
         for (int i = 0; i < statCount; i++)
         {
             var p = inv.equipped[i];
-            if (_statName[i] != null) _statName[i].text  = p != null ? "장착됨" : "없음";
+            // 신규 아이템 시스템으로 장착된 게 있으면 그 아이템의 HP를 우선 표시한다.
+            // (레거시 파츠는 새 아이템이 장착되는 순간 inv.equipped[i]에서 빠지므로,
+            // 여기서 신규 시스템을 확인하지 않으면 실제로는 장착돼 있는데도 "없음"으로 보인다.)
+            int itemCurrentHp = 0, itemMaxHp = 0;
+            bool hasItemPart = itemInv != null && itemInv.TryGetEquippedItemHp((BodySlot)i, out itemCurrentHp, out itemMaxHp);
+            bool equippedHere = p != null || hasItemPart;
+
+            if (_statName[i] != null) _statName[i].text  = equippedHere ? "장착됨" : "없음";
             if (_statHp[i]   != null)
             {
-                _statHp[i].text  = p != null ? Dots(p) : new string('○', 5);
+                _statHp[i].text  = hasItemPart ? Dots(itemCurrentHp, itemMaxHp) : (p != null ? Dots(p) : new string('○', 5));
                 // 장착 상태: 프리팹에서 지정한 색 유지 / 미장착: 어둡게.
-                _statHp[i].color = p != null
+                _statHp[i].color = equippedHere
                     ? (i < _statHpAuthoredColor.Length ? _statHpAuthoredColor[i] : new Color(0.88f, 0.48f, 0.24f, 1f))
                     : new Color(0.17f, 0.15f, 0.13f, 0.42f);
             }
@@ -2075,7 +2102,9 @@ void NormalizeCanvasTransform()
 
         for (int i = 0; i < inv.equipped.Length; i++)
         {
-            if (inv.equipped[i] != null) continue;
+            // 레거시 파츠뿐 아니라 신규 아이템 시스템으로 장착된 부위도 "채워짐"으로 친다.
+            // (그렇지 않으면 신규 아이템으로 몸통을 장착해도 재봉 상태가 "몸통 없음"으로 오인된다.)
+            if (inv.IsEquipped((BodySlot)i)) continue;
 
             emptyCount++;
             missingParts.Add(BodySlotLabel((BodySlot)i) + " 없음");
@@ -2117,7 +2146,12 @@ void NormalizeCanvasTransform()
 
     static string Dots(BodyPart p)
     {
-        int f = Mathf.Clamp(Mathf.RoundToInt((float)p.currentHp / p.maxHp * 5f), 0, 5);
+        return Dots(p.currentHp, p.maxHp);
+    }
+
+    static string Dots(int currentHp, int maxHp)
+    {
+        int f = Mathf.Clamp(Mathf.RoundToInt((float)currentHp / Mathf.Max(1, maxHp) * 5f), 0, 5);
         return new string('●', f) + new string('○', 5 - f);
     }
 }

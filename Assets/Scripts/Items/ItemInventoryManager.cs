@@ -18,10 +18,11 @@ public class ItemInventoryManager : MonoBehaviour
         go.AddComponent<ItemInventoryManager>();
     }
 
-    readonly List<ItemData> storage = new();
+    readonly List<ItemInstance> storage = new();
     readonly Dictionary<ItemEquipLocation, ItemData> equipped = new();
-    // 신체부위 아이템을 BodySlot별로 장착 (task3)
-    [System.NonSerialized] readonly Dictionary<BodySlot, ItemData> equippedByBodySlot = new();
+    // 신체부위 아이템을 BodySlot별로 장착 (task3). ItemInstance라서 교체돼 보관함에
+    // 갔다가 다시 장착돼도 그 아이템 고유의 HP가 그대로 유지된다.
+    [System.NonSerialized] readonly Dictionary<BodySlot, ItemInstance> equippedByBodySlot = new();
     // 동전 스택: 각 원소 = 해당 스택의 동전 개수 (최대 9) (task7)
     [System.NonSerialized] readonly List<int> coinStacks = new();
     // 동전 ItemData 참조 (3x3 표시용)
@@ -35,8 +36,8 @@ public class ItemInventoryManager : MonoBehaviour
     public enum StorageEntryKind { Item, CoinStack }
 
     ItemSystemSettings settings;
-    ItemData consumable;
-    ItemData shield;
+    ItemInstance consumable;
+    ItemInstance shield;
     int coins; // legacy abstract coins (AddCoins 등 비-아이템 경로)
     bool shieldWaitingForNextRoom;
     bool shieldArmed;
@@ -48,9 +49,9 @@ public class ItemInventoryManager : MonoBehaviour
 
     public event Action Changed;
 
-    public IReadOnlyList<ItemData> Storage => storage;
-    public ItemData Consumable => consumable;
-    public ItemData Shield => shield;
+    public IReadOnlyList<ItemInstance> Storage => storage;
+    public ItemData Consumable => consumable?.data;
+    public ItemData Shield => shield?.data;
     // 총 동전 = storage 스택 합계 + abstract coins
     public int Coins => ComputeTotalCoins();
     public bool ShieldArmed => shieldArmed;
@@ -61,10 +62,17 @@ public class ItemInventoryManager : MonoBehaviour
 
     // storage/coinStacks 리스트에 안전하게 넣고 빼기 위한 래퍼.
     // storageSlot/coinStackSlot 배열이 항상 같은 길이를 유지하도록 여기서만 Add/Remove 한다.
-    void AddToStorage(ItemData item)
+    void AddToStorage(ItemInstance instance)
     {
-        storage.Add(item);
+        storage.Add(instance);
         storageSlot.Add(-1);
+    }
+
+    // 처음 획득하는 아이템(ItemData)을 새 ItemInstance로 감싸 보관함에 넣는다.
+    // maxHp는 해당 부위 기본(레거시) 파츠와 같은 규칙(눈=2, 그 외=3)을 따른다.
+    void AddNewItemToStorage(ItemData item)
+    {
+        AddToStorage(new ItemInstance(item, ItemInstance.DefaultMaxHp(item.EquipLocation)));
     }
 
     void RemoveStorageAt(int index)
@@ -75,7 +83,7 @@ public class ItemInventoryManager : MonoBehaviour
 
     bool RemoveStorageItem(ItemData item)
     {
-        int idx = storage.IndexOf(item);
+        int idx = storage.FindIndex(inst => inst != null && inst.data == item);
         if (idx < 0)
             return false;
         RemoveStorageAt(idx);
@@ -130,8 +138,46 @@ public class ItemInventoryManager : MonoBehaviour
     // task3: 신체부위 장착 아이템
     public ItemData GetEquippedByBodySlot(BodySlot slot)
     {
-        equippedByBodySlot.TryGetValue(slot, out ItemData item);
-        return item;
+        equippedByBodySlot.TryGetValue(slot, out ItemInstance instance);
+        return instance?.data;
+    }
+
+    // 장착된 신규 아이템의 현재/최대 HP. 그 슬롯에 신규 아이템이 없으면 false.
+    public bool TryGetEquippedItemHp(BodySlot slot, out int currentHp, out int maxHp)
+    {
+        if (equippedByBodySlot.TryGetValue(slot, out ItemInstance instance) && instance != null)
+        {
+            currentHp = instance.currentHp;
+            maxHp = instance.maxHp;
+            return true;
+        }
+
+        currentHp = 0;
+        maxHp = 0;
+        return false;
+    }
+
+    // 그 슬롯에 신규 아이템이 장착돼 있으면 데미지를 적용한다 (레거시 BodyPart와 별개 경로).
+    // brokenItem은 이 데미지로 파괴돼 장착 해제된 아이템(월드로 떨어뜨릴 때 필요). 안 부서졌으면 null.
+    public bool TryDamageEquippedItem(BodySlot slot, int damage, out ItemData brokenItem)
+    {
+        brokenItem = null;
+        if (damage <= 0)
+            return false;
+
+        if (!equippedByBodySlot.TryGetValue(slot, out ItemInstance instance) || instance == null)
+            return false;
+
+        instance.currentHp = Mathf.Clamp(instance.currentHp - damage, 0, instance.maxHp);
+        if (instance.currentHp <= 0)
+        {
+            brokenItem = instance.data;
+            equippedByBodySlot.Remove(slot);
+            SyncEquippedLocationFromSlots(instance.data.EquipLocation);
+        }
+
+        NotifyChanged();
+        return true;
     }
     public float RoomMoveSpeedBonus => roomBuffSceneHandle == SceneManager.GetActiveScene().handle ? roomMoveSpeedBonus : 0f;
     public float RoomArmDamageBonus => roomBuffSceneHandle == SceneManager.GetActiveScene().handle ? roomArmDamageBonus : 0f;
@@ -205,9 +251,9 @@ public class ItemInventoryManager : MonoBehaviour
     public ItemData GetEquipped(ItemEquipLocation location)
     {
         if (location == ItemEquipLocation.Consumable)
-            return consumable;
+            return consumable?.data;
         if (location == ItemEquipLocation.Shield)
-            return shield;
+            return shield?.data;
 
         equipped.TryGetValue(location, out ItemData item);
         return item;
@@ -250,7 +296,7 @@ public class ItemInventoryManager : MonoBehaviour
                 message = "인벤토리가 가득 참";
                 return false;
             }
-            AddToStorage(item);
+            AddNewItemToStorage(item);
             message = item.ItemName + "을(를) 인벤토리에 넣었습니다. Q 보석 칸에 끌어다 놓아 장착하세요.";
             NotifyChanged();
             return true;
@@ -277,7 +323,7 @@ public class ItemInventoryManager : MonoBehaviour
                 message = "인벤토리가 가득 참";
                 return false;
             }
-            AddToStorage(item);
+            AddNewItemToStorage(item);
             message = item.ItemName + "을(를) 인벤토리에 넣었습니다.";
             NotifyChanged();
             return true;
@@ -289,7 +335,7 @@ public class ItemInventoryManager : MonoBehaviour
             return false;
         }
 
-        AddToStorage(item);
+        AddNewItemToStorage(item);
         message = item.ItemName + "을(를) 인벤토리에 넣었습니다.";
         NotifyChanged();
         return true;
@@ -330,7 +376,7 @@ public class ItemInventoryManager : MonoBehaviour
             return false;
         }
 
-        AddToStorage(item);
+        AddNewItemToStorage(item);
         message = item.ItemName + "을(를) 보관함에 넣었습니다.";
         NotifyChanged();
         return true;
@@ -366,7 +412,7 @@ public class ItemInventoryManager : MonoBehaviour
         if (consumable == null)
             return false;
 
-        ItemData used = consumable;
+        ItemData used = consumable.data;
         if (!ApplyConsumable(used))
             return false;
 
@@ -382,7 +428,7 @@ public class ItemInventoryManager : MonoBehaviour
             return false;
 
         shieldArmed = false;
-        ItemData usedShield = shield;
+        ItemData usedShield = shield.data;
         shield = null;
         AutoEquipNextShield();
         Announce(usedShield.ItemName + " 방어막이 피격을 막았습니다.");
@@ -407,7 +453,7 @@ public class ItemInventoryManager : MonoBehaviour
 
     public void ForceSetConsumable(ItemData item)
     {
-        consumable = item;
+        consumable = item != null ? new ItemInstance(item, ItemInstance.DefaultMaxHp(item.EquipLocation)) : null;
         if (item != null)
             Announce(item.ItemName + " Q 슬롯 장착");
         NotifyChanged();
@@ -418,16 +464,17 @@ public class ItemInventoryManager : MonoBehaviour
         if (item == null || item.Type != ItemType.GemConsumable)
             return false;
 
-        int index = storage.IndexOf(item);
+        int index = storage.FindIndex(inst => inst != null && inst.data == item);
         if (index < 0)
             return false;
 
+        ItemInstance instance = storage[index];
         RemoveStorageAt(index);
 
         if (consumable != null)
             AddToStorage(consumable);
 
-        consumable = item;
+        consumable = instance;
         Announce(item.ItemName + " Q 슬롯 장착");
         NotifyChanged();
         return true;
@@ -445,7 +492,7 @@ public class ItemInventoryManager : MonoBehaviour
 
     public ItemData RemoveConsumable()
     {
-        ItemData removed = consumable;
+        ItemData removed = consumable?.data;
         consumable = null;
         if (removed != null)
         {
@@ -463,17 +510,28 @@ public class ItemInventoryManager : MonoBehaviour
         NotifyChanged();
     }
 
-    // task3: 보관함의 신체부위 아이템을 특정 BodySlot에 장착
-    public bool TryEquipBodyPartFromStorage(ItemData item, BodySlot targetSlot)
+    // task3: 보관함의 신체부위 아이템을 특정 BodySlot에 장착.
+    // storageIndex로 정확히 어떤 인스턴스인지 지정한다 (동일 아이템이 여러 개 있어도
+    // 서로 다른 HP를 가진 인스턴스를 헷갈리지 않도록).
+    public bool TryEquipBodyPartFromStorage(int storageIndex, BodySlot targetSlot)
     {
+        if (storageIndex < 0 || storageIndex >= storage.Count)
+            return false;
+
+        ItemInstance instance = storage[storageIndex];
+        ItemData item = instance?.data;
         if (item == null || item.Type != ItemType.BodyPart)
             return false;
         if (!IsBodyPartCompatibleWithSlot(item.EquipLocation, targetSlot))
             return false;
 
-        int idx = storage.IndexOf(item);
-        if (idx < 0)
-            return false;
+        // 몸통 부위를 교체하면 인벤토리 용량이 줄어들 수 있다 (예: 16칸짜리 → 9칸짜리).
+        // 실제로 스왑을 진행하기 전에, 교체 후 예상 보관함 개수가 새 용량을 넘는지 미리 확인해서
+        // 넘으면 아예 교체를 막는다 (그렇지 않으면 보관함이 용량보다 많은 아이템을 담게 된다).
+        bool willDisplaceOld = equippedByBodySlot.TryGetValue(targetSlot, out ItemInstance existingOld) && existingOld != null;
+        int projectedStorageCount = (storage.Count - 1) + (willDisplaceOld ? 1 : 0);
+        if (projectedStorageCount > CapacityAfterEquipping(item))
+            return false; // 교체하면 보관함이 새 용량을 초과하게 됨 - 먼저 보관함을 비워야 함
 
         // 이 부위에 레거시 시스템(BodyPart)으로 이미 장착된 기본 파츠가 있으면 보관함으로 되돌린다.
         // 게임 시작 시 모든 부위에는 이 레거시 파츠가 기본으로 채워져 있어서, 여기서 치우지 않으면
@@ -484,7 +542,7 @@ public class ItemInventoryManager : MonoBehaviour
         if (hasLegacyPart && (legacyInv.IsSlotLocked(targetSlot) || !legacyInv.HasFreeStorageSlot()))
             return false; // 잠긴 슬롯이거나 보관함이 가득 차서 기존 파츠를 치울 수 없음
 
-        RemoveStorageAt(idx);
+        RemoveStorageAt(storageIndex);
 
         if (hasLegacyPart)
         {
@@ -499,14 +557,12 @@ public class ItemInventoryManager : MonoBehaviour
             }
         }
 
-        // 기존 장착 아이템(신규 시스템)이 있으면 보관함으로
-        if (equippedByBodySlot.TryGetValue(targetSlot, out ItemData old) && old != null)
-        {
-            if (storage.Count < Capacity)
-                AddToStorage(old);
-        }
+        // 기존 장착 아이템(신규 시스템)이 있으면 보관함으로 (HP 유지).
+        // 위에서 이미 교체 후 용량을 넘지 않는지 확인했으므로 여기선 안전하게 추가한다.
+        if (willDisplaceOld)
+            AddToStorage(existingOld);
 
-        equippedByBodySlot[targetSlot] = item;
+        equippedByBodySlot[targetSlot] = instance;
         // task-C: 부위 슬롯 장착 아이템의 효과가 PlayerItemEffects(GetEquipped 기반)에 반영되도록
         // location별 equipped 사전도 동기화한다. (보석 외 아이템 효과 미적용 버그)
         SyncEquippedLocationFromSlots(item.EquipLocation);
@@ -524,9 +580,9 @@ public class ItemInventoryManager : MonoBehaviour
         ItemData found = null;
         foreach (var kv in equippedByBodySlot)
         {
-            if (kv.Value != null && kv.Value.EquipLocation == location)
+            if (kv.Value != null && kv.Value.data != null && kv.Value.data.EquipLocation == location)
             {
-                found = kv.Value;
+                found = kv.Value.data;
                 break;
             }
         }
@@ -537,17 +593,17 @@ public class ItemInventoryManager : MonoBehaviour
             equipped.Remove(location);
     }
 
-    // task3: 장착된 신체부위 아이템을 보관함으로 되돌리기
+    // task3: 장착된 신체부위 아이템을 보관함으로 되돌리기 (HP 유지)
     public bool TryUnequipBodyPartToStorage(BodySlot slot)
     {
-        if (!equippedByBodySlot.TryGetValue(slot, out ItemData item) || item == null)
+        if (!equippedByBodySlot.TryGetValue(slot, out ItemInstance instance) || instance == null)
             return false;
         if (storage.Count >= Capacity)
             return false;
 
-        AddToStorage(item);
+        AddToStorage(instance);
         equippedByBodySlot.Remove(slot);
-        SyncEquippedLocationFromSlots(item.EquipLocation);
+        SyncEquippedLocationFromSlots(instance.data.EquipLocation);
         NotifyChanged();
         return true;
     }
@@ -619,32 +675,7 @@ public class ItemInventoryManager : MonoBehaviour
         return true;
     }
 
-    bool TryEquipBodyPart(ItemData item, out string message)
-    {
-        message = "";
-        ItemEquipLocation location = item.EquipLocation;
-        ItemData old = GetEquipped(location);
-        int futureCapacity = CapacityAfterEquipping(item);
-        int futureStorageCount = storage.Count + (old != null ? 1 : 0);
-
-        if (futureStorageCount > futureCapacity)
-        {
-            message = "인벤토리가 가득 참";
-            return false;
-        }
-
-        if (old != null)
-            AddToStorage(old);
-        equipped[location] = item;
-        message = item.ItemName + " 자동 장착";
-        if (old != null)
-            message += " / " + old.ItemName + "은(는) 인벤토리로 이동";
-
-        NotifyChanged();
-        return true;
-    }
-
-    bool TryEquipSpecial(ItemData item, ref ItemData slot, ItemEquipLocation location, out string message)
+    bool TryEquipSpecial(ItemData item, ref ItemInstance slot, ItemEquipLocation location, out string message)
     {
         message = "";
         if (slot != null)
@@ -657,7 +688,7 @@ public class ItemInventoryManager : MonoBehaviour
             AddToStorage(slot);
         }
 
-        slot = item;
+        slot = new ItemInstance(item, ItemInstance.DefaultMaxHp(item.EquipLocation));
         message = item.ItemName + (location == ItemEquipLocation.Consumable ? " Q 슬롯 장착" : " 방어막 슬롯 장착");
         NotifyChanged();
         return true;
@@ -785,11 +816,11 @@ public class ItemInventoryManager : MonoBehaviour
     {
         for (int i = 0; i < storage.Count; i++)
         {
-            ItemData item = storage[i];
-            if (item == null || item.Type != ItemType.GemConsumable)
+            ItemInstance instance = storage[i];
+            if (instance == null || instance.data == null || instance.data.Type != ItemType.GemConsumable)
                 continue;
             RemoveStorageAt(i);
-            consumable = item;
+            consumable = instance;
             return;
         }
     }
@@ -798,11 +829,11 @@ public class ItemInventoryManager : MonoBehaviour
     {
         for (int i = 0; i < storage.Count; i++)
         {
-            ItemData item = storage[i];
-            if (item == null || item.Type != ItemType.Shield)
+            ItemInstance instance = storage[i];
+            if (instance == null || instance.data == null || instance.data.Type != ItemType.Shield)
                 continue;
             RemoveStorageAt(i);
-            shield = item;
+            shield = instance;
             shieldWaitingForNextRoom = true;
             shieldEquippedSceneHandle = SceneManager.GetActiveScene().handle;
             return;

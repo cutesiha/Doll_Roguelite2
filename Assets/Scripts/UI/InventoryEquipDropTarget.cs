@@ -29,7 +29,7 @@ public class InventoryEquipDropTarget : MonoBehaviour, IDropHandler
                 return;
 
             var itemInv = ItemInventoryManager.Instance;
-            if (itemInv != null && itemInv.TryEquipBodyPartFromStorage(draggedItem, acceptedSlot))
+            if (itemInv != null && itemInv.TryEquipBodyPartFromStorage(source.ItemStorageIndex, acceptedSlot))
                 SoundManager.PlayClick();
             return;
         }

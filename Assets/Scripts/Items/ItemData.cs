@@ -128,6 +128,8 @@ public class ItemData : ScriptableObject
     [SerializeField] Sprite equippedSpriteLeft;
     [Tooltip("Arm/Leg/Eye 부위의 오른쪽 슬롯(ArmRight/LegRight/EyeRight)에 장착됐을 때 캐릭터에 표시할 전용 스프라이트. 비어있으면 sprite를 그대로 사용.")]
     [SerializeField] Sprite equippedSpriteRight;
+    [Tooltip("Body 부위에 장착됐을 때 캐릭터에 표시할 전용 스프라이트. Body는 좌우 구분이 없어 이 필드 하나만 쓴다. 비어있으면 sprite를 그대로 사용.")]
+    [SerializeField] Sprite equippedSpriteBody;
     [SerializeField] ItemPlaceholderShape placeholderShape = ItemPlaceholderShape.Square;
     [SerializeField] Color placeholderColor = Color.white;
     [Tooltip("월드에 스폰될 때 적용할 크기. 0 이하이면 타입별 기본 크기를 사용. (아이템 테스트룸에서 조정한 값과 동기화됨)")]
@@ -154,6 +156,7 @@ public class ItemData : ScriptableObject
     public Sprite ProjectileSprite3 => projectileSprite3 != null ? projectileSprite3 : projectileSprite;
     public Sprite EquippedSpriteLeft => equippedSpriteLeft;
     public Sprite EquippedSpriteRight => equippedSpriteRight;
+    public Sprite EquippedSpriteBody => equippedSpriteBody;
     public ItemPlaceholderShape PlaceholderShape => placeholderShape;
     public Color PlaceholderColor => placeholderColor;
     public float WorldScale => worldScale;
@@ -193,6 +196,8 @@ public class ItemData : ScriptableObject
             case BodySlot.LegRight:
             case BodySlot.EyeRight:
                 return equippedSpriteRight != null ? equippedSpriteRight : sprite;
+            case BodySlot.Body:
+                return equippedSpriteBody != null ? equippedSpriteBody : sprite;
             default:
                 return sprite;
         }

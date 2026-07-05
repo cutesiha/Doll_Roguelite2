@@ -212,7 +212,10 @@ public class PlayerDamageReceiver : MonoBehaviour
         damageCandidates.Clear();
         if (inventory != null)
             for (int i = 0; i < DamageSlots.Length; i++)
-                if (inventory.GetEquippedPart(DamageSlots[i]) != null)
+                // 레거시 BodyPart뿐 아니라 신규 아이템 시스템으로 장착된 부위도 데미지 대상에
+                // 포함시킨다. 그렇지 않으면 신규 아이템만 장착한 부위는 데미지가 안 먹고,
+                // 모든 부위가 신규 아이템뿐이면 damageCandidates가 비어 즉사 처리돼 버린다.
+                if (inventory.IsEquipped(DamageSlots[i]))
                     damageCandidates.Add(DamageSlots[i]);
 
         if (damageCandidates.Count == 0)
@@ -223,11 +226,18 @@ public class PlayerDamageReceiver : MonoBehaviour
 
         int pick = Random.Range(0, damageCandidates.Count);
         BodySlot slot = damageCandidates[pick];
-        Sprite dropSprite = SpriteForSlot(slot);
         SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
         BodyPart brokenPart;
-        if (inventory.TryDamageEquippedPart(slot, damage, out brokenPart) && brokenPart != null)
-            DropPart(dropSprite, sourceRenderer, slot);
+        ItemData brokenItemData;
+        if (inventory.TryDamageEquippedPart(slot, damage, out brokenPart, out brokenItemData))
+        {
+            if (brokenPart != null)
+                DropPart(SpriteForSlot(slot), sourceRenderer, slot);
+            else if (brokenItemData != null)
+                // 신규 아이템 시스템 장착물이 파괴됨: 슬롯 기본 그림이 아니라 그 아이템 고유의
+                // 장착 그림을 그대로 날려서 "이 아이템이 부서졌다"는 게 보이게 한다.
+                DropPart(brokenItemData.GetEquippedSprite(slot), sourceRenderer, slot);
+        }
     }
 
     void TriggerDeath()
