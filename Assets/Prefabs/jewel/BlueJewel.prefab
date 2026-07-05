@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5368862168665989958}
   - component: {fileID: 5174330319577456224}
   - component: {fileID: 1339732221896784604}
-  - component: {fileID: 771146472149695696}
+  - component: {fileID: 3965191141593656977}
   m_Layer: 0
   m_Name: BlueJewel
   m_TagString: Untagged
@@ -130,7 +130,7 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 0.8, y: 0.8857143}
   m_Direction: 0
---- !u!114 &771146472149695696
+--- !u!114 &3965191141593656977
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -139,8 +139,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 9131682489910783828}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 610779a0dddbbe64a917e83ca9a1ed2a, type: 3}
+  m_Script: {fileID: 11500000, guid: cf0afe9465481b44bba483212c3e6d0c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JewelWorldPickup
-  iconOverride: {fileID: 0}
-  gemItemId: blue_gem
+  m_EditorClassIdentifier: Assembly-CSharp::ItemWorldPickup
+  tooltipRoot: {fileID: 0}
+  tooltipBackground: {fileID: 0}
+  tooltipText: {fileID: 0}
+  tooltipBackgroundSprite: {fileID: 0}
+  tooltipLocalPosition: {x: 0, y: 1.45, z: -0.1}
+  tooltipBackgroundScale: {x: 5.2, y: 1.65, z: 1}
+  tooltipTextLocalPosition: {x: 0, y: 0, z: -0.05}
+  tooltipTextBoxSize: {x: 4.85, y: 1.35}
+  tooltipFontSize: 2
+  tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
+  tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  itemAsset: {fileID: 11400000, guid: 1fd7b3002b42f2e449d42e143d961a3f, type: 2}
+  purchaseFailureShakeDistance: 0.22
+  purchaseFailureShakeDuration: 0.34
+  purchaseFailureShakeSteps: 12
+  purchaseFailureColor: {r: 1, g: 0.12, b: 0.12, a: 1}

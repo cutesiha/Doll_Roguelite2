@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4878729604534080740}
   - component: {fileID: 326615663060641855}
   - component: {fileID: 7514786177450541935}
-  - component: {fileID: 2112356779919218560}
+  - component: {fileID: 2358337170499826740}
   m_Layer: 0
   m_Name: pink_jewel
   m_TagString: Untagged
@@ -139,7 +139,7 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.8, y: 0.6857143}
   m_EdgeRadius: 0
---- !u!114 &2112356779919218560
+--- !u!114 &2358337170499826740
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -148,8 +148,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 5757940488603958258}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 610779a0dddbbe64a917e83ca9a1ed2a, type: 3}
+  m_Script: {fileID: 11500000, guid: cf0afe9465481b44bba483212c3e6d0c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JewelWorldPickup
-  iconOverride: {fileID: 0}
-  gemItemId: pink_gem
+  m_EditorClassIdentifier: Assembly-CSharp::ItemWorldPickup
+  tooltipRoot: {fileID: 0}
+  tooltipBackground: {fileID: 0}
+  tooltipText: {fileID: 0}
+  tooltipBackgroundSprite: {fileID: 0}
+  tooltipLocalPosition: {x: 0, y: 1.45, z: -0.1}
+  tooltipBackgroundScale: {x: 5.2, y: 1.65, z: 1}
+  tooltipTextLocalPosition: {x: 0, y: 0, z: -0.05}
+  tooltipTextBoxSize: {x: 4.85, y: 1.35}
+  tooltipFontSize: 2
+  tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
+  tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  itemAsset: {fileID: 11400000, guid: d094d6212b638cc4ca0499f95d8827e4, type: 2}
+  purchaseFailureShakeDistance: 0.22
+  purchaseFailureShakeDuration: 0.34
+  purchaseFailureShakeSteps: 12
+  purchaseFailureColor: {r: 1, g: 0.12, b: 0.12, a: 1}

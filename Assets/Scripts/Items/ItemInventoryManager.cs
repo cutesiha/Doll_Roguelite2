@@ -198,6 +198,26 @@ public class ItemInventoryManager : MonoBehaviour
         }
     }
 
+    // 레거시 InventoryManager.storage와 이 storage는 같은 9칸짜리 보관함 UI 슬롯을 나눠 쓴다.
+    // Capacity 체크가 이 사실을 모르고 자기(storage) 개수만 세면, 레거시 파츠가 이미 몇 칸을
+    // 차지하고 있어도 신규 아이템이 그만큼을 무시하고 계속 채워져서 합계가 9(또는 Capacity)를
+    // 넘어버린다. 그래서 모든 용량 체크는 storage.Count가 아니라 이 UsedSlots를 써야 한다.
+    int LegacyOccupiedSlots()
+    {
+        InventoryManager legacyInv = InventoryManager.Instance;
+        if (legacyInv == null)
+            return 0;
+
+        int count = 0;
+        for (int i = 0; i < legacyInv.storage.Length; i++)
+            if (legacyInv.storage[i] != null)
+                count++;
+
+        return count;
+    }
+
+    int UsedSlots => storage.Count + LegacyOccupiedSlots();
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -291,7 +311,7 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (item.Type == ItemType.GemConsumable || item.EquipLocation == ItemEquipLocation.Consumable)
         {
-            if (storage.Count >= Capacity)
+            if (UsedSlots >= Capacity)
             {
                 message = "인벤토리가 가득 참";
                 return false;
@@ -318,7 +338,7 @@ public class ItemInventoryManager : MonoBehaviour
         if (item.Type == ItemType.BodyPart && item.EquipLocation != ItemEquipLocation.None)
         {
             // 자동 장착 대신 인벤토리 보관함에 넣는다. 사용자가 직접 드래그해서 장착.
-            if (storage.Count >= Capacity)
+            if (UsedSlots >= Capacity)
             {
                 message = "인벤토리가 가득 참";
                 return false;
@@ -329,7 +349,7 @@ public class ItemInventoryManager : MonoBehaviour
             return true;
         }
 
-        if (storage.Count >= Capacity)
+        if (UsedSlots >= Capacity)
         {
             message = "인벤토리가 가득 참";
             return false;
@@ -370,7 +390,7 @@ public class ItemInventoryManager : MonoBehaviour
             return true;
         }
 
-        if (storage.Count >= Capacity)
+        if (UsedSlots >= Capacity)
         {
             message = "인벤토리가 가득 찼습니다.";
             return false;
@@ -525,14 +545,6 @@ public class ItemInventoryManager : MonoBehaviour
         if (!IsBodyPartCompatibleWithSlot(item.EquipLocation, targetSlot))
             return false;
 
-        // 몸통 부위를 교체하면 인벤토리 용량이 줄어들 수 있다 (예: 16칸짜리 → 9칸짜리).
-        // 실제로 스왑을 진행하기 전에, 교체 후 예상 보관함 개수가 새 용량을 넘는지 미리 확인해서
-        // 넘으면 아예 교체를 막는다 (그렇지 않으면 보관함이 용량보다 많은 아이템을 담게 된다).
-        bool willDisplaceOld = equippedByBodySlot.TryGetValue(targetSlot, out ItemInstance existingOld) && existingOld != null;
-        int projectedStorageCount = (storage.Count - 1) + (willDisplaceOld ? 1 : 0);
-        if (projectedStorageCount > CapacityAfterEquipping(item))
-            return false; // 교체하면 보관함이 새 용량을 초과하게 됨 - 먼저 보관함을 비워야 함
-
         // 이 부위에 레거시 시스템(BodyPart)으로 이미 장착된 기본 파츠가 있으면 보관함으로 되돌린다.
         // 게임 시작 시 모든 부위에는 이 레거시 파츠가 기본으로 채워져 있어서, 여기서 치우지 않으면
         // 나중에 신규 아이템을 뺄 때 드롭 처리가 이 파츠를 대신 해제해버리는 문제가 생긴다.
@@ -541,6 +553,15 @@ public class ItemInventoryManager : MonoBehaviour
         bool hasLegacyPart = legacyInv != null && legacyIdx >= 0 && legacyIdx < legacyInv.equipped.Length && legacyInv.equipped[legacyIdx] != null;
         if (hasLegacyPart && (legacyInv.IsSlotLocked(targetSlot) || !legacyInv.HasFreeStorageSlot()))
             return false; // 잠긴 슬롯이거나 보관함이 가득 차서 기존 파츠를 치울 수 없음
+
+        // 몸통 부위를 교체하면 인벤토리 용량이 줄어들 수 있다 (예: 16칸짜리 → 9칸짜리).
+        // 실제로 스왑을 진행하기 전에, 교체 후 예상 "공유 보관 슬롯" 사용량(레거시+신규 합계)이
+        // 새 용량을 넘는지 미리 확인해서 넘으면 아예 교체를 막는다. UsedSlots를 써야 레거시가
+        // 이미 차지한 칸까지 반영된다 (안 그러면 신규 시스템만의 개수로 착각해 초과 허용해버림).
+        bool willDisplaceOld = equippedByBodySlot.TryGetValue(targetSlot, out ItemInstance existingOld) && existingOld != null;
+        int projectedUsedSlots = (UsedSlots - 1) + (hasLegacyPart ? 1 : 0) + (willDisplaceOld ? 1 : 0);
+        if (projectedUsedSlots > CapacityAfterEquipping(item))
+            return false; // 교체하면 보관함이 새 용량을 초과하게 됨 - 먼저 보관함을 비워야 함
 
         RemoveStorageAt(storageIndex);
 
@@ -598,7 +619,7 @@ public class ItemInventoryManager : MonoBehaviour
     {
         if (!equippedByBodySlot.TryGetValue(slot, out ItemInstance instance) || instance == null)
             return false;
-        if (storage.Count >= Capacity)
+        if (UsedSlots >= Capacity)
             return false;
 
         AddToStorage(instance);
@@ -652,7 +673,7 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (item.Type == ItemType.GemConsumable || item.EquipLocation == ItemEquipLocation.Consumable)
         {
-            if (storage.Count >= Capacity)
+            if (UsedSlots >= Capacity)
             {
                 message = "인벤토리가 가득 참";
                 return false;
@@ -666,7 +687,7 @@ public class ItemInventoryManager : MonoBehaviour
             return true;
 
         int futureCapacity = CapacityAfterEquipping(item);
-        if (storage.Count >= futureCapacity)
+        if (UsedSlots >= futureCapacity)
         {
             message = "인벤토리가 가득 참";
             return false;
@@ -680,7 +701,7 @@ public class ItemInventoryManager : MonoBehaviour
         message = "";
         if (slot != null)
         {
-            if (storage.Count >= Capacity)
+            if (UsedSlots >= Capacity)
             {
                 message = "인벤토리가 가득 참";
                 return false;

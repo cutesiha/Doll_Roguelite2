@@ -89,8 +89,6 @@ public sealed class InteractableHighlightBinder : MonoBehaviour
         // 아이템류 픽업 — 기본
         foreach (ItemWorldPickup p in FindObjectsByType<ItemWorldPickup>(FindObjectsSortMode.None))
             Attach(p.gameObject, ItemDistance, false);
-        foreach (JewelWorldPickup p in FindObjectsByType<JewelWorldPickup>(FindObjectsSortMode.None))
-            Attach(p.gameObject, ItemDistance, false);
         foreach (CoinWorldPickup p in FindObjectsByType<CoinWorldPickup>(FindObjectsSortMode.None))
             Attach(p.gameObject, ItemDistance, false);
         foreach (DropPickup p in FindObjectsByType<DropPickup>(FindObjectsSortMode.None))
