@@ -34,9 +34,9 @@ public class EnemyManager : MonoBehaviour
 
     const float BaseRoomHpMultiplier = 1.75f;
     const float HpMultiplierPerRoomLayer = 0.35f;
-    const float BaseRoomSpeedMultiplier = 1.24f;
-    const float SpeedMultiplierPerRoomLayer = 0.06f;
-    const float BaseAttackCooldownMultiplier = 0.68f;
+    const float BaseRoomSpeedMultiplier = 1.55f;
+    const float SpeedMultiplierPerRoomLayer = 0.08f;
+    const float BaseAttackCooldownMultiplier = 0.64f;
     const float AttackCooldownMultiplierPerLayer = 0.03f;
 
     void Awake()
@@ -180,13 +180,13 @@ public class EnemyManager : MonoBehaviour
             case EnemyKind.Chaser:
                 return new EnemyProfile { profileName = "DefaultChaser", enemyType = kind, maxHp = 2, moveSpeed = 1f };
             case EnemyKind.Needle:
-                return new EnemyProfile { profileName = "DefaultNeedle", enemyType = kind, maxHp = 3, moveSpeed = 0.75f };
+                return new EnemyProfile { profileName = "DefaultNeedle", enemyType = kind, maxHp = 3, moveSpeed = 0.9f };
             case EnemyKind.Ribbon:
-                return new EnemyProfile { profileName = "DefaultRibbon", enemyType = kind, maxHp = 3, moveSpeed = 0.85f };
+                return new EnemyProfile { profileName = "DefaultRibbon", enemyType = kind, maxHp = 3, moveSpeed = 1.0f };
             case EnemyKind.Spool:
                 return new EnemyProfile { profileName = "DefaultSpool", enemyType = kind, maxHp = 4, moveSpeed = 0f };
             case EnemyKind.SmallButton:
-                return new EnemyProfile { profileName = "DefaultSmallButton", enemyType = kind, maxHp = 2, moveSpeed = 1f };
+                return new EnemyProfile { profileName = "DefaultSmallButton", enemyType = kind, maxHp = 2, moveSpeed = 1.2f };
             default:
                 return null;
         }

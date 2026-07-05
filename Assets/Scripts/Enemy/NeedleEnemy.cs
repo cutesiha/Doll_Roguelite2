@@ -79,7 +79,7 @@ public class NeedleEnemy : EnemyBase
             return;
 
         Vector2 direction = ((Vector2)player.position - rb.position).normalized;
-        rb.MovePosition(rb.position + direction * chaseSpeed * Time.fixedDeltaTime);
+        MoveEnemyBody(rb, rb.position + direction * chaseSpeed * Time.fixedDeltaTime);
     }
 
     protected override void Update()
@@ -114,6 +114,7 @@ public class NeedleEnemy : EnemyBase
         if (telegraph != null)
             DestroyOwnedTelegraph(telegraph);
 
+        SoundManager.PlayNeedleEnemyDash(0.04f);
         Vector2 end = start + direction * dashDistance;
         float duration = dashDistance / Mathf.Max(0.01f, dashSpeed);
         float elapsed = 0f;
@@ -122,13 +123,13 @@ public class NeedleEnemy : EnemyBase
         while (elapsed < duration)
         {
             float t = Mathf.Clamp01(elapsed / duration);
-            rb.MovePosition(Vector2.Lerp(start, end, t));
+            MoveEnemyBody(rb, Vector2.Lerp(start, end, t));
             dealtDamage |= TryDealDashDamage(center, size, angle, dealtDamage);
             elapsed += Time.fixedDeltaTime;
             yield return new WaitForFixedUpdate();
         }
 
-        rb.MovePosition(end);
+        MoveEnemyBody(rb, end);
         TryDealDashDamage(center, size, angle, dealtDamage);
 
         ResetDashTimer();

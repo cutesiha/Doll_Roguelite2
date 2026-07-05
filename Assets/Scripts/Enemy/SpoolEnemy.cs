@@ -75,7 +75,7 @@ public class SpoolEnemy : EnemyBase
 
     public override void ApplyCombatScaling(float speedMultiplier, float cooldownMultiplier, int extraDamage)
     {
-        threadCooldownRange = ScaleRange(threadCooldownRange, cooldownMultiplier, 0.65f);
+        threadCooldownRange = ScaleRange(threadCooldownRange, cooldownMultiplier * 0.94f, 0.58f);
         threadWarningDuration = Mathf.Max(0.55f, threadWarningDuration * Mathf.Lerp(1f, cooldownMultiplier, 0.45f));
         strandCount = Mathf.Max(strandCount, 10 + Mathf.Max(0, extraDamage / 2));
         strandDamage += Mathf.Max(0, extraDamage);
@@ -133,6 +133,7 @@ public class SpoolEnemy : EnemyBase
             DestroyOwnedTelegraph(warningRoot);
 
         activeStrands.Clear();
+        SoundManager.PlaySpoolEnemyThread(0.06f);
         Color[] threadPalette = { strandIvoryColor, strandPeachColor, strandGrayColor };
         for (int i = 0; i < plannedStrands.Count; i++)
         {
