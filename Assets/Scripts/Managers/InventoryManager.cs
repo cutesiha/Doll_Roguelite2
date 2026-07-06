@@ -59,10 +59,11 @@ public class InventoryManager : MonoBehaviour
         OnInventoryChanged?.Invoke();
     }
 
+    // 기본 신체 부위는 더 이상 여기서 BodyPart로 생성하지 않는다. ItemInventoryManager가
+    // ItemData 기반 기본 파츠(default_eye/arm/leg/body)를 equippedByBodySlot에 채우고,
+    // IsEquipped()/GetBodyStateSnapshot()이 신규 시스템도 함께 조회하므로 이걸로 충분하다.
     void InitEquipped()
     {
-        foreach (BodySlot slot in Enum.GetValues(typeof(BodySlot)))
-            equipped[(int)slot] = new BodyPart(slot);
         lockedSlots = new bool[BodySlotCount];
         SyncBodyState();
     }

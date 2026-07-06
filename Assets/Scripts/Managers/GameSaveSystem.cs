@@ -122,6 +122,8 @@ public static class GameSaveSystem
         InventoryManager inventory = InventoryManager.Instance;
         if (inventory != null)
             inventory.ResetToDefault();
+
+        ItemInventoryManager.Instance?.EnsureDefaultBodyPartsEquipped();
     }
 
     static void Apply(SaveData data)

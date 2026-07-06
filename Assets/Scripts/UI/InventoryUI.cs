@@ -1872,32 +1872,7 @@ void NormalizeCanvasTransform()
     static Sprite StorageSpriteForItem(ItemInstance instance)
     {
         ItemData item = instance != null ? instance.data : null;
-        if (item == null)
-            return null;
-
-        if (item.Type != ItemType.BodyPart)
-            return item.Sprite;
-
-        BodySlot slot = PreferredBodySlotForStorageItem(instance);
-        Sprite equippedSprite = item.GetEquippedSprite(slot);
-        return equippedSprite != null ? equippedSprite : item.Sprite;
-    }
-
-    static BodySlot PreferredBodySlotForStorageItem(ItemInstance instance)
-    {
-        ItemData item = instance != null ? instance.data : null;
-        if (item != null && instance.TryGetLastBodySlot(out BodySlot rememberedSlot)
-            && ItemInventoryManager.IsBodyPartCompatibleWithSlot(item.EquipLocation, rememberedSlot))
-            return rememberedSlot;
-
-        switch (item != null ? item.EquipLocation : ItemEquipLocation.None)
-        {
-            case ItemEquipLocation.Eye: return BodySlot.EyeLeft;
-            case ItemEquipLocation.Arm: return BodySlot.ArmLeft;
-            case ItemEquipLocation.Body: return BodySlot.Body;
-            case ItemEquipLocation.Leg: return BodySlot.LegLeft;
-            default: return BodySlot.Body;
-        }
+        return item != null ? item.Sprite : null;
     }
 
     static void SetImageSpriteSafely(Image image, Sprite sprite)
