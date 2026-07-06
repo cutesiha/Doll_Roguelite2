@@ -42,7 +42,7 @@ public static class MapGenerator
         Link(b3, c1); Link(b3, c2);
         Link(b4, c1); Link(b4, c2);
 
-        var f1 = Node(4, 0, RoomType.Challenge);
+        var f1 = ConditionNode(4, 0);
         var f2 = ConditionNode(4, 1);
         Link(c1, f1); Link(c1, f2);
         Link(c2, f1); Link(c2, f2);
@@ -54,7 +54,7 @@ public static class MapGenerator
 
         // ── 중간보스 바로 뒤 "2개 중 선택" 구간 (2개 층) ──────────────────
         var h1 = Node(6, 0, RoomType.Shop);
-        var h2 = ConditionNode(6, 1);
+        var h2 = Node(6, 1, RoomType.Treasure);
         Link(middleBoss, h1);
         Link(middleBoss, h2);
 
@@ -64,15 +64,15 @@ public static class MapGenerator
         Link(h2, k1); Link(h2, k2);
         // ─────────────────────────────────────────────────────────────
 
-        var d1 = Node(8, 0, RoomType.Treasure);
-        var d2 = Node(8, 1, RoomType.Shop);
+        var d1 = ConditionNode(8, 0);
+        var d2 = ConditionNode(8, 1);
         Link(k1, d1); Link(k1, d2);
         Link(k2, d1); Link(k2, d2);
 
         var e1 = ConditionNode(9, 0);
         var e2 = Node(9, 1, RoomType.Challenge);
         var e3 = ConditionNode(9, 2);
-        var e4 = Node(9, 3, RoomType.Treasure);
+        var e4 = Node(9, 3, RoomType.Shop);
         Link(d1, e1);
         Link(d1, e2);
         Link(d2, e3);

@@ -467,7 +467,7 @@ public class ItemInventoryManager : MonoBehaviour
 
         // 영구 적 처치 드랍: coinDropChance 확률 (기본 30%)
         float chance = settings != null ? settings.coinDropChance : 0.30f;
-        if (Random.value < chance)
+        if (UnityEngine.Random.value < chance)
             SpawnCoinAt(deathPosition);
     }
 

@@ -21,6 +21,8 @@ public class RunPauseMenuUI : MonoBehaviour
     [SerializeField] string startSceneName = "StartScene";
     [SerializeField] float fadeDuration = 0.35f;
     [SerializeField] Color panelLineColor = new Color(0.30f, 0.18f, 0.10f, 1f);
+    [Tooltip("메뉴 패널 화면 중심 기준 오프셋 (Inspector에서 조정한 값이 유지됩니다)")]
+    [SerializeField] Vector2 menuPanelOffset = Vector2.zero;
 
     GameObject menuPanel;
     GameObject settingsPanel;
@@ -239,7 +241,7 @@ void Build()
 
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = Vector2.zero;
+        rect.anchoredPosition = menuPanelOffset;
         rect.sizeDelta = MenuPanelSize;
         rect.localScale = Vector3.one;
 

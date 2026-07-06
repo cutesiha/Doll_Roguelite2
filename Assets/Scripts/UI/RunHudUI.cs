@@ -2693,11 +2693,11 @@ void Awake()
 
         if (IsCurrentOrPending(node))
         {
-            TextMeshProUGUI marker = Text(nodeGO.transform, "CurrentLocationMarker", "\u25C0 \uD604\uC7AC \uC704\uCE58", 18f, MapBrown, TextAlignmentOptions.Center);
+            TextMeshProUGUI marker = Text(nodeGO.transform, "CurrentLocationMarker", "\u25C0 \uD604\uC7AC \uC704\uCE58", 38f, MapBrown, TextAlignmentOptions.Center);
             marker.rectTransform.anchorMin = marker.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             marker.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            marker.rectTransform.anchoredPosition = new Vector2(138f, 0f);
-            marker.rectTransform.sizeDelta = new Vector2(140f, 44f);
+            marker.rectTransform.anchoredPosition = new Vector2(205f, 0f);
+            marker.rectTransform.sizeDelta = new Vector2(240f, 68f);
         }
     }
 

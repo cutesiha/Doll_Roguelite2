@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: f9f46b235e6cf7e45af2ad8405e85183
+guid: 95c3551b9f34ffc49a6d0f4ed2dd8772
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 2016320994313710656
-    second: knit_sero-Photoroom_0
+      213: 5255535220500522183
+    second: screenshot-20260706-202315_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 0
+    filterMode: 1
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -75,7 +75,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 0
+    textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: knit_sero-Photoroom_0
+      name: screenshot-20260706-202315_0
       rect:
         serializedVersion: 2
-        x: 2
-        y: 3
-        width: 57
-        height: 594
+        x: 0
+        y: 0
+        width: 500
+        height: 406
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 04c2b3be2496bfb10800000000000000
-      internalID: 2016320994313710656
+      spriteID: 7c4ec7220796fe840800000000000000
+      internalID: 5255535220500522183
       vertices: []
       indices: 
       edges: []
@@ -138,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      knit_sero-Photoroom_0: 2016320994313710656
+      screenshot-20260706-202315_0: 5255535220500522183
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

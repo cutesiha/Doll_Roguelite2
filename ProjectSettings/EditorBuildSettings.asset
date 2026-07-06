@@ -41,6 +41,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/BookBossScene.unity
     guid: 0d994c24747996948a2cc33875951ad1
+  - enabled: 1
+    path: Assets/Scenes/ChallengeRewardScene.unity
+    guid: 0e5ed04c34b46df43aa1ea86b38e33b1
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
