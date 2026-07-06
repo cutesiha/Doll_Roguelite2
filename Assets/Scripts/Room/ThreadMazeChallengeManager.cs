@@ -41,6 +41,22 @@ public class ThreadMazeChallengeManager : MonoBehaviour
     [SerializeField] GameObject doorTemplate;
     [SerializeField] Vector2 doorLine = new Vector2(8f, 6.1f);
 
+    [Header("Player Shrink")]
+    // 이미지 미로(20x15)는 통로가 좁아, 도전방 동안만 플레이어를 축소해 통과 가능하게 한다.
+    // 리워드 씬으로 나갈 때 원래 크기로 복구한다.
+    [SerializeField, Range(0.2f, 1f)] float challengePlayerScale = 0.6f;
+
+    [Header("Reward Scene")]
+    [SerializeField] string rewardSceneName = "ChallengeRewardScene";
+    [SerializeField, Min(0f)] float rewardTransitionDelay = 0.9f;
+
+    Transform shrunkPlayer;
+    Vector3 shrunkPlayerOriginalScale = Vector3.one;
+    bool playerShrunk;
+
+    // 성공/실패 여부를 ChallengeRewardScene으로 전달한다(정적이라 씬 전환에도 유지됨).
+    public static bool LastSucceeded;
+
     ChallengeState state = ChallengeState.Waiting;
     float remainingTime;
     Vector2 timerBasePosition;
@@ -87,6 +103,7 @@ public class ThreadMazeChallengeManager : MonoBehaviour
     void OnDisable()
     {
         RunHudUI.HideJudgementTimer();
+        RestorePlayer(); // 안전망: 예기치 않게 종료돼도 플레이어 크기 복구
     }
 
     public bool ShouldRunInCurrentScene()
@@ -114,6 +131,7 @@ public class ThreadMazeChallengeManager : MonoBehaviour
         CaptureTimerBasePosition();
         ClearMessage();
         MovePlayerToStart();
+        ShrinkPlayer();
         ConfigureCamera();
         SetExitDoorsVisible(false);
         UpdateTimerLabel();
@@ -126,6 +144,31 @@ public class ThreadMazeChallengeManager : MonoBehaviour
             return;
 
         SucceedChallenge();
+    }
+
+    void ShrinkPlayer()
+    {
+        if (playerShrunk)
+            return;
+
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player == null)
+            return;
+
+        shrunkPlayer = player.transform;
+        shrunkPlayerOriginalScale = shrunkPlayer.localScale;
+        shrunkPlayer.localScale = shrunkPlayerOriginalScale * challengePlayerScale;
+        playerShrunk = true;
+    }
+
+    void RestorePlayer()
+    {
+        if (!playerShrunk)
+            return;
+
+        if (shrunkPlayer != null)
+            shrunkPlayer.localScale = shrunkPlayerOriginalScale;
+        playerShrunk = false;
     }
 
     void MovePlayerToStart()
@@ -210,14 +253,19 @@ public class ThreadMazeChallengeManager : MonoBehaviour
         RunHudUI.HideJudgementTimer();
         ShowMessage("도전 성공", new Color(0.3f, 1f, 0.42f, 1f));
 
-        if (MapRunState.PendingNode != null && MapRunState.PendingNode.roomType == RoomType.Challenge)
-            ItemRoomRewardSystem.HandleCombatRoomCleared(MapRunState.PendingNode, RewardPosition());
-        else
-            SpawnTemporaryReward();
+        // 보상/다음문은 이 씬에서 처리하지 않는다. 성공 상태만 전달하고
+        // ChallengeRewardScene으로 이동한다(거기서 트레저 테이블 + 아이템 + 다음문 처리).
+        LastSucceeded = true;
+        StartCoroutine(GoToRewardSceneRoutine(rewardTransitionDelay));
+        Debug.Log("[ThreadMaze] ChallengeSucceeded -> reward scene");
+    }
 
-        CompleteCurrentRoom();
-        BuildNextDoors();
-        Debug.Log("[ThreadMaze] ChallengeSucceeded");
+    IEnumerator GoToRewardSceneRoutine(float delay)
+    {
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+        RestorePlayer();
+        RoomPageTransition.LoadScene(rewardSceneName);
     }
 
     void FailChallenge()
@@ -242,9 +290,11 @@ public class ThreadMazeChallengeManager : MonoBehaviour
         yield return new WaitForSeconds(Mathf.Max(0.05f, failureFeedbackDuration));
         yield return StartCoroutine(FadeMazeOutRoutine());
 
-        CompleteCurrentRoom();
-        BuildNextDoors();
-        Debug.Log("[ThreadMaze] ChallengeFailed");
+        // 실패: 보상/트레저 테이블 없이 ChallengeRewardScene으로 이동(거기서 다음문만 표시).
+        LastSucceeded = false;
+        RestorePlayer();
+        RoomPageTransition.LoadScene(rewardSceneName);
+        Debug.Log("[ThreadMaze] ChallengeFailed -> reward scene");
         failureRoutine = null;
     }
 

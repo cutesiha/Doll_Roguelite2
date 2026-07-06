@@ -4,53 +4,70 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
 
-// 챌린지 씬의 이미지 미로를 생성한다.
+// 챌린지 씬의 이미지 미로(Assets/maze.png)를 생성한다.
 // 규칙:
 //  - 벽 스프라이트(garo1/sero1)는 원본 픽셀 밀도를 유지한 채 "균일 스케일"로만 축소한다(찌부러뜨림 금지).
 //  - 필요한 벽이 스프라이트보다 짧으면 Tiled 드로우모드가 이미지를 잘라서 표현한다(늘리지 않음).
 //  - 각 벽에는 PolygonCollider2D(사각형 4점)를 붙인다.
-//  - 미로는 수정된 방 벽 콜라이더 안쪽(x[-24.62,24.68], y[-13.41,13.38])에만 채운다.
+//  - 미로는 방 벽 콜라이더 안쪽에만 채운다(경계는 Wall_Left/Right/Top/Bottom 콜라이더에서 자동 계산).
+//  격자(GH/GV)는 maze.png를 픽셀 분석해 추출한 20x15 미로(S=좌하단, E=우상단).
 public static class ChallengeImageMazeBuilder
 {
 #if UNITY_EDITOR
-    // ── 미로 격자 (14열 × 10행). 위→아래 순서. '+' 노드, '-' 가로벽, '|' 세로벽 ──
-    // 참조 이미지에 맞춰 이 문자열만 고치면 미로 구조가 바뀐다.
-    static readonly string[] Ascii = new string[]
+    const int Cols = 20;
+    const int Rows = 15;
+
+    // 가로벽: GH[gridRow 0..Rows][col 0..Cols-1], '1'=벽. gridRow 0 = 맨 아래, Rows = 맨 위.
+    static readonly string[] GH = new string[]
     {
-        "+---+---+---+---+---+---+---+---+---+---+---+---+---+---+",
-        "|       |                           |       |         E |",
-        "+   +   +---+---+   +---+---+---+   +   +   +---+   +---+",
-        "|   |           |           |           |       |       |",
-        "+   +---+---+   +   +---+   +---+---+---+---+   +---+   +",
-        "|   |       |   |       |           |       |           |",
-        "+   +---+   +   +---+   +---+---+   +   +---+---+---+   +",
-        "|       |   |   |       |           |           |       |",
-        "+---+   +   +   +---+---+   +---+---+   +---+   +   +---+",
-        "|       |   |           |   |       |   |   |   |   |   |",
-        "+   +---+   +---+---+   +   +   +   +   +   +   +   +   +",
-        "|   |               |       |   |   |   |   |       |   |",
-        "+   +   +---+---+   +---+---+   +---+   +   +---+---+   +",
-        "|   |       |       |           |       |               |",
-        "+   +   +   +   +---+   +   +---+   +---+---+---+   +   +",
-        "|   |   |   |       |   |           |               |   |",
-        "+   +---+   +   +---+   +---+---+---+---+   +---+---+   +",
-        "|       |   |   |       |               |   |   |       |",
-        "+---+   +   +---+   +---+---+---+   +   +   +   +   +---+",
-        "| S     |                           |       |           |",
-        "+---+---+---+---+---+---+---+---+---+---+---+---+---+---+",
+        "11111111111111111111",
+        "11001000100000011010",
+        "10110101000100010110",
+        "01101110001110110000",
+        "00011011110011101000",
+        "11110001111001111101",
+        "01100110111010001010",
+        "01111110111101101110",
+        "01111111100000010011",
+        "00001111010101100000",
+        "01011000110010101110",
+        "11101001000100010011",
+        "00101101101110111110",
+        "00011110010011101000",
+        "01111101000001010110",
+        "11111111111111111111",
     };
 
-    const int Cols = 14;
-    const int Rows = 10;
+    // 세로벽: GV[row 0..Rows-1][gridCol 0..Cols], '1'=벽. row 0 = 맨 아래 셀행.
+    static readonly string[] GV = new string[]
+    {
+        "100100101001001000101",
+        "101010110111111001001",
+        "100010011110011010111",
+        "110101000101010011111",
+        "101001100001000100101",
+        "100011010001101000101",
+        "110000010000110110011",
+        "100000001001001101001",
+        "110010000011110011101",
+        "111100100101010110111",
+        "100101111011010101001",
+        "100100100110011001001",
+        "111010001011001000011",
+        "111000011101100110101",
+        "100000000110010001001",
+    };
 
-    // 미로가 채워질 사각형(월드) 폴백값. 벽 콜라이더에서 자동 계산 실패 시 사용.
+    // 미로 사각형(월드) 폴백값. 벽 콜라이더에서 자동 계산 실패 시 사용.
     const float FallbackLeft = -18.11f;
     const float FallbackRight = 18.29f;
     const float FallbackBottom = -9.66f;
     const float FallbackTop = 9.69f;
     const float BoundsMargin = 0.25f; // 방 벽 콜라이더 안쪽 여백
 
-    const float WallThickness = 0.28f; // 원하는 월드 두께
+    // 플레이어 솔리드 콜라이더는 원형(지름 ~0.8)이고 도전방에선 축소되므로,
+    // 통로(cellH-두께)에 넉넉히 들어간다. 보기 좋은 두께를 사용.
+    const float WallThickness = 0.28f;   // 원하는 월드 두께
     const float NativeThickness = 0.57f; // 스프라이트 원본 두께(57px / 100ppu)
     const int SortingOrder = 25;
 
@@ -78,7 +95,6 @@ public static class ChallengeImageMazeBuilder
             return;
         }
 
-        // 기존 자식 제거
         for (int i = container.transform.childCount - 1; i >= 0; i--)
             Object.DestroyImmediate(container.transform.GetChild(i).gameObject);
 
@@ -87,7 +103,7 @@ public static class ChallengeImageMazeBuilder
 
         bool[,] hWall = new bool[Rows + 1, Cols];
         bool[,] vWall = new bool[Rows, Cols + 1];
-        ParseAscii(hWall, vWall);
+        ParseBits(hWall, vWall);
 
         float cellW = (Right - Left) / Cols;
         float cellH = (Top - Bottom) / Rows;
@@ -95,7 +111,6 @@ public static class ChallengeImageMazeBuilder
 
         int count = 0;
 
-        // 가로벽
         for (int r = 0; r <= Rows; r++)
             for (int c = 0; c < Cols; c++)
                 if (hWall[r, c])
@@ -106,7 +121,6 @@ public static class ChallengeImageMazeBuilder
                     count++;
                 }
 
-        // 세로벽
         for (int r = 0; r < Rows; r++)
             for (int c = 0; c <= Cols; c++)
                 if (vWall[r, c])
@@ -191,29 +205,19 @@ public static class ChallengeImageMazeBuilder
         return go != null ? go.GetComponent<Collider2D>() : null;
     }
 
-    static void ParseAscii(bool[,] hWall, bool[,] vWall)
+    static void ParseBits(bool[,] hWall, bool[,] vWall)
     {
-        // ascii 라인 li: 0(위)~2*Rows(아래). 짝수=가로벽 라인, 홀수=세로벽/셀 라인.
-        // 노드 c는 char 4*c. 가로 세그먼트는 char 4*c+1, 세로벽은 char 4*c.
         for (int r = 0; r <= Rows; r++)
         {
-            int li = 2 * (Rows - r);
-            string line = Ascii[li];
+            string line = r < GH.Length ? GH[r] : "";
             for (int c = 0; c < Cols; c++)
-            {
-                int idx = 4 * c + 1;
-                hWall[r, c] = idx < line.Length && line[idx] == '-';
-            }
+                hWall[r, c] = c < line.Length && line[c] == '1';
         }
         for (int r = 0; r < Rows; r++)
         {
-            int li = 2 * (Rows - r) - 1;
-            string line = Ascii[li];
+            string line = r < GV.Length ? GV[r] : "";
             for (int c = 0; c <= Cols; c++)
-            {
-                int idx = 4 * c;
-                vWall[r, c] = idx < line.Length && line[idx] == '|';
-            }
+                vWall[r, c] = c < line.Length && line[c] == '1';
         }
     }
 

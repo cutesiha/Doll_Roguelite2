@@ -116,6 +116,20 @@ public static class ItemRoomRewardSystem
         Announce("신체방 아이템이 생성되었습니다.");
     }
 
+    // 도전방 성공 보상: 도전 카테고리 아이템 1개를 트레저 테이블 앵커 위에 스폰 + 코인 보너스.
+    public static void SpawnChallengeReward(Vector3 fallbackPosition, ItemWorldPickup template = null)
+    {
+        ItemData item = ItemCatalog.RandomByCategory(ItemCategory.ChallengeRoom);
+        ItemDropSpawner.Spawn(item, TreasureRewardPosition(fallbackPosition), false, 0, template, true);
+
+        ItemSystemSettings settings = ItemSystemSettings.Load();
+        int coinBonus = settings != null ? settings.challengeClearCoinBonus : 2;
+        if (coinBonus > 0)
+            ItemInventoryManager.Instance?.AddCoins(coinBonus);
+
+        Announce("도전 성공! 아이템 획득" + (coinBonus > 0 ? " + " + coinBonus + " 코인 보너스." : "."));
+    }
+
     static Vector3 TreasureRewardPosition(Vector3 fallback)
     {
         GameObject anchor = GameObject.Find("TreasureRewardAnchor");
@@ -236,6 +250,22 @@ public class ItemRoomSceneBridge : MonoBehaviour
             SpecialRoomController controller = DisableLegacySpecialRoomInteraction();
             HideLegacyShopProps();
             ItemRoomRewardSystem.SpawnShop(Vector3.zero, controller != null ? controller.ItemPickupTemplate : null);
+        }
+        else if (sceneName == "ChallengeRewardScene")
+        {
+            SpecialRoomController controller = DisableLegacySpecialRoomInteraction();
+            HideLegacyProps("TreasureChest");
+
+            if (ThreadMazeChallengeManager.LastSucceeded)
+            {
+                // 성공: 트레저 테이블 유지 + 도전 보상 아이템 스폰 (+ 다음문은 SpecialRoomController가 생성)
+                ItemRoomRewardSystem.SpawnChallengeReward(new Vector3(0f, 0.55f, 0f), controller != null ? controller.ItemPickupTemplate : null);
+            }
+            else
+            {
+                // 실패: 트레저 테이블/아이템 없이 다음문만. 테이블 시각물을 숨긴다.
+                HideLegacyProps("TreasureTable");
+            }
         }
 
         Destroy(gameObject);
