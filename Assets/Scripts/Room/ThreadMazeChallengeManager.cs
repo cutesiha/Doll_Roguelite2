@@ -17,6 +17,8 @@ public class ThreadMazeChallengeManager : MonoBehaviour
     [SerializeField, Min(1f)] float timeLimit = 60f;
     [SerializeField] bool requireChallengeNode = true;
     [SerializeField] bool allowDirectRoomSceneTest = true;
+    [SerializeField] Vector2 mazeMapSize = new Vector2(38f, 28.5f);
+    [SerializeField, Min(1f)] float cameraOrthographicSize = 8.2f;
 
     [Header("References")]
     [SerializeField] Transform startZone;
@@ -151,11 +153,11 @@ public class ThreadMazeChallengeManager : MonoBehaviour
             return;
 
         mainCamera.orthographic = true;
-        mainCamera.orthographicSize = 5.4f;
+        mainCamera.orthographicSize = cameraOrthographicSize;
 
         PlayerCameraFollow follow = mainCamera.GetComponent<PlayerCameraFollow>();
         if (follow != null)
-            follow.ConfigureBounds(new Vector2(28.47f, 15.87f), Vector2.zero, mainCamera.orthographicSize, true);
+            follow.ConfigureBounds(mazeMapSize, Vector2.zero, mainCamera.orthographicSize, true);
         else
             mainCamera.transform.position = new Vector3(0f, 0f, -10f);
     }
