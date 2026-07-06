@@ -232,6 +232,52 @@ public class ItemInventoryManager : MonoBehaviour
         coins = settings != null ? settings.startingCoins : 0;
         SceneManager.sceneLoaded += OnSceneLoaded;
         EnsureDebugHud();
+        EnsureDefaultBodyPartsEquipped();
+    }
+
+    static readonly BodySlot[] DefaultBodyPartSlots =
+    {
+        BodySlot.EyeLeft, BodySlot.EyeRight,
+        BodySlot.ArmLeft, BodySlot.ArmRight,
+        BodySlot.LegLeft, BodySlot.LegRight,
+        BodySlot.Body
+    };
+
+    static readonly string[] DefaultBodyPartItemIds =
+    {
+        "default_eye", "default_eye",
+        "default_arm", "default_arm",
+        "default_leg", "default_leg",
+        "default_body"
+    };
+
+    // 비어있는 신체 슬롯에 기본 파츠(ItemData 기반, category=Default라 보상 풀에는 안 나옴)를 채운다.
+    // 이미 뭔가 장착돼 있는 슬롯은 건드리지 않는다 (예: 새 런 시작 시 이전 런에서 들고 있던 아이템 유지).
+    public void EnsureDefaultBodyPartsEquipped()
+    {
+        bool changed = false;
+        for (int i = 0; i < DefaultBodyPartSlots.Length; i++)
+        {
+            BodySlot slot = DefaultBodyPartSlots[i];
+            if (equippedByBodySlot.TryGetValue(slot, out ItemInstance existing) && existing != null)
+                continue;
+
+            ItemData item = ItemCatalog.Find(DefaultBodyPartItemIds[i]);
+            if (item == null)
+                continue;
+
+            equippedByBodySlot[slot] = new ItemInstance(item, ItemInstance.DefaultMaxHp(item.EquipLocation));
+            changed = true;
+        }
+
+        if (!changed)
+            return;
+
+        SyncEquippedLocationFromSlots(ItemEquipLocation.Eye);
+        SyncEquippedLocationFromSlots(ItemEquipLocation.Arm);
+        SyncEquippedLocationFromSlots(ItemEquipLocation.Leg);
+        SyncEquippedLocationFromSlots(ItemEquipLocation.Body);
+        NotifyChanged();
     }
 
     void Start()
@@ -588,7 +634,10 @@ public class ItemInventoryManager : MonoBehaviour
                 // 이 부위 고유의 기본 그림을 미리 박아둔다.
                 if (legacyPart.icon == null)
                     legacyPart.icon = InventoryUI.FindBaseSpriteForSlot(targetSlot);
-                legacyInv.TryAddPart(legacyPart, false);
+                // HasFreeStorageSlot()을 위에서 이미 확인했으니 실패할 일은 없어야 하지만,
+                // 혹시 실패하면 이 파츠가 어디에도 남지 않고 조용히 사라지므로 최소한 로그는 남긴다.
+                if (!legacyInv.TryAddPart(legacyPart, false))
+                    Debug.LogWarning($"[Item] 레거시 파츠({legacyPart.SlotName()})를 보관함으로 옮기지 못해 사라짐");
             }
         }
 

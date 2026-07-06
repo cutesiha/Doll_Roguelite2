@@ -8,7 +8,10 @@ public enum ItemCategory
     MiddleBossRoom,
     ChallengeRoom,
     Shop,
-    ConditionReward
+    ConditionReward,
+    // 어떤 보상 풀에도 등장하지 않는, 게임 시작 시 기본으로 장착된 부위 전용 카테고리.
+    // 기존 0~4 값과 섞이지 않도록 반드시 맨 뒤에 추가한다.
+    Default
 }
 
 public enum ItemType

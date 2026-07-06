@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3997157333533642a0af80c934f3a01, type: 3}
+  m_Name: default_arm
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: default_arm
+  itemName: "기본 팔"
+  description: "게임 시작 시 기본으로 달려있는 팔"
+  category: 5
+  itemType: 0
+  equipLocation: 2
+  acquisitionLocations: 0
+  consumable: 0
+  value: 0
+  secondaryValue: 0
+  duration: 0
+  shopPrice: 0
+  effects: []
+  sprite: {fileID: 21300000, guid: 0d06c895840672b41b4cd53a3c787f7d, type: 3}
+  projectileSprite: {fileID: 0}
+  equippedSpriteLeft: {fileID: 21300000, guid: 0d06c895840672b41b4cd53a3c787f7d, type: 3}
+  equippedSpriteRight: {fileID: 21300000, guid: ba9144720c6dc0644891969099d803a2, type: 3}
+  placeholderShape: 0
+  placeholderColor: {r: 1, g: 1, b: 1, a: 1}
+  worldScale: 0

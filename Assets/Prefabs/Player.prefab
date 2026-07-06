@@ -304,14 +304,14 @@ MonoBehaviour:
   leftAttackStart: {fileID: 0}
   rightAttackStart: {fileID: 0}
   useFixedBodyAttackOrigin: 0
-  attackDistance: 0.55
+  attackDistance: 0.72
   attackDuration: 0.12
   swingArcHeight: 0.22
   swingRotation: 70
   fistRotationOffset: 0
   fistScale: {x: 1.65, y: 1.65}
   attackStartOffset: 0.22
-  attackDistanceBonus: 0.2
+  attackDistanceBonus: 0.26
   verticalAttackDistanceBonus: 0.06
   trailSpawnInterval: 0.025
   trailLifetime: 0.12

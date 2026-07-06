@@ -194,8 +194,8 @@ public class PlayerItemEffects : MonoBehaviour
         if (keyring != null)
         {
             int damage = Mathf.Max(1, Mathf.RoundToInt(ModifiedAttackDamage(leftArm, Mathf.Max(1f, keyring.value))));
-            // 열쇠 스프라이트는 날(이빨) 부분이 그림 왼쪽에 있어 180도 돌려서 날이 진행 방향을 향하게 한다.
-            ItemProjectile.Spawn(origin, direction, 10f, damage, 1.6f, 0.24f, true, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, arm.ProjectileSprite, 180f);
+            // 열쇠 스프라이트는 날(이빨) 부분이 그림 오른쪽에 있어 별도 회전 보정 없이도 날이 진행 방향을 향한다.
+            ItemProjectile.Spawn(origin, direction, 10f, damage, 1.6f, 0.24f, true, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, arm.ProjectileSprite, 0f);
             return true;
         }
 

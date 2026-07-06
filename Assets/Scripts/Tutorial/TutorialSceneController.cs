@@ -81,8 +81,7 @@ public class TutorialSceneController : MonoBehaviour
     bool inventoryOpened;
     bool inventoryTaskComplete;
     bool inventoryPartDetached;
-    BodyPart[] inventoryStartParts;
-    BodyPart detachedPart;
+    bool[] inventoryStartEquipped;
     BodySlot detachedSlot;
     bool menuOpened;
     bool attackPromptDismissed;
@@ -400,20 +399,25 @@ public class TutorialSceneController : MonoBehaviour
         inventoryOpened = false;
         inventoryTaskComplete = false;
         inventoryPartDetached = false;
-        inventoryStartParts = null;
-        detachedPart = null;
+        inventoryStartEquipped = null;
         ShowOnly(inventoryPrompt);
         step = TutorialStep.Inventory;
     }
 
+    // 부위 기본 장착 여부는 이제 레거시 BodyPart(InventoryManager.equipped)뿐 아니라
+    // ItemInventoryManager(신규 시스템, 기본 파츠 포함)에도 있을 수 있어서, 양쪽을 함께
+    // 보는 InventoryManager.IsEquipped()로 판정한다. 안 그러면 신규 시스템에만 있는
+    // 기본 파츠는 여기서 "장착 안 됨"으로 보여 탈부착 과제가 영원히 진행 안 된다.
     void CaptureInventoryStartState()
     {
         InventoryManager inventory = InventoryManager.Instance;
-        if (inventory == null || inventory.equipped == null)
+        if (inventory == null)
             return;
 
-        inventoryStartParts = new BodyPart[inventory.equipped.Length];
-        System.Array.Copy(inventory.equipped, inventoryStartParts, inventory.equipped.Length);
+        inventoryStartEquipped = new bool[InventoryManager.BodySlotCount];
+        for (int i = 0; i < inventoryStartEquipped.Length; i++)
+            inventoryStartEquipped[i] = inventory.IsEquipped((BodySlot)i);
+
         ShowOnly(inventoryDetachPrompt);
     }
 
@@ -423,21 +427,19 @@ public class TutorialSceneController : MonoBehaviour
         if (inventory == null)
             return;
 
-        if (inventoryStartParts == null)
+        if (inventoryStartEquipped == null)
             CaptureInventoryStartState();
 
-        if (!inventoryPartDetached && inventoryStartParts != null)
+        if (!inventoryPartDetached && inventoryStartEquipped != null)
         {
-            int count = Mathf.Min(inventoryStartParts.Length, inventory.equipped.Length);
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < inventoryStartEquipped.Length; i++)
             {
-                BodyPart originalPart = inventoryStartParts[i];
-                if (originalPart == null || inventory.equipped[i] != null || !StorageContains(inventory, originalPart))
-                    continue;
+                BodySlot slot = (BodySlot)i;
+                if (!inventoryStartEquipped[i] || inventory.IsEquipped(slot))
+                    continue; // 원래 비어있던 부위이거나, 아직 장착된 채라 탈착 안 함
 
                 inventoryPartDetached = true;
-                detachedPart = originalPart;
-                detachedSlot = (BodySlot)i;
+                detachedSlot = slot;
                 ShowOnly(inventoryReattachPrompt);
                 break;
             }
@@ -450,10 +452,7 @@ public class TutorialSceneController : MonoBehaviour
             return;
         }
 
-        int detachedIndex = (int)detachedSlot;
-        bool reattached = detachedIndex >= 0
-            && detachedIndex < inventory.equipped.Length
-            && inventory.equipped[detachedIndex] == detachedPart;
+        bool reattached = inventory.IsEquipped(detachedSlot);
         if (reattached)
         {
             inventoryTaskComplete = true;
@@ -465,20 +464,6 @@ public class TutorialSceneController : MonoBehaviour
             SetPromptVisible(inventoryDetachPrompt, false);
             SetPromptVisible(inventoryReattachPrompt, true);
         }
-    }
-
-    static bool StorageContains(InventoryManager inventory, BodyPart part)
-    {
-        if (inventory == null || inventory.storage == null || part == null)
-            return false;
-
-        for (int i = 0; i < inventory.storage.Length; i++)
-        {
-            if (inventory.storage[i] == part)
-                return true;
-        }
-
-        return false;
     }
 
     ScrollRect FindMapScrollRect()

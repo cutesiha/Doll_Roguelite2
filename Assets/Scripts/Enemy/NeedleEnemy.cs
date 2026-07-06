@@ -108,9 +108,13 @@ public class NeedleEnemy : EnemyBase
         if (direction.sqrMagnitude <= 0.0001f)
             direction = Vector2.right;
 
+        // 벽에 부딪히기 전까지의 안전한 거리로 미리 제한한다 (안 그러면 벽보다 빠른 대시가
+        // 매 스텝 도착 지점만 겹침 검사하는 기존 로직을 뚫고 벽 밖으로 나가버릴 수 있음).
+        float travelDistance = ClampTravelDistanceForWalls(start, direction, dashDistance);
+
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        Vector2 size = new Vector2(dashDistance, dashWidth);
-        Vector2 center = start + direction * (dashDistance * 0.5f);
+        Vector2 size = new Vector2(travelDistance, dashWidth);
+        Vector2 center = start + direction * (travelDistance * 0.5f);
         GameObject telegraph = TrackTelegraph(EnemyTelegraph.CreateBox("NeedleDashTelegraph", center, size, angle, dashTelegraphColor, 72));
 
         yield return EnemyTelegraph.Blink(telegraph, 2, warningDuration * 0.25f);
@@ -119,8 +123,8 @@ public class NeedleEnemy : EnemyBase
             DestroyOwnedTelegraph(telegraph);
 
         SoundManager.PlayNeedleEnemyDash(0.04f);
-        Vector2 end = start + direction * dashDistance;
-        float duration = dashDistance / Mathf.Max(0.01f, dashSpeed);
+        Vector2 end = start + direction * travelDistance;
+        float duration = travelDistance / Mathf.Max(0.01f, dashSpeed);
         float elapsed = 0f;
         bool dealtDamage = false;
 

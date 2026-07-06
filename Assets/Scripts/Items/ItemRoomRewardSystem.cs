@@ -210,7 +210,9 @@ public static class ItemRoomRewardSystem
         for (int i = 0; i < all.Count; i++)
         {
             ItemData item = all[i];
-            if (item != null && item.Type == ItemType.BodyPart && (excluded == null || !excluded.Contains(item)))
+            // Default 카테고리(게임 시작 기본 파츠)는 어떤 보상 풀에도 나오면 안 된다.
+            if (item != null && item.Type == ItemType.BodyPart && item.Category != ItemCategory.Default
+                && (excluded == null || !excluded.Contains(item)))
                 matches.Add(item);
         }
         return matches.Count > 0 ? matches[Random.Range(0, matches.Count)] : null;

@@ -12,8 +12,8 @@ public class PlayerManager : MonoBehaviour
     [Header("Attack")]
     [SerializeField, Min(0)] int attackDamage = 1;
     [SerializeField, Min(0f)] float attackCooldown = 0.3f;
-    [SerializeField, Min(0f)] float attackDistance = 0.55f;
-    [SerializeField, Min(0f)] float attackDistanceBonus = 0.2f;
+    [SerializeField, Min(0f)] float attackDistance = 0.72f;
+    [SerializeField, Min(0f)] float attackDistanceBonus = 0.26f;
     [SerializeField, Min(0f)] float verticalAttackDistanceBonus = 0.06f;
     [SerializeField] Vector2 attackSize = new Vector2(1f, 1f);
     [SerializeField, Range(0.05f, 0.5f)] float attackDuration = 0.12f;
