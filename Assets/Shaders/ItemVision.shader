@@ -76,7 +76,9 @@ Shader "Hidden/DollRoguelite/ItemVision"
                     mask = max(mask, step(length(p - c1), radius));
                     mask = max(mask, step(length(p - c2), radius));
                     mask = max(mask, step(length(p - c3), radius));
-                    half4 button = half4(0.0, 0.0, 0.0, 1.0);
+                    // 단추 눈의 어두운 부분: 알파를 1.0에서 살짝 낮춰(0.9) 실제 화면이 아주 옅게 비쳐
+                    // 완전한 암흑이 아니게 한다. 더 밝게/어둡게 하려면 이 알파값만 조절.
+                    half4 button = half4(0.0, 0.0, 0.0, 0.9);
                     return lerp(button, scene, mask);
                 }
                 if (_Mode > 0.5)

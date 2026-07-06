@@ -71,6 +71,7 @@ public static class ItemTestRoomPopulator
             string.Compare(a != null ? a.ItemId : "", b != null ? b.ItemId : "", System.StringComparison.Ordinal));
 
         int index = 0;
+        bool markedTooltipTemplate = false;
         foreach (ItemData item in items)
         {
             if (item == null)
@@ -83,7 +84,14 @@ public static class ItemTestRoomPopulator
                 StartPos.y - row * Spacing.y,
                 0f);
 
-            PlaceItem(rootGo.transform, item, pos);
+            ItemWorldPickup pickup = PlaceItem(rootGo.transform, item, pos);
+            if (!markedTooltipTemplate && pickup != null)
+            {
+                SerializedObject pickupObject = new SerializedObject(pickup);
+                pickupObject.FindProperty("useAsGlobalTooltipTemplate").boolValue = true;
+                pickupObject.ApplyModifiedPropertiesWithoutUndo();
+                markedTooltipTemplate = true;
+            }
             PlaceLabel(rootGo.transform, item, pos + new Vector3(0f, -0.95f, 0f));
             index++;
         }
@@ -128,7 +136,7 @@ public static class ItemTestRoomPopulator
         Debug.Log("[ItemTestRoom] 런타임 스폰 모드로 복원");
     }
 
-    static void PlaceItem(Transform parent, ItemData item, Vector3 pos)
+    static ItemWorldPickup PlaceItem(Transform parent, ItemData item, Vector3 pos)
     {
         GameObject go = new GameObject("Item_" + item.ItemId);
         Undo.RegisterCreatedObjectUndo(go, "아이템 배치");
@@ -150,6 +158,7 @@ public static class ItemTestRoomPopulator
         SerializedObject pso = new SerializedObject(pickup);
         pso.FindProperty("itemAsset").objectReferenceValue = item;
         pso.ApplyModifiedPropertiesWithoutUndo();
+        return pickup;
     }
 
     static void PlaceLabel(Transform parent, ItemData item, Vector3 pos)

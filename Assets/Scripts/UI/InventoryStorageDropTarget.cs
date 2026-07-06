@@ -62,10 +62,27 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
             return;
         }
 
-        // 장착된 부위 → 보관함 내리기.
+        // 장착된 부위 → 보관함 내리기 / 교체.
         var equippedSource = eventData.pointerDrag.GetComponent<InventoryEquippedDragSource>();
         if (equippedSource != null)
         {
+            var itemInv = ItemInventoryManager.Instance;
+
+            // 이 보관슬롯에 이 부위와 호환되는 신규 아이템이 표시 중이면, 그냥 떼는 대신 "교체"한다.
+            // (장착된 부위를 아이템 위로 끌어다 놓으면: 그 아이템이 장착되고 원래 부위는 보관함으로 이동.)
+            // 예전에는 무조건 떼기만 해서, 교체하려던 아이템과 뗀 부위가 둘 다 보관함에 남는 버그가 있었다.
+            InventoryStorageDragSource targetSlot = GetComponent<InventoryStorageDragSource>();
+            ItemData targetItem = targetSlot != null ? targetSlot.DraggedItemData : null;
+            int targetItemIndex = targetSlot != null ? targetSlot.ItemStorageIndex : -1;
+            if (itemInv != null && targetItem != null && targetItemIndex >= 0
+                && targetItem.Type == ItemType.BodyPart
+                && ItemInventoryManager.IsBodyPartCompatibleWithSlot(targetItem.EquipLocation, equippedSource.BodySlot)
+                && itemInv.TryEquipBodyPartFromStorage(targetItemIndex, equippedSource.BodySlot))
+            {
+                SoundManager.PlayClick();
+                return;
+            }
+
             if (InventoryManager.Instance.TryUnequipToStorage(equippedSource.BodySlot, storageIndex))
             {
                 SoundManager.PlayClick();
@@ -73,7 +90,6 @@ public class InventoryStorageDropTarget : MonoBehaviour, IDropHandler
             }
 
             // 신규 아이템 시스템(ItemInventoryManager)으로 장착된 신체부위 아이템 내리기.
-            var itemInv = ItemInventoryManager.Instance;
             if (itemInv != null && itemInv.TryUnequipBodyPartToStorage(equippedSource.BodySlot))
                 SoundManager.PlayClick();
         }

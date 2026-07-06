@@ -1251,9 +1251,21 @@ void Awake()
         judgementTimerHud.gameObject.SetActive(true);
         judgementTimerHud.SetAsLastSibling();
         // req: 표시할 때마다 좌측 상단 캐릭터 HP UI 아래로 위치 재확정(과거 위치가 남아있어도 교정).
-        judgementTimerHud.anchorMin = judgementTimerHud.anchorMax = new Vector2(0f, 1f);
-        judgementTimerHud.pivot = new Vector2(0f, 1f);
-        judgementTimerHud.anchoredPosition = JudgementTimerAnchoredPos;
+        bool challengeTimer = string.Equals(caption, "CHALLENGE", System.StringComparison.OrdinalIgnoreCase);
+        if (challengeTimer)
+        {
+            judgementTimerHud.anchorMin = judgementTimerHud.anchorMax = new Vector2(0.5f, 1f);
+            judgementTimerHud.pivot = new Vector2(0.5f, 1f);
+            judgementTimerHud.anchoredPosition = new Vector2(0f, -36f);
+            judgementTimerHud.sizeDelta = new Vector2(520f, 84f);
+        }
+        else
+        {
+            judgementTimerHud.anchorMin = judgementTimerHud.anchorMax = new Vector2(0f, 1f);
+            judgementTimerHud.pivot = new Vector2(0f, 1f);
+            judgementTimerHud.anchoredPosition = JudgementTimerAnchoredPos;
+            judgementTimerHud.sizeDelta = new Vector2(620f, 100f);
+        }
         judgementTimerBaseColor = JudgementTimerHigh;
 
         if (judgementTimerFill != null)
@@ -1266,7 +1278,10 @@ void Awake()
             judgementTimerSeconds.text = "0.0";
 
         if (judgementTimerCaption != null)
+        {
             judgementTimerCaption.text = caption;
+            judgementTimerCaption.color = color;
+        }
     }
 
     void ApplySetJudgementTimer(float remaining, float duration)

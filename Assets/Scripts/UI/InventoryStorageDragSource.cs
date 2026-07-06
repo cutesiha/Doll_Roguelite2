@@ -11,6 +11,8 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
     ItemData itemData;
     int itemStorageIndex = -1;
     int coinStackIndex = -1;
+    InventoryUI inventoryUI;
+    bool hidSlotContent;
 
     public int StorageIndex => storageIndex;
     public ItemData DraggedItemData => itemData;
@@ -87,6 +89,10 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
         CanvasGroup group = go.AddComponent<CanvasGroup>();
         group.blocksRaycasts = false;
 
+        // 몸에서 부위를 떼면 그 자리가 빈 것처럼, 보관 슬롯에서 아이템을 집는 동안에도
+        // 원래 슬롯이 빈 것처럼 보이도록 슬롯에 표시된 내용을 숨긴다.
+        HideSlotContent();
+
         MoveGhost(eventData);
     }
 
@@ -99,6 +105,57 @@ public class InventoryStorageDragSource : MonoBehaviour, IBeginDragHandler, IDra
     {
         if (ghost != null)
             Destroy(ghost.gameObject);
+
+        // 드롭이 성공했든(교환/이동) 실패했든 슬롯 표시를 실제 상태로 되돌린다.
+        if (hidSlotContent)
+        {
+            hidSlotContent = false;
+            if (inventoryUI == null)
+                inventoryUI = GetComponentInParent<InventoryUI>();
+            if (inventoryUI == null)
+                inventoryUI = Object.FindFirstObjectByType<InventoryUI>();
+            inventoryUI?.RefreshUI();
+        }
+    }
+
+    // 집는 동안 이 슬롯이 비어 보이도록 아이콘/동전더미/그리드/이름을 감춘다.
+    // 실제 데이터는 건드리지 않고, OnEndDrag 의 RefreshUI 로 정확히 복원된다.
+    void HideSlotContent()
+    {
+        hidSlotContent = true;
+
+        Image slotBackground = GetComponent<Image>();
+        if (slotBackground != null)
+            slotBackground.color = new Color(0.17f, 0.15f, 0.13f, 0.20f);
+
+        Transform iconTr = transform.Find("ItemIcon");
+        Image iconImage = iconTr != null ? iconTr.GetComponent<Image>() : null;
+        if (iconImage != null)
+            iconImage.color = new Color(1f, 1f, 1f, 0f);
+
+        Transform pile = transform.Find("CoinPile");
+        if (pile != null)
+            pile.gameObject.SetActive(false);
+
+        Transform grid = transform.Find("CoinGrid");
+        if (grid != null)
+            grid.gameObject.SetActive(false);
+
+        Transform nameTr = transform.Find("SlotName");
+        if (nameTr != null)
+        {
+            TMPro.TextMeshProUGUI nameLabel = nameTr.GetComponent<TMPro.TextMeshProUGUI>();
+            if (nameLabel != null)
+                nameLabel.text = "";
+        }
+
+        Transform hpTr = transform.Find("SlotHP");
+        if (hpTr != null)
+        {
+            TMPro.TextMeshProUGUI hpLabel = hpTr.GetComponent<TMPro.TextMeshProUGUI>();
+            if (hpLabel != null)
+                hpLabel.text = "";
+        }
     }
 
     void MoveGhost(PointerEventData eventData)

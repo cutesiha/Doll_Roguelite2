@@ -6,3 +6,6 @@ approval_mode = "approve"
 
 [mcp_servers.UnityMCP.tools.manage_build]
 approval_mode = "approve"
+
+[mcp_servers.UnityMCP.tools.execute_custom_tool]
+approval_mode = "approve"

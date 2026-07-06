@@ -55,7 +55,10 @@ public class PlayerDamageReceiver : MonoBehaviour
         BodySlot.EyeRight
     };
 
-    readonly Dictionary<SpriteRenderer, Color> rendererColors = new Dictionary<SpriteRenderer, Color>();
+    // 히트 피드백/무적 깜빡임이 렌더러 색을 건드리기 전의 "쉬는(원래) 색" 스냅샷.
+    // 효과가 다른 히트에 의해 중간에 끊겨도 항상 이 색으로 되돌려, 알파가 낮은 채 고착돼
+    // 플레이어가 점점 투명해지는 버그(특히 피격이 잦은 최종보스 씬)를 막는다.
+    readonly Dictionary<SpriteRenderer, Color> restingColors = new Dictionary<SpriteRenderer, Color>();
     readonly List<BodySlot> damageCandidates = new List<BodySlot>();
 
     PlayerController playerController;
@@ -167,6 +170,7 @@ public class PlayerDamageReceiver : MonoBehaviour
             DamageNextBodyTarget(contactDamage);
         Debug.Log($"[피격] 원인: 적 접촉 ({enemyCollider.gameObject.name}) | 데미지: {contactDamage}");
         SetInvincible(1f);
+        BeginHitReaction();
         PlayHitFeedback();
         StartInvincibilityBlink();
         ShakeCamera();
@@ -188,6 +192,7 @@ public class PlayerDamageReceiver : MonoBehaviour
         if (!hpLossDisabled)
             DamageNextBodyTarget(finalDamage);
         SetInvincible(1f);
+        BeginHitReaction();
         PlayHitFeedback();
         StartInvincibilityBlink();
         ShakeCamera();
@@ -237,6 +242,20 @@ public class PlayerDamageReceiver : MonoBehaviour
                 // 장착 그림을 그대로 날려서 "이 아이템이 부서졌다"는 게 보이게 한다.
                 DropPart(brokenItemData.GetEquippedSprite(slot), sourceRenderer, slot);
         }
+
+        if (AllArmsAndLegsMissing(inventory))
+            TriggerDeath();
+    }
+
+    bool AllArmsAndLegsMissing(InventoryManager inventory)
+    {
+        if (inventory == null)
+            return false;
+
+        return !inventory.IsEquipped(BodySlot.ArmLeft)
+            && !inventory.IsEquipped(BodySlot.ArmRight)
+            && !inventory.IsEquipped(BodySlot.LegLeft)
+            && !inventory.IsEquipped(BodySlot.LegRight);
     }
 
     void TriggerDeath()
@@ -349,17 +368,15 @@ public class PlayerDamageReceiver : MonoBehaviour
         while (feedbackRoutine != null)
         {
             elapsed += Time.deltaTime;
-            if (elapsed >= totalDuration) yield break;
+            if (elapsed >= totalDuration)
+            {
+                invincibilityRoutine = null;
+                yield break;
+            }
             yield return null;
         }
 
         SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
-        System.Collections.Generic.Dictionary<SpriteRenderer, Color> baseColors
-            = new System.Collections.Generic.Dictionary<SpriteRenderer, Color>();
-        for (int i = 0; i < renderers.Length; i++)
-            if (renderers[i] != null)
-                baseColors[renderers[i]] = renderers[i].color;
-
         while (elapsed < totalDuration)
         {
             bool bright = (Mathf.FloorToInt(elapsed / blinkInterval) % 2 == 0);
@@ -367,27 +384,66 @@ public class PlayerDamageReceiver : MonoBehaviour
             {
                 SpriteRenderer r = renderers[i];
                 if (r == null) continue;
-                Color c;
-                if (!baseColors.TryGetValue(r, out c)) c = r.color;
-                c = bright
+                // 어두운 프레임도 '쉬는 색' 기준 알파를 0.35배로만 낮춘다(현재 색을 base로 캡처하지 않음).
+                Color rest = RestingColorFor(r);
+                r.color = bright
                     ? new Color(1f, 1f, 1f, 1f)
-                    : new Color(c.r, c.g, c.b, 0.35f);
-                r.color = c;
+                    : new Color(rest.r, rest.g, rest.b, rest.a * 0.35f);
             }
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        for (int i = 0; i < renderers.Length; i++)
+        RestoreRestingColors();
+        invincibilityRoutine = null;
+    }
+
+    // 히트 반응(붉은 피드백 + 무적 깜빡임)을 시작하기 전에 호출.
+    // 진행 중인 효과가 있으면 '쉬는 색'으로 되돌린 뒤 시작하고, 깨끗한 상태면 지금 색을 캡처한다.
+    // 이렇게 해야 효과가 중간에 끊겨도 렌더러 알파가 낮은 채 고착되지 않는다.
+    void BeginHitReaction()
+    {
+        bool effectActive = feedbackRoutine != null || invincibilityRoutine != null;
+
+        if (feedbackRoutine != null)
         {
-            SpriteRenderer r = renderers[i];
-            if (r == null) continue;
-            Color c;
-            if (baseColors.TryGetValue(r, out c))
-                r.color = c;
+            StopCoroutine(feedbackRoutine);
+            feedbackRoutine = null;
+        }
+        if (invincibilityRoutine != null)
+        {
+            StopCoroutine(invincibilityRoutine);
+            invincibilityRoutine = null;
         }
 
-        invincibilityRoutine = null;
+        if (effectActive)
+            RestoreRestingColors();
+        else
+            CaptureRestingColors();
+    }
+
+    void CaptureRestingColors()
+    {
+        restingColors.Clear();
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+            if (renderers[i] != null)
+                restingColors[renderers[i]] = renderers[i].color;
+    }
+
+    void RestoreRestingColors()
+    {
+        foreach (KeyValuePair<SpriteRenderer, Color> pair in restingColors)
+            if (pair.Key != null)
+                pair.Key.color = pair.Value;
+    }
+
+    Color RestingColorFor(SpriteRenderer renderer)
+    {
+        if (renderer == null)
+            return Color.white;
+
+        return restingColors.TryGetValue(renderer, out Color color) ? color : renderer.color;
     }
 
     void PlayHitFeedback()
@@ -407,15 +463,9 @@ public class PlayerDamageReceiver : MonoBehaviour
     {
         ResolveReferences();
         SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
-        rendererColors.Clear();
         for (int i = 0; i < renderers.Length; i++)
-        {
-            if (renderers[i] == null)
-                continue;
-
-            rendererColors[renderers[i]] = renderers[i].color;
-            renderers[i].color = hitTint;
-        }
+            if (renderers[i] != null)
+                renderers[i].color = hitTint;
 
         float duration = Mathf.Max(0.01f, hitFeedbackDuration);
         float elapsed = 0f;
@@ -431,13 +481,14 @@ public class PlayerDamageReceiver : MonoBehaviour
             transform.position += appliedOffset;
             transform.localScale = Vector3.Lerp(baseScale, baseScale * hitScaleMultiplier, pulse);
 
+            // 항상 '쉬는 색'으로 되돌아가도록 보간한다(현재 색을 base로 캡처하지 않음).
             for (int i = 0; i < renderers.Length; i++)
             {
                 SpriteRenderer renderer = renderers[i];
-                if (renderer == null || !rendererColors.TryGetValue(renderer, out Color baseColor))
+                if (renderer == null)
                     continue;
 
-                renderer.color = Color.Lerp(hitTint, baseColor, t);
+                renderer.color = Color.Lerp(hitTint, RestingColorFor(renderer), t);
             }
 
             elapsed += Time.deltaTime;
@@ -446,11 +497,7 @@ public class PlayerDamageReceiver : MonoBehaviour
 
         transform.position -= appliedOffset;
         transform.localScale = baseScale;
-        foreach (KeyValuePair<SpriteRenderer, Color> pair in rendererColors)
-            if (pair.Key != null)
-                pair.Key.color = pair.Value;
-
-        rendererColors.Clear();
+        RestoreRestingColors();
         feedbackRoutine = null;
     }
 

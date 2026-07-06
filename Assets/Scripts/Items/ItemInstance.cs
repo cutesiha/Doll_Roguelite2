@@ -8,12 +8,26 @@ public class ItemInstance
     public readonly ItemData data;
     public int maxHp;
     public int currentHp;
+    bool hasLastBodySlot;
+    BodySlot lastBodySlot;
 
     public ItemInstance(ItemData data, int maxHp)
     {
         this.data = data;
         this.maxHp = Mathf.Max(1, maxHp);
         currentHp = this.maxHp;
+    }
+
+    public void SetLastBodySlot(BodySlot slot)
+    {
+        lastBodySlot = slot;
+        hasLastBodySlot = true;
+    }
+
+    public bool TryGetLastBodySlot(out BodySlot slot)
+    {
+        slot = lastBodySlot;
+        return hasLastBodySlot;
     }
 
     // 기본(레거시) 부위 파츠와 동일한 최대 HP 규칙: 눈은 2, 그 외(팔/다리/몸)는 3.

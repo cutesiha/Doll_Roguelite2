@@ -90,13 +90,18 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
         return text;
     }
 
-    static void EnsureTooltip()
+    public static void EnsureTooltip()
     {
         if (tooltipPanel != null)
             return;
 
         Canvas canvas = FindFirstObjectByType<Canvas>();
+        if (canvas == null)
+            return;
         tooltipCanvas = canvas;
+
+        if (TryBindAuthoredTooltip(canvas))
+            return;
 
         GameObject go = new GameObject("InventoryTooltipPanel");
         go.transform.SetParent(canvas.transform, false);
@@ -135,6 +140,84 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
 
         tooltipPanel = go;
         tooltipPanel.SetActive(false);
+    }
+
+    static bool TryBindAuthoredTooltip(Canvas preferredCanvas)
+    {
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            Canvas canvas = canvases[i] == preferredCanvas ? preferredCanvas : canvases[i];
+            if (canvas == null)
+                continue;
+
+            Transform existing = FindChildRecursive(canvas.transform, "InventoryTooltipPanel");
+            if (existing == null)
+                continue;
+
+            tooltipPanel = existing.gameObject;
+            tooltipCanvas = canvas;
+
+            RectTransform rect = tooltipPanel.GetComponent<RectTransform>();
+            if (rect == null)
+                rect = tooltipPanel.AddComponent<RectTransform>();
+
+            Image background = tooltipPanel.GetComponent<Image>();
+            if (background == null)
+                background = tooltipPanel.AddComponent<Image>();
+            background.raycastTarget = false;
+
+            Transform textTransform = FindChildRecursive(tooltipPanel.transform, "TooltipText");
+            if (textTransform == null)
+                textTransform = FindChildRecursive(tooltipPanel.transform, "Label");
+            if (textTransform == null)
+            {
+                GameObject textGo = new GameObject("TooltipText");
+                textGo.transform.SetParent(tooltipPanel.transform, false);
+                RectTransform textRect = textGo.AddComponent<RectTransform>();
+                textRect.anchorMin = Vector2.zero;
+                textRect.anchorMax = Vector2.one;
+                textRect.offsetMin = new Vector2(10f, 8f);
+                textRect.offsetMax = new Vector2(-10f, -8f);
+                textTransform = textGo.transform;
+            }
+
+            tooltipText = textTransform.GetComponent<TextMeshProUGUI>();
+            if (tooltipText == null)
+                tooltipText = textTransform.gameObject.AddComponent<TextMeshProUGUI>();
+            tooltipText.font = UIThinDungFont.Get();
+            tooltipText.raycastTarget = false;
+
+            Canvas tooltipCanvasComp = tooltipPanel.GetComponent<Canvas>();
+            if (tooltipCanvasComp == null)
+                tooltipCanvasComp = tooltipPanel.AddComponent<Canvas>();
+            tooltipCanvasComp.overrideSorting = true;
+            tooltipCanvasComp.sortingOrder = Mathf.Max(tooltipCanvasComp.sortingOrder, 600);
+
+            tooltipPanel.SetActive(false);
+            return true;
+        }
+
+        return false;
+    }
+
+    static Transform FindChildRecursive(Transform root, string childName)
+    {
+        if (root == null)
+            return null;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child.name == childName)
+                return child;
+
+            Transform nested = FindChildRecursive(child, childName);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
     }
 
     static void PositionTooltip(Vector2 screenPos)

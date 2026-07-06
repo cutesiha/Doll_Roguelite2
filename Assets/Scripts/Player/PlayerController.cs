@@ -1,6 +1,7 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -76,6 +77,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Vector2 noLegEyeOffset = new Vector2(0f, -0.08f);
     [SerializeField] float crawlEyeHeightFrac = 0.32f;   // 몸통 중심 위로 눈 높이(halfHeight 비율)
     [SerializeField] float crawlEyeSpacingFrac = 0.30f;  // 좌우 눈 간격(halfWidth 비율)
+    [SerializeField] Transform crawlMissingEyeSocketGuide;
 
     Rigidbody2D rb;
     Vector2 moveInput;
@@ -99,6 +101,7 @@ public class PlayerController : MonoBehaviour
     Transform visualRoot;
     SpriteRenderer rootBodyRenderer;
     static Sprite eyeSocketSprite;
+    const string CrawlMissingEyeSocketGuideName = "CrawlMissingEyeSocketGuide";
 
     const float PlayerFrameWidth = 70f;
     const float PlayerFrameHeight = 110f;
@@ -527,6 +530,7 @@ public class PlayerController : MonoBehaviour
         rightArmRenderer = EnsureArmRenderer(rightArmRenderer, "PlayerArm_Right");
         leftEyeSocketRenderer = EnsureEyeSocketRenderer("PlayerEyeSocket_Left");
         rightEyeSocketRenderer = EnsureEyeSocketRenderer("PlayerEyeSocket_Right");
+        EnsureCrawlMissingEyeSocketGuide();
         SetArmRenderersVisible(false, false);
         SetRendererVisible(leftEyeSocketRenderer, false);
         SetRendererVisible(rightEyeSocketRenderer, false);
@@ -638,6 +642,49 @@ public class PlayerController : MonoBehaviour
         renderer.sortingOrder = playerSortingOrder + 2;
         renderer.sharedMaterial = spriteRenderer.sharedMaterial;
         return renderer;
+    }
+
+    void EnsureCrawlMissingEyeSocketGuide()
+    {
+        if (visualRoot == null || spriteRenderer == null)
+            return;
+
+        if (crawlMissingEyeSocketGuide == null)
+        {
+            Transform existing = visualRoot.Find(CrawlMissingEyeSocketGuideName);
+            if (existing == null)
+                existing = transform.Find(CrawlMissingEyeSocketGuideName);
+            if (existing != null)
+                crawlMissingEyeSocketGuide = existing;
+        }
+
+        if (crawlMissingEyeSocketGuide == null)
+        {
+            GameObject go = new GameObject(CrawlMissingEyeSocketGuideName);
+            go.transform.SetParent(visualRoot, false);
+            go.transform.localPosition = new Vector3(0f, -0.28f, 0f);
+            go.transform.localScale = new Vector3(0.7f, 0.7f, 1f);
+            crawlMissingEyeSocketGuide = go.transform;
+        }
+
+        crawlMissingEyeSocketGuide.SetParent(visualRoot, false);
+        SpriteRenderer guideRenderer = crawlMissingEyeSocketGuide.GetComponent<SpriteRenderer>();
+        if (guideRenderer == null)
+            guideRenderer = crawlMissingEyeSocketGuide.gameObject.AddComponent<SpriteRenderer>();
+
+        if (guideRenderer.sprite == null)
+            guideRenderer.sprite = EyeSocketSprite();
+        guideRenderer.color = new Color(missingEyeSocketColor.r, missingEyeSocketColor.g, missingEyeSocketColor.b, 0.65f);
+        guideRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+        guideRenderer.sortingOrder = playerSortingOrder + 3;
+        guideRenderer.sharedMaterial = spriteRenderer.sharedMaterial;
+        guideRenderer.enabled = ShouldShowCrawlEyeGuideInScene();
+    }
+
+    bool ShouldShowCrawlEyeGuideInScene()
+    {
+        return !Application.isPlaying
+            && SceneManager.GetActiveScene().name == "itemtestroom";
     }
 
     static Sprite EyeSocketSprite()
@@ -769,21 +816,28 @@ public class PlayerController : MonoBehaviour
         // 사이드뷰는 얼굴이 옆을 향하므로 눈이 더 낮고 바라보는 쪽으로 치우친다.
         float sideEyeY = c.y + halfH * effectiveEyeHeightFrac * 0.45f + eyeOffset.y;
         float sideDx = halfW * crawlEyeSpacingFrac * 1.5f;
+        Vector2 center = new Vector2(c.x + eyeOffset.x, frontEyeY);
         Vector2 scale = new Vector2(0.7f, 0.7f);
+        if (crawlMissingEyeSocketGuide != null)
+        {
+            Vector3 guidePosition = crawlMissingEyeSocketGuide.localPosition;
+            center = new Vector2(guidePosition.x, guidePosition.y);
+            scale = CrawlGuideSocketScale();
+        }
 
         switch (facingDirection)
         {
             case FacingDirection.Left:
-                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(c.x - sideDx + eyeOffset.x, sideEyeY), scale);
+                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(center.x - sideDx, center.y + sideEyeY - frontEyeY), scale);
                 SetRendererVisible(rightEyeSocketRenderer, false);
                 break;
             case FacingDirection.Right:
                 SetRendererVisible(leftEyeSocketRenderer, false);
-                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(c.x + sideDx + eyeOffset.x, sideEyeY), scale);
+                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(center.x + sideDx, center.y + sideEyeY - frontEyeY), scale);
                 break;
             default: // Down (정면)
-                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(c.x - frontDx + eyeOffset.x, frontEyeY), scale);
-                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(c.x + frontDx + eyeOffset.x, frontEyeY), scale);
+                PlaceCrawlSocket(leftEyeSocketRenderer, missingLeft, new Vector2(center.x - frontDx, center.y), scale);
+                PlaceCrawlSocket(rightEyeSocketRenderer, missingRight, new Vector2(center.x + frontDx, center.y), scale);
                 break;
         }
     }
@@ -799,6 +853,27 @@ public class PlayerController : MonoBehaviour
 
         renderer.transform.localPosition = new Vector3(localPos.x, localPos.y, 0f);
         renderer.transform.localScale = new Vector3(scale.x, scale.y, 1f);
+    }
+
+    Vector2 CrawlGuideSocketScale()
+    {
+        if (crawlMissingEyeSocketGuide == null)
+            return new Vector2(0.7f, 0.7f);
+
+        Vector3 guideScale = crawlMissingEyeSocketGuide.localScale;
+        Vector2 scale = new Vector2(Mathf.Abs(guideScale.x), Mathf.Abs(guideScale.y));
+        SpriteRenderer guideRenderer = crawlMissingEyeSocketGuide.GetComponent<SpriteRenderer>();
+        Sprite socketSprite = EyeSocketSprite();
+        if (guideRenderer == null || guideRenderer.sprite == null || guideRenderer.sprite == socketSprite)
+            return scale;
+
+        Bounds guideBounds = guideRenderer.sprite.bounds;
+        Bounds socketBounds = socketSprite.bounds;
+        float targetWidth = guideBounds.size.x * scale.x;
+        float targetHeight = guideBounds.size.y * scale.y;
+        return new Vector2(
+            socketBounds.size.x > 0.0001f ? targetWidth / socketBounds.size.x : scale.x,
+            socketBounds.size.y > 0.0001f ? targetHeight / socketBounds.size.y : scale.y);
     }
 
     void ConfigureEyeSocket(SpriteRenderer renderer, bool visible, Vector2 pixelCenterFromTop, Vector2 scale, Vector2 extraLocalOffset)

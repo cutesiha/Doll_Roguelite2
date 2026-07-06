@@ -341,9 +341,9 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
   attackCooldown: 0.3
-  attackDistance: 1.65
-  attackDistanceBonus: 0.4
-  verticalAttackDistanceBonus: 0.12
+  attackDistance: 0.55
+  attackDistanceBonus: 0.2
+  verticalAttackDistanceBonus: 0.06
   attackSize: {x: 1, y: 1}
   attackDuration: 0.12
   fistScale: {x: 1.65, y: 1.65}
@@ -924,6 +924,205 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3fced79a5d71d2e4aba06b7739ae38bb, type: 3}
+--- !u!1 &320811601
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 320811604}
+  - component: {fileID: 320811603}
+  - component: {fileID: 320811602}
+  m_Layer: 0
+  m_Name: SoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!82 &320811602
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 320811601}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &320811603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 320811601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6472a6536b8c234d845ab545112d24a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoundManager
+  masterSfxVolume: 1
+  sfxSource: {fileID: 320811602}
+  panelClip: {fileID: 0}
+  panelVolume: 1
+  slimeClip: {fileID: 0}
+  slimeVolume: 1
+  clickClip: {fileID: 0}
+  clickVolume: 1.35
+  punchClip: {fileID: 8300000, guid: 5d7353b90ee7b6042926fc89c6265a55, type: 3}
+  punchVolume: 1
+  coinPickupClip: {fileID: 0}
+  coinPickupVolume: 1
+  gemUseClip: {fileID: 0}
+  gemUseVolume: 1
+  gemUseDuration: 1.4
+  waveClearClip: {fileID: 0}
+  waveClearVolume: 1
+  afterVictoryBgmClip: {fileID: 0}
+  twoLegsFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
+  twoLegsFootstepVolume: 1.23
+  oneLegFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
+  oneLegFootstepVolume: 1.23
+  noLegsFootstepClip: {fileID: 8300000, guid: 13a871d747201ea439960409e50727a5, type: 3}
+  noLegsFootstepVolume: 1.5
+  minotaurSlamClip: {fileID: 0}
+  minotaurSlamVolume: 1.15
+  minotaurFastBreathClip: {fileID: 0}
+  minotaurFastBreathVolume: 1
+  minotaurPinStickClip: {fileID: 0}
+  minotaurPinStickVolume: 0.95
+  bookBossRageClip: {fileID: 8300000, guid: e3caeb0bda0bf07479fe67d7c2db1789, type: 3}
+  bookBossRageVolume: 1.23
+  bookBossRainLoopClip: {fileID: 8300000, guid: f1f821df3788d3a448987ece12431efd, type: 3}
+  bookBossRainLoopVolume: 0.96
+  bookBossSirenLoopClip: {fileID: 8300000, guid: cdaf2aef2546f144f825e1b3d49b7a7d, type: 3}
+  bookBossSirenLoopVolume: 0.32
+  bookBossInkDropClip1: {fileID: 8300000, guid: aff3f06f3ebb929459f30e1ef5af1cf5, type: 3}
+  bookBossInkDropClip2: {fileID: 8300000, guid: 117a0cc190494d54ebca8a9c996ae58c, type: 3}
+  bookBossInkDropClip3: {fileID: 8300000, guid: 9f8ccc0b7e8d8bf49a8a64b0524a8dfc, type: 3}
+  bookBossInkDropClip4: {fileID: 8300000, guid: 4e3a7239c2d7e5041ab07540f9fc0d47, type: 3}
+  bookBossInkDropVolume: 1.16
+  bookBossFloorSlamClip: {fileID: 8300000, guid: e477ace3816012644aea5d1518c0952e, type: 3}
+  bookBossFloorSlamVolume: 0.35
+  bookBossPaperFlyClip: {fileID: 8300000, guid: 1287e4fd7a2b2b4498e3272b0c0afcfc, type: 3}
+  bookBossPaperFlyVolume: 1.04
+  enemyHitClip: {fileID: 0}
+  enemyHitVolume: 1
+  playerHitClip: {fileID: 8300000, guid: 42ded5264c9e97e419b436c34fcef5ac, type: 3}
+  playerHitVolume: 1
+  buttonEnemyLandingClip: {fileID: 0}
+  buttonEnemyLandingVolume: 0.85
+  needleEnemyDashClip: {fileID: 0}
+  needleEnemyDashVolume: 0.8
+  spoolEnemyThreadClip: {fileID: 0}
+  spoolEnemyThreadVolume: 0.82
+  ribbonEnemyAttackClip: {fileID: 0}
+  ribbonEnemyAttackVolume: 0.78
+--- !u!4 &320811604
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 320811601}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &370359446
 GameObject:
   m_ObjectHideFlags: 0
@@ -1383,7 +1582,7 @@ MonoBehaviour:
   bossSceneName: BossScene
   middleBossSceneName: MiddleBossScene
   finalBossSceneName: BookBossScene
-  challengeSceneName: RoomScene
+  challengeSceneName: ChallengeScene
   supplySceneName: PresentScene
   eventSceneName: EventScene
   treasureSceneName: TreasureRoomScene
@@ -4777,197 +4976,6 @@ Material:
     - _UnderlayColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
---- !u!1 &1830095703
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1830095706}
-  - component: {fileID: 1830095705}
-  - component: {fileID: 1830095704}
-  m_Layer: 0
-  m_Name: SoundManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!82 &1830095704
-AudioSource:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1830095703}
-  m_Enabled: 1
-  serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
-  m_PlayOnAwake: 0
-  m_Volume: 1
-  m_Pitch: 1
-  Loop: 0
-  Mute: 0
-  Spatialize: 0
-  SpatializePostEffects: 0
-  Priority: 128
-  DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 500
-  Pan2D: 0
-  rolloffMode: 0
-  BypassEffects: 0
-  BypassListenerEffects: 0
-  BypassReverbZones: 0
-  rolloffCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  panLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  spreadCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  reverbZoneMixCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
---- !u!114 &1830095705
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1830095703}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e6472a6536b8c234d845ab545112d24a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SoundManager
-  masterSfxVolume: 1
-  sfxSource: {fileID: 1830095704}
-  panelClip: {fileID: 0}
-  panelVolume: 1
-  slimeClip: {fileID: 0}
-  slimeVolume: 1
-  clickClip: {fileID: 0}
-  clickVolume: 1.35
-  punchClip: {fileID: 8300000, guid: 5d7353b90ee7b6042926fc89c6265a55, type: 3}
-  punchVolume: 1
-  coinPickupClip: {fileID: 0}
-  coinPickupVolume: 1
-  gemUseClip: {fileID: 0}
-  gemUseVolume: 1
-  gemUseDuration: 1.4
-  waveClearClip: {fileID: 0}
-  waveClearVolume: 1
-  afterVictoryBgmClip: {fileID: 0}
-  twoLegsFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
-  twoLegsFootstepVolume: 1.23
-  oneLegFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
-  oneLegFootstepVolume: 1.23
-  noLegsFootstepClip: {fileID: 8300000, guid: 13a871d747201ea439960409e50727a5, type: 3}
-  noLegsFootstepVolume: 1.5
-  minotaurSlamClip: {fileID: 0}
-  minotaurSlamVolume: 1.15
-  minotaurFastBreathClip: {fileID: 0}
-  minotaurFastBreathVolume: 1
-  minotaurPinStickClip: {fileID: 0}
-  minotaurPinStickVolume: 0.95
-  bookBossRageClip: {fileID: 8300000, guid: e3caeb0bda0bf07479fe67d7c2db1789, type: 3}
-  bookBossRageVolume: 1.23
-  bookBossRainLoopClip: {fileID: 8300000, guid: f1f821df3788d3a448987ece12431efd, type: 3}
-  bookBossRainLoopVolume: 0.96
-  bookBossSirenLoopClip: {fileID: 8300000, guid: cdaf2aef2546f144f825e1b3d49b7a7d, type: 3}
-  bookBossSirenLoopVolume: 0.32
-  bookBossInkDropClip1: {fileID: 8300000, guid: aff3f06f3ebb929459f30e1ef5af1cf5, type: 3}
-  bookBossInkDropClip2: {fileID: 8300000, guid: 117a0cc190494d54ebca8a9c996ae58c, type: 3}
-  bookBossInkDropClip3: {fileID: 8300000, guid: 9f8ccc0b7e8d8bf49a8a64b0524a8dfc, type: 3}
-  bookBossInkDropClip4: {fileID: 8300000, guid: 4e3a7239c2d7e5041ab07540f9fc0d47, type: 3}
-  bookBossInkDropVolume: 1.16
-  bookBossFloorSlamClip: {fileID: 8300000, guid: e477ace3816012644aea5d1518c0952e, type: 3}
-  bookBossFloorSlamVolume: 0.35
-  bookBossPaperFlyClip: {fileID: 8300000, guid: 1287e4fd7a2b2b4498e3272b0c0afcfc, type: 3}
-  bookBossPaperFlyVolume: 1.04
-  enemyHitClip: {fileID: 0}
-  enemyHitVolume: 1
-  playerHitClip: {fileID: 8300000, guid: 42ded5264c9e97e419b436c34fcef5ac, type: 3}
-  playerHitVolume: 1
---- !u!4 &1830095706
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1830095703}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!21 &1850481354
 Material:
   serializedVersion: 8
@@ -6239,7 +6247,7 @@ MonoBehaviour:
   floorSentenceMinCount: 4
   floorSentenceMaxCount: 6
   floorSentenceSpawnDelay: 0.08
-  floorSentenceWarningTime: 0.95
+  floorSentenceWarningTime: 0.78
   floorSentenceActiveTime: 1.35
   floorSentenceToPaperDelay: 0.35
   floorSentenceImpactShakeDuration: 0.18
@@ -6247,7 +6255,7 @@ MonoBehaviour:
   floorSentencePlayerSafeRadius: 3.2
   paperScrapSpeed: 13.8
   paperScrapMaxTime: 2.8
-  paperScrapWarningTime: 1.75
+  paperScrapWarningTime: 1.45
   paperScrapWarningRadius: 1.05
   paperScrapVisualSize: {x: 0.82, y: 1.05}
   wave1PaperAttackRestRange: {x: 1.6, y: 2.6}
@@ -6255,7 +6263,7 @@ MonoBehaviour:
   wave2FloorSentenceRestRange: {x: 0.45, y: 0.75}
   inkRainIntervalRange: {x: 0.65, y: 0.95}
   inkRainBurstCountRange: {x: 2, y: 4}
-  inkRainWarningTime: 0.85
+  inkRainWarningTime: 0.7
   inkRainWarningRadius: 0.8
   inkRainStainLifetime: 7
   inkRainDamageCooldown: 1.25
@@ -6266,7 +6274,7 @@ MonoBehaviour:
   wave3ShakeInterval: 0.28
   wave3MaxMinions: 5
   wave3MinionSpawnInterval: {x: 2.4, y: 3.4}
-  wave3MinionSpawnWarningTime: 1.05
+  wave3MinionSpawnWarningTime: 0.9
   wave3MinionSpawnWarningRadius: 1.15
   wave3AttackInitialDelay: 1.4
   wave3BasicLetterExtraDelay: 0.02
@@ -7581,4 +7589,4 @@ SceneRoots:
   - {fileID: 2006974083}
   - {fileID: 1944084282}
   - {fileID: 3200000001}
-  - {fileID: 1830095706}
+  - {fileID: 320811604}

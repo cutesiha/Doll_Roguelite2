@@ -56,10 +56,16 @@ public class ThresholdManager : MonoBehaviour
     bool IsRoomOrBossScene()
     {
         string name = SceneManager.GetActiveScene().name;
-        return name == roomSceneName
+        // 눈없음 오버레이는 플레이어가 실제로 돌아다니는 모든 전투/특수방 씬에서 떠야 한다.
+        // 기존에는 RoomScene/보스 씬 이름만 허용해서 조건방(Challenge)·상점(Shop)·보물방(Treasure)에서는
+        // 눈이 없어도 이미지가 안 뜨는 버그가 있었다. (지도/시작 씬에서는 표시하지 않는다.)
+        return name.StartsWith(roomSceneName)      // RoomScene, RoomScene1 …
             || name == bossSceneName
             || name == middleBossSceneName
-            || name == finalBossSceneName;
+            || name == finalBossSceneName
+            || name == "ChallengeScene"
+            || name == "ShopScene"
+            || name == "TreasureRoomScene";
     }
 
     void UpdateOverlay()

@@ -11,7 +11,7 @@ public class DoorTrigger : MonoBehaviour
     [SerializeField] string bossSceneName = "BossScene";
     [SerializeField] string middleBossSceneName = "MiddleBossScene";
     [SerializeField] string finalBossSceneName = "BookBossScene";
-    [SerializeField] string challengeSceneName = "RoomScene";
+    [SerializeField] string challengeSceneName = "ChallengeScene";
     [SerializeField] string supplySceneName = "PresentScene";
     [SerializeField] string eventSceneName = "EventScene";
     [SerializeField] string treasureSceneName = "TreasureRoomScene";
@@ -213,6 +213,7 @@ public class DoorTrigger : MonoBehaviour
 
         // 거리 기반 근접 판정 → 근처에 오기만 하면 살구색 하이라이트 + 반짝이 + Enter 상호작용.
         ResolvePlayer();
+        ApplyDoorDepthSorting();
         float distance = playerTransform != null
             ? Vector2.Distance(playerTransform.position, transform.position)
             : float.PositiveInfinity;
@@ -332,6 +333,7 @@ public class DoorTrigger : MonoBehaviour
         if (iconRenderer == null)
             iconRenderer = iconTransform.gameObject.AddComponent<SpriteRenderer>();
         iconRenderer.sortingOrder = 81;
+        ApplyDoorDepthSorting();
 
         DoorSpriteCatalog layout = DoorSpriteCatalog.Load();
         float visualScale = layout != null ? layout.doorVisualScale : doorWorldScale;
@@ -526,6 +528,8 @@ public class DoorTrigger : MonoBehaviour
 
     void PlayBlockedFeedback()
     {
+        SoundManager.PlayDoorBlocked();
+
         if (blockedRoutine != null)
             StopCoroutine(blockedRoutine);
         blockedRoutine = StartCoroutine(BlockedFeedbackRoutine());
@@ -538,6 +542,35 @@ public class DoorTrigger : MonoBehaviour
         GameObject go = GameObject.FindWithTag("Player");
         if (go != null)
             playerTransform = go.transform;
+    }
+
+    void ApplyDoorDepthSorting()
+    {
+        if (doorRenderer == null)
+            return;
+
+        if (playerTransform == null)
+            ResolvePlayer();
+
+        int playerOrder = PlayerTopSortingOrder();
+        bool playerAboveDoor = playerTransform != null && playerTransform.position.y > transform.position.y;
+        int doorOrder = playerAboveDoor ? playerOrder + 2 : playerOrder - 2;
+        doorRenderer.sortingOrder = doorOrder;
+        if (iconRenderer != null)
+            iconRenderer.sortingOrder = doorOrder + 1;
+    }
+
+    int PlayerTopSortingOrder()
+    {
+        if (playerTransform == null)
+            return 80;
+
+        SpriteRenderer[] renderers = playerTransform.GetComponentsInChildren<SpriteRenderer>(true);
+        int order = 80;
+        for (int i = 0; i < renderers.Length; i++)
+            if (renderers[i] != null)
+                order = Mathf.Max(order, renderers[i].sortingOrder);
+        return order;
     }
 
     // 문 기본 색: 잠김이면 회색, 열림이고 ShopScene이면 푸른색 보정(창백함 방지), 그 외 흰색.

@@ -1040,9 +1040,9 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
   attackCooldown: 0.3
-  attackDistance: 0.55
-  attackDistanceBonus: 0.2
-  verticalAttackDistanceBonus: 0.06
+  attackDistance: 2
+  attackDistanceBonus: 0.4
+  verticalAttackDistanceBonus: 0.12
   attackSize: {x: 1, y: 1}
   attackDuration: 0.12
   fistScale: {x: 1.65, y: 1.65}
@@ -1912,7 +1912,7 @@ MonoBehaviour:
   bindThrustDuration: 0.21
   moveSpeed: 1.02
   preferredDistance: 3.8
-  attackCooldownRange: {x: 1.9, y: 3.0}
+  attackCooldownRange: {x: 1.9, y: 3}
   telegraphDuration: 0.65
   fanRadius: 3.8
   fanAngle: 70
@@ -2755,7 +2755,7 @@ MonoBehaviour:
   bossSceneName: BossScene
   middleBossSceneName: MiddleBossScene
   finalBossSceneName: BookBossScene
-  challengeSceneName: ChallengeScene
+  challengeSceneName: RoomScene
   supplySceneName: PresentScene
   eventSceneName: EventScene
   treasureSceneName: TreasureRoomScene
@@ -10301,6 +10301,14 @@ MonoBehaviour:
   enemyHitVolume: 1
   playerHitClip: {fileID: 8300000, guid: 42ded5264c9e97e419b436c34fcef5ac, type: 3}
   playerHitVolume: 1
+  buttonEnemyLandingClip: {fileID: 0}
+  buttonEnemyLandingVolume: 0.85
+  needleEnemyDashClip: {fileID: 0}
+  needleEnemyDashVolume: 0.8
+  spoolEnemyThreadClip: {fileID: 0}
+  spoolEnemyThreadVolume: 0.82
+  ribbonEnemyAttackClip: {fileID: 0}
+  ribbonEnemyAttackVolume: 0.78
 --- !u!4 &1993731298
 Transform:
   m_ObjectHideFlags: 0

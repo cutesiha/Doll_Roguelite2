@@ -21,6 +21,7 @@ public class RibbonEnemy : EnemyBase
     [SerializeField, Min(0.05f)] float bindThrustDuration = 0.24f;
     [SerializeField, Min(0f)] float moveSpeed = 0.85f;
     [SerializeField, Min(0.5f)] float preferredDistance = 3.8f;
+    [SerializeField, Min(0.5f)] float attackStartDistance = 5.2f;
     [SerializeField] Vector2 attackCooldownRange = new Vector2(2.2f, 3.4f);
     [SerializeField, Min(0.1f)] float telegraphDuration = 0.65f;
     [SerializeField, Min(0.5f)] float fanRadius = 3.8f;
@@ -98,7 +99,9 @@ public class RibbonEnemy : EnemyBase
 
         float distance = toPlayer.magnitude;
         Vector2 direction = distance > preferredDistance ? toPlayer.normalized : -toPlayer.normalized;
-        float distanceBias = Mathf.Abs(distance - preferredDistance) < 0.35f ? 0f : 1f;
+        float distanceBias = distance > attackStartDistance
+            ? 1f
+            : (Mathf.Abs(distance - preferredDistance) < 0.35f ? 0f : 1f);
         MoveEnemyBody(rb, rb.position + direction * moveSpeed * distanceBias * Time.fixedDeltaTime);
     }
 
@@ -107,6 +110,9 @@ public class RibbonEnemy : EnemyBase
         UpdateIdleMotion();
 
         if (player == null || isAttacking)
+            return;
+
+        if (Vector2.Distance(transform.position, player.position) > attackStartDistance)
             return;
 
         if (Time.time >= nextAttackTime)

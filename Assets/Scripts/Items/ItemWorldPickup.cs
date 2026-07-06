@@ -20,6 +20,8 @@ public class ItemWorldPickup : MonoBehaviour
     Vector3 shakeOffset;
     Coroutine purchaseFailureRoutine;
     SpriteRenderer itemRenderer;
+    Collider2D pickupCollider;
+    CircleCollider2D playerCircle;
     [Header("Tooltip Authoring")]
     [SerializeField] Transform tooltipRoot;
     [SerializeField] SpriteRenderer tooltipBackground;
@@ -32,6 +34,7 @@ public class ItemWorldPickup : MonoBehaviour
     [SerializeField, Min(0.1f)] float tooltipFontSize = 2.0f;
     [SerializeField] Color tooltipBackgroundColor = new Color(0.10f, 0.07f, 0.05f, 0.92f);
     [SerializeField] Color tooltipTextColor = Color.white;
+    [SerializeField] bool useAsGlobalTooltipTemplate;
     [Header("Authoring (에디터 배치용)")]
     [SerializeField] ItemData itemAsset;
     [Header("Shop Feedback")]
@@ -45,6 +48,8 @@ public class ItemWorldPickup : MonoBehaviour
     public ItemData Item => item;
     public bool IsShopItem => shopItem;
     public bool StoreWithoutEquip => storeWithoutEquip;
+
+    static ItemWorldPickup globalTooltipTemplate;
 
     public void Configure(ItemData data, bool isShopItem, int shopPrice, bool storeOnly = false)
     {
@@ -60,6 +65,7 @@ public class ItemWorldPickup : MonoBehaviour
         if (template == null)
             return;
 
+        template.CaptureTooltipAuthoringFromHierarchy();
         tooltipBackgroundSprite = template.tooltipBackgroundSprite;
         tooltipLocalPosition = template.tooltipLocalPosition;
         tooltipBackgroundScale = template.tooltipBackgroundScale;
@@ -70,18 +76,33 @@ public class ItemWorldPickup : MonoBehaviour
         tooltipTextColor = template.tooltipTextColor;
     }
 
+    public void UseAsGlobalTooltipTemplate()
+    {
+        useAsGlobalTooltipTemplate = true;
+        globalTooltipTemplate = this;
+    }
+
     void Awake()
     {
         settings = ItemSystemSettings.Load();
         basePosition = transform.position;
         bobPhase = Random.Range(0f, Mathf.PI * 2f);
         itemRenderer = GetComponent<SpriteRenderer>();
-        Collider2D collider = GetComponent<Collider2D>();
-        if (collider != null)
-            collider.isTrigger = true;
+        pickupCollider = GetComponent<Collider2D>();
+        if (pickupCollider != null)
+            pickupCollider.isTrigger = true;
 
         if (itemAsset != null && item == null)
             Configure(itemAsset, false, 0, false);
+
+        if (useAsGlobalTooltipTemplate)
+            globalTooltipTemplate = this;
+    }
+
+    void OnDestroy()
+    {
+        if (globalTooltipTemplate == this)
+            globalTooltipTemplate = null;
     }
 
     void Start()
@@ -109,10 +130,35 @@ public class ItemWorldPickup : MonoBehaviour
             if (nearby && WasInteractPressed())
                 TryPurchase();
         }
-        else if (distance <= settings.pickupRadius)
+        else if (IsTouchingPlayerCircle())
         {
             TryCollectPlayer();
         }
+    }
+
+    // 아이템 획득 기준을 플레이어의 서클 콜라이더(몸체) 접촉으로 통일한다.
+    // 예전에는 settings.pickupRadius(추상 거리) 기준이라 캡슐/박스 등 다른 콜라이더와
+    // 어긋나 획득 범위가 애매했다.
+    bool IsTouchingPlayerCircle()
+    {
+        if (playerCircle == null)
+        {
+            ResolvePlayer();
+            if (playerCircle == null)
+                return false;
+        }
+
+        Bounds circleBounds = playerCircle.bounds;
+        float circleRadius = Mathf.Max(circleBounds.extents.x, circleBounds.extents.y);
+
+        float itemRadius = 0f;
+        if (pickupCollider != null)
+        {
+            Bounds itemBounds = pickupCollider.bounds;
+            itemRadius = Mathf.Max(itemBounds.extents.x, itemBounds.extents.y);
+        }
+
+        return Vector2.Distance(transform.position, circleBounds.center) <= circleRadius + itemRadius;
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -165,13 +211,21 @@ public class ItemWorldPickup : MonoBehaviour
 
     void TryCollect(Collider2D other)
     {
-        if (collected || other == null || !other.CompareTag("Player"))
+        if (collected || other == null)
             return;
 
         if (Time.time < pickupImmuneUntil)
             return;
 
-        player = other.transform;
+        // 플레이어의 콜라이더가 아니면 무시. 서클 콜라이더에 실제로 닿았을 때만 획득한다
+        // (캡슐/박스 트리거에 스쳐도 몸체에 닿기 전엔 안 먹도록 통일).
+        if (!other.CompareTag("Player") && other.GetComponentInParent<PlayerController>() == null)
+            return;
+
+        ResolvePlayer();
+        if (!IsTouchingPlayerCircle())
+            return;
+
         TryCollectPlayer();
     }
 
@@ -268,16 +322,25 @@ public class ItemWorldPickup : MonoBehaviour
 
     void ResolvePlayer()
     {
-        if (player != null)
-            return;
+        if (player == null)
+        {
+            GameObject playerObject = GameObject.FindWithTag("Player");
+            if (playerObject != null)
+                player = playerObject.transform;
+        }
 
-        GameObject playerObject = GameObject.FindWithTag("Player");
-        if (playerObject != null)
-            player = playerObject.transform;
+        if (playerCircle == null && player != null)
+            playerCircle = player.GetComponent<CircleCollider2D>();
     }
 
     void EnsureTooltip()
     {
+        ItemWorldPickup template = ResolveGlobalTooltipTemplate();
+        if (template != null && template != this)
+            CopyPresentationFrom(template);
+        else if (useAsGlobalTooltipTemplate)
+            CaptureTooltipAuthoringFromHierarchy();
+
         if (tooltipRoot == null)
         {
             Transform existingTooltip = transform.Find("ItemTooltip");
@@ -333,6 +396,38 @@ public class ItemWorldPickup : MonoBehaviour
         tooltipRoot.gameObject.SetActive(false);
     }
 
+    void CaptureTooltipAuthoringFromHierarchy()
+    {
+        if (tooltipRoot == null)
+        {
+            Transform existingTooltip = transform.Find("ItemTooltip");
+            if (existingTooltip != null)
+                tooltipRoot = existingTooltip;
+        }
+
+        if (tooltipRoot != null)
+            tooltipLocalPosition = tooltipRoot.localPosition;
+
+        if (tooltipBackground == null && tooltipRoot != null)
+            tooltipBackground = tooltipRoot.GetComponentInChildren<SpriteRenderer>(true);
+        if (tooltipBackground != null)
+        {
+            tooltipBackgroundSprite = tooltipBackground.sprite;
+            tooltipBackgroundScale = tooltipBackground.transform.localScale;
+            tooltipBackgroundColor = tooltipBackground.color;
+        }
+
+        if (tooltipText == null && tooltipRoot != null)
+            tooltipText = tooltipRoot.GetComponentInChildren<TextMeshPro>(true);
+        if (tooltipText != null)
+        {
+            tooltipTextLocalPosition = tooltipText.transform.localPosition;
+            tooltipFontSize = tooltipText.fontSize;
+            tooltipTextColor = tooltipText.color;
+            tooltipTextBoxSize = tooltipText.rectTransform.sizeDelta;
+        }
+    }
+
     string TooltipText()
     {
         if (item == null)
@@ -349,6 +444,24 @@ public class ItemWorldPickup : MonoBehaviour
         EnsureTooltip();
         if (tooltipRoot != null)
             tooltipRoot.gameObject.SetActive(visible);
+    }
+
+    ItemWorldPickup ResolveGlobalTooltipTemplate()
+    {
+        if (globalTooltipTemplate != null)
+            return globalTooltipTemplate;
+
+        ItemWorldPickup[] pickups = FindObjectsByType<ItemWorldPickup>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < pickups.Length; i++)
+        {
+            if (pickups[i] == null || !pickups[i].useAsGlobalTooltipTemplate)
+                continue;
+
+            globalTooltipTemplate = pickups[i];
+            return globalTooltipTemplate;
+        }
+
+        return null;
     }
 
     static bool WasInteractPressed()

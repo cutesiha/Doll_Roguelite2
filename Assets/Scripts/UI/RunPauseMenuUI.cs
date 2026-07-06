@@ -204,6 +204,7 @@ void Build()
         if (menuPanel == null)
             return;
 
+        NormalizeMenuPanel();
         RememberMenuPanelShownPosition();
 
         string[] labels =
@@ -228,6 +229,27 @@ void Build()
         }
 
         ConfigureMenuCloseButton();
+    }
+
+    void NormalizeMenuPanel()
+    {
+        RectTransform rect = menuPanel.transform as RectTransform;
+        if (rect == null)
+            rect = menuPanel.AddComponent<RectTransform>();
+
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = MenuPanelSize;
+        rect.localScale = Vector3.one;
+
+        Image image = menuPanel.GetComponent<Image>();
+        if (image == null)
+            image = menuPanel.AddComponent<Image>();
+        image.sprite = optionBackgroundSprite;
+        image.type = optionBackgroundSprite != null && optionBackgroundSprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+        image.color = Color.white;
+        image.raycastTarget = true;
     }
 
     void RememberMenuPanelShownPosition()

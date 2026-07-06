@@ -28,6 +28,9 @@ public class SoundManager : MonoBehaviour
     public const string NeedleEnemyDashSfxPath = "Sounds/needle_enemy_dash";
     public const string SpoolEnemyThreadSfxPath = "Sounds/spool_enemy_thread";
     public const string RibbonEnemyAttackSfxPath = "Sounds/ribbon_enemy_attack";
+    public const string DoorBlockedSfxPath = "Sounds/door_blocked";
+    public const string ChallengeTimerTickSfxPath = "Sounds/challenge_timer_tick";
+    public const string ChallengeTimerEndSfxPath = "Sounds/challenge_timer_end";
     static readonly string[] BookBossInkDropSfxPaths =
     {
         "Sounds/book_boss_ink_drop_1",
@@ -72,6 +75,12 @@ public class SoundManager : MonoBehaviour
     [SerializeField, Min(0f)] float gemUseDuration = 1.4f;
     [SerializeField] AudioClip waveClearClip;
     [SerializeField, Range(0f, 3f)] float waveClearVolume = 1f;
+    [SerializeField] AudioClip doorBlockedClip;
+    [SerializeField, Range(0f, 3f)] float doorBlockedVolume = 1f;
+    [SerializeField] AudioClip challengeTimerTickClip;
+    [SerializeField, Range(0f, 3f)] float challengeTimerTickVolume = 0.75f;
+    [SerializeField] AudioClip challengeTimerEndClip;
+    [SerializeField, Range(0f, 3f)] float challengeTimerEndVolume = 1f;
     [SerializeField] AudioClip afterVictoryBgmClip;
 
     [Header("Player Footsteps")]
@@ -303,6 +312,24 @@ public class SoundManager : MonoBehaviour
     {
         SoundManager manager = EnsureInstance();
         manager.PlayManaged(manager.GetWaveClearClip(), manager.waveClearVolume, repeatGuard);
+    }
+
+    public static void PlayDoorBlocked(float repeatGuard = 0.12f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetDoorBlockedClip(), manager.doorBlockedVolume, repeatGuard);
+    }
+
+    public static void PlayChallengeTimerTick(float repeatGuard = 0.2f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetChallengeTimerTickClip(), manager.challengeTimerTickVolume, repeatGuard);
+    }
+
+    public static void PlayChallengeTimerEnd(float repeatGuard = 0.2f)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetChallengeTimerEndClip(), manager.challengeTimerEndVolume, repeatGuard);
     }
 
     public static void PlayAfterVictoryBgmWithFade(float fadeOutDuration = 0.9f, float fadeInDuration = 1.0f)
@@ -818,6 +845,30 @@ public class SoundManager : MonoBehaviour
         return waveClearClip;
     }
 
+    AudioClip GetDoorBlockedClip()
+    {
+        if (doorBlockedClip == null)
+            doorBlockedClip = LoadClipResource(DoorBlockedSfxPath, ClickSfxPath);
+
+        return doorBlockedClip;
+    }
+
+    AudioClip GetChallengeTimerTickClip()
+    {
+        if (challengeTimerTickClip == null)
+            challengeTimerTickClip = LoadClipResource(ChallengeTimerTickSfxPath, ClickSfxPath);
+
+        return challengeTimerTickClip;
+    }
+
+    AudioClip GetChallengeTimerEndClip()
+    {
+        if (challengeTimerEndClip == null)
+            challengeTimerEndClip = LoadClipResource(ChallengeTimerEndSfxPath, WaveClearFallbackSfxPath);
+
+        return challengeTimerEndClip;
+    }
+
     AudioClip GetAfterVictoryBgmClip()
     {
         if (afterVictoryBgmClip == null)
@@ -1011,6 +1062,9 @@ public class SoundManager : MonoBehaviour
 
     void PlayManaged(AudioClip clip, float clipVolume, float repeatGuard)
     {
+        if (clip == null)
+            return;
+
         PlayInternal(clip, repeatGuard, clipVolume);
     }
 

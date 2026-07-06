@@ -18,7 +18,10 @@ public class ItemTestRoomSpawner : MonoBehaviour
     void Start()
     {
         if (authoredInHierarchy)
+        {
+            RegisterAuthoredTooltipTemplate();
             return;
+        }
         SpawnAllItems();
     }
 
@@ -37,6 +40,7 @@ public class ItemTestRoomSpawner : MonoBehaviour
 
         IReadOnlyList<ItemData> items = ItemCatalog.All;
         int visibleIndex = 0;
+        ItemWorldPickup tooltipTemplate = null;
         for (int i = 0; i < items.Count; i++)
         {
             ItemData item = items[i];
@@ -52,11 +56,16 @@ public class ItemTestRoomSpawner : MonoBehaviour
                 startPosition.y - row * spacing.y,
                 0f);
 
-            ItemWorldPickup pickup = ItemDropSpawner.Spawn(item, position, false, 0, null, false);
+            ItemWorldPickup pickup = ItemDropSpawner.Spawn(item, position, false, 0, tooltipTemplate, false);
             if (pickup != null)
             {
                 pickup.name = "ItemTest_" + item.ItemId;
                 pickup.transform.SetParent(root.transform, true);
+                if (tooltipTemplate == null)
+                {
+                    tooltipTemplate = pickup;
+                    tooltipTemplate.UseAsGlobalTooltipTemplate();
+                }
             }
 
             CreateLabel(root.transform, item, position + new Vector3(0f, -0.95f, 0f));
@@ -91,5 +100,14 @@ public class ItemTestRoomSpawner : MonoBehaviour
         label.textWrappingMode = TextWrappingModes.Normal;
         label.rectTransform.sizeDelta = new Vector2(3.2f, 0.85f);
         label.text = item.ItemId + "\n" + item.ItemName;
+    }
+
+    void RegisterAuthoredTooltipTemplate()
+    {
+        ItemWorldPickup[] pickups = GetComponentsInChildren<ItemWorldPickup>(true);
+        if (pickups == null || pickups.Length == 0)
+            return;
+
+        pickups[0].UseAsGlobalTooltipTemplate();
     }
 }

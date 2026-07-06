@@ -545,6 +545,8 @@ public class ItemInventoryManager : MonoBehaviour
         if (!IsBodyPartCompatibleWithSlot(item.EquipLocation, targetSlot))
             return false;
 
+        instance.SetLastBodySlot(targetSlot);
+
         // 이 부위에 레거시 시스템(BodyPart)으로 이미 장착된 기본 파츠가 있으면 보관함으로 되돌린다.
         // 게임 시작 시 모든 부위에는 이 레거시 파츠가 기본으로 채워져 있어서, 여기서 치우지 않으면
         // 나중에 신규 아이템을 뺄 때 드롭 처리가 이 파츠를 대신 해제해버리는 문제가 생긴다.
@@ -622,6 +624,7 @@ public class ItemInventoryManager : MonoBehaviour
         if (UsedSlots >= Capacity)
             return false;
 
+        instance.SetLastBodySlot(slot);
         AddToStorage(instance);
         equippedByBodySlot.Remove(slot);
         SyncEquippedLocationFromSlots(instance.data.EquipLocation);
@@ -881,6 +884,27 @@ public class ItemInventoryManager : MonoBehaviour
             gameObject.AddComponent<ItemDebugHud>();
         else if (!isTestRoom && hud != null)
             Destroy(hud);
+
+        if (isTestRoom)
+            SeedItemTestRoomInventory();
+    }
+
+    void SeedItemTestRoomInventory()
+    {
+        if (storage.Count > 0 || consumable != null || shield != null || coinStacks.Count > 0)
+            return;
+
+        IReadOnlyList<ItemData> items = ItemCatalog.All;
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemData item = items[i];
+            if (item == null || item.Type == ItemType.Currency)
+                continue;
+
+            AddNewItemToStorage(item);
+            NotifyChanged();
+            return;
+        }
     }
 
     void NotifyChanged()

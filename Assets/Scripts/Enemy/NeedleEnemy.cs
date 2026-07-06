@@ -17,6 +17,7 @@ public class NeedleEnemy : EnemyBase
     [SerializeField, Min(0f)] float chaseSpeed = 0.75f;
     [SerializeField] Vector2 dashCooldownRange = new Vector2(2.6f, 3.8f);
     [SerializeField, Min(0.1f)] float warningDuration = 1.2f;
+    [SerializeField, Min(0.5f)] float attackStartDistance = 5.8f;
     [SerializeField, Min(0.5f)] float dashDistance = 11f;
     [SerializeField, Min(0.1f)] float dashWidth = 1.05f;
     [SerializeField, Min(0.5f)] float dashSpeed = 18f;
@@ -88,6 +89,9 @@ public class NeedleEnemy : EnemyBase
             UpdateWalkAnimation();
 
         if (player == null || isBusy)
+            return;
+
+        if (Vector2.Distance(transform.position, player.position) > attackStartDistance)
             return;
 
         if (Time.time >= nextDashTime)

@@ -310,9 +310,7 @@ public class SpecialRoomController : MonoBehaviour
         if (keyboard == null)
             return false;
 
-        return keyboard.eKey.wasPressedThisFrame
-            || keyboard.enterKey.wasPressedThisFrame
-            || keyboard.numpadEnterKey.wasPressedThisFrame;
+        return keyboard.eKey.wasPressedThisFrame;
     }
 
     bool IsNear(GameObject target)

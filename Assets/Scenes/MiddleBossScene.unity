@@ -343,9 +343,9 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
   attackCooldown: 0.3
-  attackDistance: 2
-  attackDistanceBonus: 0.4
-  verticalAttackDistanceBonus: 0.12
+  attackDistance: 0.55
+  attackDistanceBonus: 0.2
+  verticalAttackDistanceBonus: 0.06
   attackSize: {x: 1, y: 1}
   attackDuration: 0.12
   fistScale: {x: 1.65, y: 1.65}
@@ -1372,7 +1372,7 @@ MonoBehaviour:
   bossSceneName: BossScene
   middleBossSceneName: MiddleBossScene
   finalBossSceneName: BookBossScene
-  challengeSceneName: RoomScene
+  challengeSceneName: ChallengeScene
   supplySceneName: PresentScene
   eventSceneName: EventScene
   treasureSceneName: TreasureRoomScene
@@ -6418,17 +6418,17 @@ MonoBehaviour:
   bossScale: 3
   breathAnimator: {fileID: 3100000017}
   introDelay: 1
-  betweenActions: 1
+  betweenActions: 0.55
   strikeTime: 0.35
   solveTime: 8
   sewingLineThickness: 4.5
   diagonalLengthMultiplier: 1.2
-  largeAttackWarningTime: 1.15
-  firstJudgementTime: 6
-  repeatJudgementTime: 4
-  designMatchTime: 4
+  largeAttackWarningTime: 0.9
+  firstJudgementTime: 5
+  repeatJudgementTime: 3.5
+  designMatchTime: 3.5
   pinClosureTime: 0.55
-  pinExplosionDelay: 0.85
+  pinExplosionDelay: 0.3
   successStunTime: 1.5
   judgementPaperOffset: {x: 0, y: -7}
   judgementMapIconSize: 1.8

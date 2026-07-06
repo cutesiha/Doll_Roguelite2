@@ -18,6 +18,7 @@ public class PlayerItemEffects : MonoBehaviour
     PlayerAttack attack;
     PlayerDamageReceiver damageReceiver;
     ItemVisionEffect visionEffect;
+    BoxCollider2D bodyBox;
     Vector3 lastThreadPosition;
     float nextThreadTime;
 
@@ -40,6 +41,7 @@ public class PlayerItemEffects : MonoBehaviour
         controller = GetComponent<PlayerController>();
         attack = GetComponent<PlayerAttack>();
         damageReceiver = GetComponent<PlayerDamageReceiver>();
+        bodyBox = GetComponent<BoxCollider2D>();
         lastThreadPosition = transform.position;
     }
 
@@ -70,9 +72,23 @@ public class PlayerItemEffects : MonoBehaviour
             return;
 
         ItemEffectData effect = legItem.GetEffect(ItemEffectType.ThreadTrail);
-        PlayerThreadTrail.Spawn(transform.position, Mathf.Max(1, Mathf.RoundToInt(effect != null ? effect.value : 1f)));
+        PlayerThreadTrail.Spawn(ThreadSpawnPosition(), Mathf.Max(1, Mathf.RoundToInt(effect != null ? effect.value : 1f)));
         lastThreadPosition = transform.position;
         nextThreadTime = Time.time + 0.14f;
+    }
+
+    // 실타래(다리 아이템)의 실은 플레이어 발밑, 즉 BoxCollider2D의 아래쪽 가장자리에 생성한다.
+    // (박스 콜라이더가 없으면 플레이어 위치를 그대로 사용.)
+    Vector3 ThreadSpawnPosition()
+    {
+        if (bodyBox == null)
+            bodyBox = GetComponent<BoxCollider2D>();
+
+        if (bodyBox == null)
+            return transform.position;
+
+        Bounds b = bodyBox.bounds;
+        return new Vector3(b.center.x, b.min.y, transform.position.z);
     }
 
     public void Refresh()

@@ -78,8 +78,9 @@ public class InventoryUI : MonoBehaviour
     bool _panelWasAuthoredOpen;
     const float PanelHiddenOffsetY = 980f;
     const float PanelOvershootY = 36f;
-    // #2: 제목 텍스트 박스를 아주 조금 아래로 내리는 오프셋(px). 더 내리려면 값을 더 음수로.
-    const float TitleBoxYOffset = -8f;
+    // #2: 제목 파선 박스의 추가 미세 오프셋(px). 0이면 텍스트가 박스 정중앙.
+    // (박스/제목 높이차 보정은 EnsureInventoryTitleBackground에서 별도로 처리한다.)
+    const float TitleBoxYOffset = 0f;
 
     // ── 색상 ───────────────────────────────────────────────────────────
     static readonly Color ClearColor = new Color(0f, 0f, 0f, 0f);
@@ -123,6 +124,7 @@ void Awake()
         if (transform.parent == null)
             DontDestroyOnLoad(gameObject);
         EnsureEventSystem();
+        InventoryItemTooltip.EnsureTooltip();
         WireClicks();
         EnsureToggleHotspot();
         ApplyInventoryHitTesting();
@@ -449,10 +451,14 @@ void Start()
             dropTarget = part.gameObject.AddComponent<InventoryEquipDropTarget>();
         dropTarget.SetAcceptedSlot(slot);
 
-        InventoryItemTooltip tooltip = part.GetComponent<InventoryItemTooltip>();
-        if (tooltip == null)
-            tooltip = part.gameObject.AddComponent<InventoryItemTooltip>();
-        tooltip.SetBodySlot(slot);
+        InventoryItemTooltip[] tooltips = part.GetComponents<InventoryItemTooltip>();
+        for (int tooltipIndex = 0; tooltipIndex < tooltips.Length; tooltipIndex++)
+        {
+            if (Application.isPlaying)
+                Destroy(tooltips[tooltipIndex]);
+            else
+                DestroyImmediate(tooltips[tooltipIndex]);
+        }
     }
 
     // 히트박스(part)보다 큰 시각적 이미지를 자식으로 만들어, 클릭/드래그 영역은 그대로 두고
@@ -645,16 +651,20 @@ void Start()
     static void FitSlotIcon(Image icon)
     {
         if (icon == null || icon.sprite == null) return;
-        icon.preserveAspect = false;
+        // 방울 눈처럼 "원래 모양 그대로" 들어가도록 종횡비를 유지한다.
+        icon.preserveAspect = true;
         icon.type = Image.Type.Simple;
         RectTransform rt = icon.transform as RectTransform;
         if (rt == null) return;
 
         Rect content = icon.sprite.textureRect;
         Rect full = icon.sprite.rect;
-        float scaleX = content.width  > 0.01f ? SlotIconBox / content.width  : 1f;
-        float scaleY = content.height > 0.01f ? SlotIconBox / content.height : 1f;
-        Vector2 size = new Vector2(full.width * scaleX, full.height * scaleY);
+        // 실제 그림 영역(content)의 더 긴 변을 슬롯 박스에 맞추는 "균일 배율"을 쓴다.
+        // 축별로 다른 배율을 쓰면(예전 방식) 정사각형이 아닌 스프라이트가 찌그러졌다.
+        // 균일 배율 + preserveAspect 로 모든 아이템이 방울 눈과 동일하게 비율을 유지한다.
+        float contentMax = Mathf.Max(content.width, content.height);
+        float scale = contentMax > 0.01f ? SlotIconBox / contentMax : 1f;
+        Vector2 size = new Vector2(full.width * scale, full.height * scale);
 
         // 여백이 극단적으로 커서 슬롯 박스를 훨씬 넘어서면(이웃 슬롯 아이콘과 겹칠 수 있음)
         // 종횡비는 유지한 채 상한선까지만 균일하게 줄인다.
@@ -972,8 +982,11 @@ TextMeshProUGUI EnsureStorageSlotLabel(Transform parent, string name, string val
         boxRect.anchorMin = new Vector2(0.5f, titleRect.anchorMax.y);
         boxRect.anchorMax = new Vector2(0.5f, titleRect.anchorMax.y);
         boxRect.pivot = titleRect.pivot;
-        // #2: 제목 텍스트 박스를 아주 조금 아래로 내린다.
-        boxRect.anchoredPosition = titleRect.anchoredPosition + new Vector2(0f, TitleBoxYOffset);
+        // 박스가 제목 텍스트보다 크고 둘 다 같은 피벗(예: 위 top)이라, 같은 anchoredPosition을 쓰면
+        // 박스가 한쪽으로 더 커져 텍스트가 박스 안에서 치우친다(제목이 위로 뜨는 원인).
+        // 박스 중심이 제목 rect 중심과 정확히 겹치도록 (피벗 기준) 높이 차의 절반만큼 보정한다.
+        float centerAlignY = (0.5f - titleRect.pivot.y) * (CSlotRectSize(titleRect).y - boxSize.y);
+        boxRect.anchoredPosition = titleRect.anchoredPosition + new Vector2(0f, centerAlignY + TitleBoxYOffset);
         boxRect.sizeDelta = boxSize;
 
         Image background = box.GetComponent<Image>();
@@ -1423,7 +1436,7 @@ void NormalizeCanvasTransform()
 
             if (i < _storageBtn.Length && _storageBtn[i] != null && _storageImg[i] != null)
                 _storageBtn[i].targetGraphic = _storageImg[i];
-            if (_storageName[i] != null) _storageName[i].text = p != null ? p.DisplayName() : (i < _storageEmptyName.Length ? _storageEmptyName[i] : "빈 슬롯");
+            if (_storageName[i] != null) _storageName[i].text = p != null && !p.IsEquippable ? p.DisplayName() : "";
             // task20: 보관 슬롯에 저장된 부위의 체력 동그라미 표시 안 함
             if (_storageHp[i]   != null) _storageHp[i].text  = "";
         }
@@ -1439,21 +1452,26 @@ void NormalizeCanvasTransform()
         for (int i = 0; i < storageCount; i++)
             slotTaken[i] = inv.storage[i] != null; // 레거시 BodyPart가 이미 차지한 칸
 
-        void DisplayItemInSlot(int slotIdx, int listIdx, ItemData item)
+        void DisplayItemInSlot(int slotIdx, int listIdx, ItemInstance instance)
         {
+            ItemData item = instance != null ? instance.data : null;
+            if (item == null)
+                return;
+
             if (_storageImg[slotIdx] != null)
                 _storageImg[slotIdx].color = new Color(0.12f, 0.09f, 0.06f, 0.35f);
 
             Image icon = GetSlotItemIcon(_storageImg[slotIdx]);
             if (icon != null)
             {
-                icon.sprite = item.Sprite;
-                icon.color  = item.Sprite != null ? Color.white : new Color(0.88f, 0.48f, 0.24f, 0.8f);
-                if (item.Sprite != null) FitSlotIcon(icon);
+                Sprite slotSprite = StorageSpriteForItem(instance);
+                icon.sprite = slotSprite;
+                icon.color  = slotSprite != null ? Color.white : new Color(0.88f, 0.48f, 0.24f, 0.8f);
+                if (slotSprite != null) FitSlotIcon(icon);
                 else (icon.transform as RectTransform).sizeDelta = Vector2.zero;
             }
             SetCoinGrid(_storageImg[slotIdx], 0, null);
-            if (_storageName[slotIdx] != null) _storageName[slotIdx].text = item.ItemName;
+            if (_storageName[slotIdx] != null) _storageName[slotIdx].text = item.Type == ItemType.BodyPart ? "" : item.ItemName;
             if (_storageHp[slotIdx]   != null) _storageHp[slotIdx].text  = "";
 
             InventoryStorageDragSource dragSource = _storageImg[slotIdx] != null ? _storageImg[slotIdx].GetComponent<InventoryStorageDragSource>() : null;
@@ -1496,7 +1514,7 @@ void NormalizeCanvasTransform()
                 int pin = itemInv.GetItemSlotPin(k);
                 if (pin < 0 || pin >= storageCount || slotTaken[pin])
                     continue;
-                DisplayItemInSlot(pin, k, itemInv.Storage[k].data);
+                DisplayItemInSlot(pin, k, itemInv.Storage[k]);
                 slotTaken[pin] = true;
                 itemPlaced[k] = true;
             }
@@ -1522,7 +1540,7 @@ void NormalizeCanvasTransform()
             {
                 if (itemPlaced[k] || !FindNextFree())
                     continue;
-                DisplayItemInSlot(nextFree, k, itemInv.Storage[k].data);
+                DisplayItemInSlot(nextFree, k, itemInv.Storage[k]);
                 slotTaken[nextFree] = true;
             }
             for (int k = 0; k < coinStackCount; k++)
@@ -1849,6 +1867,37 @@ void NormalizeCanvasTransform()
         }
 
         return GetPartSprite(slot);
+    }
+
+    static Sprite StorageSpriteForItem(ItemInstance instance)
+    {
+        ItemData item = instance != null ? instance.data : null;
+        if (item == null)
+            return null;
+
+        if (item.Type != ItemType.BodyPart)
+            return item.Sprite;
+
+        BodySlot slot = PreferredBodySlotForStorageItem(instance);
+        Sprite equippedSprite = item.GetEquippedSprite(slot);
+        return equippedSprite != null ? equippedSprite : item.Sprite;
+    }
+
+    static BodySlot PreferredBodySlotForStorageItem(ItemInstance instance)
+    {
+        ItemData item = instance != null ? instance.data : null;
+        if (item != null && instance.TryGetLastBodySlot(out BodySlot rememberedSlot)
+            && ItemInventoryManager.IsBodyPartCompatibleWithSlot(item.EquipLocation, rememberedSlot))
+            return rememberedSlot;
+
+        switch (item != null ? item.EquipLocation : ItemEquipLocation.None)
+        {
+            case ItemEquipLocation.Eye: return BodySlot.EyeLeft;
+            case ItemEquipLocation.Arm: return BodySlot.ArmLeft;
+            case ItemEquipLocation.Body: return BodySlot.Body;
+            case ItemEquipLocation.Leg: return BodySlot.LegLeft;
+            default: return BodySlot.Body;
+        }
     }
 
     static void SetImageSpriteSafely(Image image, Sprite sprite)

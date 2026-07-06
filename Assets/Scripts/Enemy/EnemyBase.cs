@@ -481,6 +481,28 @@ public class EnemyBase : MonoBehaviour
         if (CanOccupyEnemyPosition(targetPosition))
             return targetPosition;
 
+        Vector2 delta = targetPosition - current;
+        float step = delta.magnitude;
+        if (step > 0.0001f)
+        {
+            Vector2 direction = delta / step;
+            Vector2 perpendicular = new Vector2(-direction.y, direction.x);
+            float detourStep = Mathf.Max(step, 0.16f);
+            Vector2[] detours =
+            {
+                current + perpendicular * detourStep,
+                current - perpendicular * detourStep,
+                targetPosition + perpendicular * detourStep,
+                targetPosition - perpendicular * detourStep,
+                current + (direction + perpendicular).normalized * detourStep,
+                current + (direction - perpendicular).normalized * detourStep
+            };
+
+            for (int i = 0; i < detours.Length; i++)
+                if (CanOccupyEnemyPosition(detours[i]))
+                    return detours[i];
+        }
+
         Vector2 slideX = new Vector2(targetPosition.x, current.y);
         if (CanOccupyEnemyPosition(slideX))
             return slideX;

@@ -23,21 +23,26 @@ public class MinotaurBoss : EnemyBase
 
     [Header("Timing")]
     [SerializeField, Min(0.1f)] float introDelay = 1.0f;
-    [SerializeField, Min(0.1f)] float betweenActions = 1.0f;
+    // task: 패턴을 더 빨리 쓰고, 패턴↔기본공격 사이 쿨타임을 줄인다 (1.0 → 0.55).
+    [SerializeField, Min(0.1f)] float betweenActions = 0.55f;
     [SerializeField, Min(0.1f)] float strikeTime = 0.35f;
     [SerializeField, Min(1f)] float solveTime = 8f;
 
     [Header("Room-wide Sewing Lines")]
     [SerializeField, Min(0.5f)] float sewingLineThickness = 2.9f;
     [SerializeField, Min(1f)] float diagonalLengthMultiplier = 1.2f;
-    [SerializeField, Min(0.1f)] float largeAttackWarningTime = 1.15f;
+    // task1: 기본공격 경고 모션 시간을 조금 줄인다 (1.15 → 0.9).
+    [SerializeField, Min(0.1f)] float largeAttackWarningTime = 0.9f;
 
     [Header("Mechanic Timing")]
-    [SerializeField, Min(1f)] float firstJudgementTime = 6f;
-    [SerializeField, Min(1f)] float repeatJudgementTime = 4f;
-    [SerializeField, Min(1f)] float designMatchTime = 4f;
+    // task4: 1웨이브(판정) 타이머를 조금 줄인다.
+    [SerializeField, Min(1f)] float firstJudgementTime = 5f;
+    [SerializeField, Min(1f)] float repeatJudgementTime = 3.5f;
+    // task4: 2웨이브(도안 맞추기) 타이머도 조금 줄인다.
+    [SerializeField, Min(1f)] float designMatchTime = 3.5f;
     [SerializeField, Min(0.1f)] float pinClosureTime = 0.55f;
-    [SerializeField, Min(0.1f)] float pinExplosionDelay = 0.85f;
+    // task3: 3웨이브 핀 패턴의 폭발 전 경고 시간을 대폭 줄인다 (0.85 → 0.3).
+    [SerializeField, Min(0.1f)] float pinExplosionDelay = 0.3f;
     [SerializeField, Min(0.1f)] float successStunTime = 1.5f;
 
     [Header("Mechanic Layout")]

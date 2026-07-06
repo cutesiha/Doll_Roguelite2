@@ -14,7 +14,7 @@ public class ThreadMazeChallengeManager : MonoBehaviour
     }
 
     [Header("Challenge")]
-    [SerializeField, Min(1f)] float timeLimit = 40f;
+    [SerializeField, Min(1f)] float timeLimit = 60f;
     [SerializeField] bool requireChallengeNode = true;
     [SerializeField] bool allowDirectRoomSceneTest = true;
 
@@ -32,6 +32,8 @@ public class ThreadMazeChallengeManager : MonoBehaviour
     [SerializeField, Min(0f)] float warningThreshold = 10f;
     [SerializeField, Min(0f)] float warningShakePixels = 8f;
     [SerializeField, Min(0f)] float messageDuration = 2.5f;
+    [SerializeField, Min(0.05f)] float failureFeedbackDuration = 0.65f;
+    [SerializeField, Min(0.05f)] float mazeFadeDuration = 0.9f;
 
     [Header("Exit Doors")]
     [SerializeField] GameObject doorTemplate;
@@ -41,6 +43,9 @@ public class ThreadMazeChallengeManager : MonoBehaviour
     float remainingTime;
     Vector2 timerBasePosition;
     bool timerBasePositionCaptured;
+    int lastWarningSecond = int.MaxValue;
+    Coroutine messageRoutine;
+    Coroutine failureRoutine;
     readonly System.Collections.Generic.List<DoorTrigger> activeDoors = new System.Collections.Generic.List<DoorTrigger>();
 
     public ChallengeState State => state;
@@ -77,6 +82,11 @@ public class ThreadMazeChallengeManager : MonoBehaviour
             FailChallenge();
     }
 
+    void OnDisable()
+    {
+        RunHudUI.HideJudgementTimer();
+    }
+
     public bool ShouldRunInCurrentScene()
     {
         if (!requireChallengeNode && !Application.isPlaying)
@@ -96,6 +106,9 @@ public class ThreadMazeChallengeManager : MonoBehaviour
         MapRunState.EnsureRun();
         state = ChallengeState.Running;
         remainingTime = timeLimit;
+        lastWarningSecond = int.MaxValue;
+        RunHudUI.SetWaveHudVisible(false);
+        RunHudUI.ShowJudgementTimer("CHALLENGE", normalTimerColor);
         CaptureTimerBasePosition();
         ClearMessage();
         MovePlayerToStart();
@@ -149,13 +162,23 @@ public class ThreadMazeChallengeManager : MonoBehaviour
 
     void UpdateTimerLabel()
     {
+        float shown = Mathf.Max(0f, remainingTime);
+        RunHudUI.SetJudgementTimer(shown, timeLimit);
+
         if (timerLabel == null)
             return;
 
-        float shown = Mathf.Max(0f, remainingTime);
         timerLabel.text = shown.ToString("0.0") + "s";
         bool warning = shown <= warningThreshold;
-        timerLabel.color = warning ? warningTimerColor : normalTimerColor;
+        float remainingRatio = timeLimit > 0f ? Mathf.Clamp01(shown / timeLimit) : 0f;
+        timerLabel.color = Color.Lerp(warningTimerColor, normalTimerColor, remainingRatio);
+
+        int warningSecond = Mathf.CeilToInt(shown);
+        if (warning && warningSecond != lastWarningSecond && warningSecond > 0)
+        {
+            lastWarningSecond = warningSecond;
+            SoundManager.PlayChallengeTimerTick(0.15f);
+        }
 
         CaptureTimerBasePosition();
         if (warning)
@@ -182,6 +205,7 @@ public class ThreadMazeChallengeManager : MonoBehaviour
     {
         state = ChallengeState.ChallengeSucceeded;
         remainingTime = Mathf.Max(0f, remainingTime);
+        RunHudUI.HideJudgementTimer();
         ShowMessage("도전 성공", new Color(0.3f, 1f, 0.42f, 1f));
 
         if (MapRunState.PendingNode != null && MapRunState.PendingNode.roomType == RoomType.Challenge)
@@ -196,13 +220,92 @@ public class ThreadMazeChallengeManager : MonoBehaviour
 
     void FailChallenge()
     {
+        if (failureRoutine != null)
+            return;
+
         state = ChallengeState.ChallengeFailed;
         remainingTime = 0f;
         UpdateTimerLabel();
         ShowMessage("도전 실패", new Color(1f, 0.25f, 0.2f, 1f));
+        failureRoutine = StartCoroutine(FailChallengeRoutine());
+    }
+
+    IEnumerator FailChallengeRoutine()
+    {
+        RunHudUI.HideJudgementTimer();
+        SoundManager.PlayChallengeTimerEnd(0.05f);
+        CameraShake.ShakeHorizontal(failureFeedbackDuration, 0.18f, 4.5f);
+        ScreenFlash.FlashRed();
+
+        yield return new WaitForSeconds(Mathf.Max(0.05f, failureFeedbackDuration));
+        yield return StartCoroutine(FadeMazeOutRoutine());
+
         CompleteCurrentRoom();
         BuildNextDoors();
         Debug.Log("[ThreadMaze] ChallengeFailed");
+        failureRoutine = null;
+    }
+
+    IEnumerator FadeMazeOutRoutine()
+    {
+        SpriteRenderer[] sprites = GetComponentsInChildren<SpriteRenderer>(true);
+        TextMeshPro[] texts = GetComponentsInChildren<TextMeshPro>(true);
+        Collider2D[] colliders = GetComponentsInChildren<Collider2D>(true);
+        Color[] spriteColors = new Color[sprites.Length];
+        Color[] textColors = new Color[texts.Length];
+
+        for (int i = 0; i < sprites.Length; i++)
+            spriteColors[i] = sprites[i] != null ? sprites[i].color : Color.white;
+        for (int i = 0; i < texts.Length; i++)
+            textColors[i] = texts[i] != null ? texts[i].color : Color.white;
+        for (int i = 0; i < colliders.Length; i++)
+            if (ShouldFadeMazeObject(colliders[i] != null ? colliders[i].gameObject : null))
+                colliders[i].enabled = false;
+
+        float duration = Mathf.Max(0.05f, mazeFadeDuration);
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            float alpha = 1f - Mathf.Clamp01(elapsed / duration);
+            for (int i = 0; i < sprites.Length; i++)
+            {
+                if (sprites[i] == null || !ShouldFadeMazeObject(sprites[i].gameObject))
+                    continue;
+                Color color = spriteColors[i];
+                color.a *= alpha;
+                sprites[i].color = color;
+            }
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i] == null || !ShouldFadeMazeObject(texts[i].gameObject))
+                    continue;
+                Color color = textColors[i];
+                color.a *= alpha;
+                texts[i].color = color;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        for (int i = 0; i < sprites.Length; i++)
+            if (sprites[i] != null && ShouldFadeMazeObject(sprites[i].gameObject))
+                sprites[i].gameObject.SetActive(false);
+        for (int i = 0; i < texts.Length; i++)
+            if (texts[i] != null && ShouldFadeMazeObject(texts[i].gameObject))
+                texts[i].gameObject.SetActive(false);
+    }
+
+    bool ShouldFadeMazeObject(GameObject go)
+    {
+        if (go == null)
+            return false;
+        if (doorTemplate != null && go.transform.IsChildOf(doorTemplate.transform))
+            return false;
+        if (go.GetComponentInParent<DoorTrigger>() != null)
+            return false;
+        if (go.CompareTag("Player") || go.GetComponentInParent<PlayerController>() != null)
+            return false;
+        return true;
     }
 
     void CompleteCurrentRoom()
@@ -255,14 +358,16 @@ public class ThreadMazeChallengeManager : MonoBehaviour
         messageLabel.text = message;
         messageLabel.color = color;
         messageLabel.gameObject.SetActive(true);
-        StopAllCoroutines();
-        StartCoroutine(HideMessageRoutine());
+        if (messageRoutine != null)
+            StopCoroutine(messageRoutine);
+        messageRoutine = StartCoroutine(HideMessageRoutine());
     }
 
     IEnumerator HideMessageRoutine()
     {
         yield return new WaitForSeconds(messageDuration);
         ClearMessage();
+        messageRoutine = null;
     }
 
     void ClearMessage()

@@ -40,7 +40,8 @@ public class BookBossController : MonoBehaviour
     [SerializeField, Min(1)] int floorSentenceMinCount = 4;
     [SerializeField, Min(1)] int floorSentenceMaxCount = 6;
     [SerializeField, Min(0f)] float floorSentenceSpawnDelay = 0.08f;
-    [SerializeField, Min(0.1f)] float floorSentenceWarningTime = 0.95f;
+    // task6: 기본공격(바닥 문장) 경고 시간을 조금 줄인다 (0.95 → 0.78).
+    [SerializeField, Min(0.1f)] float floorSentenceWarningTime = 0.78f;
     [SerializeField, Min(0.1f)] float floorSentenceActiveTime = 1.35f;
     [SerializeField, Min(0f)] float floorSentenceToPaperDelay = 0.35f;
     [SerializeField, Min(0.01f)] float floorSentenceImpactShakeDuration = 0.18f;
@@ -50,7 +51,8 @@ public class BookBossController : MonoBehaviour
     [Header("Paper Scrap Attack")]
     [SerializeField, Min(0.1f)] float paperScrapSpeed = 13.8f;
     [SerializeField, Min(0.1f)] float paperScrapMaxTime = 2.8f;
-    [SerializeField, Min(0.1f)] float paperScrapWarningTime = 1.75f;
+    // task6: 종이 조각 패턴 경고 시간을 조금 줄인다 (1.75 → 1.45).
+    [SerializeField, Min(0.1f)] float paperScrapWarningTime = 1.45f;
     [SerializeField, Min(0.1f)] float paperScrapWarningRadius = 1.05f;
     [SerializeField] Vector2 paperScrapVisualSize = new Vector2(0.82f, 1.05f);
     [SerializeField] Vector2 wave1PaperAttackRestRange = new Vector2(1.6f, 2.6f);
@@ -60,7 +62,8 @@ public class BookBossController : MonoBehaviour
     [SerializeField] Vector2 wave2FloorSentenceRestRange = new Vector2(0.45f, 0.75f);
     [SerializeField] Vector2 inkRainIntervalRange = new Vector2(0.65f, 0.95f);
     [SerializeField] Vector2Int inkRainBurstCountRange = new Vector2Int(2, 4);
-    [SerializeField, Min(0.1f)] float inkRainWarningTime = 0.85f;
+    // task6: 잉크비 패턴 경고 시간을 조금 줄인다 (0.85 → 0.7).
+    [SerializeField, Min(0.1f)] float inkRainWarningTime = 0.7f;
     [SerializeField, Min(0.1f)] float inkRainWarningRadius = 0.8f;
     [SerializeField, Min(0.1f)] float inkRainStainLifetime = 7f;
     [SerializeField, Min(0.1f)] float inkRainDamageCooldown = 1.25f;
@@ -73,7 +76,8 @@ public class BookBossController : MonoBehaviour
     [SerializeField, Min(0.05f)] float wave3ShakeInterval = 0.28f;
     [SerializeField, Min(1)] int wave3MaxMinions = 5;
     [SerializeField] Vector2 wave3MinionSpawnInterval = new Vector2(2.4f, 3.4f);
-    [SerializeField, Min(0.1f)] float wave3MinionSpawnWarningTime = 1.05f;
+    // task6: 3웨이브 미니언 소환 경고 시간을 조금 줄인다 (1.05 → 0.9).
+    [SerializeField, Min(0.1f)] float wave3MinionSpawnWarningTime = 0.9f;
     [SerializeField, Min(0.1f)] float wave3MinionSpawnWarningRadius = 1.15f;
     [SerializeField, Min(0f)] float wave3AttackInitialDelay = 1.4f;
     [SerializeField, Min(0f)] float wave3BasicLetterExtraDelay = 0.02f;
@@ -1172,7 +1176,9 @@ public class BookBossController : MonoBehaviour
             renderer.color = new Color(0.82f, 0.78f, 0.68f, 1f);
 
         GameObject ringVisual = CreatePoisonRingVisual(landing, 1.8f);
-        AddPoisonZone(landing, 1.8f, Time.time + 4f, ringVisual, "Paper poison ring", true, Vector2.one * 1.8f);
+        // task7: 1웨이브 종이 독 장판이 아주 조금 더 빨리 사라지도록 수명 단축 (4 → 3.2초).
+        // 사라질 때는 UpdatePoison 의 FadeAndDestroyPoisonVisual 로 페이드아웃된다.
+        AddPoisonZone(landing, 1.8f, Time.time + 3.2f, ringVisual, "Paper poison ring", true, Vector2.one * 1.8f);
 
         float life = 4f;
         float lifeElapsed = 0f;
@@ -2949,8 +2955,9 @@ public class BookBossController : MonoBehaviour
         {
             if (Time.time >= poisonZones[i].endTime)
             {
+                // task7: 독 장판 비주얼이 툭 사라지지 않고 부드럽게 페이드아웃되며 사라지게 한다.
                 if (poisonZones[i].visual != null)
-                    Destroy(poisonZones[i].visual);
+                    StartCoroutine(FadeAndDestroyPoisonVisual(poisonZones[i].visual, 0.4f));
                 poisonZones.RemoveAt(i);
             }
         }
@@ -2970,6 +2977,40 @@ public class BookBossController : MonoBehaviour
                 break;
             }
         }
+    }
+
+    // task7: 독 장판(및 잉크 얼룩 등)의 비주얼을 알파 페이드아웃 후 파괴한다.
+    IEnumerator FadeAndDestroyPoisonVisual(GameObject visual, float duration)
+    {
+        if (visual == null)
+            yield break;
+
+        SpriteRenderer[] renderers = visual.GetComponentsInChildren<SpriteRenderer>(true);
+        Color[] baseColors = new Color[renderers.Length];
+        for (int i = 0; i < renderers.Length; i++)
+            baseColors[i] = renderers[i] != null ? renderers[i].color : Color.white;
+
+        float safeDuration = Mathf.Max(0.05f, duration);
+        float elapsed = 0f;
+        while (elapsed < safeDuration && visual != null)
+        {
+            float k = 1f - elapsed / safeDuration;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] == null)
+                    continue;
+
+                Color c = baseColors[i];
+                c.a = baseColors[i].a * k;
+                renderers[i].color = c;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (visual != null)
+            Destroy(visual);
     }
 
     bool PoisonZoneHitsPlayer(PoisonZone zone)

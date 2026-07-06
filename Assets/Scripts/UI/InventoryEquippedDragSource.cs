@@ -84,13 +84,20 @@ public class InventoryEquippedDragSource : MonoBehaviour, IBeginDragHandler, IDr
 
     Vector2 SourceSize()
     {
-        RectTransform sourceRect = transform as RectTransform;
+        // 캐릭터에 부착돼 실제로 보이는 그림(sourceImage)의 크기를 기준으로 고스트를 만든다.
+        // 몸통(Body)은 클릭 히트박스(transform)가 작고 실제 그림은 훨씬 큰 자식 BodyVisual에 그려지므로,
+        // transform 크기를 쓰면 집었을 때 그림이 작아져 보인다. sourceImage 의 rect × 스케일을 써서
+        // 부착 시 크기 그대로 집어지게 한다.
+        RectTransform sourceRect = sourceImage != null ? sourceImage.rectTransform : (transform as RectTransform);
         if (sourceRect == null)
             return new Vector2(170f, 170f);
 
         Vector2 size = sourceRect.rect.size;
         if (size.x <= 0f || size.y <= 0f)
             size = sourceRect.sizeDelta;
+
+        Vector3 scale = sourceRect.localScale;
+        size = new Vector2(size.x * Mathf.Abs(scale.x), size.y * Mathf.Abs(scale.y));
         return new Vector2(Mathf.Max(60f, size.x), Mathf.Max(60f, size.y));
     }
 
