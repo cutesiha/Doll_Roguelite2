@@ -16,11 +16,15 @@ MonoBehaviour:
   tooltipRadius: 2.2
   floatHeight: 0.18
   floatSpeed: 2.2
-  conditionRewardChance: 0.18
+  coinDropChance: 0.3
+  waveClearCoinBonus: 1
+  challengeClearCoinBonus: 2
+  conditionGemChance: 0.1
+  conditionRagChance: 0.05
   startingCoins: 0
-  gemPrice: 12
-  ragPrice: 10
-  bodyPartPrice: 18
+  gemPrice: 8
+  ragPrice: 8
+  bodyPartPrice: 17
   defaultInventoryCapacity: 9
   knittedBodyCapacity: 16
   flagBodyCapacity: 4

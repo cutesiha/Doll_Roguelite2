@@ -458,14 +458,26 @@ public class ItemInventoryManager : MonoBehaviour
 
     public void NotifyEnemyKilled(Vector3 deathPosition)
     {
-        if (Time.time >= coinOnKillUntil)
+        // 소모성 아이템(CoinOnKill) 효과: 기간 중 확정 드랍
+        if (Time.time < coinOnKillUntil)
+        {
+            SpawnCoinAt(deathPosition);
             return;
+        }
 
+        // 영구 적 처치 드랍: coinDropChance 확률 (기본 30%)
+        float chance = settings != null ? settings.coinDropChance : 0.30f;
+        if (Random.value < chance)
+            SpawnCoinAt(deathPosition);
+    }
+
+    void SpawnCoinAt(Vector3 position)
+    {
         GameObject coinPrefab = Resources.Load<GameObject>("Drops/동전");
         if (coinPrefab != null)
         {
-            GameObject go = Instantiate(coinPrefab, deathPosition, Quaternion.identity);
-            go.GetComponent<CoinWorldPickup>()?.Toss(deathPosition);
+            GameObject go = Instantiate(coinPrefab, position, Quaternion.identity);
+            go.GetComponent<CoinWorldPickup>()?.Toss(position);
         }
         else
             AddCoins(1);

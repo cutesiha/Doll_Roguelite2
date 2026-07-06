@@ -50,19 +50,47 @@ public static class ItemRoomRewardSystem
         {
             ItemData item = ItemCatalog.RandomByCategory(ItemCategory.ChallengeRoom);
             ItemDropSpawner.Spawn(item, roomCenter, false, 0);
-            Announce("도전방 보상이 생성되었습니다.");
+
+            // 도전방 클리어 코인 보너스
+            ItemSystemSettings settings = ItemSystemSettings.Load();
+            int coinBonus = settings != null ? settings.challengeClearCoinBonus : 2;
+            if (coinBonus > 0)
+                ItemInventoryManager.Instance?.AddCoins(coinBonus);
+
+            Announce("도전방 클리어! 아이템 + " + coinBonus + " 코인 보너스.");
             return;
         }
 
         if (pendingNode.roomType == RoomType.ConditionCombat)
         {
             ItemSystemSettings settings = ItemSystemSettings.Load();
-            if (Random.value > settings.conditionRewardChance)
-                return;
 
-            ItemData item = ItemCatalog.RandomByAcquisition(ItemAcquisitionLocation.ConditionRoom);
-            ItemDropSpawner.Spawn(item, roomCenter, false, 0);
-            Announce("조건방 보상이 생성되었습니다.");
+            // 조건방 클리어 코인 보너스 (웨이브당 1코인은 Room.cs에서 별도 지급)
+            int coinBonus = settings != null ? settings.challengeClearCoinBonus : 2;
+            if (coinBonus > 0)
+                ItemInventoryManager.Instance?.AddCoins(coinBonus);
+
+            // 추가 아이템 보상 확률 (보석 10%, 누더기 5%)
+            float roll = Random.value;
+            float gemChance = settings != null ? settings.conditionGemChance : 0.10f;
+            float ragChance = settings != null ? settings.conditionRagChance : 0.05f;
+
+            if (roll < gemChance)
+            {
+                ItemData gem = ItemCatalog.RandomByType(ItemType.GemConsumable);
+                ItemDropSpawner.Spawn(gem, roomCenter, false, 0);
+                Announce("조건방 클리어! +" + coinBonus + " 코인 + 보석 보상!");
+            }
+            else if (roll < gemChance + ragChance)
+            {
+                ItemData rag = ItemCatalog.Find("rag");
+                ItemDropSpawner.Spawn(rag, roomCenter, false, 0);
+                Announce("조건방 클리어! +" + coinBonus + " 코인 + 누더기 보상!");
+            }
+            else
+            {
+                Announce("조건방 클리어! +" + coinBonus + " 코인 보너스.");
+            }
         }
     }
 

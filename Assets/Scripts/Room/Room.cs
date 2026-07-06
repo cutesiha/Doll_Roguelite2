@@ -83,6 +83,9 @@ public class Room : MonoBehaviour
             while (!waveCleared)
                 yield return null;
 
+            // 웨이브 클리어 동전 보너스
+            GiveWaveClearCoins();
+
             if (wave < totalWaves)
                 yield return new WaitForSeconds(nextWaveDelay);
         }
@@ -908,6 +911,18 @@ public class Room : MonoBehaviour
     void OnWaveCleared()
     {
         waveCleared = true;
+    }
+
+    static void GiveWaveClearCoins()
+    {
+        ItemInventoryManager inv = ItemInventoryManager.Instance;
+        if (inv == null)
+            return;
+
+        ItemSystemSettings settings = ItemSystemSettings.Load();
+        int bonus = settings != null ? settings.waveClearCoinBonus : 1;
+        if (bonus > 0)
+            inv.AddCoins(bonus);
     }
 
     public void OnRoomCleared()

@@ -38,10 +38,10 @@ public class ItemWorldPickup : MonoBehaviour
     [Header("Authoring (에디터 배치용)")]
     [SerializeField] ItemData itemAsset;
     [Header("Shop Feedback")]
-    [SerializeField, Min(0f)] float purchaseFailureShakeDistance = 0.22f;
-    [SerializeField, Min(0.02f)] float purchaseFailureShakeDuration = 0.34f;
-    [SerializeField, Min(2)] int purchaseFailureShakeSteps = 12;
-    [SerializeField] Color purchaseFailureColor = new Color(1f, 0.12f, 0.12f, 1f);
+    [SerializeField, Min(0f)] float purchaseFailureShakeDistance = 0.09f;
+    [SerializeField, Min(0.02f)] float purchaseFailureShakeDuration = 0.28f;
+    [SerializeField, Min(2)] int purchaseFailureShakeSteps = 8;
+    [SerializeField] Color purchaseFailureColor = new Color(1f, 0.52f, 0.52f, 1f);
 
     float pickupImmuneUntil;
 

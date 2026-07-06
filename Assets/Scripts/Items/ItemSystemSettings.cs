@@ -9,14 +9,20 @@ public class ItemSystemSettings : ScriptableObject
     [Min(0f)] public float floatHeight = 0.18f;
     [Min(0f)] public float floatSpeed = 2.2f;
 
-    [Header("조건방")]
-    [Range(0f, 1f)] public float conditionRewardChance = 0.18f;
+    [Header("동전 드랍")]
+    [Range(0f, 1f)] public float coinDropChance = 0.30f;
+    [Min(0)] public int waveClearCoinBonus = 1;
+    [Min(0)] public int challengeClearCoinBonus = 2;
+
+    [Header("조건방 추가 보상 확률")]
+    [Range(0f, 1f)] public float conditionGemChance = 0.10f;
+    [Range(0f, 1f)] public float conditionRagChance = 0.05f;
 
     [Header("상점")]
     [Min(0)] public int startingCoins = 0;
-    [Min(0)] public int gemPrice = 12;
-    [Min(0)] public int ragPrice = 10;
-    [Min(0)] public int bodyPartPrice = 18;
+    [Min(0)] public int gemPrice = 8;
+    [Min(0)] public int ragPrice = 8;
+    [Min(0)] public int bodyPartPrice = 17;
 
     [Header("인벤토리")]
     [Min(1)] public int defaultInventoryCapacity = 9;
