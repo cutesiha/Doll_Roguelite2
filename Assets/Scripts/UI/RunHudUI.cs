@@ -1990,11 +1990,27 @@ void Awake()
             return;
         }
 
-        int index = (int)group.slot.Value;
+        BodySlot slot = group.slot.Value;
+        int index = (int)slot;
         if (inventory.equipped != null && index >= 0 && index < inventory.equipped.Length)
             part = inventory.equipped[index];
 
-        int remaining = part != null ? HpToPips(part.currentHp, part.maxHp, group.maxPips) : 0;
+        int remaining;
+        if (part != null)
+        {
+            remaining = HpToPips(part.currentHp, part.maxHp, group.maxPips);
+        }
+        else if (ItemInventoryManager.Instance != null
+            && ItemInventoryManager.Instance.TryGetEquippedItemHp(slot, out int itemCurrentHp, out int itemMaxHp))
+        {
+            // 신규 아이템 시스템(기본 파츠 포함)으로 장착된 경우도 HP 점에 반영한다.
+            remaining = HpToPips(itemCurrentHp, itemMaxHp, group.maxPips);
+        }
+        else
+        {
+            remaining = 0;
+        }
+
         ApplyPipColors(group.pips, remaining, group.maxPips);
     }
 

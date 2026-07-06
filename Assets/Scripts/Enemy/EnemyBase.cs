@@ -533,6 +533,35 @@ public class EnemyBase : MonoBehaviour
         return true;
     }
 
+    // 대시처럼 한 번에 멀리, 빠르게 이동하는 공격은 매 스텝 "도착 지점만" 겹침 검사하면
+    // 벽이 이동 거리보다 얇을 때 그 사이를 그대로 통과(터널링)해버릴 수 있다. 그리고
+    // CanOccupyEnemyPosition의 우회(detour) 로직은 좁은 장애물을 옆으로 피해가라고 만든
+    // 것이라, 얇은 벽 앞에서는 오히려 벽 반대편(바깥)으로 "피해서" 나가버리는 부작용이 있다.
+    // 그래서 이동 전에 전체 경로를 한 번에 스윕 검사해서, 벽에 닿기 전까지의 안전한
+    // 거리로 미리 제한한다 (플레이어처럼 벽을 넘지 못하게).
+    protected float ClampTravelDistanceForWalls(Vector2 origin, Vector2 direction, float requestedDistance)
+    {
+        if (requestedDistance <= 0f || direction.sqrMagnitude <= 0.0001f)
+            return requestedDistance;
+
+        Collider2D ownCollider = GetComponent<Collider2D>();
+        Vector2 size = ownCollider != null ? (Vector2)ownCollider.bounds.size : Vector2.one * 0.5f;
+        if (size.x <= 0.01f || size.y <= 0.01f)
+            size = Vector2.one * 0.5f;
+
+        RaycastHit2D[] hits = Physics2D.BoxCastAll(origin, size * 0.92f, transform.eulerAngles.z, direction.normalized, requestedDistance);
+        float closest = requestedDistance;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (!IsBlockingMovementCollider(hits[i].collider))
+                continue;
+            if (hits[i].distance < closest)
+                closest = hits[i].distance;
+        }
+
+        return Mathf.Max(0f, closest);
+    }
+
     bool IsBlockingMovementCollider(Collider2D other)
     {
         if (other == null || !other.enabled || other.isTrigger)
