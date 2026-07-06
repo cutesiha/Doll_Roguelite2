@@ -3,8 +3,10 @@ using UnityEngine;
 public static class MapGenerator
 {
     // Fixed route:
-    // START -> 2 condition rooms -> 4 branch rooms -> MINOTAUR
-    //       -> 2 branch rooms -> 4 branch rooms -> BOOK BOSS
+    // START -> 2 condition rooms -> 4 branch rooms -> 2 branch rooms x2 -> MINOTAUR
+    //       -> 2 branch rooms x2 -> 2 branch rooms -> 4 branch rooms -> BOOK BOSS
+    // (중간보스 바로 앞/뒤에 "2개 중 선택" 층을 2개씩 추가. 어느 쪽을 고르든 다음 층에서는
+    //  항상 같은 2개 옵션이 나오도록 완전 연결(모든 이전 노드 -> 모든 다음 노드)한다.)
 
     static int _nextId;
     static NodeConditionType[] _conditionPool;
@@ -31,27 +33,52 @@ public static class MapGenerator
         Link(a2, b3);
         Link(a2, b4);
 
-        var middleBoss = Node(3, 0, RoomType.MiddleBoss);
-        Link(b1, middleBoss);
-        Link(b2, middleBoss);
-        Link(b3, middleBoss);
-        Link(b4, middleBoss);
+        // ── 중간보스 바로 앞 "2개 중 선택" 구간 (2개 층) ──────────────────
+        // b1~b4 중 무엇을 골랐든 다음엔 항상 c1/c2 둘 다 선택지로 나온다 (완전 연결).
+        var c1 = Node(3, 0, RoomType.Treasure);
+        var c2 = Node(3, 1, RoomType.Shop);
+        Link(b1, c1); Link(b1, c2);
+        Link(b2, c1); Link(b2, c2);
+        Link(b3, c1); Link(b3, c2);
+        Link(b4, c1); Link(b4, c2);
 
-        var d1 = Node(4, 0, RoomType.Treasure);
-        var d2 = Node(4, 1, RoomType.Shop);
-        Link(middleBoss, d1);
-        Link(middleBoss, d2);
+        var f1 = Node(4, 0, RoomType.Challenge);
+        var f2 = ConditionNode(4, 1);
+        Link(c1, f1); Link(c1, f2);
+        Link(c2, f1); Link(c2, f2);
+        // ─────────────────────────────────────────────────────────────
 
-        var e1 = ConditionNode(5, 0);
-        var e2 = Node(5, 1, RoomType.Challenge);
-        var e3 = ConditionNode(5, 2);
-        var e4 = Node(5, 3, RoomType.Treasure);
+        var middleBoss = Node(5, 0, RoomType.MiddleBoss);
+        Link(f1, middleBoss);
+        Link(f2, middleBoss);
+
+        // ── 중간보스 바로 뒤 "2개 중 선택" 구간 (2개 층) ──────────────────
+        var h1 = Node(6, 0, RoomType.Shop);
+        var h2 = ConditionNode(6, 1);
+        Link(middleBoss, h1);
+        Link(middleBoss, h2);
+
+        var k1 = Node(7, 0, RoomType.Treasure);
+        var k2 = Node(7, 1, RoomType.Challenge);
+        Link(h1, k1); Link(h1, k2);
+        Link(h2, k1); Link(h2, k2);
+        // ─────────────────────────────────────────────────────────────
+
+        var d1 = Node(8, 0, RoomType.Treasure);
+        var d2 = Node(8, 1, RoomType.Shop);
+        Link(k1, d1); Link(k1, d2);
+        Link(k2, d1); Link(k2, d2);
+
+        var e1 = ConditionNode(9, 0);
+        var e2 = Node(9, 1, RoomType.Challenge);
+        var e3 = ConditionNode(9, 2);
+        var e4 = Node(9, 3, RoomType.Treasure);
         Link(d1, e1);
         Link(d1, e2);
         Link(d2, e3);
         Link(d2, e4);
 
-        var finalBoss = Node(6, 0, RoomType.FinalBoss);
+        var finalBoss = Node(10, 0, RoomType.FinalBoss);
         Link(e1, finalBoss);
         Link(e2, finalBoss);
         Link(e3, finalBoss);
