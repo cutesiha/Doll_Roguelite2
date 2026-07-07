@@ -27,6 +27,7 @@ public class PlayerAttack : MonoBehaviour
         public float slashScaleMultiplier;
         // 무기 스프라이트가 기본 주먹과 다른 방향으로 그려져 있을 때 보정하는 회전값(도).
         public float spriteRotationOffsetDegrees;
+        public bool preserveSpriteAspect;
     }
 
     [Header("Direction")]
@@ -411,7 +412,7 @@ public class PlayerAttack : MonoBehaviour
 
             if (useRedSlashEffect && elapsed >= nextSlashTime)
             {
-                SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, slashRenderScale, slashRenderColor, effectSprite);
+                SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, slashRenderScale, slashRenderColor, effectSprite, style.preserveSpriteAspect);
                 nextSlashTime += slashSpawnInterval;
             }
 
@@ -425,7 +426,7 @@ public class PlayerAttack : MonoBehaviour
         if (useTrailEffect)
             SpawnTrail(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, trailTint, effectSprite);
         if (useRedSlashEffect)
-            SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, slashRenderScale, slashRenderColor, effectSprite);
+            SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, slashRenderScale, slashRenderColor, effectSprite, style.preserveSpriteAspect);
 
         fist.gameObject.SetActive(false);
         FinishAttack();
@@ -439,19 +440,21 @@ public class PlayerAttack : MonoBehaviour
         switch (kind)
         {
             case ArmWeaponKind.Axe:
+                Sprite axeSprite = ArmItemSprite(leftArm, axeWeaponSprite);
                 return new ArmAttackStyle
                 {
                     durationScale = 1.35f,
                     arcHeightScale = 1.6f,
                     rotationScale = 1.5f,
-                    fistScaleMultiplier = 1.35f,
-                    tint = axeWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
-                    spriteOverride = axeWeaponSprite,
-                    slashScaleMultiplier = 1.8f,
+                    fistScaleMultiplier = 0.72f,
+                    tint = axeSprite != null ? Color.white : ArmItemColor(leftArm),
+                    spriteOverride = axeSprite,
+                    slashScaleMultiplier = 1f,
                     // axe2.png는 자루(갈색)가 그림 오른쪽(진행 방향 쪽)에 그려져 있어, 보정 없이 회전하면
                     // 자루가 플레이어 반대쪽(적 쪽)을 향해 완전히 뒤집혀 보인다. 180도 돌려서 자루가
                     // 플레이어 쪽, 도끼날이 진행 방향(적 쪽)을 향하도록 바로잡는다.
                     spriteRotationOffsetDegrees = 180f,
+                    preserveSpriteAspect = true,
                 };
             case ArmWeaponKind.Keyring:
                 return new ArmAttackStyle
@@ -499,6 +502,12 @@ public class PlayerAttack : MonoBehaviour
                     slashScaleMultiplier = 1f,
                 };
         }
+    }
+
+    Sprite ArmItemSprite(bool leftArm, Sprite fallback)
+    {
+        ItemData armItemData = itemEffects != null ? itemEffects.GetArmItem(leftArm) : null;
+        return armItemData != null && armItemData.Sprite != null ? armItemData.Sprite : fallback;
     }
 
     Color ArmItemColor(bool leftArm)
@@ -610,10 +619,18 @@ public class PlayerAttack : MonoBehaviour
         Sprite sprite = EffectiveFistSprite(style);
         renderer.sprite = sprite != null ? sprite : renderer.sprite;
         renderer.color = style.tint;
-        renderer.transform.localScale = new Vector3(
-            fistScale.x * style.fistScaleMultiplier,
-            fistScale.y * style.fistScaleMultiplier,
-            1f);
+        if (style.preserveSpriteAspect)
+        {
+            float uniformScale = Mathf.Max(Mathf.Abs(fistScale.x), Mathf.Abs(fistScale.y)) * style.fistScaleMultiplier;
+            renderer.transform.localScale = new Vector3(uniformScale, uniformScale, 1f);
+        }
+        else
+        {
+            renderer.transform.localScale = new Vector3(
+                fistScale.x * style.fistScaleMultiplier,
+                fistScale.y * style.fistScaleMultiplier,
+                1f);
+        }
 
         SpriteRenderer sortingSource = bodyRenderer != null ? bodyRenderer : renderer;
         renderer.sortingLayerID = sortingSource.sortingLayerID;
@@ -677,7 +694,7 @@ public class PlayerAttack : MonoBehaviour
         trailPool.Enqueue(trail);
     }
 
-    void SpawnSlash(Vector3 position, Quaternion rotation, int sortingOrder, Vector3 fistRenderScale, Color color, Sprite sprite)
+    void SpawnSlash(Vector3 position, Quaternion rotation, int sortingOrder, Vector3 fistRenderScale, Color color, Sprite sprite, bool preserveSpriteAspect = false)
     {
         SpriteRenderer slash = slashPool.Count > 0 ? slashPool.Dequeue() : CreateSlashRenderer();
         slash.sprite = sprite != null ? sprite : (fistRenderer != null ? fistRenderer.sprite : null);
@@ -692,7 +709,9 @@ public class PlayerAttack : MonoBehaviour
         slash.sortingOrder = sortingOrder;
         slash.transform.position = position;
         slash.transform.rotation = rotation;
-        slash.transform.localScale = new Vector3(fistRenderScale.x * slashScale.x, fistRenderScale.y * slashScale.y, 1f);
+        slash.transform.localScale = preserveSpriteAspect
+            ? new Vector3(fistRenderScale.x, fistRenderScale.y, 1f)
+            : new Vector3(fistRenderScale.x * slashScale.x, fistRenderScale.y * slashScale.y, 1f);
         slash.color = color;
         slash.gameObject.SetActive(true);
         activeSlashes.Add(slash);
