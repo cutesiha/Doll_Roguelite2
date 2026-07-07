@@ -46,8 +46,8 @@ public class StartBodyPartSelector : MonoBehaviour
     [SerializeField] float roadButtonFloatSpeed = 2.2f;
     [SerializeField, Range(0f, 1f)] float roadButtonAlphaHitThreshold = 0.1f;
     [SerializeField] Color panelLineColor = new Color(0.30f, 0.18f, 0.10f, 1f);
-    [Tooltip("저장 패널 페이지 삼각형에 마우스를 올렸을 때 색 (밝은 브라운 계열)")]
-    [SerializeField] Color roadButtonHoverColor = new Color(1.5f, 1.18f, 0.78f, 1f);
+    [Tooltip("저장 패널 페이지 삼각형에 마우스를 올렸을 때 색 (원래 색보다 밝게)")]
+    [SerializeField] Color roadButtonHoverColor = new Color(0.58f, 0.39f, 0.27f, 1f);
     [Tooltip("빈 슬롯 클릭 시 저장 패널이 좌우로 흔들리는 폭(px)")]
     [SerializeField] float roadPanelShakeDistance = 16f;
     [Tooltip("빈 슬롯 클릭 시 흔들림 지속 시간(초)")]
@@ -62,8 +62,11 @@ public class StartBodyPartSelector : MonoBehaviour
     Button optionCloseButton;
     Button roadCloseButton;
     Image roadButtonImage;
+    Image roadButtonHoverImage;
     RectTransform roadButtonRect;
     Vector3 roadButtonBaseScale = Vector3.one;
+    Vector2 roadButtonSpriteCentroid = new Vector2(0.5f, 0.5f);
+    Sprite roadButtonHoverMaskSprite;
     GameObject roadPanel;
     GameObject quitPanel;
     SpriteRenderer exitQuestionRenderer;
@@ -1134,6 +1137,9 @@ public class StartBodyPartSelector : MonoBehaviour
             roadButtonRect = roadButtonImage.rectTransform;
             roadButtonBasePosition = roadButtonRect.anchoredPosition;
             roadButtonBaseScale = roadButtonRect.localScale;
+            roadButtonSpriteCentroid = ComputeSpriteOpaqueCentroid(roadButtonImage.sprite);
+            if (roadButtonSpriteCentroid.x < 0f)
+                roadButtonSpriteCentroid = new Vector2(0.5f, 0.5f);
             ConfigureRoadButton(roadButtonImage);
         }
 
@@ -1231,7 +1237,48 @@ public class StartBodyPartSelector : MonoBehaviour
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(ToggleRoadPage);
         ApplyRoadButtonTint(button);
+        ConfigureRoadButtonHoverOverlay(image, button);
         UpdateRoadPageButtonVisual();
+    }
+
+    void ConfigureRoadButtonHoverOverlay(Image baseImage, Button button)
+    {
+        if (baseImage == null || button == null)
+            return;
+
+        Transform existing = baseImage.transform.Find("RoadButtonHoverOverlay");
+        GameObject overlayObject = existing != null ? existing.gameObject : new GameObject("RoadButtonHoverOverlay");
+        overlayObject.transform.SetParent(baseImage.transform, false);
+
+        RectTransform overlayRect = overlayObject.GetComponent<RectTransform>();
+        if (overlayRect == null)
+            overlayRect = overlayObject.AddComponent<RectTransform>();
+        StretchToParent(overlayRect);
+        overlayObject.transform.SetAsLastSibling();
+
+        roadButtonHoverImage = overlayObject.GetComponent<Image>();
+        if (roadButtonHoverImage == null)
+            roadButtonHoverImage = overlayObject.AddComponent<Image>();
+
+        if (roadButtonHoverMaskSprite == null)
+            roadButtonHoverMaskSprite = CreateHoverSprite(baseImage.sprite, roadButtonHoverColor);
+
+        roadButtonHoverImage.sprite = roadButtonHoverMaskSprite != null ? roadButtonHoverMaskSprite : baseImage.sprite;
+        roadButtonHoverImage.type = Image.Type.Simple;
+        roadButtonHoverImage.preserveAspect = false;
+        roadButtonHoverImage.raycastTarget = false;
+        roadButtonHoverImage.color = new Color(1f, 1f, 1f, 0f);
+
+        button.transition = Selectable.Transition.None;
+        StartPanelHoverTint hoverTint = button.GetComponent<StartPanelHoverTint>();
+        if (hoverTint == null)
+            hoverTint = button.gameObject.AddComponent<StartPanelHoverTint>();
+
+        hoverTint.Configure(
+            roadButtonHoverImage,
+            new Color(1f, 1f, 1f, 0f),
+            Color.white,
+            new Color(0.88f, 0.88f, 0.88f, 1f));
     }
 
     void ConfigureRoadText(Transform parent)
@@ -2058,7 +2105,6 @@ public class StartBodyPartSelector : MonoBehaviour
 
         if (roadButtonRect != null)
         {
-            roadButtonRect.anchoredPosition = roadButtonBasePosition;
             UpdateRoadPageButtonVisual();
             roadButtonFloatRoutine = StartCoroutine(RoadButtonFloatRoutine());
         }
@@ -2074,7 +2120,6 @@ public class StartBodyPartSelector : MonoBehaviour
 
         if (roadButtonRect != null)
         {
-            roadButtonRect.anchoredPosition = roadButtonBasePosition;
             UpdateRoadPageButtonVisual();
         }
     }
@@ -2084,7 +2129,7 @@ public class StartBodyPartSelector : MonoBehaviour
         while (roadPanel != null && roadPanel.activeInHierarchy)
         {
             float offset = Mathf.Sin(Time.unscaledTime * roadButtonFloatSpeed) * roadButtonFloatAmplitude;
-            roadButtonRect.anchoredPosition = roadButtonBasePosition + Vector2.up * offset;
+            roadButtonRect.anchoredPosition = GetRoadButtonPagePosition() + Vector2.up * offset;
             yield return null;
         }
 
@@ -2109,14 +2154,104 @@ public class StartBodyPartSelector : MonoBehaviour
         if (roadButtonRect == null)
             return;
 
-        // 1페이지: 기본 방향(아래), 2페이지: 위아래 반전되어 삼각형이 위를 향함
-        float pageDirection = roadPageIndex == 0 ? 1f : -1f;
         float baseY = Mathf.Abs(roadButtonBaseScale.y);
         if (baseY <= 0.0001f)
             baseY = 1f;
-
         float baseYSign = roadButtonBaseScale.y < 0f ? -1f : 1f;
-        roadButtonRect.localScale = new Vector3(roadButtonBaseScale.x, baseY * baseYSign * pageDirection, roadButtonBaseScale.z);
+        float pageDirection = roadPageIndex == 0 ? 1f : -1f;
+        roadButtonRect.localScale = new Vector3(
+            roadButtonBaseScale.x,
+            baseY * baseYSign * pageDirection,
+            roadButtonBaseScale.z);
+        roadButtonRect.anchoredPosition = GetRoadButtonPagePosition();
+    }
+
+    Vector2 GetRoadButtonPagePosition()
+    {
+        if (roadButtonRect == null || roadPageIndex == 0)
+            return roadButtonBasePosition;
+
+        Vector2 size = roadButtonRect.rect.size;
+        Vector2 flipOffset = new Vector2(
+            (roadButtonSpriteCentroid.x - 0.5f) * size.x * 2f,
+            (roadButtonSpriteCentroid.y - 0.5f) * size.y * 2f);
+        return roadButtonBasePosition + flipOffset;
+    }
+
+    static Vector2 ComputeSpriteOpaqueCentroid(Sprite sprite)
+    {
+        if (sprite == null || sprite.texture == null)
+            return new Vector2(-1f, -1f);
+
+        Texture2D tex = sprite.texture;
+        if (!tex.isReadable)
+            return new Vector2(-1f, -1f);
+
+        Rect r = sprite.rect;
+        int x0 = Mathf.FloorToInt(r.x);
+        int y0 = Mathf.FloorToInt(r.y);
+        int w = Mathf.FloorToInt(r.width);
+        int h = Mathf.FloorToInt(r.height);
+        if (w <= 0 || h <= 0)
+            return new Vector2(-1f, -1f);
+
+        double sumX = 0, sumY = 0;
+        int count = 0;
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                Color c = tex.GetPixel(x0 + x, y0 + y);
+                if (c.a > 0.1f)
+                {
+                    sumX += x;
+                    sumY += y;
+                    count++;
+                }
+            }
+        }
+
+        if (count <= 0)
+            return new Vector2(-1f, -1f);
+
+        return new Vector2((float)(sumX / count / w), (float)(sumY / count / h));
+    }
+
+    static Sprite CreateHoverSprite(Sprite source, Color hoverColor)
+    {
+        if (source == null || source.texture == null || !source.texture.isReadable)
+            return null;
+
+        Rect r = source.rect;
+        int x0 = Mathf.FloorToInt(r.x);
+        int y0 = Mathf.FloorToInt(r.y);
+        int w = Mathf.FloorToInt(r.width);
+        int h = Mathf.FloorToInt(r.height);
+        if (w <= 0 || h <= 0)
+            return null;
+
+        Texture2D mask = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        mask.name = source.name + "_BrownHover";
+        mask.filterMode = source.texture.filterMode;
+        mask.wrapMode = TextureWrapMode.Clamp;
+
+        Color[] pixels = new Color[w * h];
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                Color sourcePixel = source.texture.GetPixel(x0 + x, y0 + y);
+                pixels[y * w + x] = new Color(hoverColor.r, hoverColor.g, hoverColor.b, sourcePixel.a);
+            }
+        }
+
+        mask.SetPixels(pixels);
+        mask.Apply(false, true);
+
+        Vector2 pivot = new Vector2(
+            source.pivot.x / source.rect.width,
+            source.pivot.y / source.rect.height);
+        return Sprite.Create(mask, new Rect(0f, 0f, w, h), pivot, source.pixelsPerUnit, 0, SpriteMeshType.FullRect);
     }
 
     void ApplyRoadButtonTint(Button button)

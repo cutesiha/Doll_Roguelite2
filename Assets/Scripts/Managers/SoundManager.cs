@@ -214,9 +214,111 @@ public class SoundManager : MonoBehaviour
         }
     }
 
+    static float pendingBgmFadeInDuration;
+
     static void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         ApplySavedVolumes();
+
+        if (pendingBgmFadeInDuration > 0f)
+        {
+            float duration = pendingBgmFadeInDuration;
+            pendingBgmFadeInDuration = 0f;
+            SoundManager manager = EnsureInstance();
+            if (manager != null)
+                manager.StartCoroutine(manager.FadeInSceneBgmRoutine(duration));
+        }
+    }
+
+    // 다음 씬 로드 시 씬의 BGM 소스를 0에서 정상 볼륨으로 페이드 인.
+    public static void RequestBgmFadeInOnNextSceneLoad(float duration)
+    {
+        pendingBgmFadeInDuration = Mathf.Max(0f, duration);
+    }
+
+    // 현재 재생 중인 씬 BGM 소스들을 페이드 아웃 후 정지.
+    public static Coroutine FadeOutCurrentBgm(float duration)
+    {
+        SoundManager manager = EnsureInstance();
+        return manager != null ? manager.StartCoroutine(manager.FadeOutBgmRoutine(duration)) : null;
+    }
+
+    System.Collections.IEnumerator FadeOutBgmRoutine(float duration)
+    {
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        List<AudioSource> bgmSources = new List<AudioSource>();
+        List<float> startVolumes = new List<float>();
+        for (int i = 0; i < sources.Length; i++)
+        {
+            if (IsBgmSource(sources[i]) && sources[i].isPlaying)
+            {
+                bgmSources.Add(sources[i]);
+                startVolumes.Add(sources[i].volume);
+            }
+        }
+
+        float elapsed = 0f;
+        float safeDur = Mathf.Max(0.01f, duration);
+        while (elapsed < safeDur)
+        {
+            float t = Mathf.Clamp01(elapsed / safeDur);
+            for (int i = 0; i < bgmSources.Count; i++)
+            {
+                if (bgmSources[i] != null)
+                    bgmSources[i].volume = Mathf.Lerp(startVolumes[i], 0f, t);
+            }
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        for (int i = 0; i < bgmSources.Count; i++)
+        {
+            if (bgmSources[i] != null)
+            {
+                bgmSources[i].volume = 0f;
+                bgmSources[i].Stop();
+            }
+        }
+    }
+
+    System.Collections.IEnumerator FadeInSceneBgmRoutine(float duration)
+    {
+        // 씬 오브젝트가 Awake/Start를 마치도록 한 프레임 대기.
+        yield return null;
+
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        List<AudioSource> bgmSources = new List<AudioSource>();
+        List<float> targetVolumes = new List<float>();
+        float sceneBgmTarget = GetBgmVolume01() * BgmVolumeScale;
+        for (int i = 0; i < sources.Length; i++)
+        {
+            if (IsBgmSource(sources[i]))
+            {
+                bgmSources.Add(sources[i]);
+                targetVolumes.Add(sceneBgmTarget);
+                sources[i].volume = 0f;
+            }
+        }
+
+        float elapsed = 0f;
+        float safeDur = Mathf.Max(0.01f, duration);
+        while (elapsed < safeDur)
+        {
+            float t = Mathf.Clamp01(elapsed / safeDur);
+            for (int i = 0; i < bgmSources.Count; i++)
+            {
+                if (bgmSources[i] != null)
+                    bgmSources[i].volume = Mathf.Lerp(0f, targetVolumes[i], t);
+            }
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        for (int i = 0; i < bgmSources.Count; i++)
+        {
+            if (bgmSources[i] != null)
+                bgmSources[i].volume = targetVolumes[i];
+        }
     }
 
     void OnValidate()
