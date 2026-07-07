@@ -86,11 +86,11 @@ public static class ItemDataGenerator
             E(ItemEffectType.NailProjectile, 5f));
         SetProjectileSprite("wood_plank", "Assets/Sprites/Item/Itemeffect/못.png");
 
-        Create("wooden_leg", "목제 다리", "이동속도 -0.30",
+        Create("wooden_leg", "목제 다리", "오른쪽 팔 데미지 +1.00",
             ItemCategory.ChallengeRoom, ItemType.BodyPart, ItemEquipLocation.Leg,
-            ItemAcquisitionLocation.ChallengeRoom, false, -0.3f, 0f, 0f, 25,
+            ItemAcquisitionLocation.ChallengeRoom, false, 1f, 0f, 0f, 25,
             ItemPlaceholderShape.Square, new Color(0.50f, 0.28f, 0.12f, 1f),
-            E(ItemEffectType.MoveSpeed, -0.3f));
+            E(ItemEffectType.RightArmDamage, 1f));
 
         Create("flag", "깃발", "인벤토리 2x2(4칸), 이동속도 +1.00, 오른팔 공격력 +2.00",
             ItemCategory.ChallengeRoom, ItemType.BodyPart, ItemEquipLocation.Body,

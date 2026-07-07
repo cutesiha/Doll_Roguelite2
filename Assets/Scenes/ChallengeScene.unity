@@ -43455,8 +43455,8 @@ Transform:
   m_GameObject: {fileID: 1620751910}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -17.1, y: -8.6, z: 0}
-  m_LocalScale: {x: 1.4961599, y: 1.3971432, z: 0.8312}
+  m_LocalPosition: {x: -17.29, y: -9.08, z: 0}
+  m_LocalScale: {x: 1.0552416, y: 0.9854051, z: 0.58624536}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 482109942}
@@ -60130,6 +60130,8 @@ MonoBehaviour:
   punchVolume: 1
   coinPickupClip: {fileID: 0}
   coinPickupVolume: 1
+  itemPickupClip: {fileID: 0}
+  itemPickupVolume: 1
   gemUseClip: {fileID: 0}
   gemUseVolume: 1
   gemUseDuration: 1.4
