@@ -256,6 +256,7 @@ public class ItemWorldPickup : MonoBehaviour
         }
 
         collected = true;
+        SoundManager.PlayItemPickup();
         Announce(message);
         Destroy(gameObject);
     }

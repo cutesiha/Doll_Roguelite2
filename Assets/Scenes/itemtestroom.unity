@@ -1139,6 +1139,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: d877e26ef9249bd4985d18dbbb13b76f, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -1485,6 +1486,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: a1036e1fa116ce947bdae77c8f9e05b2, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -1961,6 +1963,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: ec00c3041ccad214ba17aa4de150d8e0, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -2299,6 +2302,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: 967a59a034fb95444a700c5756255f78, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -2456,6 +2460,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: 666da036d2da8d94ea4703f3123fcb4a, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -2613,6 +2618,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: 2e5d41aa6fcd79a439dc328e5f6b9cb3, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -2770,6 +2776,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: d094d6212b638cc4ca0499f95d8827e4, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -3075,6 +3082,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: cc5fe5676bf22024b944bebafc837fb0, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -3689,6 +3697,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: 1be3fe0102682004b9dc6de8dcc01eb0, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -4027,6 +4036,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: c33aca5c74c0f8147b45609e6bf13d5a, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -5851,6 +5861,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: 1fd7b3002b42f2e449d42e143d961a3f, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -6054,6 +6065,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: 644a1580a5f9af44f95cb241e0ec6f80, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -6648,6 +6660,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: 1823483e03f2ce94dbf93b5abe4c05d1, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -7167,6 +7180,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: d1a7321efa0751a4b8fb6775c99dd4b3, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -7505,6 +7519,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: 6d5d6ee495b93f54b94490ecec2d8924, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
@@ -7662,6 +7677,7 @@ MonoBehaviour:
   tooltipFontSize: 2
   tooltipBackgroundColor: {r: 0.1, g: 0.07, b: 0.05, a: 0.92}
   tooltipTextColor: {r: 1, g: 1, b: 1, a: 1}
+  useAsGlobalTooltipTemplate: 0
   itemAsset: {fileID: 11400000, guid: c97399980e87d424785cfe9de7bd3a36, type: 2}
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34

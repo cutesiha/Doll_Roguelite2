@@ -21,6 +21,12 @@ public class PlayerAttack : MonoBehaviour
         public float fistScaleMultiplier;
         public Color tint;
         public Sprite spriteOverride;
+        // true면 주먹/무기 스윙 연출 없이 투사체만 발사한다 (나무판자 등 순수 원거리 무기용).
+        public bool skipSwing;
+        // 슬래시 이펙트 크기 배율. 도끼처럼 확실히 휘둘렀다는 느낌을 주고 싶은 무기는 1보다 크게 준다.
+        public float slashScaleMultiplier;
+        // 무기 스프라이트가 기본 주먹과 다른 방향으로 그려져 있을 때 보정하는 회전값(도).
+        public float spriteRotationOffsetDegrees;
     }
 
     [Header("Direction")]
@@ -58,6 +64,7 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField, Min(0f)] float verticalAttackDistanceBonus = 0.06f;
 
     [Header("Trail")]
+    [SerializeField] bool useTrailEffect = true;
     [SerializeField, Min(0.01f)] float trailSpawnInterval = 0.025f;
     [SerializeField, Range(0.02f, 0.5f)] float trailLifetime = 0.12f;
     [SerializeField, Range(0f, 1f)] float trailStartAlpha = 0.32f;
@@ -65,10 +72,10 @@ public class PlayerAttack : MonoBehaviour
 
     [Header("Red Slash")]
     [SerializeField] bool useRedSlashEffect = true;
-    [SerializeField, Min(0.01f)] float slashSpawnInterval = 0.018f;
+    [SerializeField, Min(0.01f)] float slashSpawnInterval = 0.05f;
     [SerializeField, Range(0.02f, 0.5f)] float slashLifetime = 0.10f;
     [SerializeField] Color slashColor = new Color(1f, 0.08f, 0.02f, 0.42f);
-    [SerializeField] Vector2 slashScale = new Vector2(2.0f, 0.72f);
+    [SerializeField] Vector2 slashScale = new Vector2(1.3f, 0.45f);
     [SerializeField] int prewarmSlashCount = 8;
 
     [Header("Sorting")]
@@ -80,6 +87,8 @@ public class PlayerAttack : MonoBehaviour
     [Header("Hit")]
     [SerializeField] int attackDamage = 1;
     [SerializeField] float attackCooldown = 0.3f;
+    // 도끼는 무겁게 느껴지도록 팔당 별도의 긴 재사용대기시간을 쓴다 (반대팔은 기존 속도 유지).
+    [SerializeField, Min(0f)] float axeAttackCooldown = 2f;
     [SerializeField] Vector2 attackSize = new Vector2(1f, 1f);
     [SerializeField, Min(0f)] float hitAreaExtraLength = 0.35f;
     [SerializeField] float attackFacingLockDuration = 0.25f;
@@ -96,7 +105,8 @@ public class PlayerAttack : MonoBehaviour
     readonly Queue<SpriteRenderer> slashPool = new Queue<SpriteRenderer>();
     readonly List<SpriteRenderer> activeSlashes = new List<SpriteRenderer>();
 
-    float cooldownTimer;
+    float leftArmCooldownTimer;
+    float rightArmCooldownTimer;
     float pendingKeyTimer;
     Key pendingAttackKey = Key.None;
     int pendingPressCount;
@@ -164,7 +174,8 @@ public class PlayerAttack : MonoBehaviour
         if (keyboard == null)
             return;
 
-        cooldownTimer -= Time.deltaTime;
+        leftArmCooldownTimer -= Time.deltaTime;
+        rightArmCooldownTimer -= Time.deltaTime;
         pendingKeyTimer -= Time.deltaTime;
         if (pendingKeyTimer <= 0f)
         {
@@ -172,7 +183,8 @@ public class PlayerAttack : MonoBehaviour
             pendingPressCount = 0;
         }
 
-        if (cooldownTimer > 0f || isAttacking)
+        // 팔별 재사용대기시간은 BeginAttack에서 개별 확인한다 (도끼 쪽 팔만 느려도 반대팔은 계속 공격 가능).
+        if (isAttacking)
             return;
 
         // 팔이 하나든 둘이든 한 번 누르면 바로 공격 (연타 불필요)
@@ -267,26 +279,56 @@ public class PlayerAttack : MonoBehaviour
         if (!hasLeft && !hasRight)
             return;
 
+        bool leftReady = hasLeft && leftArmCooldownTimer <= 0f;
+        bool rightReady = hasRight && rightArmCooldownTimer <= 0f;
+
         AttackArm arm;
         bool oneArmedOnly;
         if (hasLeft && hasRight)
         {
-            // 양팔 있으면 왼팔 → 오른팔 교대
-            arm = nextAttackUsesLeftArm ? AttackArm.Left : AttackArm.Right;
-            nextAttackUsesLeftArm = !nextAttackUsesLeftArm;
+            // 도끼처럼 팔별 재사용대기시간이 다를 수 있어서, 선호하는(교대 순서상) 팔이
+            // 아직 대기 중이면 반대쪽 준비된 팔로 대신 공격한다 (둘 다 대기 중이면 스킵).
+            if (!leftReady && !rightReady)
+                return;
+
+            bool preferLeft = nextAttackUsesLeftArm;
+            if (preferLeft && leftReady)
+                arm = AttackArm.Left;
+            else if (!preferLeft && rightReady)
+                arm = AttackArm.Right;
+            else
+                arm = leftReady ? AttackArm.Left : AttackArm.Right;
+
+            nextAttackUsesLeftArm = arm != AttackArm.Left; // 다음엔 방금 안 쓴 팔을 우선
             oneArmedOnly = false;
         }
         else
         {
             // 한 팔만 남으면 그 팔로만 공격 (없는 팔 차례는 건너뜀 → 모션도 안 나감)
             arm = hasLeft ? AttackArm.Left : AttackArm.Right;
+            if (arm == AttackArm.Left && !leftReady)
+                return;
+            if (arm == AttackArm.Right && !rightReady)
+                return;
             nextAttackUsesLeftArm = !hasLeft; // 나중에 반대 팔 되찾으면 그 팔부터
             oneArmedOnly = true;
         }
 
+        bool leftArm = arm == AttackArm.Left;
+        if (itemEffects == null)
+            itemEffects = GetComponent<PlayerItemEffects>();
+        ArmWeaponKind weaponKind = itemEffects != null ? itemEffects.GetArmWeaponKind(leftArm) : ArmWeaponKind.Fist;
+        float baseCooldown = weaponKind == ArmWeaponKind.Axe ? axeAttackCooldown : attackCooldown;
+
         // 한 팔만 남으면 없는 팔 차례(왼→[오 생략]→왼…)를 건너뛰는 만큼
         // 다음 공격까지 두 배로 기다린다 → 실효 공격 속도 절반
-        cooldownTimer = oneArmedOnly ? attackCooldown * 2f : attackCooldown;
+        float resolvedCooldown = oneArmedOnly ? baseCooldown * 2f : baseCooldown;
+
+        if (leftArm)
+            leftArmCooldownTimer = resolvedCooldown;
+        else
+            rightArmCooldownTimer = resolvedCooldown;
+
         StartCoroutine(AttackRoutine(NormalizedDirection(direction), arm));
     }
 
@@ -307,6 +349,21 @@ public class PlayerAttack : MonoBehaviour
         bool leftArm = arm == AttackArm.Left;
         ArmAttackStyle style = ResolveAttackStyle(leftArm);
 
+        Vector3 hitStart = AttackStartPosition(arm, direction, AttackOrigin());
+        Vector3 hitEnd = hitStart + (Vector3)(direction * EffectiveAttackDistance(direction));
+        bool usedProjectile = itemEffects != null
+            && itemEffects.TryPerformProjectileAttack(leftArm, direction, hitStart);
+        if (!usedProjectile)
+            DealDamage(hitStart, hitEnd, direction, arm);
+
+        // 나무판자(못) 등 순수 원거리 무기는 주먹/무기 스윙 연출 없이 투사체만 발사하고 끝낸다.
+        if (style.skipSwing)
+        {
+            yield return new WaitForSeconds(Mathf.Max(0.01f, attackDuration * style.durationScale));
+            FinishAttack();
+            yield break;
+        }
+
         SpriteRenderer fist = EnsureFistRenderer();
         if (fist == null || fist.sprite == null)
         {
@@ -319,19 +376,13 @@ public class PlayerAttack : MonoBehaviour
         int effectSortingOrder = fistSortingOrder + effectSortingOrderOffset;
         ConfigureFistRenderer(fist, fistSortingOrder, style);
 
-        Vector3 hitStart = AttackStartPosition(arm, direction, AttackOrigin());
-        Vector3 hitEnd = hitStart + (Vector3)(direction * EffectiveAttackDistance(direction));
-        bool usedProjectile = itemEffects != null
-            && itemEffects.TryPerformProjectileAttack(leftArm, direction, hitStart);
-        if (!usedProjectile)
-            DealDamage(hitStart, hitEnd, direction, arm);
-
         Vector2 perpendicular = new Vector2(-direction.y, direction.x);
         float armSign = leftArm ? 1f : -1f;
-        float baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + fistRotationOffset;
+        float baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + fistRotationOffset + style.spriteRotationOffsetDegrees;
         float arcHeight = swingArcHeight * style.arcHeightScale;
         float rotationAmount = swingRotation * style.rotationScale;
         Vector3 fistRenderScale = fist.transform.localScale;
+        Vector3 slashRenderScale = fistRenderScale * Mathf.Max(0.01f, style.slashScaleMultiplier);
         Color trailTint = style.tint;
         Color slashRenderColor = new Color(style.tint.r, style.tint.g, style.tint.b, slashColor.a);
         Sprite effectSprite = EffectiveFistSprite(style);
@@ -349,7 +400,7 @@ public class PlayerAttack : MonoBehaviour
             Vector3 end = start + (Vector3)(direction * EffectiveAttackDistance(direction));
             ApplyFistPose(fist, start, end, perpendicular, armSign, baseAngle, t, arcHeight, rotationAmount);
 
-            if (elapsed >= nextTrailTime)
+            if (useTrailEffect && elapsed >= nextTrailTime)
             {
                 SpawnTrail(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, trailTint, effectSprite);
                 nextTrailTime += trailSpawnInterval;
@@ -357,7 +408,7 @@ public class PlayerAttack : MonoBehaviour
 
             if (useRedSlashEffect && elapsed >= nextSlashTime)
             {
-                SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, slashRenderColor, effectSprite);
+                SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, slashRenderScale, slashRenderColor, effectSprite);
                 nextSlashTime += slashSpawnInterval;
             }
 
@@ -368,9 +419,10 @@ public class PlayerAttack : MonoBehaviour
         Vector3 finalStart = AttackStartPosition(arm, direction, AttackOrigin());
         Vector3 finalEnd = finalStart + (Vector3)(direction * EffectiveAttackDistance(direction));
         ApplyFistPose(fist, finalStart, finalEnd, perpendicular, armSign, baseAngle, 1f, arcHeight, rotationAmount);
-        SpawnTrail(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, trailTint, effectSprite);
+        if (useTrailEffect)
+            SpawnTrail(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, trailTint, effectSprite);
         if (useRedSlashEffect)
-            SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, fistRenderScale, slashRenderColor, effectSprite);
+            SpawnSlash(fist.transform.position, fist.transform.rotation, effectSortingOrder, slashRenderScale, slashRenderColor, effectSprite);
 
         fist.gameObject.SetActive(false);
         FinishAttack();
@@ -392,6 +444,11 @@ public class PlayerAttack : MonoBehaviour
                     fistScaleMultiplier = 1.35f,
                     tint = axeWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
                     spriteOverride = axeWeaponSprite,
+                    slashScaleMultiplier = 1.8f,
+                    // axe2.png는 자루(갈색)가 그림 오른쪽(진행 방향 쪽)에 그려져 있어, 보정 없이 회전하면
+                    // 자루가 플레이어 반대쪽(적 쪽)을 향해 완전히 뒤집혀 보인다. 180도 돌려서 자루가
+                    // 플레이어 쪽, 도끼날이 진행 방향(적 쪽)을 향하도록 바로잡는다.
+                    spriteRotationOffsetDegrees = 180f,
                 };
             case ArmWeaponKind.Keyring:
                 return new ArmAttackStyle
@@ -402,6 +459,7 @@ public class PlayerAttack : MonoBehaviour
                     fistScaleMultiplier = 0.85f,
                     tint = keyringWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
                     spriteOverride = keyringWeaponSprite,
+                    slashScaleMultiplier = 1f,
                 };
             case ArmWeaponKind.Nail:
                 return new ArmAttackStyle
@@ -412,6 +470,8 @@ public class PlayerAttack : MonoBehaviour
                     fistScaleMultiplier = 0.8f,
                     tint = nailWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
                     spriteOverride = nailWeaponSprite,
+                    skipSwing = true,
+                    slashScaleMultiplier = 1f,
                 };
             case ArmWeaponKind.Star:
                 return new ArmAttackStyle
@@ -422,6 +482,7 @@ public class PlayerAttack : MonoBehaviour
                     fistScaleMultiplier = 0.8f,
                     tint = starWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
                     spriteOverride = starWeaponSprite,
+                    slashScaleMultiplier = 1f,
                 };
             default:
                 return new ArmAttackStyle
@@ -432,6 +493,7 @@ public class PlayerAttack : MonoBehaviour
                     fistScaleMultiplier = 1f,
                     tint = Color.white,
                     spriteOverride = null,
+                    slashScaleMultiplier = 1f,
                 };
         }
     }

@@ -203,7 +203,7 @@ public class PlayerItemEffects : MonoBehaviour
         if (nail != null)
         {
             int damage = Mathf.Max(1, Mathf.RoundToInt(ModifiedAttackDamage(leftArm, Mathf.Max(1f, nail.value))));
-            ItemProjectile.Spawn(origin, direction, 12f, damage, 1.4f, 0.11f, false, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, arm.ProjectileSprite);
+            ItemProjectile.Spawn(origin, direction, 12f, damage, 1.4f, 0.28f, false, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, arm.ProjectileSprite);
             return true;
         }
 

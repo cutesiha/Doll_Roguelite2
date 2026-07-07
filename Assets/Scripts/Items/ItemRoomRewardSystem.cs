@@ -49,7 +49,7 @@ public static class ItemRoomRewardSystem
         if (pendingNode.roomType == RoomType.Challenge)
         {
             ItemData item = ItemCatalog.RandomByCategory(ItemCategory.ChallengeRoom);
-            ItemDropSpawner.Spawn(item, roomCenter, false, 0);
+            SpawnWithDropEffect(item, roomCenter);
 
             // 도전방 클리어 코인 보너스
             ItemSystemSettings settings = ItemSystemSettings.Load();
@@ -78,13 +78,13 @@ public static class ItemRoomRewardSystem
             if (roll < gemChance)
             {
                 ItemData gem = ItemCatalog.RandomByType(ItemType.GemConsumable);
-                ItemDropSpawner.Spawn(gem, roomCenter, false, 0);
+                SpawnWithDropEffect(gem, roomCenter);
                 Announce("조건방 클리어! +" + coinBonus + " 코인 + 보석 보상!");
             }
             else if (roll < gemChance + ragChance)
             {
                 ItemData rag = ItemCatalog.Find("rag");
-                ItemDropSpawner.Spawn(rag, roomCenter, false, 0);
+                SpawnWithDropEffect(rag, roomCenter);
                 Announce("조건방 클리어! +" + coinBonus + " 코인 + 누더기 보상!");
             }
             else
@@ -104,7 +104,7 @@ public static class ItemRoomRewardSystem
                 continue;
             selected.Add(item);
             float x = i == 0 ? -1.1f : 1.1f;
-            ItemDropSpawner.Spawn(item, position + new Vector3(x, 0f, 0f), false, 0);
+            SpawnWithDropEffect(item, position + new Vector3(x, 0f, 0f));
         }
         Announce("중간보스 아이템 2개가 생성되었습니다.");
     }
@@ -112,7 +112,10 @@ public static class ItemRoomRewardSystem
     public static void SpawnBodyRoomReward(Vector3 position, ItemWorldPickup template = null)
     {
         ItemData item = ItemCatalog.RandomByCategory(ItemCategory.BodyRoom, ItemType.BodyPart);
-        ItemDropSpawner.Spawn(item, TreasureRewardPosition(position), false, 0, template, true);
+        Vector3 spawnPosition = TreasureRewardPosition(position);
+        ItemWorldPickup pickup = ItemDropSpawner.Spawn(item, spawnPosition, false, 0, template, true);
+        pickup?.Toss(spawnPosition);
+        ItemDropParticleEffect.Spawn(spawnPosition);
         Announce("신체방 아이템이 생성되었습니다.");
     }
 
@@ -120,7 +123,10 @@ public static class ItemRoomRewardSystem
     public static void SpawnChallengeReward(Vector3 fallbackPosition, ItemWorldPickup template = null)
     {
         ItemData item = ItemCatalog.RandomByCategory(ItemCategory.ChallengeRoom);
-        ItemDropSpawner.Spawn(item, TreasureRewardPosition(fallbackPosition), false, 0, template, true);
+        Vector3 spawnPosition = TreasureRewardPosition(fallbackPosition);
+        ItemWorldPickup pickup = ItemDropSpawner.Spawn(item, spawnPosition, false, 0, template, true);
+        pickup?.Toss(spawnPosition);
+        ItemDropParticleEffect.Spawn(spawnPosition);
 
         ItemSystemSettings settings = ItemSystemSettings.Load();
         int coinBonus = settings != null ? settings.challengeClearCoinBonus : 2;
@@ -128,6 +134,14 @@ public static class ItemRoomRewardSystem
             ItemInventoryManager.Instance?.AddCoins(coinBonus);
 
         Announce("도전 성공! 아이템 획득" + (coinBonus > 0 ? " + " + coinBonus + " 코인 보너스." : "."));
+    }
+
+    // 몬스터 킬 드랍과 동일하게, 보상 아이템이 튕겨 나가며 노란 입자 이펙트를 재생한다 (상점 진열 제외).
+    static void SpawnWithDropEffect(ItemData item, Vector3 position)
+    {
+        ItemWorldPickup pickup = ItemDropSpawner.Spawn(item, position, false, 0);
+        pickup?.Toss(position);
+        ItemDropParticleEffect.Spawn(position);
     }
 
     static Vector3 TreasureRewardPosition(Vector3 fallback)

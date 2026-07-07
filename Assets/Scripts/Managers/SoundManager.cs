@@ -44,6 +44,7 @@ public class SoundManager : MonoBehaviour
     const string AfterVictoryBgmFallbackPath = "BGM/after_victory";
     public const string CoinPickupSfxPath = "SoundEffects/동전 먹을떄 효과음";
     public const string GemUseSfxPath = "SoundEffects/보석 효과음";
+    public const string ItemPickupSfxPath = "SoundEffects/pick";
     public const float DefaultRepeatGuard = 0.08f;
     public const int DefaultVolumeLevel = 7;
     // BGM 전체 볼륨 배율 (0~1). 낮출수록 배경음악만 조용해짐. 효과음엔 영향 없음.
@@ -70,6 +71,8 @@ public class SoundManager : MonoBehaviour
     [SerializeField, Range(0f, 3f)] float punchVolume = 1f;
     [SerializeField] AudioClip coinPickupClip;
     [SerializeField, Range(0f, 3f)] float coinPickupVolume = 1f;
+    [SerializeField] AudioClip itemPickupClip;
+    [SerializeField, Range(0f, 3f)] float itemPickupVolume = 1f;
     [SerializeField] AudioClip gemUseClip;
     [SerializeField, Range(0f, 3f)] float gemUseVolume = 1f;
     [SerializeField, Min(0f)] float gemUseDuration = 1.4f;
@@ -268,6 +271,12 @@ public class SoundManager : MonoBehaviour
     {
         SoundManager manager = EnsureInstance();
         manager.PlayManaged(manager.GetCoinPickupClip(), manager.coinPickupVolume, repeatGuard);
+    }
+
+    public static void PlayItemPickup(float repeatGuard = DefaultRepeatGuard)
+    {
+        SoundManager manager = EnsureInstance();
+        manager.PlayManaged(manager.GetItemPickupClip(), manager.itemPickupVolume, repeatGuard);
     }
 
     public static void PlayPunch(float repeatGuard = DefaultRepeatGuard)
@@ -819,6 +828,14 @@ public class SoundManager : MonoBehaviour
             coinPickupClip = LoadClipResource(CoinPickupSfxPath);
 
         return coinPickupClip;
+    }
+
+    AudioClip GetItemPickupClip()
+    {
+        if (itemPickupClip == null)
+            itemPickupClip = LoadClipResource(ItemPickupSfxPath);
+
+        return itemPickupClip;
     }
 
     AudioClip GetPunchClip()

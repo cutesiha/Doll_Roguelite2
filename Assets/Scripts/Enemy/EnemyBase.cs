@@ -689,6 +689,7 @@ public class EnemyBase : MonoBehaviour
         Color effectColor = spriteRenderer != null ? spriteRenderer.color : Color.gray;
         EnemyDeathEffect.Spawn(transform.position, effectColor);
         ItemInventoryManager.Instance?.NotifyEnemyKilled(transform.position);
+        EnemyItemDropTable.TryDropSpecialItem(Kind, transform.position);
         OnDied?.Invoke(this);
         EnemyManager.Instance?.OnEnemyDied(this);
         Destroy(gameObject);
