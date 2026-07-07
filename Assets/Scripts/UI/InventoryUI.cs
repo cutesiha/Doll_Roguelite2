@@ -30,6 +30,7 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] TextMeshProUGUI[] _storageHp   = new TextMeshProUGUI[InventoryManager.StorageSlotCount];
     // A안: 프리팹에서 지정한 슬롯 배경색/빈 슬롯 텍스트를 그대로 보존한다.
     readonly Color[] _storageEmptyColor = new Color[InventoryManager.StorageSlotCount];
+    readonly Sprite[] _storageEmptySprite = new Sprite[InventoryManager.StorageSlotCount];
     readonly string[] _storageEmptyName = new string[InventoryManager.StorageSlotCount];
     // A안: Q 보석 칸의 프리팹 배경(스프라이트/색)을 기억해 비었을 때 되돌린다.
     Sprite _qGemBaseSprite;
@@ -203,9 +204,176 @@ void Start()
             return;
         }
 
+        // task6: 몸(Body) 슬롯이 비어 있으면 인벤토리 닫기를 막고 흔들림+경고를 재생.
+        if (!IsBodyEquippedNow())
+        {
+            PlayBodyRequiredWarning();
+            return;
+        }
+
         RunUiPauseManager.SetPaused("Inventory", false);
         SoundManager.PlayPanel();
         PlayPanelAnimation(false);
+    }
+
+    bool IsBodyEquippedNow()
+    {
+        var inv = InventoryManager.Instance;
+        int idx = (int)BodySlot.Body;
+        if (inv != null && inv.equipped != null && idx < inv.equipped.Length && inv.equipped[idx] != null)
+            return true;
+
+        var itemInv = ItemInventoryManager.Instance;
+        if (itemInv != null && itemInv.GetEquippedByBodySlot(BodySlot.Body) != null)
+            return true;
+
+        return false;
+    }
+
+    // task6: 흔들림 + 어둡게 + 경고 텍스트(빠른 페이드 인/아웃).
+    const float BodyRequiredShakeDistance = 22f;
+    const float BodyRequiredShakeDuration = 0.28f;
+    const float BodyRequiredWarnFadeIn = 0.10f;
+    const float BodyRequiredWarnHold = 0.55f;
+    const float BodyRequiredWarnFadeOut = 0.25f;
+
+    Coroutine _bodyRequiredShakeRoutine;
+    Coroutine _bodyRequiredWarnRoutine;
+    TextMeshProUGUI _bodyRequiredWarnText;
+
+    void PlayBodyRequiredWarning()
+    {
+        SoundManager.PlayClick();
+
+        if (_bodyRequiredShakeRoutine != null)
+            StopCoroutine(_bodyRequiredShakeRoutine);
+        _bodyRequiredShakeRoutine = StartCoroutine(BodyRequiredShakeRoutine());
+
+        if (_bodyRequiredWarnRoutine != null)
+            StopCoroutine(_bodyRequiredWarnRoutine);
+        _bodyRequiredWarnRoutine = StartCoroutine(BodyRequiredWarnRoutine());
+    }
+
+    System.Collections.IEnumerator BodyRequiredShakeRoutine()
+    {
+        RectTransform rect = _panelRect;
+        if (rect == null && _panel != null)
+            rect = _panel.transform as RectTransform;
+        if (rect == null)
+            yield break;
+
+        Vector2 origin = _panelPositionCaptured ? _panelShownPosition : rect.anchoredPosition;
+        Image[] images = _panel.GetComponentsInChildren<Image>(true);
+        Color[] originalColors = new Color[images.Length];
+        for (int i = 0; i < images.Length; i++)
+            originalColors[i] = images[i] != null ? images[i].color : Color.white;
+
+        float elapsed = 0f;
+        float duration = BodyRequiredShakeDuration;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float damp = 1f - t;
+            float offset = Mathf.Sin(elapsed * 42f) * BodyRequiredShakeDistance * damp;
+            rect.anchoredPosition = origin + new Vector2(offset, 0f);
+
+            float dark = Mathf.Lerp(0.65f, 1f, t);
+            for (int i = 0; i < images.Length; i++)
+            {
+                if (images[i] == null) continue;
+                Color c = originalColors[i];
+                images[i].color = new Color(c.r * dark, c.g * dark, c.b * dark, c.a);
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        rect.anchoredPosition = origin;
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i] != null)
+                images[i].color = originalColors[i];
+        }
+        _bodyRequiredShakeRoutine = null;
+    }
+
+    System.Collections.IEnumerator BodyRequiredWarnRoutine()
+    {
+        TextMeshProUGUI label = EnsureBodyRequiredWarnLabel();
+        if (label == null)
+            yield break;
+
+        label.gameObject.SetActive(true);
+        Color baseColor = label.color;
+        Color transparent = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+        Color opaque = new Color(baseColor.r, baseColor.g, baseColor.b, 1f);
+        label.color = transparent;
+
+        float elapsed = 0f;
+        while (elapsed < BodyRequiredWarnFadeIn)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            label.color = Color.Lerp(transparent, opaque, elapsed / BodyRequiredWarnFadeIn);
+            yield return null;
+        }
+        label.color = opaque;
+
+        elapsed = 0f;
+        while (elapsed < BodyRequiredWarnHold)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        elapsed = 0f;
+        while (elapsed < BodyRequiredWarnFadeOut)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            label.color = Color.Lerp(opaque, transparent, elapsed / BodyRequiredWarnFadeOut);
+            yield return null;
+        }
+        label.color = transparent;
+        _bodyRequiredWarnRoutine = null;
+    }
+
+    TextMeshProUGUI EnsureBodyRequiredWarnLabel()
+    {
+        if (_bodyRequiredWarnText != null)
+            return _bodyRequiredWarnText;
+
+        if (_panel == null)
+            return null;
+
+        RectTransform panelRect = _panel.transform as RectTransform;
+        Transform existing = _panel.transform.Find("BodyRequiredWarn");
+        GameObject go = existing != null ? existing.gameObject : new GameObject("BodyRequiredWarn");
+        go.transform.SetParent(_panel.transform, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        if (rect == null)
+            rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -32f);
+        rect.sizeDelta = new Vector2(640f, 64f);
+        rect.localScale = Vector3.one;
+
+        TextMeshProUGUI label = go.GetComponent<TextMeshProUGUI>();
+        if (label == null)
+            label = go.AddComponent<TextMeshProUGUI>();
+        label.raycastTarget = false;
+        label.font = UIThinDungFont.Get();
+        label.fontSize = 42f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.textWrappingMode = TextWrappingModes.NoWrap;
+        label.text = "몸은 비워둘 수 없습니다!";
+        label.color = new Color(0.72f, 0.10f, 0.08f, 0f);
+        label.transform.SetAsLastSibling();
+
+        _bodyRequiredWarnText = label;
+        return label;
     }
 
     public void OpenPanel()
@@ -564,7 +732,10 @@ void Start()
         // A안: 이미지가 코드로 새로 붙었을 때만 CEmpty 기본색을 쓰고,
         // 프리팹에서 손으로 지정한 슬롯 배경색/모양은 그대로 보존한다.
         if (index >= 0 && index < _storageEmptyColor.Length)
+        {
             _storageEmptyColor[index] = createdImage ? CEmpty : image.color;
+            _storageEmptySprite[index] = image.sprite;
+        }
         image.color = createdImage ? CEmpty : image.color;
         image.raycastTarget = true;
         _storageImg[index] = image;
@@ -1395,16 +1566,24 @@ void NormalizeCanvasTransform()
         }
 
         // ─ InventoryManager BodyPart 슬롯 ─
+        // task4: 슬롯 5-9 가 비었을 때에도 슬롯 1과 동일한 빈 슬롯 이미지/색을 보여주기 위해
+        // 슬롯 0에서 캡처한 기준 값을 모든 빈 슬롯에 강제로 다시 적용한다.
+        Color baselineEmptyColor = _storageEmptyColor != null && _storageEmptyColor.Length > 0
+            ? _storageEmptyColor[0]
+            : CEmpty;
+        Sprite baselineEmptySprite = _storageEmptySprite != null && _storageEmptySprite.Length > 0
+            ? _storageEmptySprite[0]
+            : null;
         for (int i = 0; i < storageCount; i++)
         {
             var p = inv.storage[i];
             // task4: 배경 Image는 빈/찬 색상만; 실제 스프라이트는 ItemIcon 자식에 표시
             if (_storageImg[i] != null)
             {
-                // 슬롯 배경 sprite는 에디터 지정값을 유지한다.
-                // A안: 빈 슬롯은 프리팹에서 지정한 배경색을 그대로 보여준다.
-                Color emptyColor = i < _storageEmptyColor.Length ? _storageEmptyColor[i] : CEmpty;
-                _storageImg[i].color = p != null ? new Color(0.12f, 0.09f, 0.06f, 0.35f) : emptyColor;
+                _storageImg[i].color = p != null ? new Color(0.12f, 0.09f, 0.06f, 0.35f) : baselineEmptyColor;
+                // 빈 상태에서는 슬롯 배경 sprite도 기준값으로 되돌려 슬롯 간 시각적 편차를 없앤다.
+                if (p == null && baselineEmptySprite != null)
+                    _storageImg[i].sprite = baselineEmptySprite;
                 ApplyAlphaHitTest(_storageImg[i], 0f);
             }
 
@@ -1573,7 +1752,14 @@ void NormalizeCanvasTransform()
                     _charImg[i].color = equipSprite != null ? Color.white : CSlot;
                     // 특히 Body는 히트박스보다 훨씬 큰 고정 박스(BodyVisual)에 그려서,
                     // 작은 인벤토리 아이콘을 그대로 쓰면 지나치게 커 보인다. 아이템별 배율로 보정.
-                    _charImg[i].rectTransform.localScale = Vector3.one * bodyItem.EquippedScale;
+                    // task5: 오른쪽 슬롯인데 아이템에 오른쪽 전용 그림이 없으면 좌우 미러로 표시한다.
+                    bool isRightSlot = bodySlot == BodySlot.ArmRight
+                        || bodySlot == BodySlot.LegRight
+                        || bodySlot == BodySlot.EyeRight;
+                    bool hasRightVariant = bodyItem.EquippedSpriteRight != null;
+                    float xSign = (isRightSlot && !hasRightVariant) ? -1f : 1f;
+                    float scale = bodyItem.EquippedScale;
+                    _charImg[i].rectTransform.localScale = new Vector3(xSign * scale, scale, scale);
                 }
                 else
                 {

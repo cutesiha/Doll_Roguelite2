@@ -13,6 +13,8 @@ public class StartSceneTransition : MonoBehaviour
     [SerializeField] Image fadeImage;
     [SerializeField] string targetSceneName = "TutorialScene";
     [SerializeField] float fadeDuration = 0.35f;
+    [SerializeField, Min(0f)] float bgmFadeOutDuration = 0.9f;
+    [SerializeField, Min(0f)] float nextSceneBgmFadeInDuration = 1.0f;
 
     bool isTransitioning;
 
@@ -67,20 +69,22 @@ public class StartSceneTransition : MonoBehaviour
         if (fadeImage != null)
             fadeImage.transform.SetAsLastSibling();
 
+        // 화면 페이드와 BGM 페이드 아웃을 병행하고 둘 다 끝날 때까지 대기한다.
+        SoundManager.FadeOutCurrentBgm(bgmFadeOutDuration);
+
         float duration = Mathf.Max(0.01f, fadeDuration);
+        float totalWait = Mathf.Max(duration, bgmFadeOutDuration);
         float elapsed = 0f;
-        while (true)
+        while (elapsed < totalWait)
         {
             elapsed += Time.unscaledDeltaTime;
             float alpha = Mathf.Clamp01(elapsed / duration);
             SetFadeAlpha(alpha);
-            if (alpha >= 1f)
-                break;
-
             yield return null;
         }
 
         SetFadeAlpha(1f);
+        SoundManager.RequestBgmFadeInOnNextSceneLoad(nextSceneBgmFadeInDuration);
         GameSaveSystem.StartNewRun();
         // 시작 버튼은 항상 처음부터: 튜토리얼 완료 기록과 무관하게 지정한 씬(튜토리얼)으로 간다.
         SceneManager.LoadScene(targetSceneName);

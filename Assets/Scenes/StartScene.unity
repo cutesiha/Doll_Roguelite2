@@ -11344,7 +11344,7 @@ MonoBehaviour:
   roadButtonFloatSpeed: 2.2
   roadButtonAlphaHitThreshold: 0.1
   panelLineColor: {r: 0.3, g: 0.18, b: 0.1, a: 1}
-  roadButtonHoverColor: {r: 1.5, g: 1.18, b: 0.78, a: 1}
+  roadButtonHoverColor: {r: 0.58, g: 0.39, b: 0.27, a: 1}
   roadPanelShakeDistance: 16
   roadPanelShakeDuration: 0.28
   optionVolumeClickSource: {fileID: 1099904704}

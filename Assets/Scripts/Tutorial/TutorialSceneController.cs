@@ -1238,8 +1238,11 @@ public class TutorialSceneController : MonoBehaviour
 
     // 튜토리얼 문에 다른 문(DoorTrigger)과 동일한 상호작용 콜라이더를 붙인다.
     // 문 루트의 스케일이 1이므로 카탈로그의 월드 오프셋 좌표를 그대로 사용할 수 있다.
+    // 어떤 이유로든(카탈로그 미로드/폴리곤 패스 손상 등) 콜라이더가 붙지 않아
+    // 문 상호작용이 안 되는 사례가 있어 항상 최소 BoxCollider2D 하나를 보장한다.
     void AddDoorInteractionCollider(GameObject doorObject, DoorSpriteCatalog catalog)
     {
+        bool colliderAssigned = false;
         if (catalog != null && catalog.doorColliderPath != null && catalog.doorColliderPath.Length >= 3)
         {
             PolygonCollider2D poly = doorObject.GetComponent<PolygonCollider2D>();
@@ -1248,15 +1251,29 @@ public class TutorialSceneController : MonoBehaviour
             poly.isTrigger = true;
             poly.pathCount = 1;
             poly.SetPath(0, catalog.doorColliderPath);
-            return;
+            colliderAssigned = poly != null;
         }
 
-        BoxCollider2D box = doorObject.GetComponent<BoxCollider2D>();
-        if (box == null)
-            box = doorObject.AddComponent<BoxCollider2D>();
-        box.isTrigger = true;
-        box.size = catalog != null ? catalog.doorColliderSize : new Vector2(2.34f, 2.7f);
-        box.offset = catalog != null ? catalog.doorColliderOffset : Vector2.zero;
+        if (!colliderAssigned)
+        {
+            BoxCollider2D box = doorObject.GetComponent<BoxCollider2D>();
+            if (box == null)
+                box = doorObject.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = catalog != null && catalog.doorColliderSize.x > 0.01f && catalog.doorColliderSize.y > 0.01f
+                ? catalog.doorColliderSize
+                : new Vector2(2.34f, 2.7f);
+            box.offset = catalog != null ? catalog.doorColliderOffset : Vector2.zero;
+        }
+
+        // 어떤 경우에도 상호작용용 콜라이더가 반드시 있도록 최종 안전망.
+        if (doorObject.GetComponent<Collider2D>() == null)
+        {
+            BoxCollider2D safeBox = doorObject.AddComponent<BoxCollider2D>();
+            safeBox.isTrigger = true;
+            safeBox.size = new Vector2(2.34f, 2.7f);
+            safeBox.offset = Vector2.zero;
+        }
     }
 
     void AttachInteractableHighlight(Transform target, float distance)
