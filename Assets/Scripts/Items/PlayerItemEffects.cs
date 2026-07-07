@@ -219,7 +219,7 @@ public class PlayerItemEffects : MonoBehaviour
             for (int i = -1; i <= 1; i++)
             {
                 Vector2 spreadDir = Quaternion.Euler(0f, 0f, i * spreadDegrees) * direction;
-                ItemProjectile.Spawn(origin, spreadDir, 9f, damage, lifetime, 0.16f, false, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, sprites[i + 1], 0f, spinDegreesPerSecond);
+                ItemProjectile.Spawn(origin, spreadDir, 9f, damage, lifetime, 0.32f, false, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, sprites[i + 1], 0f, spinDegreesPerSecond);
             }
             return true;
         }

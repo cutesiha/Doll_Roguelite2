@@ -94,11 +94,13 @@ public class ItemDebugHud : MonoBehaviour
         builder.AppendLine("<b>ITEM TEST</b>  <size=75%>[F8 숨기기]</size>");
         builder.Append("코인 ").Append(inventory.Coins)
             .Append("  |  보관 ").Append(inventory.Storage.Count).Append('/').Append(inventory.Capacity).AppendLine();
-        AppendSlot(builder, "눈", inventory.GetEquipped(ItemEquipLocation.Eye));
+        AppendSlot(builder, "왼눈", inventory.GetEquippedByBodySlot(BodySlot.EyeLeft));
+        AppendSlot(builder, "오른눈", inventory.GetEquippedByBodySlot(BodySlot.EyeRight));
         AppendSlot(builder, "왼팔", inventory.GetEquippedByBodySlot(BodySlot.ArmLeft));
         AppendSlot(builder, "오른팔", inventory.GetEquippedByBodySlot(BodySlot.ArmRight));
         AppendSlot(builder, "몸", inventory.GetEquipped(ItemEquipLocation.Body));
-        AppendSlot(builder, "다리", inventory.GetEquipped(ItemEquipLocation.Leg));
+        AppendSlot(builder, "왼다리", inventory.GetEquippedByBodySlot(BodySlot.LegLeft));
+        AppendSlot(builder, "오른다리", inventory.GetEquippedByBodySlot(BodySlot.LegRight));
         builder.Append("Q: ").Append(inventory.Consumable != null ? inventory.Consumable.ItemName : "없음");
         builder.Append("  |  방어막: ");
         builder.Append(inventory.Shield != null
@@ -110,7 +112,7 @@ public class ItemDebugHud : MonoBehaviour
     static void AppendSlot(StringBuilder builder, string label, ItemData item)
     {
         builder.Append(label).Append(": ").Append(item != null ? item.ItemName : "없음").Append("  ");
-        if (label == "팔" || label == "다리")
+        if (label == "오른눈" || label == "오른팔" || label == "오른다리" || label == "몸")
             builder.AppendLine();
     }
 }

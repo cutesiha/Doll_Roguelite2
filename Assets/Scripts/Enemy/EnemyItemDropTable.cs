@@ -3,7 +3,7 @@ using UnityEngine;
 // 특정 잡몹 처치 시 낮은 확률로 그 몬스터 전용 아이템을 드랍한다.
 public static class EnemyItemDropTable
 {
-    const float DropChance = 1f; // TODO: 테스트 후 0.05f로 되돌리기
+    const float DropChance = 0.05f;
 
     public static void TryDropSpecialItem(EnemyKind kind, Vector3 position)
     {

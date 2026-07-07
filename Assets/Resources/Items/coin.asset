@@ -25,7 +25,7 @@ MonoBehaviour:
   duration: 0
   shopPrice: 0
   effects: []
-  sprite: {fileID: 0}
+  sprite: {fileID: 6615368775227135551, guid: 8ba2c511ec1926c438673fc5ccfe4430, type: 3}
   projectileSprite: {fileID: 0}
   placeholderShape: 1
   placeholderColor: {r: 1, g: 0.74, b: 0.12, a: 1}

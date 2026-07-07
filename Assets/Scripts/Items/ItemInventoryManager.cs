@@ -945,27 +945,6 @@ public class ItemInventoryManager : MonoBehaviour
             gameObject.AddComponent<ItemDebugHud>();
         else if (!isTestRoom && hud != null)
             Destroy(hud);
-
-        if (isTestRoom)
-            SeedItemTestRoomInventory();
-    }
-
-    void SeedItemTestRoomInventory()
-    {
-        if (storage.Count > 0 || consumable != null || shield != null || coinStacks.Count > 0)
-            return;
-
-        IReadOnlyList<ItemData> items = ItemCatalog.All;
-        for (int i = 0; i < items.Count; i++)
-        {
-            ItemData item = items[i];
-            if (item == null || item.Type == ItemType.Currency)
-                continue;
-
-            AddNewItemToStorage(item);
-            NotifyChanged();
-            return;
-        }
     }
 
     void NotifyChanged()

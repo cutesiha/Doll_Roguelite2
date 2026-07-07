@@ -1792,18 +1792,31 @@ void NormalizeCanvasTransform()
         int statCount = Mathf.Min(inv.equipped.Length, _statName.Length, _statHp.Length);
         for (int i = 0; i < statCount; i++)
         {
+            BodySlot slotForRow = (BodySlot)i;
+
+            // 몸통(Body)은 PlayerDamageReceiver.DamageSlots에도 없듯이 전투 중 깎이는 HP
+            // 개념이 없는 부위라, [부위 상태] 패널에 아예 행 자체를 표시하지 않는다.
+            if (slotForRow == BodySlot.Body)
+            {
+                Transform row = _statName[i] != null ? _statName[i].transform.parent : null;
+                if (row != null)
+                    row.gameObject.SetActive(false);
+                continue;
+            }
+
             var p = inv.equipped[i];
             // 신규 아이템 시스템으로 장착된 게 있으면 그 아이템의 HP를 우선 표시한다.
             // (레거시 파츠는 새 아이템이 장착되는 순간 inv.equipped[i]에서 빠지므로,
             // 여기서 신규 시스템을 확인하지 않으면 실제로는 장착돼 있는데도 "없음"으로 보인다.)
             int itemCurrentHp = 0, itemMaxHp = 0;
-            bool hasItemPart = itemInv != null && itemInv.TryGetEquippedItemHp((BodySlot)i, out itemCurrentHp, out itemMaxHp);
+            bool hasItemPart = itemInv != null && itemInv.TryGetEquippedItemHp(slotForRow, out itemCurrentHp, out itemMaxHp);
             bool equippedHere = p != null || hasItemPart;
 
             if (_statName[i] != null) _statName[i].text  = equippedHere ? "장착됨" : "없음";
             if (_statHp[i]   != null)
             {
-                _statHp[i].text  = hasItemPart ? Dots(itemCurrentHp, itemMaxHp) : (p != null ? Dots(p) : new string('○', 5));
+                int defaultMaxHp = (slotForRow == BodySlot.EyeLeft || slotForRow == BodySlot.EyeRight) ? 2 : 3;
+                _statHp[i].text  = hasItemPart ? Dots(itemCurrentHp, itemMaxHp) : (p != null ? Dots(p) : new string('○', defaultMaxHp));
                 // 장착 상태: 프리팹에서 지정한 색 유지 / 미장착: 어둡게.
                 _statHp[i].color = equippedHere
                     ? (i < _statHpAuthoredColor.Length ? _statHpAuthoredColor[i] : new Color(0.88f, 0.48f, 0.24f, 1f))
@@ -2361,7 +2374,8 @@ void NormalizeCanvasTransform()
 
     static string Dots(int currentHp, int maxHp)
     {
-        int f = Mathf.Clamp(Mathf.RoundToInt((float)currentHp / Mathf.Max(1, maxHp) * 5f), 0, 5);
-        return new string('●', f) + new string('○', 5 - f);
+        int max = Mathf.Max(1, maxHp);
+        int filled = Mathf.Clamp(currentHp, 0, max);
+        return new string('●', filled) + new string('○', max - filled);
     }
 }
