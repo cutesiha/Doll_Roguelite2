@@ -1146,8 +1146,12 @@ PrefabInstance:
     m_TransformParent: {fileID: 762535625}
     m_Modifications:
     - target: {fileID: 4611663813825049642, guid: 4dba2dd2be2b03e409c5843ba87c354f, type: 3}
+      propertyPath: m_Name
+      value: ItemDrop_spool
+      objectReference: {fileID: 0}
+    - target: {fileID: 4611663813825049642, guid: 4dba2dd2be2b03e409c5843ba87c354f, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5855102967278193039, guid: 4dba2dd2be2b03e409c5843ba87c354f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1195,11 +1199,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7719632332087159058, guid: 4dba2dd2be2b03e409c5843ba87c354f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -9.20899
+      value: -8.45899
       objectReference: {fileID: 0}
     - target: {fileID: 7719632332087159058, guid: 4dba2dd2be2b03e409c5843ba87c354f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.9744102
+      value: -3.42559
       objectReference: {fileID: 0}
     - target: {fileID: 7719632332087159058, guid: 4dba2dd2be2b03e409c5843ba87c354f, type: 3}
       propertyPath: m_LocalRotation.x
@@ -1393,6 +1397,68 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1001 &251429458
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 762535625}
+    m_Modifications:
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -7.20899
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -3.42559
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8728327406810366072, guid: 70870b929c103604eab9f35da245652b, type: 3}
+      propertyPath: m_Name
+      value: ItemDrop_wood_plank
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 70870b929c103604eab9f35da245652b, type: 3}
+--- !u!4 &251429459 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4821132835995629762, guid: 70870b929c103604eab9f35da245652b, type: 3}
+  m_PrefabInstance: {fileID: 251429458}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &253689806
 GameObject:
   m_ObjectHideFlags: 0
@@ -3546,19 +3612,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1138593586368893378, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_Name
-      value: Item_round_pin
+      value: ItemDrop_round_pin
       objectReference: {fileID: 0}
     - target: {fileID: 1138593586368893378, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3278713255110097848, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -11.916079
+      value: -9.70899
       objectReference: {fileID: 0}
     - target: {fileID: 3278713255110097848, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.3750595
+      value: -3.42559
       objectReference: {fileID: 0}
     - target: {fileID: 3278713255110097848, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_LocalPosition.z
@@ -3973,6 +4039,7 @@ Transform:
   - {fileID: 666340050}
   - {fileID: 649926814}
   - {fileID: 173859864}
+  - {fileID: 251429459}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &804217137
