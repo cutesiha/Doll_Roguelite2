@@ -343,9 +343,9 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
   attackCooldown: 0.3
-  attackDistance: 1.05
+  attackDistance: 1.4
   attackDistanceBonus: 0.26
-  verticalAttackDistanceBonus: 0.06
+  verticalAttackDistanceBonus: 0.32
   attackSize: {x: 1, y: 1}
   attackDuration: 0.12
   fistScale: {x: 1.65, y: 1.65}

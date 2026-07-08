@@ -24,7 +24,10 @@ public class PlayerSceneTint : MonoBehaviour
             for (int i = 0; i < all.Length; i++)
             {
                 string n = all[i].name;
-                if (n.Contains("Shadow") || n.Contains("Socket"))
+                // 그림자/눈 소켓 같은 보조 렌더러와, PlayerAttack이 생성하는 주먹·잔상·슬래시
+                // 이펙트 렌더러는 제외한다. (이펙트 색/알파를 매 프레임 틴트로 덮으면 룸씬과
+                // 스윙 연출이 달라지고 잔상이 불투명 덩어리로 남는다.)
+                if (n.Contains("Shadow") || n.Contains("Socket") || n.Contains("PlayerAttack"))
                     continue;
                 targets.Add(all[i]);
             }

@@ -571,12 +571,25 @@ public class Room : MonoBehaviour
 
         if (TryGetRoomInnerRect(enemySize, out Rect innerRect))
         {
+            // 벽 콜라이더에 너무 붙지 않도록 innerRect 경계에서 추가로 안쪽으로 당긴 rect를
+            // 스폰 후보 범위로 쓴다. (기존 코너를 그대로 쓰면 벽에 끼는 문제 발생)
+            const float wallSpawnBuffer = 1.2f;
+            Rect safeRect = Rect.MinMaxRect(
+                innerRect.xMin + wallSpawnBuffer,
+                innerRect.yMin + wallSpawnBuffer,
+                innerRect.xMax - wallSpawnBuffer,
+                innerRect.yMax - wallSpawnBuffer);
+
+            // safeRect가 너무 좁아지면 innerRect로 대체 (아주 작은 방 대비)
+            if (safeRect.width < 0.5f || safeRect.height < 0.5f)
+                safeRect = innerRect;
+
             Vector2[] farCandidates =
             {
-                new Vector2(innerRect.xMin, innerRect.yMin),
-                new Vector2(innerRect.xMin, innerRect.yMax),
-                new Vector2(innerRect.xMax, innerRect.yMin),
-                new Vector2(innerRect.xMax, innerRect.yMax)
+                new Vector2(safeRect.xMin, safeRect.yMin),
+                new Vector2(safeRect.xMin, safeRect.yMax),
+                new Vector2(safeRect.xMax, safeRect.yMin),
+                new Vector2(safeRect.xMax, safeRect.yMax)
             };
 
             Vector2 cameraCenter = center;
@@ -594,8 +607,8 @@ public class Room : MonoBehaviour
 
             // Keep a little variation without ever moving the fourth enemy back
             // into the visible camera rectangle.
-            farthest.x = Mathf.Clamp(farthest.x + Random.Range(-0.6f, 0.6f), innerRect.xMin, innerRect.xMax);
-            farthest.y = Mathf.Clamp(farthest.y + Random.Range(-0.6f, 0.6f), innerRect.yMin, innerRect.yMax);
+            farthest.x = Mathf.Clamp(farthest.x + Random.Range(-0.6f, 0.6f), safeRect.xMin, safeRect.xMax);
+            farthest.y = Mathf.Clamp(farthest.y + Random.Range(-0.6f, 0.6f), safeRect.yMin, safeRect.yMax);
             return new Vector3(farthest.x, farthest.y, 0f);
         }
 
