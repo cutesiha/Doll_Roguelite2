@@ -80,14 +80,7 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
         if (item == null)
             return "";
 
-        string text = "<b>" + item.ItemName + "</b>";
-        if (!string.IsNullOrEmpty(item.Description))
-            text += "\n<size=85%>" + item.Description + "</size>";
-        if (item.Type == ItemType.Currency)
-            text += "\n<size=80%><color=#F5C842>동전</color></size>";
-        else if (item.Type == ItemType.GemConsumable)
-            text += "\n<size=80%>Q키로 사용</size>";
-        return text;
+        return ItemTooltipTextFormatter.Build(item);
     }
 
     public static void EnsureTooltip()
@@ -108,7 +101,7 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
         go.layer = canvas.gameObject.layer;
 
         RectTransform rect = go.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(280f, 90f);
+        rect.sizeDelta = new Vector2(280f, 110f);
         rect.pivot = new Vector2(0f, 1f);
 
         Image bg = go.AddComponent<Image>();
@@ -161,6 +154,7 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
             RectTransform rect = tooltipPanel.GetComponent<RectTransform>();
             if (rect == null)
                 rect = tooltipPanel.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(Mathf.Max(rect.sizeDelta.x, 280f), Mathf.Max(rect.sizeDelta.y, 110f));
 
             Image background = tooltipPanel.GetComponent<Image>();
             if (background == null)
@@ -187,6 +181,11 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
                 tooltipText = textTransform.gameObject.AddComponent<TextMeshProUGUI>();
             tooltipText.font = UIThinDungFont.Get();
             tooltipText.raycastTarget = false;
+            tooltipText.fontSize = 18f;
+            tooltipText.enableAutoSizing = true;
+            tooltipText.fontSizeMin = 12f;
+            tooltipText.fontSizeMax = 18f;
+            tooltipText.textWrappingMode = TextWrappingModes.Normal;
 
             Canvas tooltipCanvasComp = tooltipPanel.GetComponent<Canvas>();
             if (tooltipCanvasComp == null)

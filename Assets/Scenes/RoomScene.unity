@@ -1040,7 +1040,7 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
   attackCooldown: 0.3
-  attackDistance: 0.85
+  attackDistance: 1.05
   attackDistanceBonus: 0.26
   verticalAttackDistanceBonus: 0.06
   attackSize: {x: 1, y: 1}
@@ -1978,7 +1978,8 @@ MonoBehaviour:
   bindThrustDuration: 0.21
   moveSpeed: 1.02
   preferredDistance: 3.8
-  attackCooldownRange: {x: 1.9, y: 3.0}
+  attackStartDistance: 5.2
+  attackCooldownRange: {x: 1.9, y: 3}
   telegraphDuration: 0.65
   fanRadius: 3.8
   fanAngle: 70
@@ -4539,7 +4540,7 @@ MonoBehaviour:
   fallbackSpriteName: sp_another2
   breathingAmplitude: 0.055
   breathingFrequency: 1.15
-  threadCooldownRange: {x: 2.7, y: 4.1}
+  threadCooldownRange: {x: 4, y: 6}
   prepareDuration: 0.55
   threadWarningDuration: 1.15
   threadGrowDuration: 0.5
@@ -6136,7 +6137,7 @@ MonoBehaviour:
   fallbackSpriteName: sp1
   breathingAmplitude: 0.055
   breathingFrequency: 1.15
-  threadCooldownRange: {x: 2.7, y: 4.1}
+  threadCooldownRange: {x: 4, y: 6}
   prepareDuration: 0.55
   threadWarningDuration: 1.15
   threadGrowDuration: 0.5
@@ -8400,6 +8401,7 @@ MonoBehaviour:
   chaseSpeed: 0.75
   dashCooldownRange: {x: 2.3, y: 3.4}
   warningDuration: 1.2
+  attackStartDistance: 5.8
   dashDistance: 11
   dashWidth: 1.05
   dashSpeed: 19.5
@@ -10331,11 +10333,19 @@ MonoBehaviour:
   punchVolume: 1
   coinPickupClip: {fileID: 0}
   coinPickupVolume: 1
+  itemPickupClip: {fileID: 0}
+  itemPickupVolume: 1
   gemUseClip: {fileID: 0}
   gemUseVolume: 1
   gemUseDuration: 1.4
   waveClearClip: {fileID: 0}
   waveClearVolume: 1
+  doorBlockedClip: {fileID: 0}
+  doorBlockedVolume: 1
+  challengeTimerTickClip: {fileID: 0}
+  challengeTimerTickVolume: 0.75
+  challengeTimerEndClip: {fileID: 0}
+  challengeTimerEndVolume: 1
   afterVictoryBgmClip: {fileID: 0}
   twoLegsFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
   twoLegsFootstepVolume: 1.23
@@ -10368,6 +10378,14 @@ MonoBehaviour:
   enemyHitVolume: 1
   playerHitClip: {fileID: 8300000, guid: 42ded5264c9e97e419b436c34fcef5ac, type: 3}
   playerHitVolume: 1
+  buttonEnemyLandingClip: {fileID: 0}
+  buttonEnemyLandingVolume: 0.85
+  needleEnemyDashClip: {fileID: 0}
+  needleEnemyDashVolume: 0.8
+  spoolEnemyThreadClip: {fileID: 0}
+  spoolEnemyThreadVolume: 0.82
+  ribbonEnemyAttackClip: {fileID: 0}
+  ribbonEnemyAttackVolume: 0.78
 --- !u!4 &1993731298
 Transform:
   m_ObjectHideFlags: 0

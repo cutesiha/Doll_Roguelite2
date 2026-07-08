@@ -304,7 +304,7 @@ MonoBehaviour:
   leftAttackStart: {fileID: 0}
   rightAttackStart: {fileID: 0}
   useFixedBodyAttackOrigin: 0
-  attackDistance: 0.72
+  attackDistance: 0.92
   attackDuration: 0.12
   swingArcHeight: 0.22
   swingRotation: 70

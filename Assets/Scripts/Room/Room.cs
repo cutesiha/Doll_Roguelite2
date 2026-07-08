@@ -65,10 +65,7 @@ public class Room : MonoBehaviour
 
         bool useWaves = IsRoomScene();
         if (useWaves)
-        {
-            FarEnemyArrowIndicator.Ensure();
             yield return null;
-        }
 
         int totalWaves = useWaves ? EffectiveWaveCount() : 1;
         for (int wave = 1; wave <= totalWaves; wave++)

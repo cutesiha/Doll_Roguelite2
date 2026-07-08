@@ -28,10 +28,10 @@ public class ItemWorldPickup : MonoBehaviour
     [SerializeField] TextMeshPro tooltipText;
     [SerializeField] Sprite tooltipBackgroundSprite;
     [SerializeField] Vector3 tooltipLocalPosition = new Vector3(0f, 1.45f, -0.1f);
-    [SerializeField] Vector3 tooltipBackgroundScale = new Vector3(5.2f, 1.65f, 1f);
+    [SerializeField] Vector3 tooltipBackgroundScale = new Vector3(4.3f, 1.7f, 1f);
     [SerializeField] Vector3 tooltipTextLocalPosition = new Vector3(0f, 0f, -0.05f);
-    [SerializeField] Vector2 tooltipTextBoxSize = new Vector2(4.85f, 1.35f);
-    [SerializeField, Min(0.1f)] float tooltipFontSize = 2.0f;
+    [SerializeField] Vector2 tooltipTextBoxSize = new Vector2(4.0f, 1.45f);
+    [SerializeField, Min(0.1f)] float tooltipFontSize = 3.0f;
     [SerializeField] Color tooltipBackgroundColor = new Color(0.10f, 0.07f, 0.05f, 0.92f);
     [SerializeField] Color tooltipTextColor = Color.white;
     [SerializeField] bool useAsGlobalTooltipTemplate;
@@ -41,7 +41,6 @@ public class ItemWorldPickup : MonoBehaviour
     [SerializeField, Min(0f)] float purchaseFailureShakeDistance = 0.09f;
     [SerializeField, Min(0.02f)] float purchaseFailureShakeDuration = 0.28f;
     [SerializeField, Min(2)] int purchaseFailureShakeSteps = 8;
-    [SerializeField] Color purchaseFailureColor = new Color(1f, 0.52f, 0.52f, 1f);
 
     float pickupImmuneUntil;
 
@@ -49,7 +48,14 @@ public class ItemWorldPickup : MonoBehaviour
     public bool IsShopItem => shopItem;
     public bool StoreWithoutEquip => storeWithoutEquip;
 
+    // 짙은 갈색 박스 (텍스트는 흰색 고정) — 템플릿 복사로 색이 뭉개지지 않도록 상수로 강제
+    static readonly Color TooltipBackgroundColor = new Color(0.16f, 0.10f, 0.06f, 0.95f);
+
     static ItemWorldPickup globalTooltipTemplate;
+    const float MaxReadableTooltipFontSize = 3.2f;
+    const float MinReadableTooltipFontSize = 1.15f;
+    static readonly Vector3 MinimumTooltipBackgroundScale = new Vector3(4.3f, 1.7f, 1f);
+    static readonly Vector2 MinimumTooltipTextBoxSize = new Vector2(4.0f, 1.45f);
 
     public void Configure(ItemData data, bool isShopItem, int shopPrice, bool storeOnly = false)
     {
@@ -297,23 +303,36 @@ public class ItemWorldPickup : MonoBehaviour
         if (itemRenderer == null)
             itemRenderer = GetComponent<SpriteRenderer>();
 
-        Color originalColor = itemRenderer != null ? itemRenderer.color : Color.white;
+        // 색은 연한 붉은색으로만 살짝 물들이고, 끝나면 아이템 기본색으로 확실히 복원한다.
+        // (실시간 색을 originalColor로 잡으면 연타 시 붉은색을 원색으로 오인해 안 돌아오던 문제 방지.)
+        Color baseColor = ExpectedBaseColor();
+        Color flashColor = new Color(1f, 0.78f, 0.78f, baseColor.a);
         if (itemRenderer != null)
-            itemRenderer.color = purchaseFailureColor;
+            itemRenderer.color = flashColor;
 
+        // 흔들림은 아주 살짝만.
+        float shakeDistance = Mathf.Min(purchaseFailureShakeDistance, 0.035f);
         int steps = Mathf.Max(2, purchaseFailureShakeSteps);
         float delay = Mathf.Max(0.02f, purchaseFailureShakeDuration) / steps;
         for (int i = 0; i < steps; i++)
         {
             float direction = i % 2 == 0 ? 1f : -1f;
-            shakeOffset = Vector3.right * (purchaseFailureShakeDistance * direction);
+            shakeOffset = Vector3.right * (shakeDistance * direction);
             yield return new WaitForSecondsRealtime(delay);
         }
 
         shakeOffset = Vector3.zero;
         if (itemRenderer != null)
-            itemRenderer.color = originalColor;
+            itemRenderer.color = baseColor;
         purchaseFailureRoutine = null;
+    }
+
+    // 아이템의 정상(기본) 스프라이트 색. ItemDropSpawner가 설정하는 규칙과 동일하게 맞춘다.
+    Color ExpectedBaseColor()
+    {
+        if (item != null && item.Sprite == null)
+            return item.PlaceholderColor;
+        return Color.white;
     }
 
     static void PlayShopFeedbackSound()
@@ -342,6 +361,8 @@ public class ItemWorldPickup : MonoBehaviour
         else if (useAsGlobalTooltipTemplate)
             CaptureTooltipAuthoringFromHierarchy();
 
+        NormalizeTooltipAuthoring();
+
         if (tooltipRoot == null)
         {
             Transform existingTooltip = transform.Find("ItemTooltip");
@@ -356,8 +377,12 @@ public class ItemWorldPickup : MonoBehaviour
             tooltipRoot.SetParent(transform, false);
         }
 
-        tooltipRoot.localPosition = tooltipLocalPosition;
-        tooltipRoot.localScale = Vector3.one / Mathf.Max(0.01f, transform.localScale.x);
+        // 아이템 전체가 ResolveWorldScale()로 스케일되므로, 툴팁은 스케일을 상쇄해
+        // 아이템 스케일과 무관하게 항상 "아이템 바로 위" 고정 거리에 뜨도록 한다.
+        // (예전엔 위치는 상쇄하지 않아 스케일 큰 상점 아이템일수록 툴팁이 너무 높이 떴다.)
+        float tooltipScaleComp = 1f / Mathf.Max(0.01f, transform.localScale.x);
+        tooltipRoot.localPosition = tooltipLocalPosition * tooltipScaleComp;
+        tooltipRoot.localScale = Vector3.one * tooltipScaleComp;
 
         if (tooltipBackground == null)
             tooltipBackground = tooltipRoot.GetComponentInChildren<SpriteRenderer>(true);
@@ -371,7 +396,9 @@ public class ItemWorldPickup : MonoBehaviour
 
         tooltipBackground.transform.localScale = tooltipBackgroundScale;
         tooltipBackground.sprite = tooltipBackgroundSprite != null ? tooltipBackgroundSprite : BossVisuals.SquareSprite();
-        tooltipBackground.color = tooltipBackgroundColor;
+        // 템플릿에서 복사된 색이 어두운 글자색과 겹쳐 텍스트가 안 보이던 문제 방지:
+        // 박스는 항상 짙은 갈색, 글자는 항상 흰색으로 고정한다.
+        tooltipBackground.color = TooltipBackgroundColor;
         tooltipBackground.sortingOrder = 79;
 
         if (tooltipText == null)
@@ -387,14 +414,31 @@ public class ItemWorldPickup : MonoBehaviour
         tooltipText.transform.localPosition = tooltipTextLocalPosition;
         tooltipText.font = UIThinDungFont.Get();
         tooltipText.fontSize = tooltipFontSize;
+        tooltipText.enableAutoSizing = true;
+        // 상점 툴팁은 이름/종류+가격/설명 3줄이라 기존 하한(1.15)+Ellipsis 조합에서는
+        // 상자 안에 못 들어가 통째로 잘려 아무 텍스트도 안 보였다. 더 줄일 수 있게 하고
+        // 넘쳐도 잘리지 않도록 Overflow로 바꿔 항상 텍스트가 보이게 한다.
+        tooltipText.fontSizeMin = 2.2f;
+        tooltipText.fontSizeMax = tooltipFontSize;
         tooltipText.alignment = TextAlignmentOptions.Center;
-        tooltipText.color = tooltipTextColor;
+        tooltipText.color = Color.white;
         tooltipText.sortingOrder = 80;
         tooltipText.textWrappingMode = TextWrappingModes.Normal;
+        tooltipText.overflowMode = TextOverflowModes.Overflow;
         tooltipText.rectTransform.sizeDelta = tooltipTextBoxSize;
         tooltipText.text = TooltipText();
 
         tooltipRoot.gameObject.SetActive(false);
+    }
+
+    void NormalizeTooltipAuthoring()
+    {
+        // 모든 씬(룸/상점 등)에서 툴팁 크기를 동일하게 유지하기 위해, 씬/프리팹에
+        // 저장된 값에 상관없이 표준 크기로 강제한다. (예전엔 최소값만 보장해서
+        // 씬마다 저장된 값이 달라 크기가 제각각이었다.)
+        tooltipBackgroundScale = MinimumTooltipBackgroundScale;
+        tooltipTextBoxSize = MinimumTooltipTextBoxSize;
+        tooltipFontSize = MaxReadableTooltipFontSize;
     }
 
     void CaptureTooltipAuthoringFromHierarchy()
@@ -431,13 +475,7 @@ public class ItemWorldPickup : MonoBehaviour
 
     string TooltipText()
     {
-        if (item == null)
-            return "아이템 데이터 없음";
-
-        string suffix = shopItem
-            ? "\n[E] 구매  " + price + " 코인"
-            : "\n가까이 가면 자동 획득";
-        return "<b>" + item.ItemName + "</b>\n<size=70%>" + item.Description + suffix + "</size>";
+        return ItemTooltipTextFormatter.Build(item, shopItem ? price : null);
     }
 
     void SetTooltipVisible(bool visible)

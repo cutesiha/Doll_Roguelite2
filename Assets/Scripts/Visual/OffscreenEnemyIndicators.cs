@@ -136,7 +136,10 @@ public class OffscreenEnemyIndicators : MonoBehaviour
     static bool IsCombatScene()
     {
         string name = SceneManager.GetActiveScene().name;
-        return name != "StartScene" && name != "TutorialScene" && name != "MapScene";
+        return name != "StartScene"
+            && name != "TutorialScene"
+            && name != "MapScene"
+            && !name.StartsWith("RoomScene");
     }
 
     // +X 방향을 가리키는 막대+화살촉 스프라이트 (피벗 중앙)

@@ -343,7 +343,7 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
   attackCooldown: 0.3
-  attackDistance: 0.85
+  attackDistance: 1.05
   attackDistanceBonus: 0.26
   verticalAttackDistanceBonus: 0.06
   attackSize: {x: 1, y: 1}
@@ -2002,7 +2002,7 @@ MonoBehaviour:
   fallbackSpriteName: sp_another2
   breathingAmplitude: 0.055
   breathingFrequency: 1.15
-  threadCooldownRange: {x: 3, y: 4.5}
+  threadCooldownRange: {x: 4, y: 6}
   prepareDuration: 0.55
   threadWarningDuration: 1.15
   threadGrowDuration: 0.55
@@ -2894,7 +2894,7 @@ MonoBehaviour:
   fallbackSpriteName: sp1
   breathingAmplitude: 0.055
   breathingFrequency: 1.15
-  threadCooldownRange: {x: 3, y: 4.5}
+  threadCooldownRange: {x: 4, y: 6}
   prepareDuration: 0.55
   threadWarningDuration: 1.15
   threadGrowDuration: 0.55

@@ -123,7 +123,8 @@ public static class GameSaveSystem
         if (inventory != null)
             inventory.ResetToDefault();
 
-        ItemInventoryManager.Instance?.EnsureDefaultBodyPartsEquipped();
+        // 신규 아이템 시스템도 완전히 초기화한다 (이전 런의 보관함/장착/동전이 남지 않도록).
+        ItemInventoryManager.Instance?.ResetForNewRun();
     }
 
     static void Apply(SaveData data)

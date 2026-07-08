@@ -179,8 +179,10 @@ public class ItemInventoryManager : MonoBehaviour
         NotifyChanged();
         return true;
     }
-    public float RoomMoveSpeedBonus => roomBuffSceneHandle == SceneManager.GetActiveScene().handle ? roomMoveSpeedBonus : 0f;
-    public float RoomArmDamageBonus => roomBuffSceneHandle == SceneManager.GetActiveScene().handle ? roomArmDamageBonus : 0f;
+    // 보석(소모품) 버프는 런 내내 유지된다. (예전엔 씬 핸들로 게이팅해서 방을 옮기면 사라졌음.)
+    // 새 게임 시작 시에만 ResetForNewRun()에서 0으로 초기화된다.
+    public float RoomMoveSpeedBonus => roomMoveSpeedBonus;
+    public float RoomArmDamageBonus => roomArmDamageBonus;
 
     public int Capacity
     {
@@ -253,6 +255,33 @@ public class ItemInventoryManager : MonoBehaviour
 
     // 비어있는 신체 슬롯에 기본 파츠(ItemData 기반, category=Default라 보상 풀에는 안 나옴)를 채운다.
     // 이미 뭔가 장착돼 있는 슬롯은 건드리지 않는다 (예: 새 런 시작 시 이전 런에서 들고 있던 아이템 유지).
+    // 새 게임(시작화면 → 게임 시작) 시 이전 런의 모든 흔적을 지운다.
+    // 보관함 아이템/장착 부위/소모품/방어막/동전/버프를 전부 비우고, 기본 부위만 다시 채운다.
+    // (EnsureDefaultBodyPartsEquipped는 "빈 슬롯만" 채우므로 단독으론 초기화가 안 됨.)
+    public void ResetForNewRun()
+    {
+        storage.Clear();
+        storageSlot.Clear();
+        coinStacks.Clear();
+        coinStackSlot.Clear();
+        equipped.Clear();
+        equippedByBodySlot.Clear();
+        consumable = null;
+        shield = null;
+        coinItemRef = null;
+        coins = settings != null ? settings.startingCoins : 0;
+        shieldWaitingForNextRoom = false;
+        shieldArmed = false;
+        shieldEquippedSceneHandle = -1;
+        roomBuffSceneHandle = -1;
+        roomMoveSpeedBonus = 0f;
+        roomArmDamageBonus = 0f;
+        coinOnKillUntil = 0f;
+
+        EnsureDefaultBodyPartsEquipped();
+        NotifyChanged();
+    }
+
     public void EnsureDefaultBodyPartsEquipped()
     {
         bool changed = false;
@@ -295,12 +324,7 @@ public class ItemInventoryManager : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (roomBuffSceneHandle != scene.handle)
-        {
-            roomMoveSpeedBonus = 0f;
-            roomArmDamageBonus = 0f;
-            roomBuffSceneHandle = -1;
-        }
+        // 보석(소모품) 버프는 씬이 바뀌어도 유지한다 (초기화하지 않음).
 
         if (shieldWaitingForNextRoom && scene.handle != shieldEquippedSceneHandle)
         {
@@ -310,8 +334,24 @@ public class ItemInventoryManager : MonoBehaviour
         }
 
         EnsureDebugHud();
-        AttachEffectsToPlayer();
+        // 새 씬의 플레이어가 아직 스폰되지 않았을 수 있으므로, 몇 프레임에 걸쳐 다시 시도해
+        // 장착 아이템 효과가 확실히 다시 적용되도록 한다. (스폰 타이밍 때문에 효과가 사라지던 문제)
+        StartCoroutine(ReattachEffectsWhenPlayerReady());
         Changed?.Invoke();
+    }
+
+    System.Collections.IEnumerator ReattachEffectsWhenPlayerReady()
+    {
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            if (GameObject.FindWithTag("Player") != null)
+            {
+                AttachEffectsToPlayer();
+                Changed?.Invoke();
+                yield break;
+            }
+            yield return null;
+        }
     }
 
     public ItemData GetEquipped(ItemEquipLocation location)
@@ -603,6 +643,11 @@ public class ItemInventoryManager : MonoBehaviour
         if (!IsBodyPartCompatibleWithSlot(item.EquipLocation, targetSlot))
             return false;
 
+        // 조건방에서 잠긴 슬롯(빠진 상태를 강제하는 부위)에는 신규 아이템도 장착할 수 없다.
+        // (예전엔 이 슬롯에 레거시 파츠가 없으면 잠금 검사를 건너뛰어 장착이 가능했다.)
+        if (InventoryManager.Instance != null && InventoryManager.Instance.IsSlotLocked(targetSlot))
+            return false;
+
         instance.SetLastBodySlot(targetSlot);
 
         // 이 부위에 레거시 시스템(BodyPart)으로 이미 장착된 기본 파츠가 있으면 보관함으로 되돌린다.
@@ -681,6 +726,9 @@ public class ItemInventoryManager : MonoBehaviour
     public bool TryUnequipBodyPartToStorage(BodySlot slot)
     {
         if (!equippedByBodySlot.TryGetValue(slot, out ItemInstance instance) || instance == null)
+            return false;
+        // 조건방에서 잠긴 슬롯의 부위는 빼낼 수도 없다 (완전 잠금).
+        if (InventoryManager.Instance != null && InventoryManager.Instance.IsSlotLocked(slot))
             return false;
         if (UsedSlots >= Capacity)
             return false;

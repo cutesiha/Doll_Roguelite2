@@ -2,6 +2,7 @@ using TMPro;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public enum SpecialRoomKind
 {
@@ -99,6 +100,23 @@ public class SpecialRoomController : MonoBehaviour
     void BuildRoomVisuals()
     {
         Transform oldArt = transform.Find("SpecialRoomArt");
+        backgroundColor = roomKind == SpecialRoomKind.Treasure
+            ? new Color(0.22f, 0.16f, 0.10f, 1f)
+            : new Color(0.13f, 0.18f, 0.20f, 1f);
+
+        if (ShouldPreserveAuthoredLayout(oldArt))
+        {
+            EnsureSpecialRoomWallColliders(oldArt);
+            ResolveAuthoredRoomReferences(oldArt);
+            BuildNextDoors(oldArt);
+
+            if (promptText == null)
+                promptText = CreateWorldText(oldArt, "InteractionPrompt", "", new Vector2(0f, -mapSize.y * 0.5f + 1.2f), 0.62f, new Color(1f, 0.90f, 0.68f, 1f), 40);
+            if (messageText == null)
+                messageText = CreateWorldText(oldArt, "RoomMessage", "", new Vector2(0f, -mapSize.y * 0.5f + 2.0f), 0.58f, new Color(1f, 0.86f, 0.48f, 1f), 40);
+            return;
+        }
+
         SpriteRenderer authoredBackground = FindAuthoredBackground(oldArt);
         if (authoredBackground != null)
             authoredBackground.transform.SetParent(transform, true);
@@ -111,10 +129,6 @@ public class SpecialRoomController : MonoBehaviour
 
         if (authoredBackground != null)
             authoredBackground.transform.SetParent(art.transform, true);
-
-        backgroundColor = roomKind == SpecialRoomKind.Treasure
-            ? new Color(0.22f, 0.16f, 0.10f, 1f)
-            : new Color(0.13f, 0.18f, 0.20f, 1f);
 
         CreateRect(art.transform, "Floor_28_8x16_2", Vector2.zero, mapSize, backgroundColor, -40);
         CreateRect(art.transform, "Wall_Top", new Vector2(0f, mapSize.y * 0.5f), new Vector2(mapSize.x, 0.5f), wallColor, -35);
@@ -151,6 +165,39 @@ public class SpecialRoomController : MonoBehaviour
         }
 
         return null;
+    }
+
+    bool ShouldPreserveAuthoredLayout(Transform artRoot)
+    {
+        return artRoot != null && IsChallengeRewardScene();
+    }
+
+    void ResolveAuthoredRoomReferences(Transform artRoot)
+    {
+        if (roomKind == SpecialRoomKind.Treasure)
+            chestObject = FindChildGameObject(artRoot, "TreasureChest");
+
+        promptText = FindChildText(artRoot, "InteractionPrompt");
+        messageText = FindChildText(artRoot, "RoomMessage");
+    }
+
+    static GameObject FindChildGameObject(Transform root, string objectName)
+    {
+        if (root == null)
+            return null;
+
+        Transform[] children = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+            if (children[i] != null && children[i].name == objectName)
+                return children[i].gameObject;
+
+        return null;
+    }
+
+    static TextMeshPro FindChildText(Transform root, string objectName)
+    {
+        GameObject go = FindChildGameObject(root, objectName);
+        return go != null ? go.GetComponent<TextMeshPro>() : null;
     }
 
     void BuildTreasureProps(Transform parent)
@@ -250,7 +297,48 @@ public class SpecialRoomController : MonoBehaviour
         renderer.color = color;
         renderer.sortingOrder = sortingOrder;
 
+        if (IsWallObjectName(objectName))
+            EnsureWallCollider2D(go);
+
         return go;
+    }
+
+    void EnsureSpecialRoomWallColliders(Transform artRoot)
+    {
+        if (artRoot == null)
+            return;
+
+        Transform[] children = artRoot.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+            if (children[i] != null && IsWallObjectName(children[i].name))
+                EnsureWallCollider2D(children[i].gameObject);
+    }
+
+    static bool IsWallObjectName(string objectName)
+    {
+        return !string.IsNullOrEmpty(objectName)
+            && (objectName.StartsWith("Wall_") || objectName.StartsWith("wall"));
+    }
+
+    static void EnsureWallCollider2D(GameObject wall)
+    {
+        if (wall == null)
+            return;
+
+        BoxCollider2D collider2D = wall.GetComponent<BoxCollider2D>();
+        if (collider2D == null)
+            collider2D = wall.AddComponent<BoxCollider2D>();
+
+        BoxCollider collider3D = wall.GetComponent<BoxCollider>();
+        if (collider3D != null)
+        {
+            collider2D.offset = new Vector2(collider3D.center.x, collider3D.center.y);
+            collider2D.size = new Vector2(Mathf.Max(0.01f, collider3D.size.x), Mathf.Max(0.01f, collider3D.size.y));
+            collider3D.enabled = false;
+        }
+
+        collider2D.isTrigger = false;
+        collider2D.enabled = true;
     }
 
     TextMeshPro CreateWorldText(Transform parent, string objectName, string text, Vector2 position, float fontSize, Color color, int sortingOrder)
@@ -274,6 +362,19 @@ public class SpecialRoomController : MonoBehaviour
     void SetupPlayerAndCamera()
     {
         ResolvePlayer();
+        if (IsChallengeRewardScene())
+        {
+            Camera authoredCamera = Camera.main;
+            if (authoredCamera != null)
+            {
+                PlayerCameraFollow authoredFollow = authoredCamera.GetComponent<PlayerCameraFollow>();
+                if (authoredFollow != null)
+                    authoredFollow.enabled = false;
+            }
+
+            return;
+        }
+
         if (player != null)
             player.position = new Vector3(0f, -mapSize.y * 0.5f + 2.35f, 0f);
 
@@ -292,6 +393,11 @@ public class SpecialRoomController : MonoBehaviour
 
         mainCamera.clearFlags = CameraClearFlags.SolidColor;
         mainCamera.backgroundColor = backgroundColor;
+    }
+
+    static bool IsChallengeRewardScene()
+    {
+        return SceneManager.GetActiveScene().name == "ChallengeRewardScene";
     }
 
     void ResolvePlayer()

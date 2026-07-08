@@ -506,6 +506,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4530668063913490433, guid: 9137ef75ca62d7f68a04ee394bc3a0c3, type: 3}
+      propertyPath: tooltipFontSize
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 7596980138666810660, guid: 9137ef75ca62d7f68a04ee394bc3a0c3, type: 3}
       propertyPath: m_Name
       value: Item_star

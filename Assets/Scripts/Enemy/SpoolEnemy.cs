@@ -13,7 +13,7 @@ public class SpoolEnemy : EnemyBase
     [SerializeField] string fallbackSpriteName = "sp1";
     [SerializeField, Min(0f)] float breathingAmplitude = 0.055f;
     [SerializeField, Min(0.1f)] float breathingFrequency = 1.15f;
-    [SerializeField] Vector2 threadCooldownRange = new Vector2(3f, 4.5f);
+    [SerializeField] Vector2 threadCooldownRange = new Vector2(4f, 6f);
     [SerializeField, Min(0.05f)] float prepareDuration = 0.55f;
     [SerializeField, Min(0.05f)] float threadWarningDuration = 1.15f;
     [SerializeField, Min(0.05f)] float threadGrowDuration = 0.55f;
