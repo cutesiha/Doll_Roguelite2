@@ -102,10 +102,8 @@ public class ItemDebugHud : MonoBehaviour
         AppendSlot(builder, "왼다리", inventory.GetEquippedByBodySlot(BodySlot.LegLeft));
         AppendSlot(builder, "오른다리", inventory.GetEquippedByBodySlot(BodySlot.LegRight));
         builder.Append("Q: ").Append(inventory.Consumable != null ? inventory.Consumable.ItemName : "없음");
-        builder.Append("  |  방어막: ");
-        builder.Append(inventory.Shield != null
-            ? inventory.Shield.ItemName + (inventory.ShieldArmed ? "(활성)" : "(다음 방)")
-            : "없음");
+        builder.Append("  |  방어막 부위: ");
+        builder.Append(ShieldedSlotsLabel(inventory));
         text.text = builder.ToString();
     }
 
@@ -114,5 +112,27 @@ public class ItemDebugHud : MonoBehaviour
         builder.Append(label).Append(": ").Append(item != null ? item.ItemName : "없음").Append("  ");
         if (label == "오른눈" || label == "오른팔" || label == "오른다리" || label == "몸")
             builder.AppendLine();
+    }
+
+    static string ShieldedSlotsLabel(ItemInventoryManager inventory)
+    {
+        (BodySlot slot, string label)[] slots =
+        {
+            (BodySlot.EyeLeft, "왼눈"), (BodySlot.EyeRight, "오른눈"),
+            (BodySlot.ArmLeft, "왼팔"), (BodySlot.ArmRight, "오른팔"),
+            (BodySlot.LegLeft, "왼다리"), (BodySlot.LegRight, "오른다리"),
+        };
+
+        string result = "";
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (!inventory.IsBodySlotShielded(slots[i].slot))
+                continue;
+            if (result.Length > 0)
+                result += ", ";
+            result += slots[i].label;
+        }
+
+        return result.Length > 0 ? result : "없음";
     }
 }

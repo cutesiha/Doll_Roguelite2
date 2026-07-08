@@ -37,11 +37,11 @@ public class ItemInventoryManager : MonoBehaviour
 
     ItemSystemSettings settings;
     ItemInstance consumable;
-    ItemInstance shield;
     int coins; // legacy abstract coins (AddCoins 등 비-아이템 경로)
-    bool shieldWaitingForNextRoom;
-    bool shieldArmed;
-    int shieldEquippedSceneHandle = -1;
+    // 누더기 등 Shield 타입 아이템을 이미 장착된 신체부위 슬롯에 드래그해서 건 "그 부위 전용"
+    // 피격 1회 방어막. 부위별로 독립적이라 여러 부위에 동시에 걸 수 있다.
+    // 값(ItemData)은 HP 점 UI에서 어떤 방어막 스프라이트를 보여줄지 판단하는 데 쓰인다.
+    readonly Dictionary<BodySlot, ItemData> shieldedBodySlots = new();
     int roomBuffSceneHandle = -1;
     float roomMoveSpeedBonus;
     float roomArmDamageBonus;
@@ -51,10 +51,8 @@ public class ItemInventoryManager : MonoBehaviour
 
     public IReadOnlyList<ItemInstance> Storage => storage;
     public ItemData Consumable => consumable?.data;
-    public ItemData Shield => shield?.data;
     // 총 동전 = storage 스택 합계 + abstract coins
     public int Coins => ComputeTotalCoins();
-    public bool ShieldArmed => shieldArmed;
     // task7: 동전 스택 리스트 (UI 3x3 표시용)
     public IReadOnlyList<int> CoinStacks => coinStacks;
     // task7: 동전 아이템 데이터 참조
@@ -267,12 +265,9 @@ public class ItemInventoryManager : MonoBehaviour
         equipped.Clear();
         equippedByBodySlot.Clear();
         consumable = null;
-        shield = null;
+        shieldedBodySlots.Clear();
         coinItemRef = null;
         coins = settings != null ? settings.startingCoins : 0;
-        shieldWaitingForNextRoom = false;
-        shieldArmed = false;
-        shieldEquippedSceneHandle = -1;
         roomBuffSceneHandle = -1;
         roomMoveSpeedBonus = 0f;
         roomArmDamageBonus = 0f;
@@ -324,14 +319,7 @@ public class ItemInventoryManager : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // 보석(소모품) 버프는 씬이 바뀌어도 유지한다 (초기화하지 않음).
-
-        if (shieldWaitingForNextRoom && scene.handle != shieldEquippedSceneHandle)
-        {
-            shieldWaitingForNextRoom = false;
-            shieldArmed = shield != null;
-            Announce(shieldArmed ? "누더기 방어막이 활성화되었습니다. 다음 피격 1회를 막습니다." : "");
-        }
+        // 보석(소모품) 버프와 부위별 방어막은 씬이 바뀌어도 유지한다 (초기화하지 않음).
 
         EnsureDebugHud();
         // 새 씬의 플레이어가 아직 스폰되지 않았을 수 있으므로, 몇 프레임에 걸쳐 다시 시도해
@@ -358,8 +346,6 @@ public class ItemInventoryManager : MonoBehaviour
     {
         if (location == ItemEquipLocation.Consumable)
             return consumable?.data;
-        if (location == ItemEquipLocation.Shield)
-            return shield?.data;
 
         equipped.TryGetValue(location, out ItemData item);
         return item;
@@ -406,19 +392,6 @@ public class ItemInventoryManager : MonoBehaviour
             message = item.ItemName + "을(를) 인벤토리에 넣었습니다. Q 보석 칸에 끌어다 놓아 장착하세요.";
             NotifyChanged();
             return true;
-        }
-
-        if (item.Type == ItemType.Shield || item.EquipLocation == ItemEquipLocation.Shield)
-        {
-            bool acquired = TryEquipSpecial(item, ref shield, ItemEquipLocation.Shield, out message);
-            if (acquired)
-            {
-                shieldWaitingForNextRoom = true;
-                shieldArmed = false;
-                shieldEquippedSceneHandle = SceneManager.GetActiveScene().handle;
-                message += " (다음 방에서 방어막 활성화)";
-            }
-            return acquired;
         }
 
         if (item.Type == ItemType.BodyPart && item.EquipLocation != ItemEquipLocation.None)
@@ -528,18 +501,65 @@ public class ItemInventoryManager : MonoBehaviour
         return true;
     }
 
-    public bool TryBlockHit()
+    // 누더기 등 Shield 타입 아이템을, 이미 신체부위가 장착돼 있는 슬롯(부위 상태 패널/캐릭터 인형)에
+    // 드래그하면 그 부위 전용 방어막을 건다. 드래그 즉시 활성화되며 다음 방으로 넘어가도 유지된다.
+    // 몸통(Body)은 전투 중 데미지 개념이 없어 대상에서 제외하고, 빈 슬롯에는 걸 수 없다.
+    public bool TryShieldBodySlot(int storageIndex, BodySlot slot)
     {
-        if (!shieldArmed || shield == null)
+        if (slot == BodySlot.Body)
+            return false;
+        if (storageIndex < 0 || storageIndex >= storage.Count)
             return false;
 
-        shieldArmed = false;
-        ItemData usedShield = shield.data;
-        shield = null;
-        AutoEquipNextShield();
-        Announce(usedShield.ItemName + " 방어막이 피격을 막았습니다.");
+        ItemInstance instance = storage[storageIndex];
+        ItemData item = instance?.data;
+        if (item == null || item.Type != ItemType.Shield)
+            return false;
+
+        bool hasEquippedPart = equippedByBodySlot.ContainsKey(slot)
+            || (InventoryManager.Instance != null && InventoryManager.Instance.IsEquipped(slot));
+        if (!hasEquippedPart || shieldedBodySlots.ContainsKey(slot))
+            return false;
+
+        RemoveStorageAt(storageIndex);
+        shieldedBodySlots[slot] = item;
+        Announce(item.ItemName + " 방어막 장착 (" + BodySlotLabel(slot) + " 피격 1회를 막습니다)");
         NotifyChanged();
         return true;
+    }
+
+    public bool IsBodySlotShielded(BodySlot slot) => shieldedBodySlots.ContainsKey(slot);
+
+    // HP 점 UI에서 어떤 방어막 스프라이트를 보여줄지 판단하는 데 쓰인다. 방어막이 없으면 null.
+    public ItemData GetBodySlotShieldItem(BodySlot slot)
+    {
+        shieldedBodySlots.TryGetValue(slot, out ItemData item);
+        return item;
+    }
+
+    // 그 부위에 방어막이 걸려 있으면 소모하고 true(막음)를 반환한다. 실제 HP는 깎이지 않는다.
+    public bool TryConsumeBodySlotShield(BodySlot slot)
+    {
+        if (!shieldedBodySlots.Remove(slot))
+            return false;
+
+        Announce(BodySlotLabel(slot) + " 방어막이 피격을 막았습니다.");
+        NotifyChanged();
+        return true;
+    }
+
+    static string BodySlotLabel(BodySlot slot)
+    {
+        switch (slot)
+        {
+            case BodySlot.EyeLeft: return "왼쪽 눈";
+            case BodySlot.EyeRight: return "오른쪽 눈";
+            case BodySlot.ArmLeft: return "왼쪽 팔";
+            case BodySlot.ArmRight: return "오른쪽 팔";
+            case BodySlot.LegLeft: return "왼쪽 다리";
+            case BodySlot.LegRight: return "오른쪽 다리";
+            default: return "부위";
+        }
     }
 
     public void NotifyEnemyKilled(Vector3 deathPosition)
@@ -845,25 +865,6 @@ public class ItemInventoryManager : MonoBehaviour
         return true;
     }
 
-    bool TryEquipSpecial(ItemData item, ref ItemInstance slot, ItemEquipLocation location, out string message)
-    {
-        message = "";
-        if (slot != null)
-        {
-            if (UsedSlots >= Capacity)
-            {
-                message = "인벤토리가 가득 참";
-                return false;
-            }
-            AddToStorage(slot);
-        }
-
-        slot = new ItemInstance(item, ItemInstance.DefaultMaxHp(item.EquipLocation));
-        message = item.ItemName + (location == ItemEquipLocation.Consumable ? " Q 슬롯 장착" : " 방어막 슬롯 장착");
-        NotifyChanged();
-        return true;
-    }
-
     int CapacityAfterEquipping(ItemData item)
     {
         if (item == null || item.EquipLocation != ItemEquipLocation.Body)
@@ -991,21 +992,6 @@ public class ItemInventoryManager : MonoBehaviour
                 continue;
             RemoveStorageAt(i);
             consumable = instance;
-            return;
-        }
-    }
-
-    void AutoEquipNextShield()
-    {
-        for (int i = 0; i < storage.Count; i++)
-        {
-            ItemInstance instance = storage[i];
-            if (instance == null || instance.data == null || instance.data.Type != ItemType.Shield)
-                continue;
-            RemoveStorageAt(i);
-            shield = instance;
-            shieldWaitingForNextRoom = true;
-            shieldEquippedSceneHandle = SceneManager.GetActiveScene().handle;
             return;
         }
     }

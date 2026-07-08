@@ -34,6 +34,15 @@ public class InventoryEquipDropTarget : MonoBehaviour, IDropHandler
             return;
         }
 
+        // 누더기 등 Shield 타입 아이템을 이미 장착된 부위 슬롯에 드래그하면 그 부위 전용 방어막을 건다.
+        if (draggedItem != null && draggedItem.Type == ItemType.Shield)
+        {
+            var itemInv = ItemInventoryManager.Instance;
+            if (itemInv != null && itemInv.TryShieldBodySlot(source.ItemStorageIndex, acceptedSlot))
+                SoundManager.PlayClick();
+            return;
+        }
+
         // 기존: InventoryManager 보관함의 BodyPart 드래그
         if (InventoryManager.Instance == null)
             return;

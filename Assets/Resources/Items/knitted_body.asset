@@ -14,19 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: knitted_body
   itemName: "\uB728\uAC1C\uC9C8 \uBAB8"
-  description: "\uC778\uBCA4\uD1A0\uB9AC\uB97C 4x4(16\uCE78)\uB85C \uD655\uC7A5"
+  description: "\uC591\uD314 \uACF5\uACA9\uC18D\uB3C4 \uC7AC\uC0AC\uC6A9\uB300\uAE30\uC2DC\uAC04 -0.3\uCD08"
   category: 0
   itemType: 0
   equipLocation: 3
   acquisitionLocations: 1
   consumable: 0
-  value: 16
+  value: 0.3
   secondaryValue: 0
   duration: 0
   shopPrice: 24
   effects:
-  - effectType: 6
-    value: 16
+  - effectType: 25
+    value: 0.3
     duration: 0
   sprite: {fileID: 21300000, guid: 32606335fe1656e4da6971f463fe72e1, type: 3}
   projectileSprite: {fileID: 0}

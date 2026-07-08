@@ -511,6 +511,14 @@ public class EnemyBase : MonoBehaviour
         if (CanOccupyEnemyPosition(slideY))
             return slideY;
 
+        // 여기까지 왔는데도 전부 막혔다면 대개 "현재 위치 자체가 이미 다른 콜라이더와 겹쳐서
+        // 낀 상태"라서 그렇다 (코너에 몰리거나 스폰이 벽에 겹치는 경우 등 - 이 경우 위의 후보들도
+        // 전부 그 콜라이더 안에 있어 매번 막힘). 그냥 제자리에 머무르면 영원히 못 빠져나오므로,
+        // 겹친 콜라이더들에서 밀려나는 평균 방향으로 조금씩 밀어내 결국 빠져나오게 한다.
+        Vector2 pushOut = ComputePushOutDirection(current);
+        if (pushOut != Vector2.zero)
+            return current + pushOut * PushOutStep;
+
         return current;
     }
 
@@ -531,6 +539,42 @@ public class EnemyBase : MonoBehaviour
                 return false;
 
         return true;
+    }
+
+    const float PushOutStep = 0.05f;
+
+    // position에서 겹친 모든 "막는" 콜라이더들로부터 밀려나는 방향을 각각 구해 평균낸 뒤
+    // 정규화해서 반환한다. 안 겹쳐 있으면 Vector2.zero.
+    // (ColliderDistance2D.normal은 이 콜라이더 기준으로 상대 콜라이더 쪽을 가리키므로, 반대로
+    // -normal이 실제로 밀려나야 할 탈출 방향이다. 실측으로 방향을 확인했다.)
+    Vector2 ComputePushOutDirection(Vector2 position)
+    {
+        Collider2D ownCollider = GetComponent<Collider2D>();
+        if (ownCollider == null)
+            return Vector2.zero;
+
+        Vector2 offset = (Vector2)ownCollider.bounds.center - (Vector2)transform.position;
+        Vector2 size = ownCollider.bounds.size;
+        if (size.x <= 0.01f || size.y <= 0.01f)
+            size = Vector2.one * 0.5f;
+
+        Collider2D[] hits = Physics2D.OverlapBoxAll(position + offset, size * 0.92f, transform.eulerAngles.z);
+        Vector2 total = Vector2.zero;
+        int count = 0;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (!IsBlockingMovementCollider(hits[i]))
+                continue;
+
+            ColliderDistance2D distance = ownCollider.Distance(hits[i]);
+            if (!distance.isOverlapped)
+                continue;
+
+            total += -distance.normal;
+            count++;
+        }
+
+        return count > 0 ? (total / count).normalized : Vector2.zero;
     }
 
     // 대시처럼 한 번에 멀리, 빠르게 이동하는 공격은 매 스텝 "도착 지점만" 겹침 검사하면
