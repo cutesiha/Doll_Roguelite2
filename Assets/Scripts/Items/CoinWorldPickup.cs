@@ -25,18 +25,55 @@ public class CoinWorldPickup : MonoBehaviour
 
     IEnumerator TossRoutine(Vector3 from, Vector3 to, float duration)
     {
+        Vector3 target = ResolveWallBounce(from, to);
+
         float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
-            Vector3 pos = Vector3.Lerp(from, to, t);
+            Vector3 pos = Vector3.Lerp(from, target, t);
             pos.y += Mathf.Sin(t * Mathf.PI) * 0.8f;
             transform.position = pos;
             yield return null;
         }
-        transform.position = to;
-        basePosition = to;
+        transform.position = target;
+        basePosition = target;
+    }
+
+    // 목표 지점으로 가는 경로가 벽 콜라이더를 통과하면, 벽 위/안쪽에 드랍되는 대신
+    // 벽에서 튕겨 나온 지점으로 목표를 옮긴다.
+    Vector3 ResolveWallBounce(Vector3 from, Vector3 to)
+    {
+        Vector2 delta = to - from;
+        float distance = delta.magnitude;
+        if (distance < 0.001f)
+            return to;
+
+        Vector2 dir = delta / distance;
+        RaycastHit2D[] hits = Physics2D.RaycastAll(from, dir, distance);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider2D hitCollider = hits[i].collider;
+            if (hitCollider == null || hitCollider.isTrigger || hitCollider.transform == transform)
+                continue;
+            if (!IsWallCollider(hitCollider))
+                continue;
+
+            Vector2 reflected = Vector2.Reflect(dir, hits[i].normal);
+            float remaining = Mathf.Max(0.15f, (distance - hits[i].distance) * 0.5f);
+            Vector2 bounced = hits[i].point + reflected * remaining;
+            return new Vector3(bounced.x, bounced.y, to.z);
+        }
+
+        return to;
+    }
+
+    static bool IsWallCollider(Collider2D collider)
+    {
+        string objectName = collider.transform.name;
+        return !string.IsNullOrEmpty(objectName)
+            && (objectName.StartsWith("Wall_") || objectName.StartsWith("wall"));
     }
 
     void OnTriggerEnter2D(Collider2D other)

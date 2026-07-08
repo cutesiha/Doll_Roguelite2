@@ -173,7 +173,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
     [SerializeField] AtmospherePreset treasure = new AtmospherePreset
     {
         colorFilter = new Color(1.00f, 0.62f, 0.30f, 1f),
-        tintStrength = 0.16f,
+        tintStrength = 0.05f,
         overlayAlpha = 0.018f,
         vignetteAlpha = 0.07f,
         bloomWashAlpha = 0.05f,
@@ -185,7 +185,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
         primaryLightColor = new Color(1.00f, 0.82f, 0.28f, 1f),
         secondaryLightColor = new Color(1.00f, 0.60f, 0.22f, 1f),
         accentLightColor = new Color(1.00f, 0.93f, 0.60f, 1f),
-        primaryLightIntensity = 1.05f,
+        primaryLightIntensity = 0.75f,
         secondaryLightIntensity = 0.46f,
         accentLightIntensity = 0.32f,
         primaryLightRadius = 6.8f,
@@ -194,7 +194,7 @@ public sealed class RoomAtmosphereController : MonoBehaviour
         primaryLightAnchor = new Vector2(-0.25f, 0.10f),
         secondaryLightAnchor = new Vector2(0.42f, 0.22f),
         accentLightAnchor = new Vector2(0.15f, -0.18f),
-        screenGlowAlpha = 0.13f,
+        screenGlowAlpha = 0.09f,
         particleCount = 60,
         particleAlpha = 0.44f,
         particleSize = 1.45f,

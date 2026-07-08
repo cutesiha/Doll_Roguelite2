@@ -159,15 +159,24 @@ public class DoorTrigger : MonoBehaviour
     }
 
     // 방의 벽과 동일한 레이어를 찾는다. 벽이 플레이어를 막고 있으므로 같은 레이어면 문도 확실히 막힌다.
+    // 손으로 배치한 방(예: ChallengeRewardScene)은 벽 오브젝트 이름이 "Wall_Left" 같은 정확한
+    // 이름이 아니라 "wall", "wall (1)" 처럼 다르게 지어져 있을 수 있어, 이름이 "wall"로
+    // 시작하는 모든 오브젝트를 대상으로 찾는다(대소문자 무시).
     int ResolveBlockingLayer()
     {
-        string[] wallNames = { "Wall_Left", "Wall_Right", "Wall_Top", "Wall_Bottom" };
-        for (int i = 0; i < wallNames.Length; i++)
+        Collider2D[] colliders = FindObjectsByType<Collider2D>(FindObjectsSortMode.None);
+        for (int i = 0; i < colliders.Length; i++)
         {
-            GameObject wall = GameObject.Find(wallNames[i]);
-            if (wall != null && wall.GetComponent<Collider2D>() != null)
-                return wall.layer;
+            Collider2D collider = colliders[i];
+            if (collider == null || collider.isTrigger)
+                continue;
+
+            string objectName = collider.gameObject.name;
+            if (!string.IsNullOrEmpty(objectName)
+                && objectName.StartsWith("wall", System.StringComparison.OrdinalIgnoreCase))
+                return collider.gameObject.layer;
         }
+
         return gameObject.layer;
     }
 

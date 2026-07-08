@@ -2,7 +2,6 @@ using TMPro;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 public enum SpecialRoomKind
 {
@@ -36,6 +35,7 @@ public class SpecialRoomController : MonoBehaviour
     bool treasureClaimed;
     bool shopChoiceUsed;
     Color backgroundColor;
+    bool preservedAuthoredLayout;
 
     static Sprite squareSprite;
 
@@ -106,6 +106,7 @@ public class SpecialRoomController : MonoBehaviour
 
         if (ShouldPreserveAuthoredLayout(oldArt))
         {
+            preservedAuthoredLayout = true;
             EnsureSpecialRoomWallColliders(oldArt);
             ResolveAuthoredRoomReferences(oldArt);
             BuildNextDoors(oldArt);
@@ -167,9 +168,14 @@ public class SpecialRoomController : MonoBehaviour
         return null;
     }
 
+    // ShopScene/TreasureRoomScene/ChallengeRewardScene 모두 에디터에서 손으로 배치한
+    // "SpecialRoomArt" 레이아웃을 갖고 있다. 씬 이름으로 챌린지보상방만 골라내던 이전 방식은
+    // 나머지 두 씬의 손으로 배치한 벽/카메라 배치를 매번 파괴하고 코드로 재생성했었다
+    // (카메라가 고정되지 않고 플레이어를 따라가며, 플레이어 위치도 강제로 리셋되는 원인).
+    // 손으로 배치한 아트가 있으면 어떤 씬이든 그대로 보존한다.
     bool ShouldPreserveAuthoredLayout(Transform artRoot)
     {
-        return artRoot != null && IsChallengeRewardScene();
+        return artRoot != null;
     }
 
     void ResolveAuthoredRoomReferences(Transform artRoot)
@@ -362,8 +368,11 @@ public class SpecialRoomController : MonoBehaviour
     void SetupPlayerAndCamera()
     {
         ResolvePlayer();
-        if (IsChallengeRewardScene())
+        if (preservedAuthoredLayout)
         {
+            // 손으로 배치한 방은 카메라도 에디터에서 방 전체가 보이도록 고정해 둔 것이므로
+            // 플레이어를 따라다니게 하지 않고, 플레이어 위치도 강제로 리셋하지 않는다
+            // (에디터에 배치해 둔 시작 위치를 그대로 사용).
             Camera authoredCamera = Camera.main;
             if (authoredCamera != null)
             {
@@ -393,11 +402,6 @@ public class SpecialRoomController : MonoBehaviour
 
         mainCamera.clearFlags = CameraClearFlags.SolidColor;
         mainCamera.backgroundColor = backgroundColor;
-    }
-
-    static bool IsChallengeRewardScene()
-    {
-        return SceneManager.GetActiveScene().name == "ChallengeRewardScene";
     }
 
     void ResolvePlayer()

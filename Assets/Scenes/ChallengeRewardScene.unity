@@ -1485,7 +1485,7 @@ MonoBehaviour:
   wallColor: {r: 0.42, g: 0.3, b: 0.22, a: 1}
   treasureColor: {r: 1, g: 0.72, b: 0.16, a: 1}
   shopColor: {r: 0.36, g: 0.62, b: 0.74, a: 1}
-  nextDoorLine: {x: 8, y: 4.25}
+  nextDoorLine: {x: 8, y: 3}
   nextDoorSize: {x: 2.8, y: 0.75}
   rectangleSprite: {fileID: 21300000, guid: 234e850889114554696542958b23924f, type: 3}
   itemPickupTemplate: {fileID: 0}

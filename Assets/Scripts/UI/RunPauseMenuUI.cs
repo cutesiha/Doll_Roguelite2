@@ -89,6 +89,7 @@ public class RunPauseMenuUI : MonoBehaviour
     void OnMenuButtonClicked()
     {
         SoundManager.PlayClick();
+        RunUiPauseManager.ClearUiSelection();
         ToggleMenu();
     }
 
@@ -600,12 +601,14 @@ void Build()
         confirmYesButton = ConfigureVisibleButton(answer1, () =>
         {
             SoundManager.PlayClick();
+            RunUiPauseManager.ClearUiSelection();
             confirmYesAction?.Invoke();
         });
 
         confirmNoButton = ConfigureVisibleButton(answer2, () =>
         {
             SoundManager.PlayClick();
+            RunUiPauseManager.ClearUiSelection();
             CloseConfirm();
         });
 
@@ -1002,6 +1005,7 @@ void Build()
     void PlayClickSound()
     {
         SoundManager.PlayClick();
+        RunUiPauseManager.ClearUiSelection();
     }
 
     Image CreateImage(Transform parent, string name, Sprite sprite, Vector2 position, Vector2 size)
