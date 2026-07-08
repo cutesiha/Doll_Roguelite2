@@ -8,7 +8,8 @@ public enum ArmWeaponKind
     Axe,
     Keyring,
     Nail,
-    Star
+    Star,
+    Sunflower
 }
 
 [DisallowMultipleComponent]
@@ -160,6 +161,8 @@ public class PlayerItemEffects : MonoBehaviour
             return ArmWeaponKind.Nail;
         if (arm.HasEffect(ItemEffectType.StarBurst))
             return ArmWeaponKind.Star;
+        if (arm.HasEffect(ItemEffectType.SunflowerBurst))
+            return ArmWeaponKind.Sunflower;
         return ArmWeaponKind.Fist;
     }
 
@@ -224,7 +227,31 @@ public class PlayerItemEffects : MonoBehaviour
             return true;
         }
 
+        ItemEffectData sunflower = arm.GetEffect(ItemEffectType.SunflowerBurst);
+        if (sunflower != null)
+        {
+            // 해바라기1이 앞으로 날아가다 적에 맞거나 수명이 다하면, 그 자리에서 해바라기2가
+            // 십자(상하좌우) 모양으로 퍼져나간다.
+            int damage = Mathf.Max(1, Mathf.RoundToInt(ModifiedAttackDamage(leftArm, Mathf.Max(1f, sunflower.value))));
+            float lifetime = sunflower.duration > 0f ? sunflower.duration : 0.6f;
+            Sprite burstSprite = arm.ProjectileSprite2 != null ? arm.ProjectileSprite2 : arm.ProjectileSprite;
+            Color color = arm.PlaceholderColor;
+            ItemProjectile.Spawn(origin, direction, 10f, damage, lifetime, 0.3f, false, color,
+                ItemPlaceholderShape.Circle, arm.ProjectileSprite, 0f, 0f,
+                burstPosition => SpawnSunflowerCross(burstPosition, damage, burstSprite, color));
+            return true;
+        }
+
         return false;
+    }
+
+    static readonly Vector2[] SunflowerCrossDirections = { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
+
+    static void SpawnSunflowerCross(Vector3 position, int damage, Sprite sprite, Color color)
+    {
+        for (int i = 0; i < SunflowerCrossDirections.Length; i++)
+            ItemProjectile.Spawn(position, SunflowerCrossDirections[i], 8f, damage, 0.35f, 0.28f, false, color,
+                ItemPlaceholderShape.Circle, sprite);
     }
 
     void AccumulateEquippedEffects(ItemData item)
@@ -267,13 +294,14 @@ public class PlayerItemEffects : MonoBehaviour
         if (burst == null)
             return;
 
-        int damage = Mathf.Max(1, Mathf.RoundToInt(burst.value));
+        float damage = Mathf.Max(0.01f, burst.value);
         const int count = 12;
         for (int i = 0; i < count; i++)
         {
             float angle = i * Mathf.PI * 2f / count;
             Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            ItemProjectile.Spawn(transform.position, direction, 8f, damage, 1.2f, 0.09f, true, new Color(0.88f, 0.78f, 0.64f, 1f));
+            ItemProjectile.Spawn(transform.position, direction, 8f, damage, 1.2f, 0.09f, true,
+                new Color(0.88f, 0.78f, 0.64f, 1f), ItemPlaceholderShape.Circle, bodyItem.ProjectileSprite);
         }
     }
 }

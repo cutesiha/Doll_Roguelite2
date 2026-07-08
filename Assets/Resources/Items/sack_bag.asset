@@ -10,32 +10,33 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c3997157333533642a0af80c934f3a01, type: 3}
-  m_Name: blue_gem
+  m_Name: sack_bag
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemId: blue_gem
-  itemName: "\uD30C\uB791 \uBCF4\uC11D"
-  description: "\uD604\uC7AC \uBC29\uC5D0\uC11C \uC774\uB3D9\uC18D\uB3C4 +2.00"
-  category: 3
-  itemType: 1
-  equipLocation: 5
-  acquisitionLocations: 24
-  consumable: 1
-  value: 2
+  itemId: sack_bag
+  itemName: "\uC790\uB8E8\uAC00\uBC29"
+  description: "\uC801 \uCC98\uCE58 \uC2DC 20% \uD655\uB960\uB85C \uB204\uB354\uAE30
+    \uB4DC\uB78D"
+  category: 1
+  itemType: 0
+  equipLocation: 3
+  acquisitionLocations: 2
+  consumable: 0
+  value: 0.2
   secondaryValue: 0
   duration: 0
-  shopPrice: 12
+  shopPrice: 24
   effects:
-  - effectType: 19
-    value: 2
+  - effectType: 24
+    value: 0.2
     duration: 0
-  sprite: {fileID: 21300000, guid: 0c556c7e9dd1d934f946d2878257cd4d, type: 3}
+  sprite: {fileID: 21300000, guid: a60babd8a6bcd7843b331481d734d830, type: 3}
   projectileSprite: {fileID: 0}
   projectileSprite2: {fileID: 0}
   projectileSprite3: {fileID: 0}
   equippedSpriteLeft: {fileID: 0}
   equippedSpriteRight: {fileID: 0}
-  equippedSpriteBody: {fileID: 0}
-  placeholderShape: 2
-  placeholderColor: {r: 0.18, g: 0.48, b: 1, a: 1}
+  equippedSpriteBody: {fileID: 21300000, guid: 18ef3564438c0be40b703a5cd469a36e, type: 3}
+  placeholderShape: 0
+  placeholderColor: {r: 0.82, g: 0.72, b: 0.55, a: 1}
   worldScale: 2.8498912
   equippedScale: 1

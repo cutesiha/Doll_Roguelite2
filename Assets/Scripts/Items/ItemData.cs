@@ -77,7 +77,9 @@ public enum ItemEffectType
     RoomMoveSpeed,
     DamageAllParts,
     NextRoomShield,
-    StarBurst
+    StarBurst,
+    SunflowerBurst,
+    RagOnKill
 }
 
 [Serializable]

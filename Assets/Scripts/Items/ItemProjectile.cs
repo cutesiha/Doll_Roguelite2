@@ -5,18 +5,19 @@ public class ItemProjectile : MonoBehaviour
 {
     Vector2 direction;
     float speed;
-    int damage;
+    float damage;
     float lifetime;
     float radius;
     bool piercing;
     float spinDegreesPerSecond;
+    System.Action<Vector3> onDestroyed;
     readonly HashSet<EnemyBase> hitEnemies = new();
 
     public static ItemProjectile Spawn(
         Vector3 position,
         Vector2 direction,
         float speed,
-        int damage,
+        float damage,
         float lifetime,
         float radius,
         bool piercing,
@@ -24,7 +25,8 @@ public class ItemProjectile : MonoBehaviour
         ItemPlaceholderShape shape = ItemPlaceholderShape.Circle,
         Sprite spriteOverride = null,
         float spriteForwardOffsetDegrees = 0f,
-        float spinDegreesPerSecond = 0f)
+        float spinDegreesPerSecond = 0f,
+        System.Action<Vector3> onDestroyed = null)
     {
         GameObject go = new GameObject("ItemProjectile");
         go.transform.position = position;
@@ -49,11 +51,12 @@ public class ItemProjectile : MonoBehaviour
         ItemProjectile projectile = go.AddComponent<ItemProjectile>();
         projectile.direction = direction.sqrMagnitude > 0.001f ? direction.normalized : Vector2.down;
         projectile.speed = Mathf.Max(0.1f, speed);
-        projectile.damage = Mathf.Max(1, damage);
+        projectile.damage = Mathf.Max(0.01f, damage);
         projectile.lifetime = Mathf.Max(0.05f, lifetime);
         projectile.radius = Mathf.Max(0.03f, radius);
         projectile.piercing = piercing;
         projectile.spinDegreesPerSecond = spinDegreesPerSecond;
+        projectile.onDestroyed = onDestroyed;
         float travelAngle = Mathf.Atan2(projectile.direction.y, projectile.direction.x) * Mathf.Rad2Deg;
         go.transform.rotation = Quaternion.Euler(0f, 0f, travelAngle + spriteForwardOffsetDegrees);
         return projectile;
@@ -78,12 +81,16 @@ public class ItemProjectile : MonoBehaviour
             enemy.TakeDamage(damage);
             if (!piercing)
             {
+                onDestroyed?.Invoke(transform.position);
                 Destroy(gameObject);
                 return;
             }
         }
 
         if (lifetime <= 0f)
+        {
+            onDestroyed?.Invoke(transform.position);
             Destroy(gameObject);
+        }
     }
 }

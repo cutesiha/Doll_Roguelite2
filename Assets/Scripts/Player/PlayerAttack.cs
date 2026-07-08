@@ -47,6 +47,7 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] Sprite keyringWeaponSprite;
     [SerializeField] Sprite nailWeaponSprite;
     [SerializeField] Sprite starWeaponSprite;
+    [SerializeField] Sprite sunflowerWeaponSprite;
     [SerializeField] Transform leftAttackStart;
     [SerializeField] Transform rightAttackStart;
     [SerializeField] bool useFixedBodyAttackOrigin = true;
@@ -488,6 +489,18 @@ public class PlayerAttack : MonoBehaviour
                     fistScaleMultiplier = 0.8f,
                     tint = starWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
                     spriteOverride = starWeaponSprite,
+                    slashScaleMultiplier = 1f,
+                };
+            case ArmWeaponKind.Sunflower:
+                return new ArmAttackStyle
+                {
+                    durationScale = 0.7f,
+                    arcHeightScale = 0.4f,
+                    rotationScale = 0.65f,
+                    fistScaleMultiplier = 0.8f,
+                    tint = sunflowerWeaponSprite != null ? Color.white : ArmItemColor(leftArm),
+                    spriteOverride = sunflowerWeaponSprite,
+                    skipSwing = true,
                     slashScaleMultiplier = 1f,
                 };
             default:
