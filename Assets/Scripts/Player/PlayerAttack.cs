@@ -92,6 +92,7 @@ public class PlayerAttack : MonoBehaviour
     // 도끼는 무겁게 느껴지도록 팔당 별도의 긴 재사용대기시간을 쓴다 (반대팔은 기존 속도 유지).
     [SerializeField, Min(0f)] float axeAttackCooldown = 2f;
     [SerializeField, Min(0f)] float starAttackCooldown = 1.25f;
+    [SerializeField, Min(0f)] float sunflowerAttackCooldown = 1f;
     [SerializeField] Vector2 attackSize = new Vector2(1f, 1f);
     [SerializeField, Min(0f)] float hitAreaExtraLength = 0.35f;
     [SerializeField] float attackFacingLockDuration = 0.25f;
@@ -323,6 +324,7 @@ public class PlayerAttack : MonoBehaviour
         ArmWeaponKind weaponKind = itemEffects != null ? itemEffects.GetArmWeaponKind(leftArm) : ArmWeaponKind.Fist;
         float baseCooldown = weaponKind == ArmWeaponKind.Axe ? axeAttackCooldown
             : weaponKind == ArmWeaponKind.Star ? starAttackCooldown
+            : weaponKind == ArmWeaponKind.Sunflower ? sunflowerAttackCooldown
             : attackCooldown;
 
         // 한 팔만 남으면 없는 팔 차례(왼→[오 생략]→왼…)를 건너뛰는 만큼

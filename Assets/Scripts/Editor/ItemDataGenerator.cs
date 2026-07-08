@@ -107,11 +107,11 @@ public static class ItemDataGenerator
             E(ItemEffectType.MoveSpeed, 1f),
             E(ItemEffectType.RightArmDamage, 2f));
 
-        Create("sunflower", "해바라기", "해바라기가 날아간 뒤 십자 모양으로 퍼지며 각각 데미지 3.00",
+        Create("sunflower", "해바라기", "해바라기가 날아간 뒤 십자 모양으로 퍼지며 각각 데미지 0.20",
             ItemCategory.ChallengeRoom, ItemType.BodyPart, ItemEquipLocation.Arm,
-            ItemAcquisitionLocation.ChallengeRoom, false, 3f, 0f, 0.6f, 26,
+            ItemAcquisitionLocation.ChallengeRoom, false, 0.2f, 0f, 0.6f, 26,
             ItemPlaceholderShape.Circle, new Color(1f, 0.82f, 0.15f, 1f),
-            E(ItemEffectType.SunflowerBurst, 3f, 0.6f));
+            E(ItemEffectType.SunflowerBurst, 0.2f, 0.6f));
         SetProjectileSprite("sunflower", "Assets/Sprites/Item/Itemeffect/해바라기1.png");
 
         ItemAcquisitionLocation shopCondition = ItemAcquisitionLocation.ShopRoom | ItemAcquisitionLocation.ConditionRoom;
