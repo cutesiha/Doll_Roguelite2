@@ -368,23 +368,10 @@ public class SpecialRoomController : MonoBehaviour
     void SetupPlayerAndCamera()
     {
         ResolvePlayer();
-        if (preservedAuthoredLayout)
-        {
-            // 손으로 배치한 방은 카메라도 에디터에서 방 전체가 보이도록 고정해 둔 것이므로
-            // 플레이어를 따라다니게 하지 않고, 플레이어 위치도 강제로 리셋하지 않는다
-            // (에디터에 배치해 둔 시작 위치를 그대로 사용).
-            Camera authoredCamera = Camera.main;
-            if (authoredCamera != null)
-            {
-                PlayerCameraFollow authoredFollow = authoredCamera.GetComponent<PlayerCameraFollow>();
-                if (authoredFollow != null)
-                    authoredFollow.enabled = false;
-            }
 
-            return;
-        }
-
-        if (player != null)
+        // 손으로 배치한 방은 플레이어 시작 위치를 에디터에 배치해 둔 값 그대로 쓴다(강제 리셋 안 함).
+        // 카메라는 방 종류와 무관하게 항상 플레이어를 따라다니게 한다.
+        if (!preservedAuthoredLayout && player != null)
             player.position = new Vector3(0f, -mapSize.y * 0.5f + 2.35f, 0f);
 
         Camera mainCamera = Camera.main;
@@ -400,8 +387,12 @@ public class SpecialRoomController : MonoBehaviour
         else
             mainCamera.transform.position = new Vector3(0f, 0f, -10f);
 
-        mainCamera.clearFlags = CameraClearFlags.SolidColor;
-        mainCamera.backgroundColor = backgroundColor;
+        // 손으로 배치한 방은 배경(SpecialRoomArt)을 직접 그려뒀으니 절차적 단색 배경으로 덮지 않는다.
+        if (!preservedAuthoredLayout)
+        {
+            mainCamera.clearFlags = CameraClearFlags.SolidColor;
+            mainCamera.backgroundColor = backgroundColor;
+        }
     }
 
     void ResolvePlayer()

@@ -564,23 +564,31 @@ public class DoorTrigger : MonoBehaviour
         if (playerTransform == null)
             ResolvePlayer();
 
-        int doorOrder = PlayerTopSortingOrder() - 2;
+        int doorOrder = PlayerLowestVisibleSortingOrder() - 2;
         doorRenderer.sortingOrder = doorOrder;
         if (iconRenderer != null)
             iconRenderer.sortingOrder = doorOrder + 1;
     }
 
-    int PlayerTopSortingOrder()
+    // 실제로 화면에 그려지는(활성 + 스프라이트 보유) 파츠 중 가장 낮은 sortingOrder를 찾는다.
+    // 꺼져있는 디버그/미착용 렌더러(예: CrawlMissingEyeSocketGuide)까지 최대값에 섞이면
+    // 몸통처럼 실제로 보이는 파츠보다 문 순서가 더 높게 계산되어, 몸통이 문 뒤로 가려지는
+    // 문제가 있었다. 보이는 파츠의 최솟값보다 확실히 낮게 잡아야 항상 문 뒤에 그려진다.
+    int PlayerLowestVisibleSortingOrder()
     {
         if (playerTransform == null)
             return 80;
 
         SpriteRenderer[] renderers = playerTransform.GetComponentsInChildren<SpriteRenderer>(true);
-        int order = 80;
+        int order = int.MaxValue;
         for (int i = 0; i < renderers.Length; i++)
-            if (renderers[i] != null)
-                order = Mathf.Max(order, renderers[i].sortingOrder);
-        return order;
+        {
+            SpriteRenderer renderer = renderers[i];
+            if (renderer == null || !renderer.enabled || renderer.sprite == null)
+                continue;
+            order = Mathf.Min(order, renderer.sortingOrder);
+        }
+        return order == int.MaxValue ? 80 : order;
     }
 
     // 문 기본 색: 잠김이면 회색, 열림이고 ShopScene이면 푸른색 보정(창백함 방지), 그 외 흰색.
