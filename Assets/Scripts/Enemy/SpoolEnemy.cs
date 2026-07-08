@@ -13,7 +13,7 @@ public class SpoolEnemy : EnemyBase
     [SerializeField] string fallbackSpriteName = "sp1";
     [SerializeField, Min(0f)] float breathingAmplitude = 0.055f;
     [SerializeField, Min(0.1f)] float breathingFrequency = 1.15f;
-    [SerializeField] Vector2 threadCooldownRange = new Vector2(4f, 6f);
+    [SerializeField] Vector2 threadCooldownRange = new Vector2(6f, 9f);
     [SerializeField, Min(0.05f)] float prepareDuration = 0.55f;
     [SerializeField, Min(0.05f)] float threadWarningDuration = 1.15f;
     [SerializeField, Min(0.05f)] float threadGrowDuration = 0.55f;
@@ -21,7 +21,7 @@ public class SpoolEnemy : EnemyBase
     [SerializeField, Min(0.5f)] float strandLength = 6f;
     [SerializeField, Min(0.03f)] float strandWidth = 0.16f;
     [SerializeField, Min(0.1f)] float strandDuration = 2.1f;
-    [SerializeField, Min(1)] int strandDamage = 20;
+    [SerializeField, Min(1)] int strandDamage = 16;
     [SerializeField] Color warningColor = new Color(1f, 0.02f, 0.02f, 0.32f);
     [SerializeField] Color strandIvoryColor = new Color(0.96f, 0.91f, 0.82f, 0.96f);
     [SerializeField] Color strandPeachColor = new Color(0.91f, 0.63f, 0.48f, 0.94f);
@@ -77,7 +77,8 @@ public class SpoolEnemy : EnemyBase
     {
         threadCooldownRange = ScaleRange(threadCooldownRange, cooldownMultiplier * 0.94f, 0.58f);
         threadWarningDuration = Mathf.Max(0.55f, threadWarningDuration * Mathf.Lerp(1f, cooldownMultiplier, 0.45f));
-        strandCount = Mathf.Max(strandCount, 10 + Mathf.Max(0, extraDamage / 2));
+        // 예전엔 층이 깊어질수록(중간보스 이후 포함) 실 가닥 수가 최대 10+로 계속 늘었다.
+        // 가닥 수는 그대로 두고 데미지만 살짝 추가한다.
         strandDamage += Mathf.Max(0, extraDamage);
     }
 

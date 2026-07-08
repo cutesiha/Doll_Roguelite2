@@ -562,8 +562,16 @@ public class DoorTrigger : MonoBehaviour
             ResolvePlayer();
 
         int playerOrder = PlayerTopSortingOrder();
-        bool playerAboveDoor = playerTransform != null && playerTransform.position.y > transform.position.y;
-        int doorOrder = playerAboveDoor ? playerOrder + 2 : playerOrder - 2;
+        // 문 루트(transform)가 아니라 실제로 그려지는 스프라이트 중심(_DoorVisual, doorVisualOffset만큼
+        // 어긋나 있음)을 기준으로 비교해야 플레이어가 문 그림과 겹치는 실제 지점에서 앞/뒤가 바뀐다.
+        float doorVisualY = visualRoot != null ? visualRoot.position.y : transform.position.y;
+        bool playerAboveDoor = playerTransform != null && playerTransform.position.y > doorVisualY;
+        // 플레이어 몸통 파츠들의 sortingOrder가 서로 2~4 차이밖에 안 나서(팔 121, 그림자 119 등),
+        // 예전처럼 ±2만 더하면 문 순서가 파츠 중 하나와 정확히 같아져(타이) 렌더링 순서가
+        // 불안정해진다(같은 순서일 때 어느 쪽이 위로 그려질지는 Unity가 알아서 정함).
+        // 모든 파츠와 확실히 벌어지도록 여유를 크게 둔다.
+        const int SafeMargin = 15;
+        int doorOrder = playerAboveDoor ? playerOrder + SafeMargin : playerOrder - SafeMargin;
         doorRenderer.sortingOrder = doorOrder;
         if (iconRenderer != null)
             iconRenderer.sortingOrder = doorOrder + 1;
@@ -574,10 +582,12 @@ public class DoorTrigger : MonoBehaviour
         if (playerTransform == null)
             return 80;
 
-        SpriteRenderer[] renderers = playerTransform.GetComponentsInChildren<SpriteRenderer>(true);
+        // 비활성 상태인 숨겨진 가이드 스프라이트(예: 눈 소켓 가이드)까지 집으면 안 되므로
+        // 실제로 켜져서 그려지는 렌더러만 기준으로 삼는다.
+        SpriteRenderer[] renderers = playerTransform.GetComponentsInChildren<SpriteRenderer>(false);
         int order = 80;
         for (int i = 0; i < renderers.Length; i++)
-            if (renderers[i] != null)
+            if (renderers[i] != null && renderers[i].enabled)
                 order = Mathf.Max(order, renderers[i].sortingOrder);
         return order;
     }

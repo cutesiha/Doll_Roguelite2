@@ -61,6 +61,17 @@ public static class ItemRoomRewardSystem
             return;
         }
 
+        if (pendingNode.roomType == RoomType.NormalCombat)
+        {
+            ItemSystemSettings settings = ItemSystemSettings.Load();
+            int coinCount = settings != null ? settings.normalRoomClearCoinDrop : 5;
+            for (int i = 0; i < coinCount; i++)
+                ItemInventoryManager.Instance?.SpawnCoinAt(roomCenter);
+
+            Announce("방 클리어! 코인 " + coinCount + "개 드랍.");
+            return;
+        }
+
         if (pendingNode.roomType == RoomType.ConditionCombat)
         {
             ItemSystemSettings settings = ItemSystemSettings.Load();
@@ -113,8 +124,8 @@ public static class ItemRoomRewardSystem
     {
         ItemData item = ItemCatalog.RandomByCategory(ItemCategory.BodyRoom, ItemType.BodyPart);
         Vector3 spawnPosition = TreasureRewardPosition(position);
-        ItemWorldPickup pickup = ItemDropSpawner.Spawn(item, spawnPosition, false, 0, template, true);
-        pickup?.Toss(spawnPosition);
+        // 씬 시작과 동시에 뜨는 보상 아이템이라 튕겨 나가는 연출 없이 제자리에 놓는다.
+        ItemDropSpawner.Spawn(item, spawnPosition, false, 0, template, true);
         ItemDropParticleEffect.Spawn(spawnPosition);
         Announce("신체방 아이템이 생성되었습니다.");
     }
@@ -124,8 +135,8 @@ public static class ItemRoomRewardSystem
     {
         ItemData item = ItemCatalog.RandomByCategory(ItemCategory.ChallengeRoom);
         Vector3 spawnPosition = TreasureRewardPosition(fallbackPosition);
-        ItemWorldPickup pickup = ItemDropSpawner.Spawn(item, spawnPosition, false, 0, template, true);
-        pickup?.Toss(spawnPosition);
+        // 씬 시작과 동시에 뜨는 보상 아이템이라 튕겨 나가는 연출 없이 제자리에 놓는다.
+        ItemDropSpawner.Spawn(item, spawnPosition, false, 0, template, true);
         ItemDropParticleEffect.Spawn(spawnPosition);
 
         ItemSystemSettings settings = ItemSystemSettings.Load();

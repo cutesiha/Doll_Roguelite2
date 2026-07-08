@@ -30,9 +30,13 @@ public class ItemInstance
         return hasLastBodySlot;
     }
 
-    // 기본(레거시) 부위 파츠와 동일한 최대 HP 규칙: 눈은 2, 그 외(팔/다리/몸)는 3.
+    // 기본(레거시) 부위 파츠와 동일한 최대 HP 규칙: 눈은 2, 팔은 4, 그 외(다리/몸)는 3.
     public static int DefaultMaxHp(ItemEquipLocation location)
     {
-        return location == ItemEquipLocation.Eye ? 2 : 3;
+        if (location == ItemEquipLocation.Eye)
+            return 2;
+        if (location == ItemEquipLocation.Arm)
+            return 4;
+        return 3;
     }
 }

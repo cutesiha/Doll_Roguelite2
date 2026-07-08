@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: default_eye
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: default_eye
-  itemName: "기본 눈"
-  description: "게임 시작 시 기본으로 달려있는 눈"
+  itemName: "\uAE30\uBCF8 \uB208"
+  description: "\uAE30\uBCF8\uC73C\uB85C \uB2EC\uB824\uC788\uB294 \uB208"
   category: 5
   itemType: 0
   equipLocation: 1
@@ -27,8 +27,12 @@ MonoBehaviour:
   effects: []
   sprite: {fileID: 21300000, guid: 688c1df4f390c9740bbf9792f872bfb1, type: 3}
   projectileSprite: {fileID: 0}
+  projectileSprite2: {fileID: 0}
+  projectileSprite3: {fileID: 0}
   equippedSpriteLeft: {fileID: 21300000, guid: 688c1df4f390c9740bbf9792f872bfb1, type: 3}
   equippedSpriteRight: {fileID: 21300000, guid: 421455b974f70f04899927a220f4ef04, type: 3}
+  equippedSpriteBody: {fileID: 0}
   placeholderShape: 0
   placeholderColor: {r: 1, g: 1, b: 1, a: 1}
   worldScale: 0
+  equippedScale: 1

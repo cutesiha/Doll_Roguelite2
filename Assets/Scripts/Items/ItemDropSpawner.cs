@@ -22,9 +22,11 @@ public static class ItemDropSpawner
             renderer = go.AddComponent<SpriteRenderer>();
         renderer.sprite = item.Sprite != null ? item.Sprite : PlaceholderSprite(item.PlaceholderShape, item.PlaceholderColor);
         renderer.color = item.Sprite != null ? Color.white : item.PlaceholderColor;
-        renderer.sortingOrder = 35;
+        renderer.sortingOrder = ItemWorldPickup.ItemSortingOrder;
 
-        float size = item.ResolveWorldScale();
+        // 드랍된 아이템이 바닥에서 너무 작아 보인다는 피드백에 따라 스폰 크기를 살짝 키운다.
+        const float DropSizeMultiplier = 1.18f;
+        float size = item.ResolveWorldScale() * DropSizeMultiplier;
         go.transform.localScale = Vector3.one * size;
 
         CircleCollider2D collider = go.GetComponent<CircleCollider2D>();

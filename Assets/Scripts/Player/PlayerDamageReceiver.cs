@@ -55,11 +55,23 @@ public class PlayerDamageReceiver : MonoBehaviour
         BodySlot.EyeRight
     };
 
+    // 팔은 다른 부위보다 덜 맞도록 가중치를 낮게 준다 (다리/눈의 절반 확률).
+    static readonly float[] DamageSlotWeights =
+    {
+        0.5f, // ArmLeft
+        0.5f, // ArmRight
+        1f,   // LegLeft
+        1f,   // LegRight
+        1f,   // EyeLeft
+        1f    // EyeRight
+    };
+
     // 히트 피드백/무적 깜빡임이 렌더러 색을 건드리기 전의 "쉬는(원래) 색" 스냅샷.
     // 효과가 다른 히트에 의해 중간에 끊겨도 항상 이 색으로 되돌려, 알파가 낮은 채 고착돼
     // 플레이어가 점점 투명해지는 버그(특히 피격이 잦은 최종보스 씬)를 막는다.
     readonly Dictionary<SpriteRenderer, Color> restingColors = new Dictionary<SpriteRenderer, Color>();
     readonly List<BodySlot> damageCandidates = new List<BodySlot>();
+    readonly List<float> damageCandidateWeights = new List<float>();
 
     PlayerController playerController;
     SpriteRenderer bodyRenderer;
@@ -214,13 +226,17 @@ public class PlayerDamageReceiver : MonoBehaviour
 
         InventoryManager inventory = InventoryManager.Instance;
         damageCandidates.Clear();
+        damageCandidateWeights.Clear();
         if (inventory != null)
             for (int i = 0; i < DamageSlots.Length; i++)
                 // 레거시 BodyPart뿐 아니라 신규 아이템 시스템으로 장착된 부위도 데미지 대상에
                 // 포함시킨다. 그렇지 않으면 신규 아이템만 장착한 부위는 데미지가 안 먹고,
                 // 모든 부위가 신규 아이템뿐이면 damageCandidates가 비어 즉사 처리돼 버린다.
                 if (inventory.IsEquipped(DamageSlots[i]))
+                {
                     damageCandidates.Add(DamageSlots[i]);
+                    damageCandidateWeights.Add(DamageSlotWeights[i]);
+                }
 
         if (damageCandidates.Count == 0)
         {
@@ -228,8 +244,7 @@ public class PlayerDamageReceiver : MonoBehaviour
             return;
         }
 
-        int pick = Random.Range(0, damageCandidates.Count);
-        BodySlot slot = damageCandidates[pick];
+        BodySlot slot = PickWeightedSlot(damageCandidates, damageCandidateWeights);
         SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
         BodyPart brokenPart;
         ItemData brokenItemData;
@@ -245,6 +260,27 @@ public class PlayerDamageReceiver : MonoBehaviour
 
         if (AllArmsAndLegsMissing(inventory))
             TriggerDeath();
+    }
+
+    static BodySlot PickWeightedSlot(List<BodySlot> slots, List<float> weights)
+    {
+        float total = 0f;
+        for (int i = 0; i < weights.Count; i++)
+            total += weights[i];
+
+        if (total <= 0f)
+            return slots[Random.Range(0, slots.Count)];
+
+        float roll = Random.Range(0f, total);
+        float cumulative = 0f;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            cumulative += weights[i];
+            if (roll <= cumulative)
+                return slots[i];
+        }
+
+        return slots[slots.Count - 1];
     }
 
     bool AllArmsAndLegsMissing(InventoryManager inventory)

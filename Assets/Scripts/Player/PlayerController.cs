@@ -212,7 +212,7 @@ public class PlayerController : MonoBehaviour
 
         HandleConsumableHotkey(kb);
 
-        if (Time.time < movementLockedUntil)
+        if (Time.time < hardLockUntil || Time.time < movementLockedUntil)
         {
             moveInput = Vector2.zero;
             forwardWalkPressed = false;
@@ -341,6 +341,25 @@ public class PlayerController : MonoBehaviour
     {
         movementLockedUntil = Mathf.Max(movementLockedUntil, Time.time + Mathf.Max(0f, duration));
         moveInput = Vector2.zero;
+    }
+
+    // 컷신처럼 "정확히 언제 끝나는지 모르는" 동안 잠글 때 쓴다. 매 프레임 LockMovement(짧은시간)를
+    // 갱신하는 방식은 프레임이 한 번이라도 끊기면 그 사이에 풀려버릴 수 있어, 명시적으로
+    // 켜고/끄는 락을 추가한다. SetHardLocked(false) 호출이 누락돼도 영원히 못 움직이지
+    // 않도록, 켤 때 10초짜리 안전 타임아웃으로 스스로 풀리게 해둔다.
+    float hardLockUntil;
+
+    public void SetHardLocked(bool locked)
+    {
+        if (locked)
+        {
+            moveInput = Vector2.zero;
+            hardLockUntil = Time.time + 10f;
+        }
+        else
+        {
+            hardLockUntil = 0f;
+        }
     }
 
     public void FaceDirection(Vector2 direction, float lockDuration)

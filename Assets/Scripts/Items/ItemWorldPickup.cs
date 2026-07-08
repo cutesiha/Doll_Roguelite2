@@ -51,6 +51,9 @@ public class ItemWorldPickup : MonoBehaviour
     // 짙은 갈색 박스 (텍스트는 흰색 고정) — 템플릿 복사로 색이 뭉개지지 않도록 상수로 강제
     static readonly Color TooltipBackgroundColor = new Color(0.16f, 0.10f, 0.06f, 0.95f);
 
+    // 아이템은 플레이어/문(최대 sortingOrder ~120대)을 포함한 모든 방 오브젝트보다 항상 위에 그려져야 한다.
+    public const int ItemSortingOrder = 200;
+
     static ItemWorldPickup globalTooltipTemplate;
     const float MaxReadableTooltipFontSize = 3.2f;
     const float MinReadableTooltipFontSize = 1.15f;
@@ -201,18 +204,20 @@ public class ItemWorldPickup : MonoBehaviour
 
     IEnumerator TossRoutine(Vector3 from, Vector3 to, float duration)
     {
+        Vector3 target = DropWallBounce.ResolveTarget(from, to, transform);
+
         float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
-            Vector3 pos = Vector3.Lerp(from, to, t);
+            Vector3 pos = Vector3.Lerp(from, target, t);
             pos.y += Mathf.Sin(t * Mathf.PI) * 0.8f;
             transform.position = pos;
             yield return null;
         }
-        transform.position = to;
-        basePosition = to;
+        transform.position = target;
+        basePosition = target;
     }
 
     void TryCollect(Collider2D other)
@@ -399,7 +404,7 @@ public class ItemWorldPickup : MonoBehaviour
         // 템플릿에서 복사된 색이 어두운 글자색과 겹쳐 텍스트가 안 보이던 문제 방지:
         // 박스는 항상 짙은 갈색, 글자는 항상 흰색으로 고정한다.
         tooltipBackground.color = TooltipBackgroundColor;
-        tooltipBackground.sortingOrder = 79;
+        tooltipBackground.sortingOrder = ItemSortingOrder + 1;
 
         if (tooltipText == null)
             tooltipText = tooltipRoot.GetComponentInChildren<TextMeshPro>(true);
@@ -422,7 +427,7 @@ public class ItemWorldPickup : MonoBehaviour
         tooltipText.fontSizeMax = tooltipFontSize;
         tooltipText.alignment = TextAlignmentOptions.Center;
         tooltipText.color = Color.white;
-        tooltipText.sortingOrder = 80;
+        tooltipText.sortingOrder = ItemSortingOrder + 2;
         tooltipText.textWrappingMode = TextWrappingModes.Normal;
         tooltipText.overflowMode = TextOverflowModes.Overflow;
         tooltipText.rectTransform.sizeDelta = tooltipTextBoxSize;

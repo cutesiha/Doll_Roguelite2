@@ -10,8 +10,6 @@ public class Room : MonoBehaviour
 
     [SerializeField] EnemyBase enemyPrefab;
     [SerializeField] int waveCount = 3;
-    [SerializeField, Min(0)] int extraEnemyEveryLayers = 2;
-    [SerializeField, Min(0)] int maxExtraEnemiesPerWave = 3;
     [SerializeField] int spawnBlinkCount = 6;
     [SerializeField] float spawnBlinkInterval = 0.12f;
     [SerializeField] float nextWaveDelay = 0.75f;
@@ -584,32 +582,18 @@ public class Room : MonoBehaviour
             if (safeRect.width < 0.5f || safeRect.height < 0.5f)
                 safeRect = innerRect;
 
-            Vector2[] farCandidates =
-            {
-                new Vector2(safeRect.xMin, safeRect.yMin),
-                new Vector2(safeRect.xMin, safeRect.yMax),
-                new Vector2(safeRect.xMax, safeRect.yMin),
-                new Vector2(safeRect.xMax, safeRect.yMax)
-            };
+            // 항상 가장 먼 "모서리"에만 스폰되던 걸, 화면 밖(카메라에 안 보이는) 영역이면
+            // 어디든 고르게 나오도록 바꾼다. 방 전체(safeRect)에서 카메라가 보여주는 영역
+            // (cameraRect)을 뺀 "띠" 영역 중 하나를 골라 그 안에서 무작위 지점을 뽑는다.
+            if (!TryGetCameraSpawnRect(enemySize, out Rect cameraRect))
+                cameraRect = safeRect;
 
-            Vector2 cameraCenter = center;
-            Vector2 farthest = farCandidates[0];
-            float farthestDistance = (farthest - cameraCenter).sqrMagnitude;
-            for (int i = 1; i < farCandidates.Length; i++)
-            {
-                float distance = (farCandidates[i] - cameraCenter).sqrMagnitude;
-                if (distance > farthestDistance)
-                {
-                    farthest = farCandidates[i];
-                    farthestDistance = distance;
-                }
-            }
+            if (TryPickOutsideBandPoint(safeRect, cameraRect, out Vector2 outsidePoint))
+                return new Vector3(outsidePoint.x, outsidePoint.y, 0f);
 
-            // Keep a little variation without ever moving the fourth enemy back
-            // into the visible camera rectangle.
-            farthest.x = Mathf.Clamp(farthest.x + Random.Range(-0.6f, 0.6f), safeRect.xMin, safeRect.xMax);
-            farthest.y = Mathf.Clamp(farthest.y + Random.Range(-0.6f, 0.6f), safeRect.yMin, safeRect.yMax);
-            return new Vector3(farthest.x, farthest.y, 0f);
+            // 카메라가 방 전체를 다 비출 만큼 방이 작으면(띠 영역이 없으면) safeRect 안에서 무작위로.
+            outsidePoint = new Vector2(Random.Range(safeRect.xMin, safeRect.xMax), Random.Range(safeRect.yMin, safeRect.yMax));
+            return new Vector3(outsidePoint.x, outsidePoint.y, 0f);
         }
 
         float x, y;
@@ -637,25 +621,51 @@ public class Room : MonoBehaviour
         return new Vector3(x, y, 0f);
     }
 
+    // safeRect(방 전체 스폰 가능 영역)에서 cameraRect(현재 화면에 보이는 영역)를 뺀 나머지
+    // "띠" 영역들 중 하나를 무작위로 골라, 그 안에서 무작위 지점을 뽑는다. 모서리 4곳으로만
+    // 몰리지 않고 화면 밖 벽 쪽 어디든 고르게 나오게 하기 위함.
+    static readonly List<Rect> bandCandidates = new List<Rect>(4);
+
+    static bool TryPickOutsideBandPoint(Rect safeRect, Rect cameraRect, out Vector2 point)
+    {
+        point = Vector2.zero;
+        bandCandidates.Clear();
+
+        if (cameraRect.xMin > safeRect.xMin)
+            bandCandidates.Add(Rect.MinMaxRect(safeRect.xMin, safeRect.yMin, cameraRect.xMin, safeRect.yMax));
+        if (safeRect.xMax > cameraRect.xMax)
+            bandCandidates.Add(Rect.MinMaxRect(cameraRect.xMax, safeRect.yMin, safeRect.xMax, safeRect.yMax));
+        if (cameraRect.yMin > safeRect.yMin)
+            bandCandidates.Add(Rect.MinMaxRect(safeRect.xMin, safeRect.yMin, safeRect.xMax, cameraRect.yMin));
+        if (safeRect.yMax > cameraRect.yMax)
+            bandCandidates.Add(Rect.MinMaxRect(safeRect.xMin, cameraRect.yMax, safeRect.xMax, safeRect.yMax));
+
+        if (bandCandidates.Count == 0)
+            return false;
+
+        Rect band = bandCandidates[Random.Range(0, bandCandidates.Count)];
+        point = new Vector2(Random.Range(band.xMin, band.xMax), Random.Range(band.yMin, band.yMax));
+        return true;
+    }
+
     int EffectiveWaveCount()
     {
         return Mathf.Max(1, waveCount);
     }
 
+    // 방(레이어)마다 적 숫자를 계속 늘리던 걸 없앴다. 중간보스를 넘긴 뒤로만 웨이브당
+    // 2마리를 더 보탠다 (기존 6마리 → 8마리), 그 이후로는 더 늘지 않고 고정.
+    const int PostMiddleBossExtraEnemiesPerWave = 2;
+
     int EffectiveEnemiesInsidePerWave()
     {
-        return BaseEnemiesInsidePerWave + ExtraEnemiesForLayer();
+        int extra = MapRunState.HasPassedMiddleBoss() ? PostMiddleBossExtraEnemiesPerWave : 0;
+        return BaseEnemiesInsidePerWave + extra;
     }
 
     int EffectiveEnemiesOutsidePerWave()
     {
-        return BaseEnemiesOutsidePerWave + Mathf.Clamp(ExtraEnemiesForLayer() / 2, 0, 2);
-    }
-
-    int ExtraEnemiesForLayer()
-    {
-        int every = Mathf.Max(1, extraEnemyEveryLayers);
-        return Mathf.Clamp(Mathf.Max(0, RoomLayer() - 1) / every, 0, maxExtraEnemiesPerWave);
+        return BaseEnemiesOutsidePerWave;
     }
 
     float EffectiveSpawnApproachSpeed()

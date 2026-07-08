@@ -9,8 +9,8 @@ public class EnemyChaser : EnemyBase
     [SerializeField] Vector2 slamCooldownRange = new Vector2(3f, 5f);
     [SerializeField, Min(0.1f)] float slamTelegraphDuration = 1.35f;
     [SerializeField, Min(0.1f)] float slamRadius = 0.75f;
-    [SerializeField, Min(1)] int slamDamage = 28;
-    [SerializeField, Min(1)] int slamEdgeDamage = 40;
+    [SerializeField, Min(1)] int slamDamage = 22;
+    [SerializeField, Min(1)] int slamEdgeDamage = 32;
     [SerializeField, Range(0.1f, 1f)] float slamEdgeInnerRatio = 0.68f;
     [SerializeField, Min(0.05f)] float slamJumpDuration = 0.78f;
     [SerializeField, Min(0f)] float slamJumpArcHeight = 1.15f;

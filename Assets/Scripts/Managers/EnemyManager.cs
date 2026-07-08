@@ -32,12 +32,13 @@ public class EnemyManager : MonoBehaviour
     System.Action onRoomCleared;
     int nextProfileIndex;
 
-    const float BaseRoomHpMultiplier = 1.75f;
-    const float HpMultiplierPerRoomLayer = 0.35f;
-    const float BaseRoomSpeedMultiplier = 1.55f;
-    const float SpeedMultiplierPerRoomLayer = 0.08f;
-    const float BaseAttackCooldownMultiplier = 0.64f;
-    const float AttackCooldownMultiplierPerLayer = 0.03f;
+    // 방(레이어)마다 오르던 배율이 너무 가팔라서 대폭 낮춤.
+    const float BaseRoomHpMultiplier = 1.2f;
+    const float HpMultiplierPerRoomLayer = 0.10f;
+    const float BaseRoomSpeedMultiplier = 1.1f;
+    const float SpeedMultiplierPerRoomLayer = 0.03f;
+    const float BaseAttackCooldownMultiplier = 0.85f;
+    const float AttackCooldownMultiplierPerLayer = 0.015f;
 
     void Awake()
     {
@@ -63,15 +64,8 @@ public class EnemyManager : MonoBehaviour
         enemy.ApplyProfile(ScaledProfile(profile));
         enemy.ApplyCombatScaling(CurrentRoomSpeedMultiplier(), CurrentRoomAttackCooldownMultiplier(), CurrentRoomExtraAttackDamage());
 
-        // task22: 중간보스 방 이후의 잡몹은 체력을 50% 올린다.
-        if (MapRunState.HasPassedMiddleBoss())
-            enemy.ScaleMaxHealth(MiddleBossClearedHpMultiplier);
-
         return true;
     }
-
-    // 중간보스 통과 이후 잡몹 체력 배율. 중간 지점 강화이므로 킬타임이 과도하게 늘지 않는 1.5배로 설정.
-    const float MiddleBossClearedHpMultiplier = 1.5f;
 
     public void RegisterRoom(List<EnemyBase> enemies, System.Action onCleared)
     {
@@ -165,12 +159,12 @@ public class EnemyManager : MonoBehaviour
     public static float CurrentRoomAttackCooldownMultiplier()
     {
         int level = Mathf.Max(0, CurrentRoomLayer() - 1);
-        return Mathf.Max(0.45f, BaseAttackCooldownMultiplier - level * AttackCooldownMultiplierPerLayer);
+        return Mathf.Max(0.6f, BaseAttackCooldownMultiplier - level * AttackCooldownMultiplierPerLayer);
     }
 
     public static int CurrentRoomExtraAttackDamage()
     {
-        return Mathf.Max(0, CurrentRoomLayer() - 1) * 2;
+        return Mathf.Max(0, CurrentRoomLayer() - 1);
     }
 
     static EnemyProfile DefaultProfileFor(EnemyKind kind)

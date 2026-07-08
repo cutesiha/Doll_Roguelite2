@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: default_leg
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: default_leg
-  itemName: "기본 다리"
-  description: "게임 시작 시 기본으로 달려있는 다리"
+  itemName: "\uAE30\uBCF8 \uB2E4\uB9AC"
+  description: "\uAE30\uBCF8\uC73C\uB85C \uB2EC\uB824\uC788\uB294 \uB2E4\uB9AC"
   category: 5
   itemType: 0
   equipLocation: 4
@@ -27,8 +27,12 @@ MonoBehaviour:
   effects: []
   sprite: {fileID: 21300000, guid: 611ed70a972bafc4c922ac84fc6c1df8, type: 3}
   projectileSprite: {fileID: 0}
+  projectileSprite2: {fileID: 0}
+  projectileSprite3: {fileID: 0}
   equippedSpriteLeft: {fileID: 21300000, guid: 611ed70a972bafc4c922ac84fc6c1df8, type: 3}
   equippedSpriteRight: {fileID: 21300000, guid: 2f64b13c853769f4db57e5f421f4c4ff, type: 3}
+  equippedSpriteBody: {fileID: 0}
   placeholderShape: 0
   placeholderColor: {r: 1, g: 1, b: 1, a: 1}
   worldScale: 0
+  equippedScale: 1

@@ -29,8 +29,8 @@ public class RibbonEnemy : EnemyBase
     [SerializeField, Min(0.5f)] float bindLength = 7.2f;
     [SerializeField, Min(0.05f)] float bindWidth = 0.45f;
     [SerializeField, Min(0f)] float bindDuration = 1f;
-    [SerializeField, Min(1)] int fanDamage = 22;
-    [SerializeField, Min(1)] int bindDamage = 12;
+    [SerializeField, Min(1)] int fanDamage = 18;
+    [SerializeField, Min(1)] int bindDamage = 10;
     [SerializeField] Color ribbonTelegraphColor = new Color(1f, 0.08f, 0.08f, 0.34f);
     [SerializeField] Color ribbonStrikeColor = new Color(0.72f, 0.5f, 0.95f, 0.78f);
 

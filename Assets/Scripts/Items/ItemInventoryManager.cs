@@ -573,7 +573,7 @@ public class ItemInventoryManager : MonoBehaviour
         ItemDropParticleEffect.Spawn(position);
     }
 
-    void SpawnCoinAt(Vector3 position)
+    public void SpawnCoinAt(Vector3 position)
     {
         GameObject coinPrefab = Resources.Load<GameObject>("Drops/동전");
         if (coinPrefab != null)
@@ -640,7 +640,28 @@ public class ItemInventoryManager : MonoBehaviour
         if (amount <= 0)
             return;
 
-        coins += amount;
+        // coinStacks(3x3 슬롯 표시용)에 직접 쌓는다. 예전엔 abstract coins에만 더해서
+        // 총액(Coins)은 늘어나도 인벤토리 슬롯엔 코인 더미가 하나도 안 보이는 "보이지 않는
+        // 돈"이 됐었다.
+        if (coinItemRef == null)
+            coinItemRef = ItemCatalog.Find("coin");
+
+        int remaining = amount;
+        for (int idx = 0; idx < coinStacks.Count && remaining > 0; idx++)
+        {
+            int space = 9 - coinStacks[idx];
+            if (space <= 0) continue;
+            int add = Mathf.Min(space, remaining);
+            coinStacks[idx] += add;
+            remaining -= add;
+        }
+        while (remaining > 0)
+        {
+            int add = Mathf.Min(9, remaining);
+            AddCoinStack(add);
+            remaining -= add;
+        }
+
         NotifyChanged();
     }
 

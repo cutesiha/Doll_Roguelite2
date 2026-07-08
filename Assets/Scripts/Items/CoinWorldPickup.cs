@@ -25,7 +25,7 @@ public class CoinWorldPickup : MonoBehaviour
 
     IEnumerator TossRoutine(Vector3 from, Vector3 to, float duration)
     {
-        Vector3 target = ResolveWallBounce(from, to);
+        Vector3 target = DropWallBounce.ResolveTarget(from, to, transform);
 
         float elapsed = 0f;
         while (elapsed < duration)
@@ -39,41 +39,6 @@ public class CoinWorldPickup : MonoBehaviour
         }
         transform.position = target;
         basePosition = target;
-    }
-
-    // 목표 지점으로 가는 경로가 벽 콜라이더를 통과하면, 벽 위/안쪽에 드랍되는 대신
-    // 벽에서 튕겨 나온 지점으로 목표를 옮긴다.
-    Vector3 ResolveWallBounce(Vector3 from, Vector3 to)
-    {
-        Vector2 delta = to - from;
-        float distance = delta.magnitude;
-        if (distance < 0.001f)
-            return to;
-
-        Vector2 dir = delta / distance;
-        RaycastHit2D[] hits = Physics2D.RaycastAll(from, dir, distance);
-        for (int i = 0; i < hits.Length; i++)
-        {
-            Collider2D hitCollider = hits[i].collider;
-            if (hitCollider == null || hitCollider.isTrigger || hitCollider.transform == transform)
-                continue;
-            if (!IsWallCollider(hitCollider))
-                continue;
-
-            Vector2 reflected = Vector2.Reflect(dir, hits[i].normal);
-            float remaining = Mathf.Max(0.15f, (distance - hits[i].distance) * 0.5f);
-            Vector2 bounced = hits[i].point + reflected * remaining;
-            return new Vector3(bounced.x, bounced.y, to.z);
-        }
-
-        return to;
-    }
-
-    static bool IsWallCollider(Collider2D collider)
-    {
-        string objectName = collider.transform.name;
-        return !string.IsNullOrEmpty(objectName)
-            && (objectName.StartsWith("Wall_") || objectName.StartsWith("wall"));
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -94,14 +59,15 @@ public class CoinWorldPickup : MonoBehaviour
         if (Time.time < pickupImmuneUntil)
             return;
 
-        InventoryManager inventory = InventoryManager.Instance;
-        if (inventory == null)
+        // 상점(ItemInventoryManager)이 실제로 확인/차감하는 동전 풀과 같은 곳에 넣어야 한다.
+        // 예전엔 레거시 InventoryManager(BodyPart Kind.Coin)에 쌓여서, 인벤토리엔 코인이
+        // 보여도 상점에서는 그 돈을 전혀 인식하지 못하는 별개의 풀이 되어 있었다.
+        ItemInventoryManager itemInventory = ItemInventoryManager.Instance;
+        if (itemInventory == null)
             return;
 
-        BodyPart coin = new BodyPart(ItemKind.Coin);
-        coin.icon = GetComponent<SpriteRenderer>()?.sprite;
-
-        if (!inventory.TryAddPart(coin, false))
+        ItemData coinItem = ItemCatalog.Find("coin");
+        if (coinItem == null || !itemInventory.TryAcquire(coinItem, out _))
             return;
 
         collected = true;

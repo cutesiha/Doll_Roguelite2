@@ -21,7 +21,7 @@ public class BodyPartWorldDrop : MonoBehaviour
 
         SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
         renderer.sprite = sprite;
-        renderer.sortingOrder = 35;
+        renderer.sortingOrder = ItemWorldPickup.ItemSortingOrder;
 
         CircleCollider2D collider = go.AddComponent<CircleCollider2D>();
         collider.isTrigger = true;
@@ -50,17 +50,19 @@ public class BodyPartWorldDrop : MonoBehaviour
 
     IEnumerator TossRoutine(Vector3 from, Vector3 to, float duration)
     {
+        Vector3 target = DropWallBounce.ResolveTarget(from, to, transform);
+
         float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
-            Vector3 pos = Vector3.Lerp(from, to, t);
+            Vector3 pos = Vector3.Lerp(from, target, t);
             pos.y += Mathf.Sin(t * Mathf.PI) * 0.8f;
             transform.position = pos;
             yield return null;
         }
-        transform.position = to;
+        transform.position = target;
     }
 
     void OnTriggerEnter2D(Collider2D other)

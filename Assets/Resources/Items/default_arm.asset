@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: default_arm
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: default_arm
-  itemName: "기본 팔"
-  description: "게임 시작 시 기본으로 달려있는 팔"
+  itemName: "\uAE30\uBCF8 \uD314"
+  description: "\uAE30\uBCF8\uC73C\uB85C \uB2EC\uB824\uC788\uB294 \uD314"
   category: 5
   itemType: 0
   equipLocation: 2
@@ -27,8 +27,12 @@ MonoBehaviour:
   effects: []
   sprite: {fileID: 21300000, guid: 0d06c895840672b41b4cd53a3c787f7d, type: 3}
   projectileSprite: {fileID: 0}
+  projectileSprite2: {fileID: 0}
+  projectileSprite3: {fileID: 0}
   equippedSpriteLeft: {fileID: 21300000, guid: 0d06c895840672b41b4cd53a3c787f7d, type: 3}
   equippedSpriteRight: {fileID: 21300000, guid: ba9144720c6dc0644891969099d803a2, type: 3}
+  equippedSpriteBody: {fileID: 0}
   placeholderShape: 0
   placeholderColor: {r: 1, g: 1, b: 1, a: 1}
   worldScale: 0
+  equippedScale: 1

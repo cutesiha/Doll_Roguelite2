@@ -101,7 +101,7 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
         go.layer = canvas.gameObject.layer;
 
         RectTransform rect = go.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(280f, 110f);
+        rect.sizeDelta = new Vector2(370f, 160f);
         rect.pivot = new Vector2(0f, 1f);
 
         Image bg = go.AddComponent<Image>();
@@ -119,13 +119,13 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
 
         tooltipText = textGo.AddComponent<TextMeshProUGUI>();
         tooltipText.font = UIThinDungFont.Get();
-        tooltipText.fontSize = 18f;
+        tooltipText.fontSize = 36f;
         tooltipText.color = Color.white;
         tooltipText.raycastTarget = false;
         tooltipText.textWrappingMode = TextWrappingModes.Normal;
         tooltipText.enableAutoSizing = true;
-        tooltipText.fontSizeMin = 12f;
-        tooltipText.fontSizeMax = 18f;
+        tooltipText.fontSizeMin = 24f;
+        tooltipText.fontSizeMax = 36f;
 
         Canvas tooltipCanvasComp = go.AddComponent<Canvas>();
         tooltipCanvasComp.overrideSorting = true;
@@ -154,7 +154,7 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
             RectTransform rect = tooltipPanel.GetComponent<RectTransform>();
             if (rect == null)
                 rect = tooltipPanel.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(Mathf.Max(rect.sizeDelta.x, 280f), Mathf.Max(rect.sizeDelta.y, 110f));
+            rect.sizeDelta = new Vector2(Mathf.Max(rect.sizeDelta.x, 370f), Mathf.Max(rect.sizeDelta.y, 160f));
 
             Image background = tooltipPanel.GetComponent<Image>();
             if (background == null)
@@ -181,10 +181,10 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
                 tooltipText = textTransform.gameObject.AddComponent<TextMeshProUGUI>();
             tooltipText.font = UIThinDungFont.Get();
             tooltipText.raycastTarget = false;
-            tooltipText.fontSize = 18f;
+            tooltipText.fontSize = 36f;
             tooltipText.enableAutoSizing = true;
-            tooltipText.fontSizeMin = 12f;
-            tooltipText.fontSizeMax = 18f;
+            tooltipText.fontSizeMin = 24f;
+            tooltipText.fontSizeMax = 36f;
             tooltipText.textWrappingMode = TextWrappingModes.Normal;
 
             Canvas tooltipCanvasComp = tooltipPanel.GetComponent<Canvas>();

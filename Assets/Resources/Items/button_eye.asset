@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: button_eye
   itemName: "\uB2E8\uCD94 \uB208"
-  description: "\uD654\uBA74\uC774 \uB2E8\uCD94 \uAD6C\uBA4D\uC73C\uB85C \uBC14\uB77C\uBCF4\uB294
-    \uAC83\uCC98\uB7FC \uBCF4\uC784"
+  description: "\uD654\uBA74\uC774 \uB2E8\uCD94\uB85C \uBCF4\uC774\uACE0 \uC591\uD314
+    \uB370\uBBF8\uC9C0 1 \uC99D\uAC00"
   category: 1
   itemType: 0
   equipLocation: 1
   acquisitionLocations: 2
   consumable: 0
-  value: 0
+  value: 1
   secondaryValue: 0
   duration: 0
   shopPrice: 22

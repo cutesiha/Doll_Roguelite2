@@ -91,14 +91,19 @@ public class CharacterOvalShadow : MonoBehaviour
         if (shadowRenderer == null)
             return;
 
+        // 정렬 순서는 예술적으로 손으로 맞춘 값이 아니라 부모를 그대로 따라가야 하는
+        // 기계적인 값이라, authored(손으로 배치한 소품 그림자)여도 항상 동기화한다.
+        // 예전엔 authored면 통째로 건너뛰어서, 나중에 부모(desk/doll)의 sortingOrder가
+        // 바뀌면 그림자만 예전 값에 멈춰 다른 오브젝트 뒤에 가려지는 문제가 있었다.
+        shadowRenderer.sortingLayerID = ownerRenderer != null ? ownerRenderer.sortingLayerID : 0;
+        shadowRenderer.sortingOrder = ownerRenderer != null ? ownerRenderer.sortingOrder + sortingOrderOffset : sortingOrderOffset;
+
         if (authored)
             return;
 
         Sprite sourceSprite = playerController != null ? playerController.GetShadowSourceSprite() : ownerRenderer.sprite;
         shadowRenderer.sprite = sourceSprite;
         shadowRenderer.color = shadowColor;
-        shadowRenderer.sortingLayerID = ownerRenderer != null ? ownerRenderer.sortingLayerID : 0;
-        shadowRenderer.sortingOrder = ownerRenderer != null ? ownerRenderer.sortingOrder + sortingOrderOffset : sortingOrderOffset;
         shadowRenderer.sharedMaterial = ownerRenderer != null ? ownerRenderer.sharedMaterial : null;
         shadowRenderer.enabled = sourceSprite != null;
 

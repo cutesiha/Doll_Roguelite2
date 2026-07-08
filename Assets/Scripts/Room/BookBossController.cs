@@ -30,8 +30,10 @@ public class BookBossController : MonoBehaviour
     [SerializeField] int minionKillBodyDamage = 10;
 
     [Header("Attack Damage")]
-    [SerializeField, Min(1)] int letterDamage = 14;
-    [SerializeField, Min(1)] int paperDamage = 18;
+    // 바닥 문장 공격이 너무 강하다는 피드백에 따라 데미지를 낮춤 (14 → 9).
+    [SerializeField, Min(1)] int letterDamage = 9;
+    // 나머지 공격들도 조금씩 낮춤 (18 → 15).
+    [SerializeField, Min(1)] int paperDamage = 15;
     [SerializeField, Min(1)] int poisonTickDamage = 1;
 
     [Header("Floor Sentence Attack")]
@@ -55,7 +57,8 @@ public class BookBossController : MonoBehaviour
     [SerializeField, Min(0.1f)] float paperScrapWarningTime = 1.45f;
     [SerializeField, Min(0.1f)] float paperScrapWarningRadius = 1.05f;
     [SerializeField] Vector2 paperScrapVisualSize = new Vector2(0.82f, 1.05f);
-    [SerializeField] Vector2 wave1PaperAttackRestRange = new Vector2(1.6f, 2.6f);
+    // 기본 바닥 문장 공격과 겹쳐 보인다는 피드백에 따라 텀을 조금 늘림 (1.6~2.6 → 2.2~3.2).
+    [SerializeField] Vector2 wave1PaperAttackRestRange = new Vector2(2.2f, 3.2f);
     [SerializeField, Min(0f)] float wave1PaperAttackInitialDelay = 0.75f;
 
     [Header("Wave 2 Ink Rain")]
@@ -66,7 +69,8 @@ public class BookBossController : MonoBehaviour
     [SerializeField, Min(0.1f)] float inkRainWarningTime = 0.7f;
     [SerializeField, Min(0.1f)] float inkRainWarningRadius = 0.8f;
     [SerializeField, Min(0.1f)] float inkRainStainLifetime = 7f;
-    [SerializeField, Min(0.1f)] float inkRainDamageCooldown = 1.25f;
+    // 잉크비도 조금 더 약하게: 틱 사이 간격을 늘려 초당 데미지를 낮춤 (1.25 → 1.6).
+    [SerializeField, Min(0.1f)] float inkRainDamageCooldown = 1.6f;
     [SerializeField] Vector2 inkRainStainHitboxSize = new Vector2(1.35f, 0.9f);
 
     [Header("Wave 3 Frenzy")]

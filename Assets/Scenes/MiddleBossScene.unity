@@ -337,8 +337,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8a8720917cc9f74d8d23f5a37e33d1f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerManager
-  maxHp: 10
-  currentHp: 10
   moveSpeed: 5
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
@@ -681,9 +679,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   ribbonSprite: {fileID: 0}
   fallbackSpriteName: ri1
   walkBoingSpeed: 2.4
@@ -695,6 +690,7 @@ MonoBehaviour:
   bindThrustDuration: 0.24
   moveSpeed: 0.85
   preferredDistance: 3.8
+  attackStartDistance: 5.2
   attackCooldownRange: {x: 2.2, y: 3.4}
   telegraphDuration: 0.65
   fanRadius: 3.2
@@ -1995,9 +1991,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   idleSprite: {fileID: 21300000, guid: 3637f4cf1971d914ba9794c2c5954acc, type: 3}
   fallbackSpriteName: sp_another2
   breathingAmplitude: 0.055
@@ -2526,9 +2519,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   moveSpeed: 1
   useButtonSlam: 1
   slamCooldownRange: {x: 3, y: 5}
@@ -2887,9 +2877,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   idleSprite: {fileID: 21300000, guid: 5791e5fa846e04545b11f4e0119b5967, type: 3}
   fallbackSpriteName: sp1
   breathingAmplitude: 0.055
@@ -3489,9 +3476,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.18
   hitShakeDistance: 0.12
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.12
-  cameraShakeMagnitude: 0.1
   moveSpeed: 0.65
   fallbackSpriteName: pixil-frame-0 (22)
 --- !u!50 &1377652414
@@ -3976,9 +3960,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   moveSpeed: 1
   useButtonSlam: 1
   slamCooldownRange: {x: 3, y: 5}
@@ -4294,9 +4275,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.12
   hitShakeDistance: 0.045
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.1
-  cameraShakeMagnitude: 0.08
   frame1: {fileID: 21300000, guid: 0a1622cb7a4528746a8f514fbbb9b57f, type: 3}
   frame2: {fileID: 21300000, guid: 328c183fa2a25f54f9cca4d6893fe053, type: 3}
   frame3: {fileID: 21300000, guid: 47f0e78acfb71ed46b1b55b6de653060, type: 3}
@@ -4304,6 +4282,7 @@ MonoBehaviour:
   chaseSpeed: 0.75
   dashCooldownRange: {x: 2.6, y: 3.8}
   warningDuration: 1.2
+  attackStartDistance: 5.8
   dashDistance: 11
   dashWidth: 1.05
   dashSpeed: 18
@@ -6003,11 +5982,19 @@ MonoBehaviour:
   punchVolume: 1
   coinPickupClip: {fileID: 0}
   coinPickupVolume: 1
+  itemPickupClip: {fileID: 0}
+  itemPickupVolume: 1
   gemUseClip: {fileID: 0}
   gemUseVolume: 1
   gemUseDuration: 1.4
   waveClearClip: {fileID: 0}
   waveClearVolume: 1
+  doorBlockedClip: {fileID: 0}
+  doorBlockedVolume: 1
+  challengeTimerTickClip: {fileID: 0}
+  challengeTimerTickVolume: 0.75
+  challengeTimerEndClip: {fileID: 0}
+  challengeTimerEndVolume: 1
   afterVictoryBgmClip: {fileID: 0}
   twoLegsFootstepClip: {fileID: 8300000, guid: f828f395b376ff44a846d24dbb167135, type: 3}
   twoLegsFootstepVolume: 1.23
@@ -6021,10 +6008,33 @@ MonoBehaviour:
   minotaurFastBreathVolume: 1
   minotaurPinStickClip: {fileID: 8300000, guid: b49be53eaf0ab6e4d99270b70a68f8c4, type: 3}
   minotaurPinStickVolume: 0.95
+  bookBossRageClip: {fileID: 0}
+  bookBossRageVolume: 1
+  bookBossRainLoopClip: {fileID: 0}
+  bookBossRainLoopVolume: 0.55
+  bookBossSirenLoopClip: {fileID: 0}
+  bookBossSirenLoopVolume: 0.7
+  bookBossInkDropClip1: {fileID: 0}
+  bookBossInkDropClip2: {fileID: 0}
+  bookBossInkDropClip3: {fileID: 0}
+  bookBossInkDropClip4: {fileID: 0}
+  bookBossInkDropVolume: 0.95
+  bookBossFloorSlamClip: {fileID: 0}
+  bookBossFloorSlamVolume: 1.05
+  bookBossPaperFlyClip: {fileID: 0}
+  bookBossPaperFlyVolume: 0.85
   enemyHitClip: {fileID: 8300000, guid: 415735aa5a06b1247a521f98673b4838, type: 3}
   enemyHitVolume: 1
   playerHitClip: {fileID: 8300000, guid: 42ded5264c9e97e419b436c34fcef5ac, type: 3}
   playerHitVolume: 1
+  buttonEnemyLandingClip: {fileID: 0}
+  buttonEnemyLandingVolume: 0.85
+  needleEnemyDashClip: {fileID: 0}
+  needleEnemyDashVolume: 0.8
+  spoolEnemyThreadClip: {fileID: 0}
+  spoolEnemyThreadVolume: 0.82
+  ribbonEnemyAttackClip: {fileID: 0}
+  ribbonEnemyAttackVolume: 0.78
 --- !u!4 &1993731298
 Transform:
   m_ObjectHideFlags: 0
@@ -6125,6 +6135,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Room
   enemyPrefab: {fileID: 0}
   waveCount: 3
+  extraEnemyEveryLayers: 2
+  maxExtraEnemiesPerWave: 3
   spawnBlinkCount: 6
   spawnBlinkInterval: 0.12
   nextWaveDelay: 0.75
@@ -6401,7 +6413,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01b62b3ed42e1394b80cbe58008d0130, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MinotaurBoss
-  maxHp: 120
+  maxHp: 150
   bodyColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   framesPerSecond: 8
   hitCollider: {fileID: 3100000013}
@@ -6410,9 +6422,6 @@ MonoBehaviour:
   hitFeedbackDuration: 0.18
   hitShakeDistance: 0.12
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
-  shakeCameraOnHit: 1
-  cameraShakeDuration: 0.12
-  cameraShakeMagnitude: 0.1
   spriteName: mino_jjin
   bossHp: 120
   bossScale: 3

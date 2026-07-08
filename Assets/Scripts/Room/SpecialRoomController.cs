@@ -331,16 +331,26 @@ public class SpecialRoomController : MonoBehaviour
         if (wall == null)
             return;
 
+        // Unity는 같은 오브젝트에 Collider와 Collider2D를 동시에 허용하지 않는다.
+        // BoxCollider(3D)가 남아있으면 AddComponent<BoxCollider2D>가 조용히 null을 반환해
+        // 아래에서 NullReferenceException이 나므로, 값을 옮긴 뒤 3D 콜라이더를 완전히 제거한다.
+        BoxCollider collider3D = wall.GetComponent<BoxCollider>();
+        bool hadCollider3D = collider3D != null;
+        Vector2 offset = hadCollider3D ? new Vector2(collider3D.center.x, collider3D.center.y) : Vector2.zero;
+        Vector2 size = hadCollider3D
+            ? new Vector2(Mathf.Max(0.01f, collider3D.size.x), Mathf.Max(0.01f, collider3D.size.y))
+            : Vector2.zero;
+        if (hadCollider3D)
+            Object.DestroyImmediate(collider3D);
+
         BoxCollider2D collider2D = wall.GetComponent<BoxCollider2D>();
         if (collider2D == null)
             collider2D = wall.AddComponent<BoxCollider2D>();
 
-        BoxCollider collider3D = wall.GetComponent<BoxCollider>();
-        if (collider3D != null)
+        if (hadCollider3D)
         {
-            collider2D.offset = new Vector2(collider3D.center.x, collider3D.center.y);
-            collider2D.size = new Vector2(Mathf.Max(0.01f, collider3D.size.x), Mathf.Max(0.01f, collider3D.size.y));
-            collider3D.enabled = false;
+            collider2D.offset = offset;
+            collider2D.size = size;
         }
 
         collider2D.isTrigger = false;
@@ -370,15 +380,19 @@ public class SpecialRoomController : MonoBehaviour
         ResolvePlayer();
         if (preservedAuthoredLayout)
         {
-            // 손으로 배치한 방은 카메라도 에디터에서 방 전체가 보이도록 고정해 둔 것이므로
-            // 플레이어를 따라다니게 하지 않고, 플레이어 위치도 강제로 리셋하지 않는다
-            // (에디터에 배치해 둔 시작 위치를 그대로 사용).
-            Camera authoredCamera = Camera.main;
-            if (authoredCamera != null)
+            // 손으로 배치한 방 중 보물방만 배경 이미지(treasureart)에 맞춰 카메라를 고정한다.
+            // 상점은 에디터에 배치된 PlayerCameraFollow를 그대로 두어 플레이어를 따라가게 한다.
+            if (roomKind == SpecialRoomKind.Treasure)
             {
-                PlayerCameraFollow authoredFollow = authoredCamera.GetComponent<PlayerCameraFollow>();
-                if (authoredFollow != null)
-                    authoredFollow.enabled = false;
+                Camera authoredCamera = Camera.main;
+                if (authoredCamera != null)
+                {
+                    PlayerCameraFollow authoredFollow = authoredCamera.GetComponent<PlayerCameraFollow>();
+                    if (authoredFollow != null)
+                        authoredFollow.enabled = false;
+
+                    FitCameraToBackgroundArt(authoredCamera, transform.Find("SpecialRoomArt"));
+                }
             }
 
             return;
@@ -402,6 +416,40 @@ public class SpecialRoomController : MonoBehaviour
 
         mainCamera.clearFlags = CameraClearFlags.SolidColor;
         mainCamera.backgroundColor = backgroundColor;
+    }
+
+    static void FitCameraToBackgroundArt(Camera camera, Transform artRoot)
+    {
+        if (camera == null)
+            return;
+
+        SpriteRenderer background = FindNamedSpriteRenderer(artRoot, "treasureart");
+        if (background == null)
+            return;
+
+        camera.orthographic = true;
+
+        Bounds bounds = background.bounds;
+        float verticalSize = bounds.extents.y;
+        float horizontalSize = camera.aspect > 0f ? bounds.extents.x / camera.aspect : verticalSize;
+        camera.orthographicSize = Mathf.Max(0.1f, Mathf.Max(verticalSize, horizontalSize));
+        camera.transform.position = new Vector3(bounds.center.x, bounds.center.y, camera.transform.position.z);
+    }
+
+    static SpriteRenderer FindNamedSpriteRenderer(Transform root, string nameContains)
+    {
+        if (root == null)
+            return null;
+
+        SpriteRenderer[] renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            SpriteRenderer renderer = renderers[i];
+            if (renderer != null && renderer.name.IndexOf(nameContains, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return renderer;
+        }
+
+        return null;
     }
 
     void ResolvePlayer()

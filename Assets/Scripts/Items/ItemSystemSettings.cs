@@ -13,6 +13,7 @@ public class ItemSystemSettings : ScriptableObject
     [Range(0f, 1f)] public float coinDropChance = 0.30f;
     [Min(0)] public int waveClearCoinBonus = 1;
     [Min(0)] public int challengeClearCoinBonus = 2;
+    [Min(0)] public int normalRoomClearCoinDrop = 5;
 
     [Header("조건방 추가 보상 확률")]
     [Range(0f, 1f)] public float conditionGemChance = 0.10f;

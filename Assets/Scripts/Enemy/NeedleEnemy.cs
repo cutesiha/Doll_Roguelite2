@@ -21,7 +21,7 @@ public class NeedleEnemy : EnemyBase
     [SerializeField, Min(0.5f)] float dashDistance = 11f;
     [SerializeField, Min(0.1f)] float dashWidth = 1.05f;
     [SerializeField, Min(0.5f)] float dashSpeed = 18f;
-    [SerializeField, Min(1)] int dashDamage = 30;
+    [SerializeField, Min(1)] int dashDamage = 24;
     [SerializeField] Color dashTelegraphColor = new Color(1f, 0.08f, 0.08f, 0.28f);
 
     Rigidbody2D rb;

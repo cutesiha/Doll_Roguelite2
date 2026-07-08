@@ -720,8 +720,9 @@ void Awake()
 
         AddExistingPipGroup(BodySlot.EyeLeft, "EyesRow_L_Pip_", 2);
         AddExistingPipGroup(BodySlot.EyeRight, "EyesRow_R_Pip_", 2);
-        AddExistingPipGroup(BodySlot.ArmLeft, "ArmsRow_L_Pip_", 3);
-        AddExistingPipGroup(BodySlot.ArmRight, "ArmsRow_R_Pip_", 3);
+        // 팔 최대 HP가 4로 늘어나 핍도 4칸으로 늘림 (에디터에서 핍 오브젝트 하나 더 복제해둠).
+        AddExistingPipGroup(BodySlot.ArmLeft, "ArmsRow_L_Pip_", 4);
+        AddExistingPipGroup(BodySlot.ArmRight, "ArmsRow_R_Pip_", 4);
         AddExistingPipGroup(BodySlot.LegLeft, "LegsRow_L_Pip_", 3);
         AddExistingPipGroup(BodySlot.LegRight, "LegsRow_R_Pip_", 3);
         Transform bodyRow = FindChildRecursive(transform, "BodyRow");
@@ -853,7 +854,8 @@ void Awake()
 
     void BuildBodyHud()
     {
-        GameObject group = Rect(transform, "BodyPipHud", Anchor.TopLeft, new Vector2(30f, -30f), new Vector2(470f, 176f));
+        // 팔 핍이 4칸으로 늘어나 한 칸 더 넓어진 만큼 패널 폭도 같이 늘림 (470 → 490).
+        GameObject group = Rect(transform, "BodyPipHud", Anchor.TopLeft, new Vector2(30f, -30f), new Vector2(490f, 176f));
         Image backing = group.AddComponent<Image>();
         SetRoundedImage(backing, roundedPanelSprite);
         backing.color = new Color(0.17f, 0.15f, 0.13f, 0.10f);
@@ -863,7 +865,8 @@ void Awake()
 
         float rowX = 114f;
         BuildPartRow(group.transform, "EyesRow", HudPartIcon.Eye, BodySlot.EyeLeft, 2, BodySlot.EyeRight, 2, new Vector2(rowX, -10f), false);
-        BuildPartRow(group.transform, "ArmsRow", HudPartIcon.Arm, BodySlot.ArmLeft, 3, BodySlot.ArmRight, 3, new Vector2(rowX, -46f), false);
+        // 팔 최대 HP가 4로 늘어서 핍도 4칸씩 그린다.
+        BuildPartRow(group.transform, "ArmsRow", HudPartIcon.Arm, BodySlot.ArmLeft, 4, BodySlot.ArmRight, 4, new Vector2(rowX, -46f), false);
         BuildPartRow(group.transform, "LegsRow", HudPartIcon.Leg, BodySlot.LegLeft, 3, BodySlot.LegRight, 3, new Vector2(rowX, -82f), false);
     }
 

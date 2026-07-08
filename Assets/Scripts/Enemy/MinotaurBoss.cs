@@ -1134,6 +1134,10 @@ public class MinotaurBoss : EnemyBase
                 playerController = po.GetComponent<PlayerController>();
         }
 
+        // 이 컷신(줌인→유지→복귀) 내내 확실히 멈춰있도록 하드 락을 건다. 아래 각 단계에서
+        // 계속 호출하는 LockMovement(0.3f)는 보조 안전장치로 그대로 둔다.
+        playerController?.SetHardLocked(true);
+
         Vector3 arenaCamPos = cam != null ? cam.transform.position : Vector3.zero;
         float arenaCamSize = cam != null ? cam.orthographicSize : 6f;
         Vector3 focusPos = new Vector3(transform.position.x, transform.position.y, arenaCamPos.z);
@@ -1206,7 +1210,7 @@ public class MinotaurBoss : EnemyBase
         // req B2: 3웨이브 내내 숨쉬기 빠르게 유지 / 화면은 살짝 붉은 상태 유지
         breathAnimator?.SetSpeedMultiplier(3f);
         SetWave3RedAlpha(0.12f);
-        // 이후로 LockMovement를 더 호출하지 않으므로 플레이어 이동이 곧 풀린다.
+        playerController?.SetHardLocked(false);
     }
 
     void EnsureWave3RedOverlay()
