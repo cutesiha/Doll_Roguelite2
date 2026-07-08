@@ -544,6 +544,8 @@ public class ItemInventoryManager : MonoBehaviour
 
     public void NotifyEnemyKilled(Vector3 deathPosition)
     {
+        TryDropRagOnKill(deathPosition);
+
         // 소모성 아이템(CoinOnKill) 효과: 기간 중 확정 드랍
         if (Time.time < coinOnKillUntil)
         {
@@ -555,6 +557,20 @@ public class ItemInventoryManager : MonoBehaviour
         float chance = settings != null ? settings.coinDropChance : 0.30f;
         if (UnityEngine.Random.value < chance)
             SpawnCoinAt(deathPosition);
+    }
+
+    // 자루가방(몸통 아이템) 효과: 적 처치 시 이펙트에 저장된 확률로 누더기 드랍.
+    void TryDropRagOnKill(Vector3 position)
+    {
+        ItemData body = GetEquipped(ItemEquipLocation.Body);
+        ItemEffectData ragOnKill = body != null ? body.GetEffect(ItemEffectType.RagOnKill) : null;
+        if (ragOnKill == null || UnityEngine.Random.value >= ragOnKill.value)
+            return;
+
+        ItemData rag = ItemCatalog.Find("rag");
+        ItemWorldPickup pickup = ItemDropSpawner.Spawn(rag, position, false, 0);
+        pickup?.Toss(position);
+        ItemDropParticleEffect.Spawn(position);
     }
 
     void SpawnCoinAt(Vector3 position)

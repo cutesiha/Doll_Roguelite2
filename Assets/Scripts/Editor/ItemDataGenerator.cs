@@ -49,11 +49,18 @@ public static class ItemDataGenerator
             ItemPlaceholderShape.Square, new Color(0.82f, 0.42f, 0.45f, 1f),
             E(ItemEffectType.InventoryCapacity, 16f));
 
-        Create("round_pin", "원형 시침핀", "피격 시 사방으로 시침핀이 발사되며 각각 데미지 5.00",
+        Create("round_pin", "원형 시침핀", "피격 시 사방으로 시침핀이 발사되며 각각 데미지 0.50",
             ItemCategory.MiddleBossRoom, ItemType.BodyPart, ItemEquipLocation.Body,
-            ItemAcquisitionLocation.MiddleBossRoom, false, 5f, 0f, 0f, 26,
+            ItemAcquisitionLocation.MiddleBossRoom, false, 0.5f, 0f, 0f, 26,
             ItemPlaceholderShape.Circle, new Color(0.88f, 0.74f, 0.68f, 1f),
-            E(ItemEffectType.NeedleBurstOnHit, 5f));
+            E(ItemEffectType.NeedleBurstOnHit, 0.5f));
+        SetProjectileSprite("round_pin", "Assets/Sprites/Item/Itemeffect/시침 공격.png");
+
+        Create("sack_bag", "자루가방", "적 처치 시 20% 확률로 누더기 드랍",
+            ItemCategory.MiddleBossRoom, ItemType.BodyPart, ItemEquipLocation.Body,
+            ItemAcquisitionLocation.MiddleBossRoom, false, 0.2f, 0f, 0f, 24,
+            ItemPlaceholderShape.Square, new Color(0.82f, 0.72f, 0.55f, 1f),
+            E(ItemEffectType.RagOnKill, 0.2f));
 
         Create("ribbon", "리본", "이동속도 +1.00",
             ItemCategory.MiddleBossRoom, ItemType.BodyPart, ItemEquipLocation.Leg,
@@ -99,6 +106,13 @@ public static class ItemDataGenerator
             E(ItemEffectType.InventoryCapacity, 4f),
             E(ItemEffectType.MoveSpeed, 1f),
             E(ItemEffectType.RightArmDamage, 2f));
+
+        Create("sunflower", "해바라기", "해바라기가 날아간 뒤 십자 모양으로 퍼지며 각각 데미지 3.00",
+            ItemCategory.ChallengeRoom, ItemType.BodyPart, ItemEquipLocation.Arm,
+            ItemAcquisitionLocation.ChallengeRoom, false, 3f, 0f, 0.6f, 26,
+            ItemPlaceholderShape.Circle, new Color(1f, 0.82f, 0.15f, 1f),
+            E(ItemEffectType.SunflowerBurst, 3f, 0.6f));
+        SetProjectileSprite("sunflower", "Assets/Sprites/Item/Itemeffect/해바라기1.png");
 
         ItemAcquisitionLocation shopCondition = ItemAcquisitionLocation.ShopRoom | ItemAcquisitionLocation.ConditionRoom;
 

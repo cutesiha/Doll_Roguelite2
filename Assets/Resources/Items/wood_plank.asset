@@ -31,8 +31,12 @@ MonoBehaviour:
     duration: 0
   sprite: {fileID: 21300000, guid: 1008d42cf0354984a91764f421e29b49, type: 3}
   projectileSprite: {fileID: 6564845988308305418, guid: f81f719e7188e3e44a222768ef4c8c98, type: 3}
+  projectileSprite2: {fileID: 0}
+  projectileSprite3: {fileID: 0}
   equippedSpriteLeft: {fileID: 21300000, guid: 0ff277d38e390e74e9052f1d43fbacb8, type: 3}
   equippedSpriteRight: {fileID: 21300000, guid: 808bd09e588158b4e990f6658d7e7a50, type: 3}
+  equippedSpriteBody: {fileID: 0}
   placeholderShape: 0
   placeholderColor: {r: 0.55, g: 0.32, b: 0.14, a: 1}
   worldScale: 2.8498912
+  equippedScale: 1
