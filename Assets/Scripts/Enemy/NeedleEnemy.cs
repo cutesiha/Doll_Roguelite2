@@ -188,11 +188,11 @@ public class NeedleEnemy : EnemyBase
             return sprite;
 
 #if UNITY_EDITOR
-        Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/enemy/" + spriteName + ".png").OfType<Sprite>().ToArray();
+        Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Sprites/enemy/" + spriteName + ".png").OfType<Sprite>().ToArray();
         if (sprites.Length > 0)
             return sprites[0];
 
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + spriteName + ".png");
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/enemy/" + spriteName + ".png");
 #else
         return null;
 #endif

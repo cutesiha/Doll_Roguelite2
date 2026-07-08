@@ -3531,12 +3531,12 @@ public class BookBossController : MonoBehaviour
             return sprite;
 
 #if UNITY_EDITOR
-        Object[] all = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/enemy/" + spriteName + ".png");
+        Object[] all = AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Sprites/enemy/" + spriteName + ".png");
         for (int i = 0; i < all.Length; i++)
             if (all[i] is Sprite found)
                 return found;
 
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + spriteName + ".png");
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/enemy/" + spriteName + ".png");
 #else
         return null;
 #endif

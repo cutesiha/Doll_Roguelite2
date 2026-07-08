@@ -45,7 +45,7 @@ public class SmallButtonEnemy : EnemyBase
         Sprite sprite = Resources.Load<Sprite>("Sprites/enemy/" + fallbackSpriteName);
 #if UNITY_EDITOR
         if (sprite == null)
-            sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + fallbackSpriteName + ".png");
+            sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/enemy/" + fallbackSpriteName + ".png");
 #endif
         if (sprite == null)
             sprite = FallbackEnemySprite();

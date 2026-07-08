@@ -1334,7 +1334,7 @@ public class MinotaurBoss : EnemyBase
         Sprite sprite = Resources.Load<Sprite>("Sprites/enemy/" + spriteName);
 #if UNITY_EDITOR
         if (sprite == null)
-            sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + spriteName + ".png");
+            sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/enemy/" + spriteName + ".png");
 #endif
         if (sprite != null)
             bossRenderer.sprite = sprite;
@@ -1346,7 +1346,7 @@ public class MinotaurBoss : EnemyBase
 #if UNITY_EDITOR
     Sprite LoadEditorSprite(string frameName)
     {
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + frameName + ".png");
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/enemy/" + frameName + ".png");
     }
 #endif
 }

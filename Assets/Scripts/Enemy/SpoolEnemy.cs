@@ -198,7 +198,7 @@ public class SpoolEnemy : EnemyBase
             return sprite;
 
 #if UNITY_EDITOR
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + spriteName + ".png");
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/enemy/" + spriteName + ".png");
 #else
         return null;
 #endif

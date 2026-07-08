@@ -256,7 +256,7 @@ public class RibbonEnemy : EnemyBase
 
 #if UNITY_EDITOR
         if (ribbonSprite == null)
-            ribbonSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/enemy/" + fallbackSpriteName + ".png");
+            ribbonSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/enemy/" + fallbackSpriteName + ".png");
 #endif
     }
 

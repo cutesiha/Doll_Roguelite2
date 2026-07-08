@@ -328,7 +328,7 @@ public class EnemyBase : MonoBehaviour
             return SortSprites(frames);
 
 #if UNITY_EDITOR
-        return SortSprites(AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/enemy/" + spriteName + ".png").OfType<Sprite>().ToArray());
+        return SortSprites(AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Sprites/enemy/" + spriteName + ".png").OfType<Sprite>().ToArray());
 #else
         return new Sprite[0];
 #endif
