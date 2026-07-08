@@ -218,7 +218,11 @@ public class SpoolEnemy : EnemyBase
 
     void UpdateGrowingStrands(List<Strand> plannedStrands, float t)
     {
-        for (int i = 0; i < plannedStrands.Count; i++)
+        // 공격 도중 이 적이 죽으면 Die()가 activeStrands를 먼저 비우는데, 그 뒤에도
+        // 이 코루틴이 한 프레임 더 돌 수 있어 plannedStrands 기준으로만 돌면 범위를
+        // 벗어난다. 더 작은 쪽 개수로 방어한다.
+        int count = Mathf.Min(plannedStrands.Count, activeStrands.Count);
+        for (int i = 0; i < count; i++)
         {
             Strand active = activeStrands[i];
             active.end = Vector2.Lerp(plannedStrands[i].start, plannedStrands[i].end, t);

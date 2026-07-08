@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 9206db1efff153342be4b298faf6ed6e
+guid: 07ceb2c25deec5a4789fe43a91003f5f
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3460760415368841694
-    second: "\uBCC41_0"
+      213: -6437523122885073462
+    second: "\uAE30\uBC1C eq_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 0
+    filterMode: 1
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 30
+  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: "\uBCC41_0"
+      name: "\uAE30\uBC1C eq_0"
       rect:
         serializedVersion: 2
-        x: 3
-        y: 5
-        width: 24
-        height: 24
+        x: 112
+        y: 124
+        width: 142
+        height: 173
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ed90bca0347170030800000000000000
-      internalID: 3460760415368841694
+      spriteID: ac56213c3d259a6a0800000000000000
+      internalID: -6437523122885073462
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      "\uBCC41_0": 3460760415368841694
+      "\uAE30\uBC1C eq_0": -6437523122885073462
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

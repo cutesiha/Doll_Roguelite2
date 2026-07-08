@@ -312,7 +312,7 @@ MonoBehaviour:
   fistRotationOffset: 0
   fistScale: {x: 1.65, y: 1.65}
   attackStartOffset: 0.22
-  attackDistanceBonus: 0.26
+  attackDistanceBonus: 0.3
   verticalAttackDistanceBonus: 0.06
   useTrailEffect: 0
   trailSpawnInterval: 0.025

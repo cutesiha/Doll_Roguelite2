@@ -205,7 +205,9 @@ public class PlayerItemEffects : MonoBehaviour
         ItemEffectData nail = arm.GetEffect(ItemEffectType.NailProjectile);
         if (nail != null)
         {
-            int damage = Mathf.Max(1, Mathf.RoundToInt(ModifiedAttackDamage(leftArm, Mathf.Max(1f, nail.value))));
+            // 못 데미지는 1 미만(소수)일 수 있다 - EnemyBase.TakeDamage(float)가 맞을 때마다
+            // 남은 소수점을 누적했다가 1이 채워지면 실제 HP 1을 깎는다.
+            float damage = ModifiedAttackDamage(leftArm, Mathf.Max(0f, nail.value));
             ItemProjectile.Spawn(origin, direction, 12f, damage, 1.4f, 0.28f, false, arm.PlaceholderColor, ItemPlaceholderShape.Diamond, arm.ProjectileSprite);
             return true;
         }

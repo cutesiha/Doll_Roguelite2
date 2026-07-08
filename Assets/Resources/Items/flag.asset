@@ -35,13 +35,13 @@ MonoBehaviour:
   - effectType: 3
     value: 2
     duration: 0
-  sprite: {fileID: 0}
+  sprite: {fileID: -6661956398358179675, guid: 400bf7107ec0cc14b8f083ff4dcc9b46, type: 3}
   projectileSprite: {fileID: 0}
   projectileSprite2: {fileID: 0}
   projectileSprite3: {fileID: 0}
   equippedSpriteLeft: {fileID: 0}
   equippedSpriteRight: {fileID: 0}
-  equippedSpriteBody: {fileID: 0}
+  equippedSpriteBody: {fileID: -6437523122885073462, guid: 07ceb2c25deec5a4789fe43a91003f5f, type: 3}
   placeholderShape: 3
   placeholderColor: {r: 0.85, g: 0.18, b: 0.2, a: 1}
   worldScale: 2.28
