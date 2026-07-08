@@ -1675,7 +1675,9 @@ void NormalizeCanvasTransform()
             Image icon = GetSlotItemIcon(_storageImg[slotIdx]);
             if (icon != null) icon.color = Color.clear;
 
-            SetCoinGrid(_storageImg[slotIdx], count, itemInv.CoinItemRef);
+            // 3x3 격자가 아니라, 레거시 동전 더미와 동일한 비스듬히 겹친 더미 모양으로 표시한다.
+            SetCoinGrid(_storageImg[slotIdx], 0, null);
+            SetCoinPile(_storageImg[slotIdx], count, itemInv.CoinItemRef != null ? itemInv.CoinItemRef.Sprite : null);
             if (_storageName[slotIdx] != null) _storageName[slotIdx].text = "동전 ×" + count;
             if (_storageHp[slotIdx]   != null) _storageHp[slotIdx].text  = "";
 
