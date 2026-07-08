@@ -333,6 +333,7 @@ MonoBehaviour:
   attackCooldown: 0.3
   axeAttackCooldown: 2
   starAttackCooldown: 1.25
+  sunflowerAttackCooldown: 1
   attackSize: {x: 1, y: 1}
   hitAreaExtraLength: 0.35
   attackFacingLockDuration: 0.25

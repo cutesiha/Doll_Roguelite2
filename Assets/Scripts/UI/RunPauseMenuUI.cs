@@ -41,6 +41,9 @@ public class RunPauseMenuUI : MonoBehaviour
     Coroutine menuPanelAnimationRoutine;
     Vector2 menuPanelShownPosition;
     bool hasMenuPanelShownPosition;
+    // RunMenuPanel이 씬/프리팹에 이미 손으로 배치돼 있었는지 여부. true면 크기를 하드코딩된
+    // 기본값으로 되돌리지 않고 에디터에서 잡아둔 크기를 그대로 유지한다.
+    bool menuPanelPreExisting;
 
     static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
     static readonly Color TextColor = new Color(0.17f, 0.11f, 0.06f, 1f);
@@ -158,7 +161,11 @@ void Build()
     void FindExistingPanels()
     {
         if (menuPanel == null)
+        {
             menuPanel = FindDirectChild("RunMenuPanel");
+            if (menuPanel != null)
+                menuPanelPreExisting = true;
+        }
         if (settingsPanel == null)
             settingsPanel = FindDirectChild("RunSettingsPanel");
         if (savePanel == null)
@@ -242,14 +249,22 @@ void Build()
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = menuPanelOffset;
-        rect.sizeDelta = MenuPanelSize;
+        // 이미 배치돼 있던(에디터에서 손으로 만든) 패널이면 크기를 하드코딩된 기본값으로
+        // 되돌리지 않는다 (디자인해둔 크기가 매번 720x360으로 뭉개지는 문제).
+        if (!menuPanelPreExisting)
+            rect.sizeDelta = MenuPanelSize;
         rect.localScale = Vector3.one;
 
         Image image = menuPanel.GetComponent<Image>();
         if (image == null)
             image = menuPanel.AddComponent<Image>();
-        image.sprite = optionBackgroundSprite;
-        image.type = optionBackgroundSprite != null && optionBackgroundSprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+        // 이미 씬/프리팹에서 직접 지정해둔 배경 스프라이트가 있으면 덮어쓰지 않는다
+        // (에디터에서 꾸며둔 테두리 디자인이 런타임에 기본 스프라이트로 뭉개지는 문제).
+        if (image.sprite == null)
+        {
+            image.sprite = optionBackgroundSprite;
+            image.type = optionBackgroundSprite != null && optionBackgroundSprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+        }
         image.color = Color.white;
         image.raycastTarget = true;
     }
@@ -940,8 +955,12 @@ void Build()
         if (image == null)
             image = existing.gameObject.AddComponent<Image>();
 
-        image.sprite = questionSprite;
-        image.type = questionSprite != null && questionSprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+        // 씬/프리팹에 이미 지정된 버튼 배경 스프라이트가 있으면 유지한다.
+        if (image.sprite == null)
+        {
+            image.sprite = questionSprite;
+            image.type = questionSprite != null && questionSprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+        }
         image.color = Color.white;
         image.raycastTarget = true;
 

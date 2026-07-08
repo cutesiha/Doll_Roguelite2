@@ -116,6 +116,10 @@ public class TutorialSceneController : MonoBehaviour
         EnsureEventSystem();
         EnsureTutorialCanvas();
         EnsureRunHud();
+        // 다른 방 컨트롤러(Room/SpecialRoomController 등)와 동일하게 맵 런 상태를 미리 만들어둔다.
+        // 이게 없으면 M을 눌러 지도를 열기 전까지 HUD의 미니맵 아이콘이 최신 미리보기 대신
+        // 예전 자리표시자 아이콘으로 남아있는다.
+        MapRunState.EnsureRun();
         BuildUi();
         BuildArrow();
         BuildDoor();
