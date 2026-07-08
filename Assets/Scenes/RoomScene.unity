@@ -842,9 +842,9 @@ MonoBehaviour:
   missingLegSpeedMultiplier: 0.5
   attackDamage: 1
   attackCooldown: 0.3
-  attackDistance: 1.05
+  attackDistance: 1.4
   attackDistanceBonus: 0.26
-  verticalAttackDistanceBonus: 0.06
+  verticalAttackDistanceBonus: 0.32
   attackSize: {x: 1, y: 1}
   attackDuration: 0.12
   fistScale: {x: 1.65, y: 1.65}
@@ -1617,6 +1617,10 @@ PrefabInstance:
     - target: {fileID: 987664835448091773, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
       propertyPath: m_Name
       value: Item_sunflower
+      objectReference: {fileID: 0}
+    - target: {fileID: 987664835448091773, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3177,6 +3181,10 @@ PrefabInstance:
     - target: {fileID: 1138593586368893378, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_Name
       value: Item_round_pin
+      objectReference: {fileID: 0}
+    - target: {fileID: 1138593586368893378, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3278713255110097848, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -8568,6 +8576,10 @@ PrefabInstance:
     - target: {fileID: 7596980138666810660, guid: d042563bdbb3046a5eaef2abe17e3fb2, type: 3}
       propertyPath: m_Name
       value: Item_button_eye
+      objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: d042563bdbb3046a5eaef2abe17e3fb2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

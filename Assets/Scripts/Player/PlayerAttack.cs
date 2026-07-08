@@ -52,7 +52,7 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] Transform rightAttackStart;
     [SerializeField] bool useFixedBodyAttackOrigin = true;
     [FormerlySerializedAs("attackRange")]
-    [SerializeField, Min(0f)] float attackDistance = 0.55f;
+    [SerializeField, Min(0f)] float attackDistance = 1.4f;
     [FormerlySerializedAs("flashDuration")]
     [SerializeField, Range(0.05f, 0.5f)] float attackDuration = 0.15f;
     [SerializeField, Min(0f)] float swingArcHeight = 0.22f;
@@ -63,7 +63,7 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField, Min(0f)] float attackStartOffset = 0.22f;
     [FormerlySerializedAs("sideAttackDistanceBonus")]
     [SerializeField, Min(0f)] float attackDistanceBonus = 0.2f;
-    [SerializeField, Min(0f)] float verticalAttackDistanceBonus = 0.06f;
+    [SerializeField, Min(0f)] float verticalAttackDistanceBonus = 0.32f;
 
     [Header("Trail")]
     [SerializeField] bool useTrailEffect = true;

@@ -1493,6 +1493,7 @@ MonoBehaviour:
   startSceneName: StartScene
   fadeDuration: 0.35
   panelLineColor: {r: 0.3, g: 0.18, b: 0.1, a: 1}
+  menuPanelOffset: {x: 0, y: 0}
 --- !u!1 &755505356616699420
 GameObject:
   m_ObjectHideFlags: 0
@@ -9123,7 +9124,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &5059659316355507276
 RectTransform:
   m_ObjectHideFlags: 0
