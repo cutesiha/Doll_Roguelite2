@@ -8685,6 +8685,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 363284659066238242, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 430652816770386933, guid: 1126bc8203ab48941ab16d832b3ef907, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4280428075

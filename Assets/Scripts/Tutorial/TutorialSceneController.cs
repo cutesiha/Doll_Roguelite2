@@ -660,7 +660,11 @@ public class TutorialSceneController : MonoBehaviour
         canvasObject.SetActive(true);
         tutorialCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         tutorialCanvas.overrideSorting = true;
-        tutorialCanvas.sortingOrder = 900;
+        // RunHudUI의 캔버스(지도/인벤토리/일시정지 패널 포함)는 sortingOrder 80으로 렌더된다.
+        // 여기가 900이면 별개의 Canvas라 항상 RunHudUI보다 앞에 그려져, 튜토리얼이 "M을 눌러
+        // 지도를 보라"고 안내해도 지도 패널이 이 캔버스 뒤에 가려져 안 보이는 문제가 있었다.
+        // RunHudUI보다 살짝 낮게 둬서 지도/인벤토리/미니맵이 튜토리얼 UI 위에 항상 보이게 한다.
+        tutorialCanvas.sortingOrder = 78;
 
         CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
         if (scaler == null)

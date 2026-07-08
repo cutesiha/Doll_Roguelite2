@@ -2299,6 +2299,7 @@ void Awake()
     void PlayClickSound()
     {
         SoundManager.PlayClick();
+        RunUiPauseManager.ClearUiSelection();
     }
 
     void HandleInventoryHotkey()
