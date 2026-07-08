@@ -299,6 +299,50 @@ public class BookBossController : MonoBehaviour
             arenaSize.x * 0.5f / framingAspect + cameraFramePadding);
     }
 
+    // 최종보스를 처치한 직후, 아레나 전체를 비추던 카메라를 플레이어 쪽으로 확대한다.
+    void ZoomCameraToPlayerForEnding()
+    {
+        Camera cam = Camera.main;
+        if (cam == null)
+            return;
+
+        Vector3 startPosition = cam.transform.position;
+        Vector3 targetPosition = player != null
+            ? new Vector3(player.position.x, player.position.y, startPosition.z)
+            : startPosition;
+        float targetSize = EndingCloseUpCameraSize(cam);
+
+        if (cameraZoomRoutine != null)
+            StopCoroutine(cameraZoomRoutine);
+
+        cameraZoomRoutine = StartCoroutine(SmoothCameraFrame(
+            cam,
+            startPosition,
+            targetPosition,
+            cam.orthographicSize,
+            targetSize,
+            cameraZoomDuration,
+            () =>
+            {
+                PlayerCameraFollow follow = cam.GetComponent<PlayerCameraFollow>();
+                if (follow != null)
+                {
+                    follow.ConfigureBounds(arenaSize, arenaCenter, targetSize, true);
+                    follow.enabled = true;
+                }
+            }));
+    }
+
+    // Full HD(16:9) 기준의 살짝 확대된 클로즈업 사이즈. 화면이 더 넓으면 세로 프레이밍을 유지하도록 늘어난다.
+    float EndingCloseUpCameraSize(Camera cam)
+    {
+        const float closeUpHalfHeight = 4.2f;
+        const float fullHdAspect = 16f / 9f;
+        float aspect = cam.aspect > 0.01f ? cam.aspect : fullHdAspect;
+        float framingAspect = Mathf.Max(aspect, fullHdAspect);
+        return closeUpHalfHeight * (framingAspect / fullHdAspect);
+    }
+
     void RestoreCameraAfterBoss()
     {
         Camera cam = Camera.main;
@@ -1957,6 +2001,8 @@ public class BookBossController : MonoBehaviour
         if (playerController != null)
             playerController.ApplyTemporarySpeedMultiplier(1f, 0f);
 
+        ZoomCameraToPlayerForEnding();
+
         Vector2 endingPos = body != null ? body.BasePosition : arenaCenter;
         yield return StartCoroutine(FadeOutBossBodyWithScraps(endingPos));
 
@@ -1970,12 +2016,12 @@ public class BookBossController : MonoBehaviour
 
         endingSentenceAura = CreateSoftAura(endingPos, new Color(1f, 0.68f, 0.38f, 0.26f), 5.4f, 88);
         endingSentenceParticles = CreateSoftParticles("EndingSentenceParticles", endingPos, new Color(1f, 0.73f, 0.48f, 0.72f), 40, 0.22f, 0.35f, 93);
-        endingPromptText = CreateWorldText("[E] 결말 다시 쓰기", endingPos + new Vector2(0f, 1.9f), 1.0f, new Color(1f, 0.86f, 0.55f, 0f), 94);
+        endingPromptText = CreateWorldText("[E] 키를 눌러 상호작용", endingPos + new Vector2(0f, 1.9f), 2.0f, new Color(1f, 1f, 1f, 0f), 94);
 
         while (!endingSolved)
         {
             float distance = player != null ? Vector2.Distance(player.position, endingPos) : 999f;
-            bool near = distance <= 3.2f;
+            bool near = distance <= 3.2f && !endingPanelOpen;
             SetAuraVisible(endingSentenceAura, endingSentenceParticles, near);
             if (endingPromptText != null)
             {
@@ -2388,7 +2434,7 @@ public class BookBossController : MonoBehaviour
 
         finalDoorAura = CreateSoftAura(doorPos, new Color(1f, 0.72f, 0.42f, 0.28f), 4.6f, 89);
         finalDoorParticles = CreateSoftParticles("FinalDoorParticles", doorPos, new Color(1f, 0.78f, 0.50f, 0.8f), 34, 0.18f, 0.28f, 94);
-        TextMeshPro enterPrompt = CreateWorldText("[Enter] 바깥세상으로", doorPos + new Vector2(0f, 2.25f), 0.95f, new Color(1f, 0.88f, 0.56f, 0f), 96);
+        TextMeshPro enterPrompt = CreateWorldText("[Enter]를 눌러 나가기", doorPos + new Vector2(0f, 2.25f), 2.0f, new Color(1f, 1f, 1f, 0f), 96);
 
         float elapsed = 0f;
         while (elapsed < 2.4f && renderer != null)
@@ -2448,6 +2494,56 @@ public class BookBossController : MonoBehaviour
             elapsed += Time.deltaTime;
             yield return null;
         }
+        image.color = Color.white;
+
+        yield return StartCoroutine(PlayEndingNarrationRoutine(root));
+    }
+
+    static readonly string[] EndingNarrationSentences =
+    {
+        "나는 아직 내가 누구인지 모른다.",
+        "하지만 멈춰 있던 시간은 끝났다.",
+        "나를 알아가기 위해,",
+        "나는 바깥세상으로 나아간다.",
+    };
+
+    IEnumerator PlayEndingNarrationRoutine(RectTransform canvasRoot)
+    {
+        TextMeshProUGUI narrationText = AddUIText(canvasRoot, "EndingNarrationText", "", Vector2.zero, new Vector2(1500f, 320f), 64f, Color.black, FontStyles.Bold);
+
+        for (int i = 0; i < EndingNarrationSentences.Length; i++)
+        {
+            yield return StartCoroutine(TypeEndingSentence(narrationText, EndingNarrationSentences[i]));
+            yield return StartCoroutine(WaitForEndingAdvanceInput());
+        }
+
+        SceneManager.LoadScene("StartScene");
+    }
+
+    IEnumerator TypeEndingSentence(TextMeshProUGUI text, string sentence)
+    {
+        text.text = "";
+        for (int i = 0; i < sentence.Length; i++)
+        {
+            text.text += sentence[i];
+            yield return new WaitForSeconds(0.06f);
+        }
+    }
+
+    IEnumerator WaitForEndingAdvanceInput()
+    {
+        // 문장이 다 써지자마자 이전 입력이 그대로 씹혀 넘어가지 않도록 한 프레임 쉬어간다.
+        yield return null;
+        while (true)
+        {
+            Keyboard keyboard = Keyboard.current;
+            Mouse mouse = Mouse.current;
+            bool advance = (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame))
+                || (mouse != null && mouse.leftButton.wasPressedThisFrame);
+            if (advance)
+                yield break;
+            yield return null;
+        }
     }
 
     void AddEndingPoolWord(string word)
@@ -2505,8 +2601,23 @@ public class BookBossController : MonoBehaviour
 
         ParticleSystemRenderer renderer = ps.GetComponent<ParticleSystemRenderer>();
         renderer.sortingOrder = order;
+        renderer.material = SoftParticleMaterial();
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         return ps;
+    }
+
+    static Material softParticleMaterial;
+
+    // ParticleSystemRenderer는 머티리얼을 지정하지 않으면 기본 셰이더가 깨져 보라색으로 렌더링된다.
+    // InteractableHighlight의 부드러운 원형 텍스처를 재사용해 은은한 입자로 보이게 한다.
+    static Material SoftParticleMaterial()
+    {
+        if (softParticleMaterial != null)
+            return softParticleMaterial;
+
+        softParticleMaterial = new Material(Shader.Find("Sprites/Default"));
+        softParticleMaterial.mainTexture = InteractableHighlight.SoftGlowSprite().texture;
+        return softParticleMaterial;
     }
 
     void SetAuraVisible(GameObject aura, ParticleSystem particles, bool visible)

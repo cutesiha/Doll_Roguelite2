@@ -1075,14 +1075,11 @@ public class MinotaurBoss : EnemyBase
     {
         RunHudUI.ShowJudgementTimer(message, color);
 
-        // 인벤토리/지도 메뉴를 열면 Time.timeScale이 0이 되는데, 이 두 타이머(1웨이브 판정 /
-        // 2웨이브 도안 맞추기)만큼은 메뉴를 열어도 실제 시간으로 계속 흘러야 한다 — 메뉴 닫자마자
-        // 타이머가 0이 돼서 바로 맞는 식으로. 그래서 Time.deltaTime 대신 unscaledDeltaTime을 쓴다.
         float remaining = duration;
         while (remaining > 0f && !bossDefeated)
         {
             RunHudUI.SetJudgementTimer(remaining, duration);
-            remaining -= Time.unscaledDeltaTime;
+            remaining -= Time.deltaTime;
             yield return null;
         }
 

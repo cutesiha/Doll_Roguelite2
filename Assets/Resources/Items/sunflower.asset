@@ -21,7 +21,7 @@ MonoBehaviour:
   equipLocation: 2
   acquisitionLocations: 4
   consumable: 0
-  value: 0.6
+  value: 1
   secondaryValue: 0
   duration: 0.6
   shopPrice: 26
@@ -36,6 +36,7 @@ MonoBehaviour:
   equippedSpriteLeft: {fileID: -6057341749681122140, guid: 02d54fcf7ccf71f47a80eafcc824fe33, type: 3}
   equippedSpriteRight: {fileID: -8336714215929588512, guid: f2d3564c07e80964ab440c0e41d8ad0b, type: 3}
   equippedSpriteBody: {fileID: 0}
+  shieldPipSprite: {fileID: 0}
   placeholderShape: 1
   placeholderColor: {r: 1, g: 0.82, b: 0.15, a: 1}
   worldScale: 2.8498912

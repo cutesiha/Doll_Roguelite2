@@ -191,7 +191,7 @@ public class InteractableHighlight : MonoBehaviour
         }
     }
 
-    static Sprite SoftGlowSprite()
+    public static Sprite SoftGlowSprite()
     {
         if (softGlowSprite != null)
             return softGlowSprite;
