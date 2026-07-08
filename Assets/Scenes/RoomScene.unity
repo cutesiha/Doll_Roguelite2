@@ -1018,6 +1018,63 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 2.34, y: 2.6999998}
   m_EdgeRadius: 0
+--- !u!1001 &191638831
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -9.546457
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -7.807966
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 103917549386319642, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 987664835448091773, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_Name
+      value: Item_sunflower (1)
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
 --- !u!1 &248893106
 GameObject:
   m_ObjectHideFlags: 0
@@ -9744,3 +9801,4 @@ SceneRoots:
   - {fileID: 1921259364}
   - {fileID: 306844541}
   - {fileID: 669073310}
+  - {fileID: 191638831}

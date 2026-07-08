@@ -700,6 +700,11 @@ public class TutorialSceneController : MonoBehaviour
         if (runHud == null)
             return;
 
+        // 원인 불명으로 RunHudCanvas가 비활성 상태로 발견되는 경우가 있어(M키로 지도가
+        // 안 열리는 버그의 원인이었음) 방어적으로 항상 켜준다.
+        if (!runHud.gameObject.activeSelf)
+            runHud.gameObject.SetActive(true);
+
         inventoryUI = runHud.GetComponentInChildren<InventoryUI>(true);
         pauseMenuUI = runHud.GetComponent<RunPauseMenuUI>();
     }

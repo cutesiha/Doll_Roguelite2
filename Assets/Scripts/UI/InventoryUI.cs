@@ -428,7 +428,9 @@ void Start()
         get
         {
             EnsurePanelReference();
-            return _panel != null && _panel.activeSelf;
+            // activeSelf만 보면 부모(InventoryCanvas 등)가 꺼져 있어도 프리팹에 authored된
+            // activeSelf=true 값이 그대로 남아 "열려있다"고 잘못 판정할 수 있다.
+            return _panel != null && _panel.activeInHierarchy;
         }
     }
 
