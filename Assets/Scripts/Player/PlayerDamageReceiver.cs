@@ -249,21 +249,19 @@ public class PlayerDamageReceiver : MonoBehaviour
                 DropPart(brokenItemData.GetEquippedSprite(slot), sourceRenderer, slot);
         }
 
-        if (AllArmsAndLegsMissing(inventory))
+        // 이 체크는 DamageNextBodyTarget(전투 데미지로 부위가 부서졌을 때)에서만 호출되므로,
+        // 인벤토리에서 직접 팔을 떼는 것과는 무관하게 "공격으로 양팔이 모두 파괴됐을 때"만 사망한다.
+        if (BothArmsMissing(inventory))
             TriggerDeath();
 
         return true;
     }
 
-    bool AllArmsAndLegsMissing(InventoryManager inventory)
+    bool BothArmsMissing(InventoryManager inventory)
     {
-        if (inventory == null)
-            return false;
-
-        return !inventory.IsEquipped(BodySlot.ArmLeft)
-            && !inventory.IsEquipped(BodySlot.ArmRight)
-            && !inventory.IsEquipped(BodySlot.LegLeft)
-            && !inventory.IsEquipped(BodySlot.LegRight);
+        return inventory != null
+            && !inventory.IsEquipped(BodySlot.ArmLeft)
+            && !inventory.IsEquipped(BodySlot.ArmRight);
     }
 
     void TriggerDeath()

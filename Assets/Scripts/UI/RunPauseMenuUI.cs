@@ -420,7 +420,7 @@ void Build()
         if (settingsPanel == null)
             return;
 
-        ConfigureTMP(FindDeep(settingsPanel.transform, "OptionTitleText"), "설정 <<", 34f);
+        ConfigureTMP(FindDeep(settingsPanel.transform, "OptionTitleText"), "설정", 34f);
         ConfigureTMP(FindDeep(settingsPanel.transform, "BgmVolumeText"), "BGM 음량", 30f);
         ConfigureTMP(FindDeep(settingsPanel.transform, "SfxVolumeText"), "SFX 음량", 30f);
 
@@ -495,7 +495,7 @@ void Build()
         if (savePanel == null)
             return;
 
-        ConfigureTMP(FindDeep(savePanel.transform, "RoadTitleText"), "저장 <<", 34f);
+        ConfigureTMP(FindDeep(savePanel.transform, "RoadTitleText"), "저장", 34f);
 
         Transform close = FindDeep(savePanel.transform, "RoadCloseHotspot");
         if (close != null)
@@ -536,7 +536,7 @@ void Build()
             saveDateLabels[i] = dateLabel;
         }
 
-        saveStatusLabel = EnsurePanelTMP(savePanel.transform, "RoadEmptySlotMessage", new Rect(111f, 195f, 255f, 35f), 25f);
+        saveStatusLabel = EnsurePanelTMP(savePanel.transform, "RoadEmptySlotMessage", new Rect(111f, 195f, 255f, 35f), 34f);
         RefreshSavePanel();
     }
 
@@ -553,6 +553,7 @@ void Build()
 
         text.font = UIThinDungFont.Get(uiFont);
         text.fontSize = fontSize;
+        text.fontStyle = FontStyles.Bold;
         text.alignment = TextAlignmentOptions.Center;
         text.color = TextColor;
         text.raycastTarget = false;
@@ -1168,6 +1169,7 @@ void Build()
         text.font = UIThinDungFont.Get(uiFont);
         text.text = value;
         text.fontSize = fontSize;
+        text.fontStyle = FontStyles.Bold;
         text.alignment = TextAlignmentOptions.Center;
         text.color = TextColor;
         text.raycastTarget = false;

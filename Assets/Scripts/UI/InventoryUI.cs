@@ -1684,6 +1684,10 @@ void NormalizeCanvasTransform()
             InventoryStorageDragSource dragSource = _storageImg[slotIdx] != null ? _storageImg[slotIdx].GetComponent<InventoryStorageDragSource>() : null;
             if (dragSource != null)
                 dragSource.SetCoinStackIndex(listIdx);
+
+            InventoryItemTooltip coinTooltip = _storageImg[slotIdx] != null ? _storageImg[slotIdx].GetComponent<InventoryItemTooltip>() : null;
+            if (coinTooltip != null)
+                coinTooltip.SetCoinCount(count);
         }
 
         bool[] itemPlaced = new bool[itemStorageCount];

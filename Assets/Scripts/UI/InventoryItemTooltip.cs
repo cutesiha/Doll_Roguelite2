@@ -14,11 +14,14 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] int storageIndex = -1;
     ItemData itemData;
     BodySlot? bodySlot;
+    int coinCount = -1;
 
     public void SetStorageIndex(int index) => storageIndex = index;
-    public void SetItemData(ItemData data) => itemData = data;
+    public void SetItemData(ItemData data) { itemData = data; coinCount = -1; }
     public void SetBodySlot(BodySlot slot) { bodySlot = slot; itemData = null; }
     public void ClearBodySlot() { bodySlot = null; }
+    // 인벤토리 동전 더미(칸 안에 최대 9개까지 쌓임) 호버 툴팁. "1/9" 처럼 개수/9로 표시한다.
+    public void SetCoinCount(int count) { coinCount = count; itemData = null; bodySlot = null; }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
@@ -59,6 +62,9 @@ public class InventoryItemTooltip : MonoBehaviour, IPointerEnterHandler, IPointe
 
     string BuildTooltipText()
     {
+        if (coinCount >= 0)
+            return "<b>동전</b>\n<size=85%>" + coinCount + "/" + InventoryManager.MaxCoinStackCount + "</size>";
+
         ItemData item = itemData;
 
         // BodySlot 장착 아이템 확인

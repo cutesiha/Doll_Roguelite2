@@ -1381,7 +1381,8 @@ public class StartBodyPartSelector : MonoBehaviour
         TextMeshProUGUI text = EnsureTMPText(parent, "RoadEmptySlotMessage");
         text.font = UIThinDungFont.Get();
         text.text = "그 칸에 저장된 파일이 없습니다!";
-        text.fontSize = 25f;
+        text.fontSize = 34f;
+        text.fontStyle = FontStyles.Bold;
         text.alignment = TextAlignmentOptions.Center;
         text.color = WithAlpha(panelLineColor, 0f);
         text.raycastTarget = false;

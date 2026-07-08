@@ -6423,7 +6423,7 @@ MonoBehaviour:
   hitShakeDistance: 0.12
   hitTint: {r: 1, g: 0.28, b: 0.24, a: 1}
   spriteName: mino_jjin
-  bossHp: 120
+  bossHp: 150
   bossScale: 3
   breathAnimator: {fileID: 3100000017}
   introDelay: 1
