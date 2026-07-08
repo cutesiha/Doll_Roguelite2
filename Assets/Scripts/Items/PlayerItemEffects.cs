@@ -26,6 +26,7 @@ public class PlayerItemEffects : MonoBehaviour
     float moveSpeedBonus;
     float leftArmDamageBonus;
     float rightArmDamageBonus;
+    float armAttackCooldownReduction;
     ItemData leftArmItem;
     ItemData rightArmItem;
     ItemData legItem;
@@ -36,6 +37,7 @@ public class PlayerItemEffects : MonoBehaviour
     public float MoveSpeedBonus => moveSpeedBonus;
     public float LeftArmDamageBonus => leftArmDamageBonus;
     public float RightArmDamageBonus => rightArmDamageBonus;
+    public float ArmAttackCooldownReduction => armAttackCooldownReduction;
 
     void Awake()
     {
@@ -108,6 +110,7 @@ public class PlayerItemEffects : MonoBehaviour
         moveSpeedBonus = inventory.RoomMoveSpeedBonus;
         leftArmDamageBonus = inventory.RoomArmDamageBonus;
         rightArmDamageBonus = inventory.RoomArmDamageBonus;
+        armAttackCooldownReduction = 0f;
         AccumulateEquippedEffects(leftEyeItem);
         AccumulateEquippedEffects(rightEyeItem);
         AccumulateEquippedEffects(leftArmItem);
@@ -282,6 +285,9 @@ public class PlayerItemEffects : MonoBehaviour
                 case ItemEffectType.BothArmDamage:
                     leftArmDamageBonus += effect.value;
                     rightArmDamageBonus += effect.value;
+                    break;
+                case ItemEffectType.ArmAttackCooldownReduction:
+                    armAttackCooldownReduction += effect.value;
                     break;
             }
         }

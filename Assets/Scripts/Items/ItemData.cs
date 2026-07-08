@@ -79,7 +79,8 @@ public enum ItemEffectType
     NextRoomShield,
     StarBurst,
     SunflowerBurst,
-    RagOnKill
+    RagOnKill,
+    ArmAttackCooldownReduction
 }
 
 [Serializable]
@@ -135,6 +136,8 @@ public class ItemData : ScriptableObject
     [SerializeField] Sprite equippedSpriteRight;
     [Tooltip("Body 부위에 장착됐을 때 캐릭터에 표시할 전용 스프라이트. Body는 좌우 구분이 없어 이 필드 하나만 쓴다. 비어있으면 sprite를 그대로 사용.")]
     [SerializeField] Sprite equippedSpriteBody;
+    [Tooltip("이 아이템을 신체부위 슬롯에 방어막으로 걸었을 때, 좌측 상단 HP 점 UI에서 그 부위의 마지막 점 자리에 대신 표시할 스프라이트 (누더기 전용).")]
+    [SerializeField] Sprite shieldPipSprite;
     [SerializeField] ItemPlaceholderShape placeholderShape = ItemPlaceholderShape.Square;
     [SerializeField] Color placeholderColor = Color.white;
     [Tooltip("월드에 스폰될 때 적용할 크기. 0 이하이면 타입별 기본 크기를 사용. (아이템 테스트룸에서 조정한 값과 동기화됨)")]
@@ -162,6 +165,7 @@ public class ItemData : ScriptableObject
     public Sprite EquippedSpriteLeft => equippedSpriteLeft;
     public Sprite EquippedSpriteRight => equippedSpriteRight;
     public Sprite EquippedSpriteBody => equippedSpriteBody;
+    public Sprite ShieldPipSprite => shieldPipSprite;
     public ItemPlaceholderShape PlaceholderShape => placeholderShape;
     public Color PlaceholderColor => placeholderColor;
     public float WorldScale => worldScale;

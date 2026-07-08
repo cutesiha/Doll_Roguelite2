@@ -553,6 +553,9 @@ public class DoorTrigger : MonoBehaviour
             playerTransform = go.transform;
     }
 
+    // 예전에는 플레이어가 문보다 위(뒤)에 있으면 문을 앞으로 그려서 "문 뒤로 걸어들어가는" 느낌을
+    // 냈는데, 그 경계값 근처에서 캐릭터 머리 위쪽이 문 그림에 가려지는 문제가 있었다.
+    // 이제는 위치와 무관하게 캐릭터가 항상 문보다 앞에 보이도록 고정한다.
     void ApplyDoorDepthSorting()
     {
         if (doorRenderer == null)
@@ -561,9 +564,7 @@ public class DoorTrigger : MonoBehaviour
         if (playerTransform == null)
             ResolvePlayer();
 
-        int playerOrder = PlayerTopSortingOrder();
-        bool playerAboveDoor = playerTransform != null && playerTransform.position.y > transform.position.y;
-        int doorOrder = playerAboveDoor ? playerOrder + 2 : playerOrder - 2;
+        int doorOrder = PlayerTopSortingOrder() - 2;
         doorRenderer.sortingOrder = doorOrder;
         if (iconRenderer != null)
             iconRenderer.sortingOrder = doorOrder + 1;

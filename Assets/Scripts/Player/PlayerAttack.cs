@@ -91,6 +91,7 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] float attackCooldown = 0.3f;
     // 도끼는 무겁게 느껴지도록 팔당 별도의 긴 재사용대기시간을 쓴다 (반대팔은 기존 속도 유지).
     [SerializeField, Min(0f)] float axeAttackCooldown = 2f;
+    [SerializeField, Min(0f)] float keyringAttackCooldown = 0.5f;
     [SerializeField, Min(0f)] float starAttackCooldown = 1.25f;
     [SerializeField, Min(0f)] float sunflowerAttackCooldown = 1f;
     [SerializeField] Vector2 attackSize = new Vector2(1f, 1f);
@@ -100,6 +101,8 @@ public class PlayerAttack : MonoBehaviour
     [Header("Missing Arm Input")]
     [SerializeField, Min(0f)] float pressTimeout = 0.5f;
     [SerializeField, Min(1)] int requiredPressCount = 3;
+
+    const float MinAttackCooldown = 0.05f;
 
     static readonly Key[] DirKeys = { Key.UpArrow, Key.DownArrow, Key.LeftArrow, Key.RightArrow };
     static readonly Vector2[] DirVectors = { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
@@ -323,9 +326,15 @@ public class PlayerAttack : MonoBehaviour
             itemEffects = GetComponent<PlayerItemEffects>();
         ArmWeaponKind weaponKind = itemEffects != null ? itemEffects.GetArmWeaponKind(leftArm) : ArmWeaponKind.Fist;
         float baseCooldown = weaponKind == ArmWeaponKind.Axe ? axeAttackCooldown
+            : weaponKind == ArmWeaponKind.Keyring ? keyringAttackCooldown
             : weaponKind == ArmWeaponKind.Star ? starAttackCooldown
             : weaponKind == ArmWeaponKind.Sunflower ? sunflowerAttackCooldown
             : attackCooldown;
+
+        // 뜨개질 몸 등 "공격속도 증가" 아이템은 재사용대기시간을 초 단위로 깎아준다.
+        // 무기 종류와 무관하게 양팔에 동일하게 적용되며, 0 밑으로는 내려가지 않게 바닥을 둔다.
+        float cooldownReduction = itemEffects != null ? itemEffects.ArmAttackCooldownReduction : 0f;
+        baseCooldown = Mathf.Max(MinAttackCooldown, baseCooldown - cooldownReduction);
 
         // 한 팔만 남으면 없는 팔 차례(왼→[오 생략]→왼…)를 건너뛰는 만큼
         // 다음 공격까지 두 배로 기다린다 → 실효 공격 속도 절반

@@ -332,6 +332,7 @@ MonoBehaviour:
   attackDamage: 1
   attackCooldown: 0.3
   axeAttackCooldown: 2
+  keyringAttackCooldown: 0.5
   starAttackCooldown: 1.25
   sunflowerAttackCooldown: 1
   attackSize: {x: 1, y: 1}

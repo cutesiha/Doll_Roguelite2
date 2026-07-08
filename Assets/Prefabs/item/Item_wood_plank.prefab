@@ -157,4 +157,3 @@ MonoBehaviour:
   purchaseFailureShakeDistance: 0.22
   purchaseFailureShakeDuration: 0.34
   purchaseFailureShakeSteps: 12
-  purchaseFailureColor: {r: 1, g: 0.12, b: 0.12, a: 1}

@@ -163,11 +163,11 @@ public class PlayerDamageReceiver : MonoBehaviour
             return;
 
         nextDamageTime = Time.time + damageCooldown;
-        if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryBlockHit())
+
+        bool blocked = !hpLossDisabled && !DamageNextBodyTarget(contactDamage);
+        if (blocked)
             return;
 
-        if (!hpLossDisabled)
-            DamageNextBodyTarget(contactDamage);
         Debug.Log($"[피격] 원인: 적 접촉 ({enemyCollider.gameObject.name}) | 데미지: {contactDamage}");
         SetInvincible(1f);
         BeginHitReaction();
@@ -186,11 +186,11 @@ public class PlayerDamageReceiver : MonoBehaviour
         int finalDamage = Mathf.Max(1, damage);
         float cooldown = cooldownOverride >= 0f ? cooldownOverride : damageCooldown;
         nextDamageTime = Time.time + Mathf.Max(0.01f, cooldown);
-        if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryBlockHit())
+
+        bool blocked = !hpLossDisabled && !DamageNextBodyTarget(finalDamage);
+        if (blocked)
             return false;
 
-        if (!hpLossDisabled)
-            DamageNextBodyTarget(finalDamage);
         SetInvincible(1f);
         BeginHitReaction();
         PlayHitFeedback();
@@ -208,7 +208,8 @@ public class PlayerDamageReceiver : MonoBehaviour
             controller.LockMovement(duration);
     }
 
-    void DamageNextBodyTarget(int damage)
+    // 반환값 false = 이 피격이 부위별 방어막에 완전히 막혀 실제 HP 손실/피드백이 없었음을 뜻한다.
+    bool DamageNextBodyTarget(int damage)
     {
         damage = Mathf.Clamp(damage, 1, maxDamagePerHit);
 
@@ -225,11 +226,16 @@ public class PlayerDamageReceiver : MonoBehaviour
         if (damageCandidates.Count == 0)
         {
             TriggerDeath();
-            return;
+            return true;
         }
 
         int pick = Random.Range(0, damageCandidates.Count);
         BodySlot slot = damageCandidates[pick];
+
+        // 누더기 등으로 이 부위에 방어막이 걸려 있으면 실제 데미지 없이 막는다.
+        if (ItemInventoryManager.Instance != null && ItemInventoryManager.Instance.TryConsumeBodySlotShield(slot))
+            return false;
+
         SpriteRenderer sourceRenderer = SourceRendererForSlot(slot);
         BodyPart brokenPart;
         ItemData brokenItemData;
@@ -245,6 +251,8 @@ public class PlayerDamageReceiver : MonoBehaviour
 
         if (AllArmsAndLegsMissing(inventory))
             TriggerDeath();
+
+        return true;
     }
 
     bool AllArmsAndLegsMissing(InventoryManager inventory)

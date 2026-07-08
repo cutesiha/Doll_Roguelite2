@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemId: rag
   itemName: "\uB204\uB354\uAE30"
-  description: "\uB2E4\uC74C \uBC29\uC5D0\uC11C \uD53C\uACA9 1\uD68C\uB97C \uBB34\uD6A8\uD654\uD558\uB294
-    \uBC29\uC5B4\uB9C9"
+  description: "\uC7A5\uCC29\uB41C \uC2E0\uCCB4\uBD80\uC704 \uC2AC\uB86F\uC5D0 \uB4DC\uB798\uADF8\uD558\uBA74 \uADF8 \uBD80\uC704\uC758
+    \uD53C\uACA9 1\uD68C\uB97C \uB9C9\uC544\uC8FC\uB294 \uBC29\uC5B4\uB9C9"
   category: 3
   itemType: 3
   equipLocation: 6
@@ -36,6 +36,7 @@ MonoBehaviour:
   equippedSpriteLeft: {fileID: 0}
   equippedSpriteRight: {fileID: 0}
   equippedSpriteBody: {fileID: 0}
+  shieldPipSprite: {fileID: -2054075737623796407, guid: d5956be308a76d54ebf6affdbb526d9e, type: 3}
   placeholderShape: 0
   placeholderColor: {r: 0.58, g: 0.48, b: 0.42, a: 1}
   worldScale: 2.8498912

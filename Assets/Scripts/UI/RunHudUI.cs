@@ -1982,15 +1982,25 @@ void Awake()
         if (group == null || group.pips == null || !group.slot.HasValue)
             return;
 
+        BodySlot slot = group.slot.Value;
+
+        // 누더기 등으로 이 부위에 방어막이 걸려 있으면, 남은 HP 점 중 마지막(다음에 깎일) 자리를
+        // 방어막 전용 스프라이트로 대신 보여준다. 실제로 막히면 그 자리는 그대로 유지된다.
+        ItemData shieldItem = ItemInventoryManager.Instance != null ? ItemInventoryManager.Instance.GetBodySlotShieldItem(slot) : null;
+        Sprite shieldSprite = shieldItem != null ? shieldItem.ShieldPipSprite : null;
+
+        // BuildPips()가 생성 시 쓴 것과 같은 규칙: hpPipSprite(단추 아이콘)가 있으면 그걸,
+        // 없으면 roundedPipSprite를 기본값으로 쓴다. 방어막이 아닌 칸은 항상 이 스프라이트여야 한다.
+        Sprite defaultPipSprite = hpPipSprite != null ? hpPipSprite : roundedPipSprite;
+
         BodyPart part = null;
         InventoryManager inventory = InventoryManager.Instance;
         if (inventory == null)
         {
-            ApplyPipColors(group.pips, group.maxPips, group.maxPips);
+            ApplyPipColors(group.pips, group.maxPips, group.maxPips, shieldSprite, defaultPipSprite);
             return;
         }
 
-        BodySlot slot = group.slot.Value;
         int index = (int)slot;
         if (inventory.equipped != null && index >= 0 && index < inventory.equipped.Length)
             part = inventory.equipped[index];
@@ -2011,7 +2021,7 @@ void Awake()
             remaining = 0;
         }
 
-        ApplyPipColors(group.pips, remaining, group.maxPips);
+        ApplyPipColors(group.pips, remaining, group.maxPips, shieldSprite, defaultPipSprite);
     }
 
     static int HpToPips(int currentHp, int maxHp, int maxPips)
@@ -2022,12 +2032,31 @@ void Awake()
         return Mathf.Clamp(Mathf.CeilToInt((float)currentHp / maxHp * maxPips), 1, maxPips);
     }
 
-    static void ApplyPipColors(Image[] pips, int remaining, int maxPips)
+    static void ApplyPipColors(Image[] pips, int remaining, int maxPips, Sprite shieldSprite, Sprite defaultPipSprite)
     {
         Color filled = PipColor(remaining, maxPips);
+        // 방어막은 "다음에 깎일" 자리, 즉 남은 점 중 마지막 칸에 표시한다.
+        int shieldPipIndex = shieldSprite != null && remaining > 0 ? remaining - 1 : -1;
         for (int i = 0; i < pips.Length; i++)
-            if (pips[i] != null)
-                pips[i].color = i < remaining ? filled : EmptyPipColor;
+        {
+            if (pips[i] == null)
+                continue;
+
+            if (i == shieldPipIndex)
+            {
+                pips[i].sprite = shieldSprite;
+                pips[i].preserveAspect = true;
+                pips[i].color = Color.white;
+                continue;
+            }
+
+            if (defaultPipSprite != null && pips[i].sprite != defaultPipSprite)
+            {
+                pips[i].sprite = defaultPipSprite;
+                pips[i].preserveAspect = defaultPipSprite != null;
+            }
+            pips[i].color = i < remaining ? filled : EmptyPipColor;
+        }
     }
 
     static Color PipColor(int remaining, int maxPips)
