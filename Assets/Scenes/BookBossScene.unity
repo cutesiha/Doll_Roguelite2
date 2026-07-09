@@ -490,6 +490,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\uB3D9\uC804 (2)"
       objectReference: {fileID: 0}
+    - target: {fileID: 5423533619614333586, guid: b1aa8a8b880730843951af352385f1cb, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1241,6 +1245,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Item_moving_eye
       objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: 4c36e75b2986aff1c504bf764010ee49, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1480,6 +1488,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\uB3D9\uC804 (1)"
       objectReference: {fileID: 0}
+    - target: {fileID: 5423533619614333586, guid: b1aa8a8b880730843951af352385f1cb, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1627,6 +1639,10 @@ PrefabInstance:
     - target: {fileID: 7596980138666810660, guid: e24f8171a7638efb3867587bd69e1211, type: 3}
       propertyPath: m_Name
       value: Item_wooden_leg
+      objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: e24f8171a7638efb3867587bd69e1211, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2185,6 +2201,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Item_sunflower
       objectReference: {fileID: 0}
+    - target: {fileID: 987664835448091773, guid: 3cde5b7416f7c16c54725de16f367b6a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2472,6 +2492,10 @@ PrefabInstance:
     - target: {fileID: 7596980138666810660, guid: 74ed3ce343e75693a3a9e133301bf3f0, type: 3}
       propertyPath: m_Name
       value: Item_bell
+      objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: 74ed3ce343e75693a3a9e133301bf3f0, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3393,6 +3417,10 @@ PrefabInstance:
     - target: {fileID: 1138593586368893378, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_Name
       value: Item_round_pin
+      objectReference: {fileID: 0}
+    - target: {fileID: 1138593586368893378, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3278713255110097848, guid: 3febd3af55052504da8b5589ef1464cc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4393,6 +4421,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Item_star
       objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: 9137ef75ca62d7f68a04ee394bc3a0c3, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4615,6 +4647,10 @@ PrefabInstance:
     - target: {fileID: 7596980138666810660, guid: dc787dde2038d4e6c93e766bcd20c73f, type: 3}
       propertyPath: m_Name
       value: Item_ribbon
+      objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: dc787dde2038d4e6c93e766bcd20c73f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6026,6 +6062,10 @@ PrefabInstance:
     - target: {fileID: 5423533619614333586, guid: b1aa8a8b880730843951af352385f1cb, type: 3}
       propertyPath: m_Name
       value: "\uB3D9\uC804"
+      objectReference: {fileID: 0}
+    - target: {fileID: 5423533619614333586, guid: b1aa8a8b880730843951af352385f1cb, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
