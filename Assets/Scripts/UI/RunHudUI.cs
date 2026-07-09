@@ -375,39 +375,39 @@ void Awake()
         if (uiFont == null)
             uiFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/ThinDungGeunMo SDF.asset");
         if (roundedPanelSprite == null)
-            roundedPanelSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/Sprites/ui_round_rect_20.png");
+            roundedPanelSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/UI/ui_round_rect_20.png");
         if (roundedButtonSprite == null)
-            roundedButtonSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/Sprites/ui_round_rect_10.png");
+            roundedButtonSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/UI/ui_round_rect_10.png");
         if (roundedPipSprite == null)
-            roundedPipSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/Sprites/ui_round_pip_6.png");
+            roundedPipSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/UI/ui_round_pip_6.png");
         if (circleSprite == null)
-            circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/Sprites/ui_circle.png");
+            circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/UI/ui_circle.png");
         if (hpPipSprite == null)
-            hpPipSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/room/hp.png");
+            hpPipSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/room/hp.png");
         if (startRoomMapIcon == null)
-            startRoomMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/startroom.png");
+            startRoomMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/startroom.png");
         if (treasureMapIcon == null)
-            treasureMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/treasure.png");
+            treasureMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/treasure.png");
         if (challengeMapIcon == null)
-            challengeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/challenge.png");
+            challengeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/challenge.png");
         if (middleBossMapIcon == null)
-            middleBossMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/middleboss.png");
+            middleBossMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/middleboss.png");
         if (mainBossMapIcon == null)
-            mainBossMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/mainboss.png");
+            mainBossMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/mainboss.png");
         if (shopMapIcon == null)
-            shopMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/shop.png");
+            shopMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/shop.png");
         if (noLeftArmMapIcon == null)
-            noLeftArmMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/noleftarm.png");
+            noLeftArmMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/noleftarm.png");
         if (noRightArmMapIcon == null)
-            noRightArmMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/norightarm.png");
+            noRightArmMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/norightarm.png");
         if (noLeftEyeMapIcon == null)
-            noLeftEyeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/nolefteye.png");
+            noLeftEyeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/nolefteye.png");
         if (noRightEyeMapIcon == null)
-            noRightEyeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/norighteye.png");
+            noRightEyeMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/norighteye.png");
         if (noLeftLegMapIcon == null)
-            noLeftLegMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/noleftleg.png");
+            noLeftLegMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/noleftleg.png");
         if (noRightLegMapIcon == null)
-            noRightLegMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/norightleg.png");
+            noRightLegMapIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/norightleg.png");
 #endif
     }
 

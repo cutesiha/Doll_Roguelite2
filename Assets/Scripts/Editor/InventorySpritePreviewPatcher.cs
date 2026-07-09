@@ -22,8 +22,8 @@ public static class InventorySpritePreviewPatcher
         GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
         try
         {
-            SetImage(root.transform, "BodyBaseImage", "Assets/Sprites/interface/body_real.png", null, false);
-            SetImage(root.transform, "FaceBaseImage", "Assets/Sprites/interface/head.png", null, false);
+            SetImage(root.transform, "BodyBaseImage", "Assets/Resources/Sprites/interface/body_real.png", null, false);
+            SetImage(root.transform, "FaceBaseImage", "Assets/Resources/Sprites/interface/head.png", null, false);
             SetImage(root.transform, "EquipPart_EyeLeft", "Assets/TextMesh Pro/Sprites/Player/eye_left.png", null, true);
             SetImage(root.transform, "EquipPart_EyeRight", "Assets/TextMesh Pro/Sprites/Player/eye_right.png", null, true);
             SetImage(root.transform, "EquipPart_ArmLeft", "Assets/TextMesh Pro/Sprites/Player/arm_left.png", null, true);

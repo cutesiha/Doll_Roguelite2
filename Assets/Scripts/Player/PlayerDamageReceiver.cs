@@ -629,7 +629,7 @@ public class PlayerDamageReceiver : MonoBehaviour
             return sprite;
 
 #if UNITY_EDITOR
-        return UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/PlayerUI/" + spriteName + ".png");
+        return UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/PlayerUI/" + spriteName + ".png");
 #else
         return null;
 #endif

@@ -41,7 +41,7 @@ public static class ItemDataGenerator
             ItemAcquisitionLocation.BodyRoom, false, 3f, 0f, 0f, 22,
             ItemPlaceholderShape.Diamond, new Color(0.72f, 0.72f, 0.78f, 1f),
             E(ItemEffectType.KeyringProjectile, 3f));
-        SetProjectileSprite("keyring", "Assets/Sprites/Item/Itemeffect/열쇠 나가는거.png");
+        SetProjectileSprite("keyring", "Assets/Resources/Sprites/Item/Itemeffect/열쇠 나가는거.png");
 
         Create("knitted_body", "뜨개질 몸", "인벤토리를 4x4(16칸)로 확장",
             ItemCategory.BodyRoom, ItemType.BodyPart, ItemEquipLocation.Body,
@@ -54,7 +54,7 @@ public static class ItemDataGenerator
             ItemAcquisitionLocation.MiddleBossRoom, false, 0.5f, 0f, 0f, 26,
             ItemPlaceholderShape.Circle, new Color(0.88f, 0.74f, 0.68f, 1f),
             E(ItemEffectType.NeedleBurstOnHit, 0.5f));
-        SetProjectileSprite("round_pin", "Assets/Sprites/Item/Itemeffect/시침 공격.png");
+        SetProjectileSprite("round_pin", "Assets/Resources/Sprites/Item/Itemeffect/시침 공격.png");
 
         Create("sack_bag", "자루가방", "적 처치 시 20% 확률로 누더기 드랍",
             ItemCategory.MiddleBossRoom, ItemType.BodyPart, ItemEquipLocation.Body,
@@ -91,7 +91,7 @@ public static class ItemDataGenerator
             ItemAcquisitionLocation.MiddleBossRoom, false, 5f, 0f, 0f, 25,
             ItemPlaceholderShape.Square, new Color(0.55f, 0.32f, 0.14f, 1f),
             E(ItemEffectType.NailProjectile, 5f));
-        SetProjectileSprite("wood_plank", "Assets/Sprites/Item/Itemeffect/못.png");
+        SetProjectileSprite("wood_plank", "Assets/Resources/Sprites/Item/Itemeffect/못.png");
 
         Create("wooden_leg", "목제 다리", "오른쪽 팔 데미지 +1.00",
             ItemCategory.ChallengeRoom, ItemType.BodyPart, ItemEquipLocation.Leg,
@@ -112,7 +112,7 @@ public static class ItemDataGenerator
             ItemAcquisitionLocation.ChallengeRoom, false, 0.2f, 0f, 0.6f, 26,
             ItemPlaceholderShape.Circle, new Color(1f, 0.82f, 0.15f, 1f),
             E(ItemEffectType.SunflowerBurst, 0.2f, 0.6f));
-        SetProjectileSprite("sunflower", "Assets/Sprites/Item/Itemeffect/해바라기1.png");
+        SetProjectileSprite("sunflower", "Assets/Resources/Sprites/Item/Itemeffect/해바라기1.png");
 
         ItemAcquisitionLocation shopCondition = ItemAcquisitionLocation.ShopRoom | ItemAcquisitionLocation.ConditionRoom;
 

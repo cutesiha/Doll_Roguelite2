@@ -774,7 +774,7 @@ public class MinotaurBoss : EnemyBase
         Sprite sprite = Resources.Load<Sprite>("Sprites/mapicon/" + iconName);
 #if UNITY_EDITOR
         if (sprite == null)
-            sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/mapicon/" + iconName + ".png");
+            sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/mapicon/" + iconName + ".png");
 #endif
         mapIconCache[iconName] = sprite;
         return sprite;

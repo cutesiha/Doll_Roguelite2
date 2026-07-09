@@ -1984,7 +1984,7 @@ void NormalizeCanvasTransform()
         if (sprite != null)
             return sprite;
 #if UNITY_EDITOR
-        sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/Sprites/" + spriteName + ".png");
+        sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/UI/" + spriteName + ".png");
         if (sprite != null)
             return sprite;
 #endif
@@ -2118,12 +2118,12 @@ void NormalizeCanvasTransform()
             return sprite;
 
 #if UNITY_EDITOR
-        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/Player/" + spriteName + ".png");
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Sprites/Player/" + spriteName + ".png");
         for (int i = 0; i < assets.Length; i++)
             if (assets[i] is Sprite editorSprite)
                 return editorSprite;
 
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Player/" + spriteName + ".png");
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/Player/" + spriteName + ".png");
 #else
         return null;
 #endif
@@ -2146,12 +2146,12 @@ void NormalizeCanvasTransform()
             return sprite;
 
 #if UNITY_EDITOR
-        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/interface/" + spriteName + ".png");
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Sprites/interface/" + spriteName + ".png");
         for (int i = 0; i < assets.Length; i++)
             if (assets[i] is Sprite editorSprite)
                 return editorSprite;
 
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/interface/" + spriteName + ".png");
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/interface/" + spriteName + ".png");
 #else
         return null;
 #endif

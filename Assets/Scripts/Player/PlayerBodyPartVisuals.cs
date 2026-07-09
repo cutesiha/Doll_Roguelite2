@@ -135,12 +135,12 @@ public class PlayerBodyPartVisuals : MonoBehaviour
             return sprites[0];
 
 #if UNITY_EDITOR
-        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/Player/" + spriteName + ".png");
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Sprites/Player/" + spriteName + ".png");
         for (int i = 0; i < assets.Length; i++)
             if (assets[i] is Sprite editorSprite)
                 return editorSprite;
 
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Player/" + spriteName + ".png");
+        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/Player/" + spriteName + ".png");
 #else
         return null;
 #endif

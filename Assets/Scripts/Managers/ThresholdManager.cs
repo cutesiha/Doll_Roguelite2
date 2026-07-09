@@ -166,7 +166,7 @@ public class ThresholdManager : MonoBehaviour
         if (sprite != null)
             return sprite;
 #if UNITY_EDITOR
-        sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/interface/" + spriteName + ".png");
+        sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/interface/" + spriteName + ".png");
         if (sprite != null)
             return sprite;
 #endif

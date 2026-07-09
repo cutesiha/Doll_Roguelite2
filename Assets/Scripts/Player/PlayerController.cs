@@ -525,7 +525,7 @@ public class PlayerController : MonoBehaviour
             return sprite;
 
 #if UNITY_EDITOR
-        sprite = LoadEditorSprite("Assets/Sprites/Player/" + spriteName + ".png");
+        sprite = LoadEditorSprite("Assets/Resources/Sprites/Player/" + spriteName + ".png");
         if (sprite != null)
             return sprite;
 
@@ -1105,7 +1105,7 @@ public class PlayerController : MonoBehaviour
             return new[] { sprite };
 
 #if UNITY_EDITOR
-        sprites = LoadEditorSprites("Assets/Sprites/Player/" + spriteName + ".png");
+        sprites = LoadEditorSprites("Assets/Resources/Sprites/Player/" + spriteName + ".png");
         if (sprites.Length > 0)
             return sprites;
 #endif
@@ -1124,7 +1124,7 @@ public class PlayerController : MonoBehaviour
             return new[] { sprite };
 
 #if UNITY_EDITOR
-        sprites = LoadEditorSprites("Assets/Sprites/playerwalk/" + spriteName + ".png");
+        sprites = LoadEditorSprites("Assets/Resources/Sprites/playerwalk/" + spriteName + ".png");
         if (sprites.Length > 0)
             return sprites;
 #endif
@@ -1139,7 +1139,7 @@ public class PlayerController : MonoBehaviour
             return sprite;
 
 #if UNITY_EDITOR
-        return LoadEditorSprite("Assets/Sprites/Playerstanding/" + spriteName + ".png");
+        return LoadEditorSprite("Assets/Resources/Sprites/Playerstanding/" + spriteName + ".png");
 #else
         return null;
 #endif
@@ -1179,7 +1179,7 @@ public class PlayerController : MonoBehaviour
         Sprite s = LoadFirstSprite("Sprites/noleg/" + nameOnly);
         if (s != null) return s;
 #if UNITY_EDITOR
-        return LoadEditorSprite("Assets/Sprites/noleg/" + filename);
+        return LoadEditorSprite("Assets/Resources/Sprites/noleg/" + filename);
 #else
         return null;
 #endif
@@ -1191,7 +1191,7 @@ public class PlayerController : MonoBehaviour
         Sprite[] s = SortSprites(Resources.LoadAll<Sprite>("Sprites/noleg/" + nameOnly));
         if (s.Length > 0) return s;
 #if UNITY_EDITOR
-        s = LoadEditorSprites("Assets/Sprites/noleg/" + filename);
+        s = LoadEditorSprites("Assets/Resources/Sprites/noleg/" + filename);
         if (s.Length > 0) return s;
 #endif
         return new Sprite[0];

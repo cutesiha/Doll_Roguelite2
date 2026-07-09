@@ -1233,9 +1233,9 @@ void Build()
 
 #if UNITY_EDITOR
         if (optionBackgroundSprite == null)
-            optionBackgroundSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/startscene/option2.png");
+            optionBackgroundSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/startscene/option2.png");
         if (questionSprite == null)
-            questionSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/startscene/question.png");
+            questionSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/startscene/question.png");
         if (uiFont == null)
             uiFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/ThinDungGeunMo SDF.asset");
 #endif

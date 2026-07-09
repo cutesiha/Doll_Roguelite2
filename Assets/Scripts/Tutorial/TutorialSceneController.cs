@@ -963,7 +963,7 @@ public class TutorialSceneController : MonoBehaviour
 
 #if UNITY_EDITOR
         if (memoSprite == null)
-            memoSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/tutorial/memo.png");
+            memoSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/tutorial/memo.png");
 #endif
     }
 
@@ -1213,7 +1213,7 @@ public class TutorialSceneController : MonoBehaviour
 #if UNITY_EDITOR
         if (sprite == null)
         {
-            Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/door/enemyroom.png");
+            Object[] assets = AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Sprites/door/enemyroom.png");
             foreach (Object a in assets)
                 if (a is Sprite s) { sprite = s; break; }
         }
@@ -1318,7 +1318,7 @@ public class TutorialSceneController : MonoBehaviour
 #if UNITY_EDITOR
         if (sprite == null)
         {
-            UnityEngine.Object[] assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/room/jakup.png");
+            UnityEngine.Object[] assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Sprites/room/jakup.png");
             foreach (UnityEngine.Object asset in assets)
                 if (asset is Sprite s) { sprite = s; break; }
         }

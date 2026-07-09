@@ -6,8 +6,8 @@ using UnityEngine;
 
 public static class ItemTestRoomPopulator
 {
-    const string BackgroundSpritePath = "Assets/Sprites/room/room_fullhd.png";
-    const string FallbackBgPath = "Assets/Sprites/room/room1back.png";
+    const string BackgroundSpritePath = "Assets/Resources/Sprites/room/room_fullhd.png";
+    const string FallbackBgPath = "Assets/Resources/Sprites/room/room1back.png";
     const string AuthoredRootName = "ItemTestRoom_Authored";
     const string BgObjectName = "ItemTestRoom_Background";
     static readonly Vector2 StartPos = new Vector2(-12f, 5f);

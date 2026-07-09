@@ -10,8 +10,8 @@ public static class RunHudHierarchyAuthoring
 {
     const string RunHudPrefabPath = "Assets/Prefabs/UI/RunHudCanvas.prefab";
     const string FontPath = "Assets/TextMesh Pro/Fonts/ThinDungGeunMo SDF.asset";
-    const string OptionBackgroundPath = "Assets/Sprites/startscene/option2.png";
-    const string QuestionSpritePath = "Assets/Sprites/startscene/question.png";
+    const string OptionBackgroundPath = "Assets/Resources/Sprites/startscene/option2.png";
+    const string QuestionSpritePath = "Assets/Resources/Sprites/startscene/question.png";
 
     [MenuItem("Tools/Run HUD/Bake Editable Panels Into Prefab")]
     public static void BakeEditablePanelsIntoPrefab()
@@ -304,7 +304,7 @@ public static class RunHudHierarchyAuthoring
         CreatePreviewDashedLine(preview, right, lowerMiddle, brown);
         CreatePreviewDashedLine(preview, right, lowerRight, brown);
 
-        Sprite nodeSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/Sprites/ui_circle.png");
+        Sprite nodeSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Sprites/UI/ui_circle.png");
         CreatePreviewNode(preview, "PreviewNode_Start", top, nodeSprite, brown, 124f);
         CreatePreviewNode(preview, "PreviewNode_Left", left, nodeSprite, brown, 124f);
         CreatePreviewNode(preview, "PreviewNode_Right", right, nodeSprite, brown, 124f);
