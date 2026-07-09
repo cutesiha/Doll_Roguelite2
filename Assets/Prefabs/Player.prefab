@@ -449,8 +449,8 @@ MonoBehaviour:
   dropSideDistance: 0.16
   droppedPartSortingOrder: 4
   eyeDropSize: 0.55
-  armDropSize: 1.35
-  legDropSize: 1.5
+  armDropSize: 0.95
+  legDropSize: 1.05
   eyeDropSizeAnchor: {fileID: 0}
   armDropSizeAnchor: {fileID: 0}
   legDropSizeAnchor: {fileID: 0}

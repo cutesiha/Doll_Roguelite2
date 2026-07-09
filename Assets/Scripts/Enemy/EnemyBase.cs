@@ -42,6 +42,8 @@ public class EnemyBase : MonoBehaviour
     int currentFrame = -1;
     Coroutine hitFeedbackRoutine;
     Color spriteBaseColor = Color.white;
+    // HitFeedbackRoutine이 아직 원위치로 되돌리지 못한 흔들림 오프셋(연타로 중간에 끊길 때 복구용).
+    float hitFeedbackResidualOffsetX;
     readonly List<GameObject> ownedTelegraphs = new List<GameObject>();
     Transform spawnApproachTarget;
     Rigidbody2D spawnApproachBody;
@@ -651,6 +653,19 @@ public class EnemyBase : MonoBehaviour
         {
             StopCoroutine(hitFeedbackRoutine);
             spriteRenderer.color = spriteBaseColor;
+
+            // 이전 흔들림이 끝까지 재생되지 못하고 중단되면 원위치 복구 코드(while 루프 이후)가
+            // 실행되지 않아, 아직 안 되돌아간 오프셋이 그대로 남는다. 연타로 계속 중단되면 이게
+            // 누적되어 한쪽으로 계속 밀려나는 버그가 생기므로 여기서 명시적으로 되돌린다.
+            if (hitFeedbackResidualOffsetX != 0f)
+            {
+                Rigidbody2D rb = GetComponent<Rigidbody2D>();
+                if (rb != null)
+                    rb.position = new Vector2(rb.position.x - hitFeedbackResidualOffsetX, rb.position.y);
+                else
+                    transform.position -= new Vector3(hitFeedbackResidualOffsetX, 0f, 0f);
+                hitFeedbackResidualOffsetX = 0f;
+            }
         }
 
         spriteBaseColor = spriteRenderer.color;
@@ -710,6 +725,7 @@ public class EnemyBase : MonoBehaviour
                 transform.position += new Vector3(delta, 0f, 0f);
 
             prevWave = wave;
+            hitFeedbackResidualOffsetX = wave;
 
             if (spriteRenderer != null)
                 spriteRenderer.color = Color.Lerp(hitTint, baseColor, t);
@@ -722,6 +738,7 @@ public class EnemyBase : MonoBehaviour
             rb.position = new Vector2(rb.position.x - prevWave, rb.position.y);
         else
             transform.position -= new Vector3(prevWave, 0f, 0f);
+        hitFeedbackResidualOffsetX = 0f;
 
         if (spriteRenderer != null)
             spriteRenderer.color = baseColor;

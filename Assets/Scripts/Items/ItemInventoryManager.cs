@@ -216,7 +216,10 @@ public class ItemInventoryManager : MonoBehaviour
         return count;
     }
 
-    int UsedSlots => storage.Count + LegacyOccupiedSlots();
+    // 동전 더미도 storage와 같은 물리 슬롯 그리드를 나눠 쓰므로 용량 계산에 포함해야 한다.
+    // 안 그러면 그리드가 이미 꽉 찼는데도 새 동전 더미가 계속 생겨 화면에 표시될 칸이 없는
+    // "보이지 않는 동전" 버그가 생긴다.
+    int UsedSlots => storage.Count + coinStacks.Count + LegacyOccupiedSlots();
 
     void Awake()
     {
@@ -359,25 +362,14 @@ public class ItemInventoryManager : MonoBehaviour
 
         if (item.Type == ItemType.Currency)
         {
-            // 동전을 스택으로 인벤토리 슬롯에 저장 (task7)
             coinItemRef = item;
             int amount = Mathf.Max(1, Mathf.RoundToInt(item.Value));
-            int remaining = amount;
-            for (int idx = 0; idx < coinStacks.Count && remaining > 0; idx++)
+            if (!TryAddPickedUpCoins(amount))
             {
-                int space = 9 - coinStacks[idx];
-                if (space <= 0) continue;
-                int add = Mathf.Min(space, remaining);
-                coinStacks[idx] += add;
-                remaining -= add;
-            }
-            while (remaining > 0)
-            {
-                AddCoinStack(Mathf.Min(9, remaining));
-                remaining -= 9;
+                message = "인벤토리가 가득 참";
+                return false;
             }
             message = item.ItemName + " 획득";
-            NotifyChanged();
             return true;
         }
 
@@ -430,22 +422,12 @@ public class ItemInventoryManager : MonoBehaviour
         {
             coinItemRef = item;
             int amount = Mathf.Max(1, Mathf.RoundToInt(item.Value));
-            int remaining = amount;
-            for (int idx = 0; idx < coinStacks.Count && remaining > 0; idx++)
+            if (!TryAddPickedUpCoins(amount))
             {
-                int space = 9 - coinStacks[idx];
-                if (space <= 0) continue;
-                int add = Mathf.Min(space, remaining);
-                coinStacks[idx] += add;
-                remaining -= add;
-            }
-            while (remaining > 0)
-            {
-                AddCoinStack(Mathf.Min(9, remaining));
-                remaining -= 9;
+                message = "인벤토리가 가득 찼습니다.";
+                return false;
             }
             message = item.ItemName + " 획득";
-            NotifyChanged();
             return true;
         }
 
@@ -655,6 +637,9 @@ public class ItemInventoryManager : MonoBehaviour
         return removed;
     }
 
+    // 환불/보상 등 강제 지급 경로. 인벤토리가 꽉 차 새 동전 더미가 필요해도 절대 실패하지
+    // 않는다(환불이 조용히 씹히면 그 자체가 더 큰 버그). 월드에서 "줍는" 동전은 이걸 쓰지
+    // 말고 아래 TryAddPickedUpCoins를 통해 용량을 지키게 한다.
     public void AddCoins(int amount)
     {
         if (amount <= 0)
@@ -663,6 +648,35 @@ public class ItemInventoryManager : MonoBehaviour
         // coinStacks(3x3 슬롯 표시용)에 직접 쌓는다. 예전엔 abstract coins에만 더해서
         // 총액(Coins)은 늘어나도 인벤토리 슬롯엔 코인 더미가 하나도 안 보이는 "보이지 않는
         // 돈"이 됐었다.
+        FillCoinStacks(amount);
+        NotifyChanged();
+    }
+
+    // 월드에서 동전을 주울 때 쓰는 용량 체크 경로. 기존 동전 더미(9개 미만)에 여유가 있으면
+    // 새 슬롯 없이 계속 쌓이지만, 그걸로 부족해 새 동전 더미 슬롯이 필요한데 인벤토리 그리드에
+    // 빈 칸이 없으면 이 획득 전체를 취소한다(다른 아이템이 가득 찼을 때 거부되는 것과 동일).
+    bool TryAddPickedUpCoins(int amount)
+    {
+        if (amount <= 0)
+            return true;
+
+        int existingSpace = 0;
+        for (int idx = 0; idx < coinStacks.Count; idx++)
+            existingSpace += 9 - coinStacks[idx];
+
+        int overflow = Mathf.Max(0, amount - existingSpace);
+        int newStacksNeeded = overflow > 0 ? Mathf.CeilToInt(overflow / 9f) : 0;
+        int freeSlots = Mathf.Max(0, Capacity - UsedSlots);
+        if (newStacksNeeded > freeSlots)
+            return false;
+
+        FillCoinStacks(amount);
+        NotifyChanged();
+        return true;
+    }
+
+    void FillCoinStacks(int amount)
+    {
         if (coinItemRef == null)
             coinItemRef = ItemCatalog.Find("coin");
 
@@ -681,8 +695,6 @@ public class ItemInventoryManager : MonoBehaviour
             AddCoinStack(add);
             remaining -= add;
         }
-
-        NotifyChanged();
     }
 
     // task3: 보관함의 신체부위 아이템을 특정 BodySlot에 장착.
