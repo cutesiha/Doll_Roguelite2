@@ -10,6 +10,11 @@ public class BodyPartWorldDrop : MonoBehaviour
     bool collected;
     float pickupImmuneUntil;
 
+    const float DefaultDropScale = 0.248f;
+    // 버리기로 떨어지는 기본 팔/몸/다리는 기존 크기(DefaultDropScale)가 너무 커서 절반으로 줄인다.
+    // 눈이나 동전/누더기/보석 등 다른 아이템은 건드리지 않는다.
+    const float LimbDropScale = 0.124f;
+
     public static BodyPartWorldDrop Spawn(BodyPart part, Vector3 position, Sprite sprite)
     {
         if (part == null)
@@ -17,7 +22,7 @@ public class BodyPartWorldDrop : MonoBehaviour
 
         GameObject go = new GameObject("DroppedItem_" + part.DisplayName());
         go.transform.position = position;
-        go.transform.localScale = Vector3.one * 0.248f;
+        go.transform.localScale = Vector3.one * DropScaleFor(part);
 
         SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
         renderer.sprite = sprite;
@@ -30,6 +35,24 @@ public class BodyPartWorldDrop : MonoBehaviour
         BodyPartWorldDrop drop = go.AddComponent<BodyPartWorldDrop>();
         drop.part = part;
         return drop;
+    }
+
+    static float DropScaleFor(BodyPart part)
+    {
+        if (!part.IsEquippable)
+            return DefaultDropScale;
+
+        switch (part.slot)
+        {
+            case BodySlot.ArmLeft:
+            case BodySlot.ArmRight:
+            case BodySlot.LegLeft:
+            case BodySlot.LegRight:
+            case BodySlot.Body:
+                return LimbDropScale;
+            default:
+                return DefaultDropScale;
+        }
     }
 
     public void Toss(Vector3 origin, float distance = 2.5f, float duration = 0.4f)
