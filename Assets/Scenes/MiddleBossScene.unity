@@ -3316,6 +3316,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Item_keyring
       objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: d3ee54962c4157340bc31fb82c87fb42, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3837,6 +3841,10 @@ PrefabInstance:
     - target: {fileID: 7596980138666810660, guid: dc787dde2038d4e6c93e766bcd20c73f, type: 3}
       propertyPath: m_Name
       value: Item_ribbon
+      objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: dc787dde2038d4e6c93e766bcd20c73f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6358,6 +6366,10 @@ PrefabInstance:
     - target: {fileID: 7596980138666810660, guid: d042563bdbb3046a5eaef2abe17e3fb2, type: 3}
       propertyPath: m_Name
       value: Item_button_eye
+      objectReference: {fileID: 0}
+    - target: {fileID: 7596980138666810660, guid: d042563bdbb3046a5eaef2abe17e3fb2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
