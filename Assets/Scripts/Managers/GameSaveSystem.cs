@@ -98,6 +98,7 @@ public static class GameSaveSystem
 
         PlayerPrefs.SetString(Key(slotIndex), JsonUtility.ToJson(data));
         PlayerPrefs.Save();
+        Debug.Log($"[SaveDebug] SaveSlot({slotIndex}) scene={data.sceneName} map.rootId={data.map?.rootId} map.currentId={data.map?.currentId} map.pendingId={data.map?.pendingId} nodeCount={data.map?.nodes?.Count}");
         return GetSlotInfo(slotIndex);
     }
 
@@ -105,11 +106,18 @@ public static class GameSaveSystem
     {
         SaveData data;
         if (!TryRead(slotIndex, out data))
+        {
+            Debug.Log($"[SaveDebug] LoadSlotAndEnter({slotIndex}) FAILED TryRead");
             return false;
+        }
+
+        Debug.Log($"[SaveDebug] LoadSlotAndEnter({slotIndex}) read scene={data.sceneName} map.rootId={data.map?.rootId} map.currentId={data.map?.currentId} map.pendingId={data.map?.pendingId} nodeCount={data.map?.nodes?.Count}");
 
         Time.timeScale = 1f;
         Apply(data);
+        Debug.Log($"[SaveDebug] After Apply(): MapRunState.Root={(MapRunState.Root != null ? MapRunState.Root.id.ToString() : "null")} CurrentNode={(MapRunState.CurrentNode != null ? MapRunState.CurrentNode.id.ToString() : "null")} PendingNode={(MapRunState.PendingNode != null ? MapRunState.PendingNode.id.ToString() : "null")}");
         string sceneName = string.IsNullOrEmpty(data.sceneName) ? "RoomScene" : data.sceneName;
+        Debug.Log($"[SaveDebug] Loading scene: {sceneName}");
         SceneManager.LoadScene(sceneName);
         return true;
     }

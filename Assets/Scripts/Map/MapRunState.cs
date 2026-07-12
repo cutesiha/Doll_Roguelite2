@@ -136,7 +136,10 @@ public static class MapRunState
         PendingNode = pending;
 
         if (Root == null || CurrentNode == null)
+        {
+            Debug.LogWarning($"[SaveDebug] MapRunState.Restore FALLBACK to ResetRun: root found={root != null} current found={current != null} rootId={save.rootId} currentId={save.currentId}");
             ResetRun();
+        }
     }
 
     // task22: 중간보스 방을 지났는지 여부.
@@ -168,7 +171,11 @@ public static class MapRunState
 
     public static bool CompletePendingRoom()
     {
-        if (CurrentNode == null || PendingNode == null) return false;
+        if (CurrentNode == null || PendingNode == null)
+        {
+            Debug.Log($"[SaveDebug] CompletePendingRoom SKIPPED: CurrentNode={(CurrentNode != null ? CurrentNode.id.ToString() : "null")} PendingNode={(PendingNode != null ? PendingNode.id.ToString() : "null")}");
+            return false;
+        }
         if (!CurrentNode.children.Contains(PendingNode))
         {
             PendingNode = null;
@@ -180,6 +187,7 @@ public static class MapRunState
         CurrentNode = PendingNode;
         PendingNode = null;
         UpdateVisibility();
+        Debug.Log($"[SaveDebug] CompletePendingRoom OK: CurrentNode now={CurrentNode.id}");
         return true;
     }
 
