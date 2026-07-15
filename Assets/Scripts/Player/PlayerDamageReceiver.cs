@@ -294,6 +294,17 @@ public class PlayerDamageReceiver : MonoBehaviour
         if (attack != null)
             attack.enabled = false;
 
+        // 그림자는 매 프레임 자기 모양을 되돌려서, 쓰러지는 연출 중에 캐릭터가
+        // 두 개로 겹쳐 보이는 원인이었다. 죽을 때는 꺼서 캐릭터 하나만 보이게 한다.
+        CharacterOvalShadow shadow = GetComponent<CharacterOvalShadow>();
+        if (shadow != null)
+        {
+            shadow.enabled = false;
+            Transform shadowChild = transform.Find("Character Direction Shadow");
+            if (shadowChild != null)
+                shadowChild.gameObject.SetActive(false);
+        }
+
         Collider2D[] colliders = GetComponentsInChildren<Collider2D>();
         for (int i = 0; i < colliders.Length; i++)
             if (colliders[i] != null)
