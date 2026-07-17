@@ -167,6 +167,8 @@ public class PlayerDamageReceiver : MonoBehaviour
         bool blocked = !hpLossDisabled && !DamageNextBodyTarget(contactDamage);
         if (blocked)
             return;
+        if (isDead)
+            return;
 
         Debug.Log($"[피격] 원인: 적 접촉 ({enemyCollider.gameObject.name}) | 데미지: {contactDamage}");
         SetInvincible(1f);
@@ -190,6 +192,8 @@ public class PlayerDamageReceiver : MonoBehaviour
         bool blocked = !hpLossDisabled && !DamageNextBodyTarget(finalDamage);
         if (blocked)
             return false;
+        if (isDead)
+            return true;
 
         SetInvincible(1f);
         BeginHitReaction();
@@ -286,6 +290,8 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     void DisablePlayerAfterDeath()
     {
+        StopHitFeedbackForDeath();
+
         PlayerController controller = GetComponent<PlayerController>();
         if (controller != null)
             controller.enabled = false;
@@ -316,19 +322,44 @@ public class PlayerDamageReceiver : MonoBehaviour
 
     }
 
+    void StopHitFeedbackForDeath()
+    {
+        if (feedbackRoutine != null)
+        {
+            StopCoroutine(feedbackRoutine);
+            feedbackRoutine = null;
+        }
+
+        if (invincibilityRoutine != null)
+        {
+            StopCoroutine(invincibilityRoutine);
+            invincibilityRoutine = null;
+        }
+
+        RestoreRestingColors();
+        restingColors.Clear();
+    }
+
     IEnumerator PlayerFallRoutine()
     {
-        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
-        Color[] baseColors = new Color[renderers.Length];
-        for (int i = 0; i < renderers.Length; i++)
-            baseColors[i] = renderers[i] != null ? renderers[i].color : Color.white;
+        SpriteRenderer[] allRenderers = GetComponentsInChildren<SpriteRenderer>(false);
+        List<SpriteRenderer> renderers = new List<SpriteRenderer>();
+        List<Color> baseColors = new List<Color>();
+        for (int i = 0; i < allRenderers.Length; i++)
+        {
+            SpriteRenderer renderer = allRenderers[i];
+            if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
+                continue;
+
+            renderers.Add(renderer);
+            baseColors.Add(renderer.color);
+        }
 
         Vector3 startPosition = transform.position;
         Vector3 endPosition = startPosition + Vector3.down * deathFallDistance;
         Quaternion startRotation = transform.rotation;
         Quaternion endRotation = startRotation * Quaternion.Euler(0f, 0f, deathFallAngle);
         Vector3 startScale = transform.localScale;
-        Vector3 endScale = new Vector3(startScale.x * 1.08f, startScale.y * 0.58f, startScale.z);
         float duration = Mathf.Max(0.1f, deathFallDuration);
         float elapsed = 0f;
 
@@ -338,10 +369,10 @@ public class PlayerDamageReceiver : MonoBehaviour
             float eased = t * t * (3f - 2f * t);
             transform.position = Vector3.Lerp(startPosition, endPosition, eased);
             transform.rotation = Quaternion.Slerp(startRotation, endRotation, eased);
-            transform.localScale = Vector3.Lerp(startScale, endScale, Mathf.Sin(eased * Mathf.PI * 0.5f));
+            transform.localScale = startScale;
 
             float alpha = Mathf.Lerp(1f, 0.35f, Mathf.Clamp01((t - 0.45f) / 0.55f));
-            for (int i = 0; i < renderers.Length; i++)
+            for (int i = 0; i < renderers.Count; i++)
             {
                 if (renderers[i] == null)
                     continue;
@@ -349,12 +380,13 @@ public class PlayerDamageReceiver : MonoBehaviour
                 Color color = baseColors[i];
                 color.a *= alpha;
                 renderers[i].color = color;
-                renderers[i].enabled = true;
             }
 
             elapsed += Time.deltaTime;
             yield return null;
         }
+
+        transform.localScale = startScale;
 
         yield return new WaitForSeconds(0.28f);
     }
